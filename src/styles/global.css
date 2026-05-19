@@ -1,0 +1,119 @@
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  color: #17202a;
+  background-color: #f4f7f6;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button {
+  border: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.home-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  background:
+    radial-gradient(circle at top left, rgba(43, 125, 115, 0.16), transparent 32%),
+    linear-gradient(135deg, #f4f7f6 0%, #ffffff 100%);
+}
+
+.hero-section {
+  width: 100%;
+  max-width: 920px;
+  padding: 56px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 24px 80px rgba(23, 32, 42, 0.12);
+  border: 1px solid rgba(43, 125, 115, 0.12);
+}
+
+.app-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background-color: #e3f4ef;
+  color: #1d6b60;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+}
+
+.hero-section h1 {
+  margin: 24px 0 16px;
+  max-width: 760px;
+  font-size: clamp(2.4rem, 6vw, 5rem);
+  line-height: 1;
+  letter-spacing: -0.06em;
+  color: #17202a;
+}
+
+.hero-section p {
+  max-width: 680px;
+  margin: 0;
+  color: #5c6b73;
+  font-size: 1.1rem;
+  line-height: 1.7;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 36px;
+}
+
+.hero-actions button {
+  padding: 14px 22px;
+  border-radius: 14px;
+  background-color: #1d6b60;
+  color: #ffffff;
+  font-weight: 700;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hero-actions button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(29, 107, 96, 0.22);
+}
+
+.hero-actions .secondary-button {
+  background-color: #edf3f1;
+  color: #1d6b60;
+}
+
+@media (max-width: 640px) {
+  .home-page {
+    padding: 24px 16px;
+  }
+
+  .hero-section {
+    padding: 32px 24px;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+  }
+
+  .hero-actions button {
+    width: 100%;
+  }
+}
