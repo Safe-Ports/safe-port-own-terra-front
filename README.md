@@ -1,73 +1,169 @@
-# React + TypeScript + Vite
+```md
+# OwnTerra Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend application for the OwnTerra platform.
 
-Currently, two official plugins are available:
+OwnTerra is a web application focused on the management and monitoring of real estate lot acquisition processes, including clients, payments, documentation, progress tracking and administrative workflows.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Repository
 
-## React Compiler
+safe-port-own-terra-front
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech Stack
 
-## Expanding the ESLint configuration
+- React
+- TypeScript
+- Vite
+- CSS
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Project Status
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Initial frontend framework created.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Current scope:
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- Base React project
+- Essential folder structure
+- Initial home page
+- Basic responsive styling
+- Happy path running locally
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Requirements
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Before running the project, make sure you have installed:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- Node.js
+- npm
+
+Recommended versions:
+
+- Node.js 20+
+- npm 10+
+
+## Installation
+
+Clone the repository:
+
+git clone https://github.com/Safe-Ports/safe-port-own-terra-front.git
+
+Enter the project folder:
+
+cd safe-port-own-terra-front
+
+Install dependencies:
+
+npm install
+
+Run development server:
+
+npm run dev
+
+Open the local URL shown in the terminal, usually:
+
+http://localhost:5173/
+
+## Available Scripts
+
+Run development server:
+
+npm run dev
+
+Generate production build:
+
+npm run build
+
+Preview production build:
+
+npm run preview
+
+Run lint:
+
+npm run lint
+
+## Initial Folder Structure
+
+src/
+├── assets/
+├── components/
+├── layouts/
+├── pages/
+├── routes/
+├── services/
+├── styles/
+└── utils/
+
+## Folder Purpose
+
+### assets
+
+Static files used by the application, such as images, icons and logos.
+
+### components
+
+Reusable UI components.
+
+### layouts
+
+General page structures.
+
+### pages
+
+Main application pages.
+
+### routes
+
+Application route definitions.
+
+### services
+
+External service connections, API clients and HTTP request logic.
+
+### styles
+
+Global styles and shared CSS files.
+
+### utils
+
+Helper functions used across the project.
+
+## Happy Path
+
+The initial happy path validates that:
+
+1. The project installs correctly.
+2. The development server starts.
+3. The application renders the OwnTerra home page.
+4. The production build completes successfully.
+
+## Acceptance Criteria
+
+- Repository created under Safe-Ports.
+- Required permissions configured.
+- Essential frontend folders created.
+- React application runs locally.
+- Initial happy path implemented.
+- README created.
+- Pull request opened.
+- Pull request approved.
+- Pull request merged.
+
+## Development Workflow
+
+Create a new branch:
+
+git checkout -b feature/name-of-change
+
+Commit changes:
+
+git add .
+git commit -m "feat: describe the change"
+
+Push branch:
+
+git push -u origin feature/name-of-change
+
+Open a pull request into the main branch.
+
+## Notes
+
+This repository contains the frontend base for OwnTerra. Backend integration, authentication, dashboards
