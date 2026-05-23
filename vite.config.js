@@ -9,6 +9,9 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "pwa-icon.svg", "apple-touch-icon.png", "mask-icon.svg"],
+      workbox: {
+        navigateFallbackDenylist: [/^\/LoteManager_v32_rento(?:\.html)?/]
+      },
       manifest: {
         name: "Ownterra",
         short_name: "Ownterra",
