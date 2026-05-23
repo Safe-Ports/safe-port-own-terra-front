@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Ownterra Native",
+    "slug": "ownterra-native",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "scheme": "ownterranative",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F4F1EB"
+    },
+    "ios": {
+      "bundleIdentifier": "com.fernandoestrada.ownterranative",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.fernandoestrada.ownterranative",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-font"
+    ]
+  }
+}
