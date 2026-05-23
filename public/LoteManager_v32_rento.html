@@ -5096,7 +5096,6 @@ function gv(v,btn){
 
   if(v==='clientes') renderClientList();
   if(v==='contratos') renderContracts();
-  if(v==='frac'&&window._fracData){ setTimeout(function(){ renderFracMap(window._fracData); },0); }
   if(v==='documentos') renderDocuments();
   if(v==='pagos') renderPagos();
   if(v==='calculadora') calcAmort();
@@ -7293,7 +7292,7 @@ function _miDiaBuildTasks(role, data){
         priority:"warn", icon:"⏰",
         title:stuckLots+" lotes apartados sin avance",
         sub:"Revisa si las reservas están progresando a contrato",
-        action:"Ver", actionFn:"gv(\"frac\", document.getElementById(\"sb-btn-frac\"))"
+        action:"Ver", actionFn:"openFracGallery(document.getElementById(\"sb-btn-frac\"))"
       });
     }
 
