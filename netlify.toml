@@ -3,6 +3,12 @@
   publish = "dist"
 
 [[redirects]]
+  from = "/LoteManager_v32_rento"
+  to = "/LoteManager_v32_rento.html"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200

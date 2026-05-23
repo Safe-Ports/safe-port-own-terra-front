@@ -2,7 +2,7 @@ function App() {
   return (
     <iframe
       title="Ownterra"
-      src="/LoteManager_v32_rento.html?v=ownterra-v32-actions"
+      src="/LoteManager_v32_rento?v=ownterra-v32-actions"
       style={{
         width: "100vw",
         height: "100vh",
