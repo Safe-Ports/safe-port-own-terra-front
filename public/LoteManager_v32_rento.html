@@ -87,6 +87,13 @@ body{font-family:'Inter','DM Sans',sans-serif;background:var(--bg);color:var(--t
 .tn-notif:hover{background:rgba(255,255,255,.12);color:#fff}
 .tn-notif-dot{position:absolute;top:-2px;right:-2px;width:13px;height:13px;border-radius:50%;background:var(--red);border:2px solid #183024;font-size:.48rem;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center}
 .tn-av{width:30px;height:30px;border-radius:50%;background:rgba(42,122,80,.4);border:2px solid rgba(42,122,80,.5);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.65rem;color:#fff;cursor:pointer}
+.tn-user{position:relative;display:flex;align-items:center}
+.tn-user-menu{position:absolute;top:40px;right:0;z-index:240;display:none;width:220px;padding:8px;background:#0f2016;border:1px solid rgba(255,255,255,.1);border-radius:12px;box-shadow:0 14px 36px rgba(0,0,0,.38)}
+.tn-user.open .tn-user-menu{display:block}
+.tn-user-name{font-size:.78rem;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tn-user-role{font-size:.64rem;color:rgba(255,255,255,.45);margin-top:2px}
+.tn-user-action{width:100%;margin-top:8px;display:flex;align-items:center;gap:8px;padding:8px 10px;border:0;border-radius:9px;background:rgba(192,57,43,.12);color:#f9a49a;font-size:.76rem;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif}
+.tn-user-action:hover{background:rgba(192,57,43,.24);color:#fff}
 
 /* ── Compat stubs for old sidebar code ── */
 .sb-btn{display:none}
@@ -729,6 +736,7 @@ select.fi{cursor:pointer}
 /* ── NEW v2: VISITAS ── */
 .visit-card{background:var(--sf);border:1px solid var(--bd);border-radius:11px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:13px;cursor:pointer;transition:all .15s;box-shadow:var(--sh)}
 .visit-card:hover{border-color:var(--tan);box-shadow:var(--sh2);transform:translateY(-1px)}
+.visitas-list{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .visit-date-box{width:50px;height:54px;border-radius:9px;background:var(--navy);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0}
 .vd-day{font-family:'Playfair Display',serif;font-size:1.35rem;line-height:1}
 .vd-mon{font-size:.55rem;text-transform:uppercase;letter-spacing:.5px;opacity:.7}
@@ -736,6 +744,11 @@ select.fi{cursor:pointer}
 .visit-nm{font-weight:700;font-size:.84rem}
 .visit-sub{font-size:.69rem;color:var(--mu);margin-top:2px}
 .visit-tags{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap}
+.visit-actions{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+.visit-action{border:1px solid var(--bd);background:var(--sf2);color:var(--tx2);border-radius:7px;padding:5px 9px;font-size:.66rem;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif}
+.visit-action.primary{border-color:var(--forest);background:var(--forest);color:#fff}
+.visit-action:hover{border-color:var(--forest);color:var(--forest)}
+.visit-action.primary:hover{background:var(--forest-lt);color:#fff}
 .v-tag{font-size:.6rem;font-weight:700;padding:2px 8px;border-radius:7px}
 .v-tag.lote{background:var(--grn-lt);color:var(--grn)}
 .v-tag.depto{background:var(--sky-lt);color:var(--sky)}
@@ -747,6 +760,7 @@ select.fi{cursor:pointer}
 .visit-asesor{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .va-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.62rem;color:#fff}
 .va-nm{font-size:.7rem;color:var(--mu);max-width:70px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.visitas-empty{display:none;background:var(--sf);border:1px dashed var(--bd);border-radius:12px;padding:20px;text-align:center;color:var(--mu);font-size:.85rem}
 
 /* ── NEW v2: CONSTRUCCION ── */
 .obra-card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden;margin-bottom:14px;box-shadow:var(--sh)}
@@ -993,6 +1007,118 @@ body,button,input,select,textarea{font-family:var(--corp-font)!important}
 @media(max-width:1180px){body{position:static;overflow:auto;height:auto;min-height:100vh}.topnav{height:auto;min-height:54px;align-items:flex-start;flex-wrap:wrap;padding:8px 12px;gap:6px}.tn-logo{width:100%;margin:0 0 4px}.tn-sep{display:none}.tn-group{position:relative}.tn-btn{height:38px;border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:0 10px;background:rgba(255,255,255,.04)}.tn-group.open .tn-drop{display:block}.tn-drop{top:42px;border-radius:12px;min-width:230px}.tn-right{width:100%;margin-left:0;justify-content:space-between}.tn-search{flex:1;width:auto}.main{min-height:calc(100vh - 118px)}}
 @media(max-width:760px){.topbar{height:auto;min-height:46px;flex-wrap:wrap;padding:8px 12px}.view-scroll{padding:14px 12px}.kpi-grid,.pagos-kpis{grid-template-columns:1fr 1fr!important}.grid-2,.cl-layout,.acceso-grid,.ownterra-form,.ownterra-detail-grid{grid-template-columns:1fr!important}.card-hd,[style*="display:flex;justify-content:space-between"]{flex-wrap:wrap}.tbl{min-width:760px}.card-body[style*="padding:0"]{overflow-x:auto}.visit-card,.cont-card,.obra-hd{align-items:flex-start;flex-wrap:wrap}.unit-grid{grid-template-columns:repeat(2,minmax(0,1fr));display:grid!important}.unit-cell{width:auto!important;min-width:0}#docs-kpis{grid-template-columns:1fr 1fr!important}.ot-filters{align-items:stretch;flex-direction:column}.ot-filter-chips{overflow-x:auto;padding-bottom:2px}}
 @media(max-width:480px){.kpi-grid,.pagos-kpis,#docs-kpis{grid-template-columns:1fr!important}.tn-btn{font-size:.7rem}.tn-search input{font-size:.7rem}.bc-greet-pills{align-items:stretch}.bc-greet-pill{justify-content:flex-start}.ownterra-modal-ft{flex-direction:column}}
+@media(max-width:760px) and (orientation:portrait){
+  html,body{width:100%;min-height:100%;height:auto;overflow:auto;position:static}
+  body{display:block;background:var(--bg);padding-bottom:env(safe-area-inset-bottom)}
+  #login-screen{position:fixed;overflow-y:auto;display:block;background:var(--sf)}
+  .login-left{width:100%;min-height:230px;padding:26px 22px;gap:22px}
+  .login-right{width:100%;min-height:auto;padding:24px 18px 32px;display:block}
+  .login-form-wrap{max-width:none}
+  .ll-tagline{font-size:1.8rem;margin-bottom:10px}
+  .ll-desc{font-size:.82rem;max-width:none}
+  .ll-stats{gap:16px;flex-wrap:wrap}
+  .ll-stat-v{font-size:1.3rem}
+  .ll-map-deco{display:none}
+
+  .topnav{position:sticky;top:0;z-index:1000;display:flex;flex-wrap:wrap;align-items:center;gap:7px;padding:8px 10px 9px;max-height:none;overflow:visible}
+  .tn-logo{order:1;width:auto;flex:1 1 150px;margin:0;min-width:0}
+  .tn-logo-nm{font-size:.9rem}
+  .tn-sep{display:none}
+  .tn-group{order:3;display:block;min-width:0;position:relative}
+  .tn-btn{width:auto;height:36px;justify-content:center;padding:0 11px;border-radius:10px;font-size:.72rem;overflow:hidden;text-overflow:ellipsis;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.09);border-bottom-color:rgba(255,255,255,.09)}
+  .tn-btn.home-btn{order:3;width:40px;justify-content:center}
+  .tn-drop{position:absolute;top:40px;left:0;display:none;width:min(270px,calc(100vw - 20px));min-width:0;margin-top:0;border-radius:12px;background:#0f2016;box-shadow:0 10px 24px rgba(0,0,0,.25)}
+  .tn-group:nth-of-type(4) .tn-drop{left:auto;right:0}
+  .tn-group:hover .tn-drop{display:none}
+  .tn-group.open .tn-drop{display:block}
+  .tn-right{order:2;display:grid;grid-template-columns:1fr 34px 34px;align-items:center;gap:7px;width:100%;margin:0;min-width:0}
+  .tn-search{grid-column:1;grid-row:1;width:100%;min-width:0;height:36px;padding:4px 10px}
+  .tn-search input{font-size:.72rem}
+  .tn-notif,.tn-av{width:34px;height:34px;flex:0 0 auto}
+  .tn-notif{grid-column:2;grid-row:1}
+  .tn-user{grid-column:3;grid-row:1}
+  .tn-user-menu{top:42px;right:0}
+  #defaultNav,#editorNav{grid-column:1/-1;overflow-x:auto;gap:7px;padding-bottom:2px;width:100%}
+  #defaultNav .tb-btn,#editorNav .tb-btn{white-space:nowrap;flex:0 0 auto}
+
+  .main{height:auto;min-height:calc(100svh - 132px);overflow:visible;display:block}
+  .content{height:auto;min-height:0;overflow:visible;display:block}
+  .view{overflow:visible}
+  .view.active{display:block;min-height:calc(100svh - 190px);overflow:visible}
+  .view-scroll{height:auto;min-height:0;overflow:visible;padding:12px 10px 24px}
+  .topbar{position:sticky;top:0;z-index:40;align-items:flex-start;gap:8px}
+  .topbar-r{width:100%;overflow-x:auto;padding-bottom:2px}
+  .tb-src{width:100%;min-width:0}
+
+  .bento-home{height:auto;min-height:0;overflow:visible;padding:10px}
+  .bento-grid{display:grid;grid-template-columns:1fr;grid-auto-rows:auto;gap:12px;min-height:0}
+  .bc{min-height:auto;max-height:none;border-radius:12px}
+  .bc:hover{transform:none}
+  .bc-greet{padding:18px 16px}
+  .bc-greet-txt{font-size:1.18rem}
+  .bc-greet-txt em{display:block;margin-top:4px}
+  .bc-greet-sub{font-size:.82rem}
+  .bc-greet-pills{display:grid;grid-template-columns:1fr;gap:8px}
+  .bc-greet-pill{width:100%;justify-content:flex-start;padding:8px 11px;font-size:.78rem}
+  .bc-list-head{padding:12px 14px 9px}
+  .bc-list-title{font-size:.92rem}
+  .bc-list-item,.bc-firma,.bc-acc{padding:11px 14px;align-items:flex-start}
+  .bc-li-nm{font-size:.9rem}
+  .bc-li-sub{font-size:.74rem;white-space:normal;line-height:1.35}
+  .bc-firma-btn{align-self:center;font-size:.68rem;padding:6px 10px}
+  .bc-map{min-height:240px}
+  .bc-list-body{max-height:none}
+  .bc-modules{grid-template-columns:1fr}
+  #view-visitas .kpi-grid{grid-template-columns:1fr 1fr!important}
+  #view-visitas .filters{width:100%;overflow-x:auto;flex-wrap:nowrap;padding-bottom:5px}
+  #view-visitas .fpill{flex:0 0 auto}
+  #view-visitas .view-scroll > div[style*="justify-content:space-between"]{display:flex!important;flex-direction:column;align-items:stretch!important;gap:10px}
+  #view-visitas .btn-p{width:100%;min-height:44px;font-size:.9rem}
+  .visitas-list{grid-template-columns:1fr!important;gap:12px}
+  .visit-card{display:grid;grid-template-columns:54px 1fr;align-items:start;gap:12px;padding:14px}
+  .visit-date-box{width:54px;height:58px}
+  .visit-info{min-width:0}
+  .visit-nm{font-size:1rem;line-height:1.2}
+  .visit-sub{font-size:.82rem;line-height:1.38;white-space:normal}
+  .visit-asesor{grid-column:1/-1;padding-top:2px}
+  .va-av{width:34px;height:34px;font-size:.74rem}
+  .va-nm{max-width:none;font-size:.8rem}
+  .visit-actions{grid-column:1/-1}
+  .visit-action{flex:1;min-height:36px;font-size:.74rem}
+
+  .kpi-grid,.pagos-kpis,#docs-kpis{grid-template-columns:1fr!important;gap:10px}
+  .kpi{padding:14px 15px}
+  .kpi-val{font-size:1.55rem}
+  .grid-2,.cl-layout,.acceso-grid,.ownterra-form,.ownterra-detail-grid{grid-template-columns:1fr!important}
+  .card{margin-bottom:12px}
+  .card-hd{padding:12px 14px;gap:8px}
+  .card-body{padding:12px 14px}
+  .filters,.ot-filter-chips{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px}
+  .fpill,.chip,.contract-badge{white-space:nowrap}
+
+  #lotes-upload-screen,#lotes-map-upload{display:flex;min-height:calc(100svh - 210px);height:auto;padding:18px 12px!important;justify-content:flex-start!important}
+  #lotes-upload-screen [style*="grid-template-columns:1fr 1fr"],
+  #lotes-map-upload [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}
+  #lotes-editor-screen{height:auto;min-height:calc(100svh - 190px);overflow:visible!important}
+  #lotes-editor-screen > div:first-child{position:sticky;top:0;z-index:30;flex-wrap:wrap;align-items:flex-start;padding:8px 10px!important}
+  #lotes-editor-screen > div:first-child > div[style*="display:flex;gap:9px"]{width:100%;overflow-x:auto;padding-bottom:2px}
+  #lotes-editor-screen > div[style*="display:flex;flex:1"]{display:flex!important;flex-direction:column!important;height:auto;overflow:visible!important}
+  #lotes-editor-screen > div[style*="display:flex;flex:1"] > div[style*="background:#1a1a2e"]{min-height:280px;flex:0 0 280px!important;width:100%}
+  #lot-split-handle{display:none!important}
+  #lot-builder-panel{width:100%!important;min-height:420px;max-height:none;overflow:visible!important}
+  #lot-builder-panel > div{max-width:100%}
+  .lot-matrix-board{overflow-x:auto}
+
+  #view-lotes .canvas-wrap{min-height:330px;flex:0 0 330px}
+  #view-lotes .side-panel{width:100%;height:auto;max-height:none;border-left:none;border-top:1px solid #c2d9f0}
+  #view-lotes .panel-body{max-height:none}
+  #view-lotes .editor-wrap,#view-lotes [style*="display:flex;flex:1;min-height:0"]{flex-direction:column!important;overflow:visible!important}
+
+  .modal,.ownterra-action-modal{align-items:flex-start;overflow-y:auto;padding:10px}
+  .modal-box,.ownterra-modal-box,.ot-modal{width:100%!important;max-width:100%!important;max-height:none!important;margin:0}
+  .modal-body,.ownterra-modal-body,.ot-modal-body{padding:14px}
+  .ownterra-modal-ft{flex-direction:column}
+}
 </style>
 </head>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -1196,7 +1322,14 @@ body,button,input,select,textarea{font-family:var(--corp-font)!important}
       <button class="tb-btn tb-p" id="btn-new-contract" style="display:none;font-size:.72rem;padding:5px 12px" onclick="openContractModal()">+ Contrato</button>
     </div>
     <div class="tn-notif"><span>🔔</span><span class="tn-notif-dot">8</span></div>
-    <div class="tn-av">JR</div>
+    <div class="tn-user">
+      <div class="tn-av" id="tn-user-av">JR</div>
+      <div class="tn-user-menu" id="tn-user-menu">
+        <div class="tn-user-name" id="tn-user-name">Juan Ruiz</div>
+        <div class="tn-user-role" id="tn-user-role">Usuario</div>
+        <button class="tn-user-action" onclick="doLogout()">↩ Cerrar sesión</button>
+      </div>
+    </div>
   </div>
 </nav>
 
@@ -1945,18 +2078,18 @@ body,button,input,select,textarea{font-family:var(--corp-font)!important}
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
         <div class="filters" style="margin-bottom:0">
-          <div class="fpill act">Todas</div>
-          <div class="fpill">Pendientes</div>
-          <div class="fpill">Confirmadas</div>
-          <div class="fpill">Realizadas</div>
-          <div class="fpill">Lotes</div>
-          <div class="fpill">Deptos</div>
-          <div class="fpill">Locales</div>
+          <div class="fpill act" data-visit-filter="todas" onclick="ownterraApplyVisitFilter('todas',this)">Todas</div>
+          <div class="fpill" data-visit-filter="pendientes" onclick="ownterraApplyVisitFilter('pendientes',this)">Pendientes</div>
+          <div class="fpill" data-visit-filter="confirmadas" onclick="ownterraApplyVisitFilter('confirmadas',this)">Confirmadas</div>
+          <div class="fpill" data-visit-filter="realizadas" onclick="ownterraApplyVisitFilter('realizadas',this)">Realizadas</div>
+          <div class="fpill" data-visit-filter="lotes" onclick="ownterraApplyVisitFilter('lotes',this)">Lotes</div>
+          <div class="fpill" data-visit-filter="deptos" onclick="ownterraApplyVisitFilter('deptos',this)">Deptos</div>
+          <div class="fpill" data-visit-filter="locales" onclick="ownterraApplyVisitFilter('locales',this)">Locales</div>
         </div>
         <button class="btn-p">+ Programar visita</button>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="visitas-list" id="visitas-list">
         <div class="visit-card">
           <div class="visit-date-box"><div class="vd-day">23</div><div class="vd-mon">May</div></div>
           <div class="visit-info">
@@ -2021,6 +2154,7 @@ body,button,input,select,textarea{font-family:var(--corp-font)!important}
           </div>
         </div>
       </div>
+      <div class="visitas-empty" id="visitas-empty">No hay visitas para este filtro.</div>
     </div>
   </div>
 
@@ -5547,14 +5681,15 @@ function togglePass() {
 
 function injectUserBadge() {
   if (!currentUser) return;
-  var badge = document.createElement('div');
-  badge.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 14px;margin:10px;background:rgba(255,255,255,.06);border-radius:10px;border:1px solid rgba(255,255,255,.1)';
-  badge.innerHTML =
-    '<div style="width:32px;height:32px;border-radius:50%;background:'+currentUser.color+';display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.72rem;color:#fff;flex-shrink:0">'+currentUser.initials+'</div>'+
-    '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:.78rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+currentUser.name+'</div><div style="font-size:.64rem;color:rgba(255,255,255,.4)">'+currentUser.role+'</div></div>'+
-    '<button onclick="doLogout()" title="Cerrar sesión" style="background:rgba(255,255,255,.08);border:none;border-radius:6px;width:24px;height:24px;cursor:pointer;font-size:.8rem;color:rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;transition:all .14s" onmouseover="this.style.background=\'rgba(192,57,43,.3)\';this.style.color=\'#f9a49a\'" onmouseout="this.style.background=\'rgba(255,255,255,.08)\';this.style.color=\'rgba(255,255,255,.5)\'">✕</button>';
-  var foot = document.querySelector('.sb-foot');
-  foot.parentNode.insertBefore(badge, foot);
+  var av = document.getElementById('tn-user-av');
+  var nm = document.getElementById('tn-user-name');
+  var role = document.getElementById('tn-user-role');
+  if (av) {
+    av.textContent = currentUser.initials || 'US';
+    av.style.background = currentUser.color || 'rgba(42,122,80,.4)';
+  }
+  if (nm) nm.textContent = currentUser.name || currentUser.username || 'Usuario';
+  if (role) role.textContent = currentUser.role || 'Usuario';
 }
 
 function doLogout() {
@@ -5565,9 +5700,16 @@ function doLogout() {
   ls.classList.remove('hidden');
   ls.style.opacity = '0';
   ls.style.transition = 'opacity .3s ease';
-  // Remove badge
-  var badge = document.querySelector('.sb-foot').previousElementSibling;
-  if (badge && badge.style.borderRadius === '10px') badge.remove();
+  document.querySelectorAll('.tn-user.open').forEach(function(x){x.classList.remove('open');});
+  var av = document.getElementById('tn-user-av');
+  if (av) {
+    av.textContent = 'JR';
+    av.style.background = 'rgba(42,122,80,.4)';
+  }
+  var nm = document.getElementById('tn-user-name');
+  var role = document.getElementById('tn-user-role');
+  if (nm) nm.textContent = 'Juan Ruiz';
+  if (role) role.textContent = 'Usuario';
   // Reset form
   document.getElementById('lf-user').value = '';
   document.getElementById('lf-pass').value = '';
@@ -8193,7 +8335,9 @@ function ownterraScheduleVisit(property){
     {id:'ov-notes',label:'Notas',type:'textarea',full:true,placeholder:'Objetivo de la visita, requerimientos, seguimiento...'}
   ],function(){
     var data=ownterraMocks();
-    data.visits.unshift({client:document.getElementById('ov-client').value||'Prospecto',property:document.getElementById('ov-property').value||'Inmueble',date:document.getElementById('ov-date').value,status:'Sin confirmar',type:'Visita',advisor:document.getElementById('ov-advisor').value||'Asesor'});
+    var property=document.getElementById('ov-property').value||'Inmueble';
+    var type=property.toLowerCase().indexOf('depto')>=0?'Depto':property.toLowerCase().indexOf('local')>=0?'Local':'Lote';
+    data.visits.unshift({id:'vis-'+Date.now(),client:document.getElementById('ov-client').value||'Prospecto',property:property,date:document.getElementById('ov-date').value,status:'Pendiente',type:type,advisor:document.getElementById('ov-advisor').value||'Asesor',notes:document.getElementById('ov-notes').value||'Visita programada desde el formulario.'});
     ownterraSaveMocks(data);
     document.getElementById('ownterra-action-modal').remove();
     toast('📅 Visita programada en simulación');
@@ -8251,17 +8395,144 @@ function ownterraPropertyDetail(cell){
 function ownterraShowDetail(title){
   ownterraModal(title,'<div class="ownterra-detail-grid"><div class="ownterra-detail"><small>Estado</small><b>Activo</b></div><div class="ownterra-detail"><small>Prioridad</small><b>Media</b></div><div class="ownterra-detail"><small>Responsable</small><b>Operaciones</b></div><div class="ownterra-detail"><small>Última actualización</small><b>Hoy</b></div></div><div class="ownterra-toast-note">Vista demo para validar navegación y flujo operativo antes de conectar backend.</div>','<button class="btn-p" onclick="document.getElementById(\'ownterra-action-modal\').remove()">Entendido</button>');
 }
+var ownterraVisitFilter='todas';
+function ownterraNormalizeVisits(){
+  var data=ownterraMocks();
+  if(!Array.isArray(data.visits)) data.visits=[];
+  var hasPedro=data.visits.some(function(v){return v.client==='Pedro Álvarez Ruiz';});
+  if(!hasPedro){
+    data.visits.push({id:'vis-004',client:'Pedro Álvarez Ruiz',property:'Lote 7-B',date:'2026-05-21T11:00',type:'Lote',status:'Realizada',advisor:'Juan Rodríguez',notes:'Cliente revisó ubicación y amenidades.'});
+  }
+  data.visits.forEach(function(v,i){
+    if(!v.id) v.id='vis-'+String(i+1).padStart(3,'0');
+    if(!v.notes) v.notes='Seguimiento comercial pendiente.';
+    if(v.type==='Departamento') v.type='Depto';
+    if(v.status==='Sin confirmar') v.status='Pendiente';
+  });
+  ownterraSaveMocks(data);
+  return data.visits;
+}
+function ownterraVisitStatusClass(status){
+  var s=(status||'').toLowerCase();
+  if(s.indexOf('realizada')>=0) return 'realizada';
+  if(s.indexOf('confirm')>=0) return 'confirmada';
+  if(s.indexOf('cancel')>=0) return 'cancelada';
+  return 'pendiente';
+}
+function ownterraVisitTypeClass(type){
+  var t=(type||'').toLowerCase();
+  if(t.indexOf('depto')>=0||t.indexOf('depart')>=0) return 'depto';
+  if(t.indexOf('local')>=0) return 'local';
+  return 'lote';
+}
+function ownterraVisitInitials(name){
+  return (name||'OT').split(/\s+/).filter(Boolean).slice(0,2).map(function(p){return p.charAt(0);}).join('').toUpperCase()||'OT';
+}
+function ownterraVisitMatches(v,filter){
+  var status=ownterraVisitStatusClass(v.status);
+  var type=ownterraVisitTypeClass(v.type);
+  if(filter==='pendientes') return status==='pendiente';
+  if(filter==='confirmadas') return status==='confirmada';
+  if(filter==='realizadas') return status==='realizada';
+  if(filter==='lotes') return type==='lote';
+  if(filter==='deptos') return type==='depto';
+  if(filter==='locales') return type==='local';
+  return true;
+}
+function ownterraVisitCard(v){
+  var d=new Date(v.date||Date.now());
+  var statusClass=ownterraVisitStatusClass(v.status);
+  var typeClass=ownterraVisitTypeClass(v.type);
+  var advisor=v.advisor||'Asesor';
+  var color=typeClass==='depto'?'var(--sky)':typeClass==='local'?'var(--amb)':'var(--forest)';
+  var confirmBtn=statusClass==='pendiente'?'<button class="visit-action primary" onclick="event.stopPropagation();ownterraSetVisitStatus(\''+v.id+'\',\'Confirmada\')">Confirmar</button>':'';
+  var doneBtn=statusClass!=='realizada'?'<button class="visit-action" onclick="event.stopPropagation();ownterraSetVisitStatus(\''+v.id+'\',\'Realizada\')">Realizada</button>':'';
+  return '<div class="visit-card" data-visit-id="'+v.id+'" onclick="ownterraVisitDetail(\''+v.id+'\')">'+
+    '<div class="visit-date-box"><div class="vd-day">'+String(d.getDate()).padStart(2,'0')+'</div><div class="vd-mon">'+d.toLocaleDateString('es-MX',{month:'short'}).replace('.','')+'</div></div>'+
+    '<div class="visit-info">'+
+      '<div class="visit-nm">'+v.client+'</div>'+
+      '<div class="visit-sub">'+v.property+' — '+(v.project||'')+(v.project?' · ':'')+d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})+' hrs</div>'+
+      '<div class="visit-tags"><span class="v-tag '+typeClass+'">'+(v.type||'Visita')+'</span><span class="v-tag '+statusClass+'">'+v.status+'</span></div>'+
+      '<div class="visit-actions">'+confirmBtn+doneBtn+'<button class="visit-action" onclick="event.stopPropagation();ownterraReprogramVisit(\''+v.id+'\')">Reprogramar</button></div>'+
+    '</div>'+
+    '<div class="visit-asesor"><div class="va-av" style="background:'+color+'">'+ownterraVisitInitials(advisor)+'</div><div class="va-nm">'+advisor+'</div></div>'+
+  '</div>';
+}
+function ownterraRenderVisits(){
+  var wrap=document.getElementById('visitas-list');
+  if(!wrap) return;
+  var visits=ownterraNormalizeVisits().filter(function(v){return ownterraVisitMatches(v,ownterraVisitFilter);});
+  visits.sort(function(a,b){return new Date(a.date)-new Date(b.date);});
+  wrap.innerHTML=visits.map(ownterraVisitCard).join('');
+  var empty=document.getElementById('visitas-empty');
+  if(empty) empty.style.display=visits.length?'none':'block';
+  var all=ownterraNormalizeVisits();
+  var kpis=document.querySelectorAll('#view-visitas .kpi-val');
+  if(kpis[0]) kpis[0].textContent=all.length;
+  if(kpis[1]) kpis[1].textContent=all.filter(function(v){return ownterraVisitStatusClass(v.status)==='confirmada';}).length;
+  if(kpis[2]) kpis[2].textContent=all.filter(function(v){return ownterraVisitStatusClass(v.status)==='pendiente';}).length;
+  if(kpis[3]) kpis[3].textContent=all.filter(function(v){return ownterraVisitStatusClass(v.status)==='realizada';}).length;
+}
+function ownterraApplyVisitFilter(filter,el){
+  ownterraVisitFilter=filter||'todas';
+  document.querySelectorAll('#view-visitas [data-visit-filter]').forEach(function(x){x.classList.toggle('act',x.dataset.visitFilter===ownterraVisitFilter);});
+  ownterraRenderVisits();
+  toast('Filtro aplicado: '+(el?el.textContent:ownterraVisitFilter));
+}
+function ownterraFindVisit(id){
+  return ownterraNormalizeVisits().find(function(v){return v.id===id;});
+}
+function ownterraSetVisitStatus(id,status){
+  var data=ownterraMocks();
+  var v=(data.visits||[]).find(function(x){return x.id===id;});
+  if(!v) return;
+  v.status=status;
+  ownterraSaveMocks(data);
+  ownterraRenderVisits();
+  toast(status==='Realizada'?'✅ Visita marcada como realizada':'✅ Visita confirmada');
+}
+function ownterraVisitDetail(id){
+  var v=ownterraFindVisit(id); if(!v) return;
+  var d=new Date(v.date||Date.now());
+  var body='<div class="ownterra-detail-grid">'+
+    '<div class="ownterra-detail"><small>Cliente</small><b>'+v.client+'</b></div>'+
+    '<div class="ownterra-detail"><small>Inmueble</small><b>'+v.property+'</b></div>'+
+    '<div class="ownterra-detail"><small>Fecha</small><b>'+d.toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'})+'</b></div>'+
+    '<div class="ownterra-detail"><small>Hora</small><b>'+d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})+' hrs</b></div>'+
+    '<div class="ownterra-detail"><small>Tipo</small><b>'+v.type+'</b></div>'+
+    '<div class="ownterra-detail"><small>Estado</small><b>'+v.status+'</b></div>'+
+    '<div class="ownterra-detail"><small>Asesor</small><b>'+v.advisor+'</b></div>'+
+    '<div class="ownterra-detail"><small>Notas</small><b>'+v.notes+'</b></div>'+
+    '</div>';
+  var footer='<button class="btn-s" onclick="ownterraReprogramVisit(\''+id+'\')">Reprogramar</button>';
+  if(ownterraVisitStatusClass(v.status)==='pendiente') footer+='<button class="btn-p" onclick="ownterraSetVisitStatus(\''+id+'\',\'Confirmada\');document.getElementById(\'ownterra-action-modal\').remove()">Confirmar</button>';
+  if(ownterraVisitStatusClass(v.status)!=='realizada') footer+='<button class="btn-p" onclick="ownterraSetVisitStatus(\''+id+'\',\'Realizada\');document.getElementById(\'ownterra-action-modal\').remove()">Marcar realizada</button>';
+  ownterraModal('Detalle de visita',body,footer);
+}
+function ownterraReprogramVisit(id){
+  var v=ownterraFindVisit(id); if(!v) return;
+  ownterraForm('Reprogramar visita',[
+    {id:'or-client',label:'Cliente',value:v.client},
+    {id:'or-date',label:'Nueva fecha y hora',type:'datetime-local',value:(v.date||'').slice(0,16)},
+    {id:'or-notes',label:'Notas',type:'textarea',full:true,value:v.notes||''}
+  ],function(){
+    var data=ownterraMocks();
+    var item=(data.visits||[]).find(function(x){return x.id===id;});
+    if(item){
+      item.client=document.getElementById('or-client').value||item.client;
+      item.date=document.getElementById('or-date').value||item.date;
+      item.notes=document.getElementById('or-notes').value||item.notes;
+      item.status='Pendiente';
+      ownterraSaveMocks(data);
+    }
+    document.getElementById('ownterra-action-modal').remove();
+    ownterraRenderVisits();
+    toast('📅 Visita reprogramada');
+  });
+}
 function ownterraRenderDynamicMocks(v){
   if(v==='visitas'){
-    var data=ownterraMocks();
-    var wrap=document.querySelector('#view-visitas [style*="grid-template-columns:1fr 1fr"]');
-    if(wrap && !wrap.dataset.mocked){
-      data.visits.slice(3).forEach(function(vis){
-        var d=new Date(vis.date||Date.now());
-        wrap.insertAdjacentHTML('afterbegin','<div class="visit-card"><div class="visit-date-box"><div class="vd-day">'+String(d.getDate()).padStart(2,'0')+'</div><div class="vd-mon">'+d.toLocaleDateString('es-MX',{month:'short'})+'</div></div><div class="visit-info"><div class="visit-nm">'+vis.client+'</div><div class="visit-sub">'+vis.property+' · '+d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})+'</div><div class="visit-tags"><span class="v-tag lote">'+(vis.type||'Visita')+'</span><span class="v-tag pendiente">'+vis.status+'</span></div></div><div class="visit-asesor"><div class="va-av" style="background:var(--forest)">OT</div><div class="va-nm">'+vis.advisor+'</div></div></div>');
-      });
-      wrap.dataset.mocked='1';
-    }
+    ownterraRenderVisits();
   }
 }
 function ownterraInit(){
@@ -8269,12 +8540,15 @@ function ownterraInit(){
   document.addEventListener('click',function(e){
     var group=e.target.closest('.tn-group > .tn-btn');
     if(group){e.preventDefault();var g=group.parentElement;document.querySelectorAll('.tn-group.open').forEach(function(x){if(x!==g)x.classList.remove('open');});g.classList.toggle('open');return;}
-    var btn=e.target.closest('button,.fpill,.pt-tab,.unit-cell,.tn-notif,.tn-av');
+    var userMenu=e.target.closest('.tn-user');
+    if(userMenu && !e.target.closest('.tn-user-action')){e.preventDefault();document.querySelectorAll('.tn-group.open').forEach(function(x){x.classList.remove('open');});userMenu.classList.toggle('open');return;}
+    if(!e.target.closest('.tn-user')) document.querySelectorAll('.tn-user.open').forEach(function(x){x.classList.remove('open');});
+    var btn=e.target.closest('button,.fpill,.pt-tab,.unit-cell,.tn-notif');
     if(!btn) return;
     var txt=(btn.textContent||'').trim();
     if(btn.classList.contains('unit-cell')){ownterraPropertyDetail(btn);return;}
     if(btn.classList.contains('tn-notif')){ownterraShowDetail('Centro de notificaciones');return;}
-    if(btn.classList.contains('tn-av')){ownterraShowDetail('Perfil y sesión');return;}
+    if(btn.classList.contains('fpill') && btn.closest('#view-visitas')){return;}
     if(btn.classList.contains('fpill')){btn.parentElement.querySelectorAll('.fpill').forEach(function(x){x.classList.remove('act');});btn.classList.add('act');toast('Filtro aplicado: '+txt);return;}
     if(btn.classList.contains('pt-tab')){btn.parentElement.querySelectorAll('.pt-tab').forEach(function(x){x.classList.remove('active');});btn.classList.add('active');toast('Historial filtrado: '+txt);return;}
     if(txt.indexOf('Registrar acceso')>=0){e.preventDefault();ownterraRegisterAccess();return;}
