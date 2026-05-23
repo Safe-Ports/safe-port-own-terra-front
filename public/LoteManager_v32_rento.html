@@ -986,6 +986,39 @@ select.fi{cursor:pointer}
 .ot-form-label{font-size:.7rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;display:block}
 .ot-form-group{margin-bottom:11px}
 
+/* Vendedor: operación de lotes */
+.seller-lots-view{flex:1;min-height:0;overflow-y:auto;background:var(--bg);padding:18px 22px;display:flex;flex-direction:column;gap:14px}
+.seller-lots-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.seller-lots-title{font-family:'Playfair Display',serif;font-size:1.18rem;font-weight:700;color:var(--tx)}
+.seller-lots-sub{font-size:.78rem;color:var(--mu);margin-top:2px}
+.seller-kpis{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px}
+.seller-kpi{background:var(--sf);border:1px solid var(--bd);border-radius:11px;padding:11px 13px;box-shadow:var(--sh)}
+.seller-kpi-v{font-size:1.25rem;font-weight:800;color:var(--tx)}
+.seller-kpi-l{font-size:.66rem;color:var(--mu);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.seller-lot-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:10px}
+.seller-lot-search{flex:1;min-width:220px;border:1.5px solid var(--bd);border-radius:9px;background:var(--sf2);padding:8px 11px;font-family:'DM Sans',sans-serif;font-size:.82rem;color:var(--tx);outline:none}
+.seller-lot-search:focus{border-color:var(--forest)}
+.seller-lot-chips{display:flex;gap:6px;flex-wrap:wrap}
+.seller-lot-chip{border:1.5px solid var(--bd);background:var(--sf2);color:var(--mu);border-radius:18px;padding:6px 12px;font-size:.72rem;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.seller-lot-chip.active{background:var(--forest);border-color:var(--forest);color:#fff}
+.seller-lots-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;align-content:start}
+.seller-lot-card{background:var(--sf);border:1.5px solid var(--bd);border-radius:12px;padding:14px;box-shadow:var(--sh);display:flex;flex-direction:column;gap:10px;min-width:0}
+.seller-lot-top{display:flex;gap:10px;align-items:flex-start;min-width:0}
+.seller-lot-num{width:52px;height:52px;border-radius:12px;background:var(--forest);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0}
+.seller-lot-num b{font-size:1.25rem;line-height:1}
+.seller-lot-num span{font-size:.58rem;text-transform:uppercase;opacity:.75;margin-top:2px}
+.seller-lot-main{min-width:0;flex:1}
+.seller-lot-name{font-size:.96rem;font-weight:800;color:var(--tx);line-height:1.22;overflow-wrap:anywhere}
+.seller-lot-meta{font-size:.75rem;color:var(--mu);line-height:1.45;margin-top:2px;overflow-wrap:anywhere}
+.seller-lot-badges{display:flex;gap:6px;flex-wrap:wrap}
+.seller-lot-badge{border-radius:8px;padding:3px 8px;font-size:.65rem;font-weight:800}
+.seller-lot-badge.available{background:#dcfce7;color:#15803d}.seller-lot-badge.reserved{background:#fef3c7;color:#b45309}.seller-lot-badge.sold{background:#fee2e2;color:#dc2626}
+.seller-lot-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:auto}
+.seller-lot-actions button{min-width:0;border-radius:8px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx2);padding:8px 9px;font-family:'DM Sans',sans-serif;font-size:.74rem;font-weight:800;cursor:pointer}
+.seller-lot-actions button.primary{background:var(--forest);border-color:var(--forest);color:#fff}
+.seller-lot-actions button.warn{background:#fef3c7;border-color:#fcd34d;color:#b45309}
+.seller-lot-actions button.danger{background:#fee2e2;border-color:#fca5a5;color:#dc2626}
+
 /* ── OWNTERRA RESPONSIVE + CORPORATE OVERRIDES ── */
 :root{--corp-font:'Inter',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
 body,button,input,select,textarea{font-family:var(--corp-font)!important}
@@ -1008,8 +1041,9 @@ body,button,input,select,textarea{font-family:var(--corp-font)!important}
 @media(max-width:760px){.topbar{height:auto;min-height:46px;flex-wrap:wrap;padding:8px 12px}.view-scroll{padding:14px 12px}.kpi-grid,.pagos-kpis{grid-template-columns:1fr 1fr!important}.grid-2,.cl-layout,.acceso-grid,.ownterra-form,.ownterra-detail-grid{grid-template-columns:1fr!important}.card-hd,[style*="display:flex;justify-content:space-between"]{flex-wrap:wrap}.tbl{min-width:760px}.card-body[style*="padding:0"]{overflow-x:auto}.visit-card,.cont-card,.obra-hd{align-items:flex-start;flex-wrap:wrap}.unit-grid{grid-template-columns:repeat(2,minmax(0,1fr));display:grid!important}.unit-cell{width:auto!important;min-width:0}#docs-kpis{grid-template-columns:1fr 1fr!important}.ot-filters{align-items:stretch;flex-direction:column}.ot-filter-chips{overflow-x:auto;padding-bottom:2px}}
 @media(max-width:480px){.kpi-grid,.pagos-kpis,#docs-kpis{grid-template-columns:1fr!important}.tn-btn{font-size:.7rem}.tn-search input{font-size:.7rem}.bc-greet-pills{align-items:stretch}.bc-greet-pill{justify-content:flex-start}.ownterra-modal-ft{flex-direction:column}}
 @media(max-width:760px) and (orientation:portrait){
+  *,*::before,*::after{box-sizing:border-box;min-width:0}
   html,body{width:100%;min-height:100%;height:auto;overflow:auto;position:static}
-  body{display:block;background:var(--bg);padding-bottom:env(safe-area-inset-bottom)}
+  body{display:block;background:var(--bg);padding-bottom:env(safe-area-inset-bottom);overflow-x:hidden}
   #login-screen{position:fixed;overflow-y:auto;display:block;background:var(--sf)}
   .login-left{width:100%;min-height:230px;padding:26px 22px;gap:22px}
   .login-right{width:100%;min-height:auto;padding:24px 18px 32px;display:block}
@@ -1041,11 +1075,11 @@ body,button,input,select,textarea{font-family:var(--corp-font)!important}
   #defaultNav,#editorNav{grid-column:1/-1;overflow-x:auto;gap:7px;padding-bottom:2px;width:100%}
   #defaultNav .tb-btn,#editorNav .tb-btn{white-space:nowrap;flex:0 0 auto}
 
-  .main{height:auto;min-height:calc(100svh - 132px);overflow:visible;display:block}
-  .content{height:auto;min-height:0;overflow:visible;display:block}
-  .view{overflow:visible}
-  .view.active{display:block;min-height:calc(100svh - 190px);overflow:visible}
-  .view-scroll{height:auto;min-height:0;overflow:visible;padding:12px 10px 24px}
+  .main{height:auto;min-height:calc(100svh - 132px);overflow:visible;display:block;max-width:100%}
+  .content{height:auto;min-height:0;overflow:visible;display:block;max-width:100%}
+  .view{overflow:visible;max-width:100%}
+  .view.active{display:block;min-height:calc(100svh - 190px);overflow:visible;max-width:100%}
+  .view-scroll{height:auto;min-height:0;overflow:visible;padding:12px 10px 24px;max-width:100%}
   .topbar{position:sticky;top:0;z-index:40;align-items:flex-start;gap:8px}
   .topbar-r{width:100%;overflow-x:auto;padding-bottom:2px}
   .tb-src{width:100%;min-width:0}
@@ -1113,6 +1147,57 @@ body,button,input,select,textarea{font-family:var(--corp-font)!important}
   #view-lotes .side-panel{width:100%;height:auto;max-height:none;border-left:none;border-top:1px solid #c2d9f0}
   #view-lotes .panel-body{max-height:none}
   #view-lotes .editor-wrap,#view-lotes [style*="display:flex;flex:1;min-height:0"]{flex-direction:column!important;overflow:visible!important}
+  #fracViewContent{max-width:100%;overflow:visible!important}
+  #fracViewContent > div[style*="border-bottom"][style*="display:flex"]{padding:10px!important;align-items:flex-start!important}
+  #fracViewContent > div[style*="flex:1;display:flex;min-height:0"]{flex-direction:column!important;overflow:visible!important}
+  #fracMatPanel{width:100%;min-height:260px;max-height:none;overflow-x:auto!important;overflow-y:visible!important;padding:12px 10px!important}
+  #fracDetSide{width:100%!important;min-width:0!important;max-width:none!important;min-height:360px;border-left:none!important;border-top:1px solid var(--bd);overflow:visible!important}
+  #fracDetSide > div:first-child{display:none!important}
+  #fracDetBody{overflow:visible!important}
+
+  #view-ordenes .ot-wrap{width:100%;max-width:100%;height:auto;min-height:calc(100svh - 190px);overflow:hidden}
+  #view-ordenes .ot-topbar{padding:12px 10px 8px;flex-direction:column;align-items:stretch;gap:9px}
+  #view-ordenes .ot-title{font-size:1rem;line-height:1.25;overflow-wrap:anywhere}
+  #view-ordenes .ot-add-btn{width:100%;justify-content:center;min-height:44px;font-size:.86rem}
+  #view-ordenes .ot-filters{padding:10px;display:flex;flex-direction:column;align-items:stretch;gap:9px;overflow:hidden;max-width:100%}
+  #view-ordenes .ot-search{width:100%;max-width:none;min-width:0;height:42px;font-size:.82rem}
+  #view-ordenes .ot-filter-sep{display:none}
+  #view-ordenes .ot-filter-chips{display:flex;flex-wrap:nowrap;overflow-x:auto;max-width:100%;padding-bottom:4px}
+  #view-ordenes .ot-chip{flex:0 0 auto}
+  #view-ordenes .ot-cat-sel{width:100%;min-width:0;height:42px;font-size:.82rem}
+  #view-ordenes .ot-list-meta{padding:8px 10px 2px}
+  #view-ordenes .ot-list{padding:10px;overflow:visible;max-width:100%;gap:10px}
+  #view-ordenes .ot-lc{max-width:100%;overflow:hidden}
+  #view-ordenes .ot-lc-head{display:grid;grid-template-columns:auto 1fr auto;align-items:start;gap:8px;padding:12px}
+  #view-ordenes .ot-lc-id{grid-column:2;grid-row:1}
+  #view-ordenes .ot-lc-status-dot{grid-column:1;grid-row:1;margin-top:5px}
+  #view-ordenes .ot-cat-tag{grid-column:1/-1;justify-self:start;max-width:100%;white-space:normal}
+  #view-ordenes .ot-lc-inm{grid-column:1/-1;white-space:normal;overflow:visible;text-overflow:clip;font-size:.9rem;line-height:1.25}
+  #view-ordenes .ot-lc-cont{grid-column:1/-1;max-width:100%;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.3}
+  #view-ordenes .ot-lc-status-badge{grid-column:1/3;justify-self:start}
+  #view-ordenes .ot-lc-chevron{grid-column:3;grid-row:1}
+  #view-ordenes .ot-lc-sub{padding:0 12px 12px;flex-direction:column;align-items:stretch;gap:7px}
+  #view-ordenes .ot-lc-date{font-size:.7rem}
+  #view-ordenes .ot-lc-prog-wrap{width:100%;max-width:none}
+  #view-ordenes .ot-card-action{width:100%;margin-left:0!important;justify-content:center;min-height:36px}
+  #view-ordenes .ot-lc-body{padding:14px 12px}
+  #view-ordenes .ot-stepper{overflow-x:auto;padding-bottom:6px;margin-bottom:14px}
+  #view-ordenes .ot-step{min-width:60px;flex:0 0 60px}
+  #view-ordenes .ot-step-lbl{white-space:normal;font-size:.54rem;line-height:1.15}
+  #view-ordenes .ot-detail-row{flex-direction:column;gap:7px}
+  #view-ordenes .ot-detail-val{overflow-wrap:anywhere}
+  #view-ordenes .ot-lc-actions,.ot-modal-ft{flex-direction:column}
+  #view-ordenes .ot-btn-prim,#view-ordenes .ot-btn-sec{width:100%;min-height:42px}
+
+  .seller-lots-view{padding:12px 10px 24px;overflow:visible}
+  .seller-lots-head{gap:8px}
+  .seller-kpis{grid-template-columns:1fr 1fr;gap:8px}
+  .seller-lot-tools{align-items:stretch}
+  .seller-lot-search{width:100%;min-width:0;flex-basis:100%}
+  .seller-lot-chips{overflow-x:auto;flex-wrap:nowrap;width:100%;padding-bottom:4px}
+  .seller-lot-chip{flex:0 0 auto}
+  .seller-lots-grid{grid-template-columns:1fr;gap:10px}
+  .seller-lot-actions{grid-template-columns:1fr}
 
   .modal,.ownterra-action-modal{align-items:flex-start;overflow-y:auto;padding:10px}
   .modal-box,.ownterra-modal-box,.ot-modal{width:100%!important;max-width:100%!important;max-height:none!important;margin:0}
@@ -2933,7 +3018,16 @@ function renderFracSidebar() {
   }
 }
 
+function isSellerUser(){
+  return currentUser && String(currentUser.role).toLowerCase()==='vendedor';
+}
+
 function openFracGallery(btn) {
+  if(isSellerUser()){
+    gv('frac', null);
+    openSellerLotsView();
+    return;
+  }
   gv('frac', null);
   renderFracGallery();
 }
@@ -3136,6 +3230,180 @@ function renderFracGallery() {
   fvc.appendChild(grid);
 }
 
+var _sellerLotFilter = {status:'all', q:''};
+
+function sellerHtml(v){
+  return String(v==null?'':v).replace(/[&<>"']/g,function(ch){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
+  });
+}
+function sellerFindFrac(fracId){
+  return (window._allFracs||[]).find(function(f){return String(f.id)===String(fracId);});
+}
+function sellerFindLot(fracId, lotId){
+  var f=sellerFindFrac(fracId);
+  if(!f) return null;
+  var l=(f.lots||[]).find(function(x){return String(x.id)===String(lotId);});
+  return l ? {frac:f, lot:l} : null;
+}
+function recalcFracStats(f){
+  if(!f||!f.lots) return;
+  f.avail=f.lots.filter(function(l){return l.status==='available';}).length;
+  f.sold=f.lots.filter(function(l){return l.status==='sold';}).length;
+  f.res=f.lots.filter(function(l){return l.status==='reserved';}).length;
+  renderFracSidebar();
+}
+function sellerEnsureLots(){
+  if(!window._allFracs) window._allFracs=[];
+  if(!window._allFracs.length){
+    window._allFracs.push({
+      id:'seller_demo',
+      name:'Inventario Demo',
+      lots:[
+        {id:'sd-1',num:1,name:'Lote 1',area:160,price:420000,priceF:487200,dp:84000,interest:12,months:96,status:'available',seller:'Vendedor',buyer:'',points:[]},
+        {id:'sd-2',num:2,name:'Lote 2',area:168,price:445000,priceF:516200,dp:89000,interest:12,months:96,status:'reserved',seller:'Vendedor',buyer:'Prospecto pendiente',points:[]},
+        {id:'sd-3',num:3,name:'Lote 3',area:175,price:470000,priceF:545200,dp:94000,interest:12,months:96,status:'sold',seller:'Vendedor',buyer:'Cliente demo',points:[]}
+      ],
+      bg:null,avail:1,sold:1,res:1,minX:0,minY:0,maxX:360,maxY:220
+    });
+  }
+  window._allFracs.forEach(function(f){
+    (f.lots||[]).forEach(function(l,idx){
+      if(!l.id) l.id=(f.id||'frac')+'-'+(l.num||idx+1);
+      if(!l.seller) l.seller=(currentUser&&currentUser.name)||'Vendedor';
+    });
+    recalcFracStats(f);
+  });
+}
+function sellerAllLots(){
+  sellerEnsureLots();
+  var rows=[];
+  (window._allFracs||[]).forEach(function(f){
+    (f.lots||[]).forEach(function(l){rows.push({frac:f, lot:l});});
+  });
+  return rows;
+}
+function openSellerLotsView(){
+  var fvc=document.getElementById('fracViewContent');
+  if(!fvc) return;
+  var titleEl=document.getElementById('topTitle');
+  if(titleEl) titleEl.textContent='Mis lotes';
+  var edNav=document.getElementById('editorNav');
+  var defNav=document.getElementById('defaultNav');
+  if(edNav) edNav.style.display='none';
+  if(defNav) defNav.style.display='flex';
+
+  var rows=sellerAllLots();
+  var q=(_sellerLotFilter.q||'').toLowerCase().trim();
+  var filtered=rows.filter(function(r){
+    var l=r.lot, f=r.frac;
+    if(_sellerLotFilter.status!=='all'&&l.status!==_sellerLotFilter.status) return false;
+    if(q){
+      var hay=[l.num,l.name,l.buyer,l.seller,f.name].join(' ').toLowerCase();
+      if(hay.indexOf(q)<0) return false;
+    }
+    return true;
+  });
+  var counts={total:rows.length,available:0,reserved:0,sold:0};
+  rows.forEach(function(r){ if(counts[r.lot.status]!=null) counts[r.lot.status]++; });
+
+  fvc.innerHTML='';
+  fvc.style.cssText='flex:1;display:flex;min-height:0;overflow:hidden';
+  var wrap=document.createElement('div');
+  wrap.className='seller-lots-view';
+  var chips=[
+    {v:'all',l:'Todos',n:counts.total},
+    {v:'available',l:'Disponibles',n:counts.available},
+    {v:'reserved',l:'Apartados',n:counts.reserved},
+    {v:'sold',l:'Vendidos',n:counts.sold}
+  ];
+  var chipsHtml='';
+  chips.forEach(function(c){
+    chipsHtml+='<button class="seller-lot-chip '+(_sellerLotFilter.status===c.v?'active':'')+'" onclick="sellerSetLotFilter(\'status\',\''+c.v+'\')">'+c.l+' <span>'+c.n+'</span></button>';
+  });
+  wrap.innerHTML=
+    '<div class="seller-lots-head">'+
+      '<div><div class="seller-lots-title">Mis lotes</div><div class="seller-lots-sub">Gestiona disponibilidad, apartados, ventas y documentación de tu inventario.</div></div>'+
+    '</div>'+
+    '<div class="seller-kpis">'+
+      '<div class="seller-kpi"><div class="seller-kpi-v">'+counts.total+'</div><div class="seller-kpi-l">Total</div></div>'+
+      '<div class="seller-kpi"><div class="seller-kpi-v">'+counts.available+'</div><div class="seller-kpi-l">Disponibles</div></div>'+
+      '<div class="seller-kpi"><div class="seller-kpi-v">'+counts.reserved+'</div><div class="seller-kpi-l">Apartados</div></div>'+
+      '<div class="seller-kpi"><div class="seller-kpi-v">'+counts.sold+'</div><div class="seller-kpi-l">Vendidos</div></div>'+
+    '</div>'+
+    '<div class="seller-lot-tools">'+
+      '<input class="seller-lot-search" id="seller-lot-search" value="'+sellerHtml(_sellerLotFilter.q)+'" placeholder="Buscar lote, cliente o fraccionamiento..." oninput="sellerSetLotFilter(\'q\',this.value)">'+
+      '<div class="seller-lot-chips">'+chipsHtml+'</div>'+
+    '</div>'+
+    '<div class="seller-lots-grid" id="seller-lots-grid"></div>';
+  fvc.appendChild(wrap);
+
+  var grid=document.getElementById('seller-lots-grid');
+  if(!filtered.length){
+    grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:38px 16px;color:var(--mu);background:var(--sf);border:1px solid var(--bd);border-radius:12px">Sin lotes con esos filtros.</div>';
+    return;
+  }
+  filtered.forEach(function(r){ grid.appendChild(buildSellerLotCard(r.frac,r.lot)); });
+}
+function buildSellerLotCard(f,l){
+  var st={available:'Disponible',reserved:'Apartado',sold:'Vendido'};
+  var action=l.status==='available'
+    ? '<button class="warn" onclick="sellerSetLotStatus(\''+sellerHtml(f.id)+'\',\''+sellerHtml(l.id)+'\',\'reserved\')">Apartar</button><button class="primary" onclick="sellerSetLotStatus(\''+sellerHtml(f.id)+'\',\''+sellerHtml(l.id)+'\',\'sold\')">Vender</button>'
+    : l.status==='reserved'
+      ? '<button class="primary" onclick="sellerSetLotStatus(\''+sellerHtml(f.id)+'\',\''+sellerHtml(l.id)+'\',\'sold\')">Confirmar venta</button><button class="danger" onclick="sellerSetLotStatus(\''+sellerHtml(f.id)+'\',\''+sellerHtml(l.id)+'\',\'available\')">Liberar</button>'
+      : '<button class="warn" onclick="sellerSetLotStatus(\''+sellerHtml(f.id)+'\',\''+sellerHtml(l.id)+'\',\'reserved\')">Pasar a apartado</button><button class="danger" onclick="sellerSetLotStatus(\''+sellerHtml(f.id)+'\',\''+sellerHtml(l.id)+'\',\'available\')">Liberar</button>';
+  var card=document.createElement('div');
+  card.className='seller-lot-card';
+  card.innerHTML=
+    '<div class="seller-lot-top">'+
+      '<div class="seller-lot-num"><b>'+sellerHtml(l.num||l.name||'--')+'</b><span>Lote</span></div>'+
+      '<div class="seller-lot-main">'+
+        '<div class="seller-lot-name">'+sellerHtml(l.name||('Lote '+(l.num||'')))+'</div>'+
+        '<div class="seller-lot-meta">'+sellerHtml(f.name)+' · '+sellerHtml(l.area||0)+' m²</div>'+
+        '<div class="seller-lot-meta">'+(l.price?('$'+Math.round(l.price).toLocaleString('es-MX')):'Sin precio')+' contado · '+sellerHtml(l.seller||'Sin vendedor')+'</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="seller-lot-badges">'+
+      '<span class="seller-lot-badge '+sellerHtml(l.status)+'">'+(st[l.status]||l.status)+'</span>'+
+      (l.buyer?'<span class="seller-lot-badge reserved">Cliente: '+sellerHtml(l.buyer)+'</span>':'')+
+    '</div>'+
+    '<div class="seller-lot-actions">'+action+
+      '<button onclick="sellerOpenLotDetail(\''+sellerHtml(f.id)+'\',\''+sellerHtml(l.id)+'\')">Detalle</button>'+
+      '<button onclick="sellerOpenLotDocs(\''+sellerHtml(f.id)+'\',\''+sellerHtml(l.id)+'\')">Documentos</button>'+
+    '</div>';
+  return card;
+}
+function sellerSetLotFilter(key,val){
+  _sellerLotFilter[key]=val;
+  openSellerLotsView();
+}
+function sellerSetLotStatus(fracId,lotId,status){
+  var found=sellerFindLot(fracId,lotId);
+  if(!found) return;
+  found.lot.status=status;
+  if(status==='available') found.lot.buyer='';
+  if(status==='sold'&&!found.lot.buyer) found.lot.buyer='Venta registrada';
+  recalcFracStats(found.frac);
+  openSellerLotsView();
+  toast('Lote '+(found.lot.num||found.lot.name)+' marcado como '+({available:'disponible',reserved:'apartado',sold:'vendido'}[status]||status));
+}
+function sellerOpenLotDetail(fracId,lotId){
+  var found=sellerFindLot(fracId,lotId);
+  if(!found) return;
+  gv('frac',null);
+  renderFracMap(found.frac);
+  setTimeout(function(){ if(window.showFracDetailFor) window.showFracDetailFor(found.lot,found.frac,found.frac.name); },0);
+}
+function sellerOpenLotDocs(fracId,lotId){
+  var found=sellerFindLot(fracId,lotId);
+  if(!found) return;
+  if(typeof openDocUploadModal==='function'){
+    openDocUploadModal('lot',String(found.lot.id));
+  }else{
+    gv('documentos',null);
+  }
+}
+
 // ── Render a specific fraccionamiento map (extracted from crearFraccionamiento)
 /* ═══════════════════════════════════════════════════════
    FRAC MAP — MATRIX VIEW (replaces SVG polygon map)
@@ -3168,8 +3436,7 @@ function renderFracMap(f) {
     +'</div>'
     +'<div style="flex:1"></div>'
     +'<div style="display:flex;gap:6px;align-items:center;flex-shrink:0">'
-      +'<button class="tb-btn tb-s" onclick="gv(\'lotes\',null)" style="font-size:.74rem;padding:5px 12px">✏ Editar</button>'
-      +'<button class="tb-btn tb-s" onclick="exportApp()" style="font-size:.74rem;padding:5px 12px">⬇ Exportar</button>'
+      +(isSellerUser()?'<button class="tb-btn tb-s" onclick="openSellerLotsView()" style="font-size:.74rem;padding:5px 12px">📋 Mis lotes</button>':'<button class="tb-btn tb-s" onclick="gv(\'lotes\',null)" style="font-size:.74rem;padding:5px 12px">✏ Editar</button><button class="tb-btn tb-s" onclick="exportApp()" style="font-size:.74rem;padding:5px 12px">⬇ Exportar</button>')
     +'</div>';
   fvc.appendChild(strip);
 
@@ -5060,6 +5327,11 @@ function setContracts(d){setLS('lm_contracts',d);}
 function gv(v,btn){
   /* fall-through: treat 'midia' and 'dashboard' as home */
   if(v==='midia'||v==='dashboard') v='home';
+  var sellerLotsRequested=false;
+  if(v==='lotes' && isSellerUser()){
+    sellerLotsRequested=true;
+    v='frac';
+  }
   document.querySelectorAll('.view').forEach(function(el){el.classList.remove('active');});
   var viewEl=document.getElementById('view-'+v);
   if(!viewEl){ console.warn('view not found:',v); return; }
@@ -5078,17 +5350,17 @@ function gv(v,btn){
   if(comGroup.indexOf(v)>-1){ var b=document.getElementById('tn-comercial'); if(b) b.classList.add('active'); }
 
   /* sub-topbar */
-  var titles={home:'Inicio',lotes:'Carga de Lotes',frac:'Fraccionamiento',clientes:'Clientes & CRM',contratos:'Contratos',documentos:'Gestión Documental',pagos:'Control de Pagos',calculadora:'Calculadora de Amortización',departamentos:'Departamentos',locales:'Locales Comerciales',acceso:'Control de Acceso — Portería',visitas:'Visitas Programadas',construccion:'Seguimiento de Construcción',contratistas:'Contratistas Externos',historial:'Historial del Inmueble'};
+  var titles={home:'Inicio',lotes:'Carga de Lotes',frac:'Fraccionamiento',clientes:'Clientes & CRM',contratos:'Contratos',documentos:'Gestión Documental',pagos:'Control de Pagos',calculadora:'Calculadora de Amortización',departamentos:'Departamentos',locales:'Locales Comerciales',acceso:'Control de Acceso — Portería',visitas:'Visitas Programadas',ordenes:'Órdenes de Trabajo',construccion:'Seguimiento de Construcción',contratistas:'Contratistas Externos',historial:'Historial del Inmueble'};
   var subBar=document.getElementById('subTopbar');
   if(subBar){ subBar.style.display=(v==='home')?'none':'flex'; }
   var titleEl=document.getElementById('topTitle');
-  if(titleEl) titleEl.textContent=titles[v]||v;
+  if(titleEl) titleEl.textContent=sellerLotsRequested?'Mis lotes':(titles[v]||v);
 
   /* contextual nav buttons */
   var edNav=document.getElementById('editorNav');
   var defNav=document.getElementById('defaultNav');
-  if(edNav) edNav.style.display=v==='lotes'?'flex':'none';
-  if(defNav) defNav.style.display=v==='lotes'?'none':'flex';
+  if(edNav) edNav.style.display=(v==='lotes'&&!sellerLotsRequested)?'flex':'none';
+  if(defNav) defNav.style.display=(v==='lotes'&&!sellerLotsRequested)?'none':'flex';
   var addClientBtn=document.getElementById('btn-add-client');
   var addContractBtn=document.getElementById('btn-new-contract');
   if(addClientBtn) addClientBtn.style.display=v==='clientes'?'inline-flex':'none';
@@ -5100,6 +5372,7 @@ function gv(v,btn){
   if(v==='pagos') renderPagos();
   if(v==='calculadora') calcAmort();
   if(v==='ordenes') renderOrdenes();
+  if(sellerLotsRequested) setTimeout(function(){openSellerLotsView();},0);
 }
 
 /* ── UTILS ── */
