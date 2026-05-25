@@ -20,6 +20,22 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      if (
+        location.hostname === "localhost" ||
+        location.hostname === "127.0.0.1" ||
+        location.hostname.startsWith("192.168.")
+      ) {
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.getRegistrations().then((registrations) => {
+            registrations.forEach((registration) => registration.unregister());
+          });
+        }
+        if ("caches" in window) {
+          caches.keys().then((keys) => keys.forEach((key) => caches.delete(key)));
+        }
+      }
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
   </html>
