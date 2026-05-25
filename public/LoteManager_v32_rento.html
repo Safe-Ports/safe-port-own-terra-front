@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OwnTerra — Sistema de Gestión de Lotes</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
 :root{
   /* ══ EMERALD & CREAM — Residencial Premium ══ */
@@ -605,6 +606,87 @@ select.fi{cursor:pointer}
   .pagos-filters .btn-p{width:100%}
   .mi-dia-task{align-items:flex-start!important;flex-wrap:wrap}
   .mi-dia-task-btn{width:100%!important}
+}
+
+/* ══ BENTO HOME — Mi Día v2/v3 ══ */
+.bento-home{flex:1;overflow-y:auto;padding:14px 16px;min-height:0;background:var(--bg)}
+.bento-grid{display:grid;grid-template-columns:repeat(12,1fr);grid-template-rows:auto 1fr 2fr;gap:10px;flex:1;min-height:0}
+.bc{background:var(--sf);border-radius:13px;border:1px solid var(--bd);box-shadow:var(--sh);overflow:hidden;position:relative;cursor:pointer;transition:all .18s;display:flex;flex-direction:column;min-height:0}
+.bc:hover{box-shadow:var(--sh2);transform:translateY(-2px);border-color:rgba(42,122,80,.35)}
+.bc-accent{position:absolute;top:0;left:0;right:0;height:3px;border-radius:13px 13px 0 0}
+.gc3{grid-column:span 3}.gc4{grid-column:span 4}.gc5{grid-column:span 5}
+.gc6{grid-column:span 6}.gc7{grid-column:span 7}.gc8{grid-column:span 8}
+.gc9{grid-column:span 9}.gc12{grid-column:span 12}
+.bc-list-head{padding:11px 14px 7px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;background:var(--sf2);flex-shrink:0}
+.bc-list-title{font-weight:700;font-size:.8rem;color:var(--tx)}
+.bc-list-body{flex:1;overflow-y:auto;min-height:0}
+.bc-list-body::-webkit-scrollbar{width:3px}
+.bc-list-body::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
+.bc-list-item{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid rgba(221,216,206,.45);font-size:.76rem}
+.bc-list-item:last-child{border-bottom:none}
+.bc-li-info{flex:1;min-width:0}
+.bc-li-nm{font-weight:600;font-size:.77rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bc-li-sub{font-size:.63rem;color:var(--mu)}
+.bc-vdate{width:34px;height:34px;border-radius:7px;background:var(--navy);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0}
+.bc-vday{font-family:'Playfair Display',serif;font-size:.9rem;line-height:1}
+.bc-vmon{font-size:.46rem;text-transform:uppercase;opacity:.6}
+.bc-vtag{font-size:.58rem;font-weight:700;padding:1px 6px;border-radius:5px;margin-left:auto;flex-shrink:0}
+.bc-vtag.lote{background:var(--grn-lt);color:var(--grn)}
+.bc-vtag.local{background:var(--amb-lt);color:var(--amb)}
+.bc-vtag.depto{background:var(--sky-lt);color:var(--sky)}
+.bc-firma{display:flex;align-items:center;gap:8px;padding:7px 14px;border-bottom:1px solid rgba(221,216,206,.45);font-size:.74rem}
+.bc-firma:last-child{border-bottom:none}
+.bc-firma-dot{width:6px;height:6px;border-radius:50%;background:var(--amb);flex-shrink:0}
+.bc-firma-btn{margin-left:auto;padding:3px 9px;border-radius:6px;background:var(--amb);color:#fff;border:none;font-size:.6rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;flex-shrink:0;white-space:nowrap}
+.bc-acc{display:flex;align-items:center;gap:8px;padding:7px 14px;border-bottom:1px solid rgba(221,216,206,.45)}
+.bc-acc:last-child{border-bottom:none}
+.bc-acc-av{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0}
+.bc-acc-av.s{background:var(--red-lt)}
+.bc-acc-nm{font-weight:600;font-size:.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bc-acc-sub{font-size:.62rem;color:var(--mu)}
+.bc-acc-badge{font-size:.55rem;font-weight:700;padding:1px 6px;border-radius:5px;display:block;margin-top:1px;text-align:center}
+.bc-acc-badge.sal{background:var(--red-lt);color:var(--red)}
+.bc-greet{background:linear-gradient(135deg,#183024,#2A4A35);border:none;padding:14px 18px;display:flex;align-items:center;gap:12px}
+.bc-greet:hover{transform:none;box-shadow:var(--sh)}
+.bc-greet-txt{font-family:'Playfair Display',serif;font-size:1.15rem;color:#fff;line-height:1.2}
+.bc-greet-txt em{color:#7ef5b2;font-style:italic}
+.bc-greet-sub{font-size:.74rem;color:rgba(255,255,255,.5);margin-top:3px}
+.bc-greet-pills{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.bc-greet-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:16px;font-size:.68rem;font-weight:700;cursor:pointer;transition:all .15s;border:1px solid}
+.bc-greet-pill.red{background:rgba(192,57,43,.15);color:#f9a49a;border-color:rgba(192,57,43,.25)}
+.bc-greet-pill.amb{background:rgba(176,120,32,.15);color:#f5c84a;border-color:rgba(176,120,32,.25)}
+.bc-greet-pill.grn{background:rgba(42,122,80,.15);color:#7ef5b2;border-color:rgba(42,122,80,.25)}
+.bc-greet-pill:hover{filter:brightness(1.15)}
+.bc-notif-item{display:flex;align-items:flex-start;gap:9px;padding:9px 14px;border-bottom:1px solid rgba(221,216,206,.45);cursor:pointer;transition:background .12s}
+.bc-notif-item:last-child{border-bottom:none}
+.bc-notif-item:hover{background:rgba(42,122,80,.04)}
+.bc-notif-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.bc-notif-dot.req{background:#0EA5E9}
+.bc-notif-dot.warn{background:var(--amb)}
+.bc-notif-dot.ok{background:var(--grn)}
+.bc-notif-dot.err{background:var(--red)}
+.bc-notif-title{font-weight:600;font-size:.74rem;line-height:1.3}
+.bc-notif-sub{font-size:.62rem;color:var(--mu);margin-top:1px;line-height:1.4}
+.bc-notif-meta{display:flex;align-items:center;gap:5px;margin-top:4px}
+.bc-notif-tag{font-size:.55rem;font-weight:700;padding:1px 6px;border-radius:5px}
+.bc-notif-tag.req{background:#e0f2fe;color:#0284c7}
+.bc-notif-tag.warn{background:var(--amb-lt);color:var(--amb)}
+.bc-notif-tag.ok{background:var(--grn-lt);color:var(--grn)}
+.bc-notif-tag.err{background:var(--red-lt);color:var(--red)}
+.bc-notif-time{font-size:.6rem;color:var(--mu);margin-left:auto;flex-shrink:0;align-self:flex-start;padding-top:2px}
+.bc-notif-btn{margin-top:5px;padding:3px 8px;border-radius:6px;background:var(--forest);color:#fff;border:none;font-size:.58rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif}
+.bc-notif-btn:hover{background:#1e5c3a}
+@media(max-width:1100px){
+  .bento-grid{grid-template-columns:repeat(6,1fr)}
+  .gc12{grid-column:span 6}
+  .gc8{grid-column:span 6}
+  .gc4{grid-column:span 3}
+}
+@media(max-width:680px){
+  .bento-home{padding:8px 10px}
+  .bento-grid{grid-template-columns:1fr;grid-auto-rows:auto}
+  .gc12,.gc8,.gc6,.gc4,.gc3{grid-column:span 1}
+  .bc{min-height:120px}
 }
 </style>
 </head>
@@ -5696,16 +5778,10 @@ function renderMiDia(){
   var userName = currentUser ? currentUser.name : "Usuario";
   var firstName = userName.split(" ")[0];
 
-  /* Greeting based on hour */
   var hr = new Date().getHours();
   var greeting = hr < 12 ? "Buenos días" : hr < 19 ? "Buenas tardes" : "Buenas noches";
+  var dateStr = new Date().toLocaleDateString("es-MX", { weekday:"long", day:"numeric", month:"long" });
 
-  /* Date */
-  var dateStr = new Date().toLocaleDateString("es-MX", {
-    weekday:"long", day:"numeric", month:"long"
-  });
-
-  /* Data sources */
   var clients = getClients();
   var contracts = getContracts();
   var payments = typeof getPayments === "function" ? getPayments() : [];
@@ -5733,7 +5809,6 @@ function renderMiDia(){
     });
   }
 
-  /* ── Build tasks ── */
   var today = new Date(); today.setHours(0,0,0,0);
 
   var overduePayments = scopedPayments.filter(function(p){
@@ -5742,105 +5817,266 @@ function renderMiDia(){
     return d < today;
   });
 
-  var dueSoonPayments = scopedPayments.filter(function(p){
-    if(p.status === "paid") return false;
-    var d = new Date(p.dueDate); d.setHours(0,0,0,0);
-    var diff = (d - today) / 86400000;
-    return diff >= 0 && diff <= 7;
+  var reservations = scopedContracts.filter(function(c){
+    return c.type === "reserve" || c.status === "reserve";
   });
 
   var coldLeads = scopedClients.filter(function(c){
     return c.type === "lead" && c.status === "lead" && !c.lastContacted;
   });
 
-  var reservations = scopedContracts.filter(function(c){
-    return c.type === "reserve" || c.status === "reserve";
+  var missingDocs = scopedContracts.filter(function(c){
+    return !docs.some(function(d){ return d.contractId === c.id; });
   });
 
-  /* Sum cobros esta semana */
-  var weekCobro = dueSoonPayments.reduce(function(s,p){return s+(p.amount||0);},0);
+  var recentContracts = scopedContracts.slice().sort(function(a,b){
+    return new Date(b.date||0) - new Date(a.date||0);
+  }).slice(0, 4);
 
-  /* ── KPI strip ── */
-  var kpiHTML;
-  if(role === "admin"){
-    var soldThisMonth = scopedContracts.filter(function(c){
-      if(!c.date) return false;
-      var d = new Date(c.date);
-      return d.getMonth()===today.getMonth() && d.getFullYear()===today.getFullYear() && c.type==="sale";
-    });
-    var revenueMonth = soldThisMonth.reduce(function(s,c){return s+(c.amount||0);},0);
+  /* Monthly stats for chart */
+  var year = new Date().getFullYear();
+  var monthlyRevenue = [0,0,0,0,0,0,0,0,0,0,0,0];
+  var monthlyContracts = [0,0,0,0,0,0,0,0,0,0,0,0];
+  var chartLabels = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
-    var teamVendors = {};
-    clients.forEach(function(c){ if(c.seller) teamVendors[c.seller] = true; });
-    var teamCount = Object.keys(teamVendors).length || 1;
-
-    kpiHTML =
-      _miDiaKpi("Tareas críticas", overduePayments.length + reservations.length, "#C0392B", overduePayments.length>0?"acción inmediata":"todo en orden")+
-      _miDiaKpi("Ingresos del mes", "$"+_fmtShort(revenueMonth), "#2A7A50", soldThisMonth.length+" ventas")+
-      _miDiaKpi("Equipo activo", teamCount, "#1A5280", "vendedores")+
-      _miDiaKpi("Pagos vencidos", overduePayments.length, "#B07820", "$"+_fmtShort(overduePayments.reduce(function(s,p){return s+(p.amount||0);},0)));
-  } else {
-    var myCommission = scopedContracts
-      .filter(function(c){return c.type==="sale";})
-      .reduce(function(s,c){return s+((c.amount||0)*0.03);},0);
-
-    kpiHTML =
-      _miDiaKpi("Mis tareas hoy", overduePayments.length + coldLeads.length + reservations.length, "#C0392B", "pendientes urgentes")+
-      _miDiaKpi("Pagos por cobrar", "$"+_fmtShort(weekCobro), "#2A7A50", dueSoonPayments.length+" cuotas esta semana")+
-      _miDiaKpi("Mis clientes", scopedClients.length, "#1A5280", scopedClients.filter(function(c){return c.type==="buyer";}).length+" compradores")+
-      _miDiaKpi("Comisión proyectada", "$"+_fmtShort(myCommission), "#B07820", "3% sobre ventas");
-  }
-
-  /* ── Tasks list ── */
-  var tasks = _miDiaBuildTasks(role, {
-    overduePayments: overduePayments,
-    dueSoonPayments: dueSoonPayments,
-    coldLeads: coldLeads,
-    reservations: reservations,
-    clients: clients,
-    contracts: scopedContracts,
-    docs: docs
+  scopedContracts.forEach(function(c){
+    if(!c.date) return;
+    var d = new Date(c.date);
+    if(d.getFullYear() === year && c.type === "sale") monthlyContracts[d.getMonth()]++;
+  });
+  scopedPayments.forEach(function(p){
+    if(p.status !== "paid" || !p.paidDate) return;
+    var d = new Date(p.paidDate);
+    if(d.getFullYear() === year) monthlyRevenue[d.getMonth()] += (p.amount||0);
   });
 
-  /* ── Activity feed ── */
-  var activity = _miDiaBuildActivity(role, scopedPayments, scopedContracts, scopedClients);
+  var currentMonth = new Date().getMonth();
+  var avgMonthly = currentMonth > 0 ? Math.round(monthlyRevenue.slice(0,currentMonth).reduce(function(s,v){return s+v;},0) / currentMonth / 1000) : 0;
+  var chartCerradas = monthlyRevenue.map(function(v,i){ return i <= currentMonth ? Math.round(v/1000) : 0; });
+  var chartEstimado = monthlyRevenue.map(function(v,i){ return i >= currentMonth ? (Math.round(v/1000) || avgMonthly) : 0; });
 
-  /* ── Render ── */
-  view.innerHTML =
-    '<div class="view-scroll" style="padding:0">'+
-      _miDiaHero(greeting, firstName, dateStr, role, overduePayments.length, weekCobro, scopedContracts.length, clients)+
-      '<div style="padding:18px 24px;background:var(--bg)">'+
-        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">'+kpiHTML+'</div>'+
-        '<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px;align-items:start">'+
-          /* Tasks column */
-          '<div class="card" style="padding:0;margin:0">'+
-            '<div style="padding:14px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;background:var(--sf2)">'+
-              '<div style="font-weight:700;font-size:.86rem;color:var(--tx);text-transform:uppercase;letter-spacing:.6px">'+
-                (role==="admin"?"🚨 Tareas críticas del negocio":"☀️ Tareas de hoy")+
-              '</div>'+
-              '<span style="font-size:.7rem;color:var(--mu)">'+tasks.length+" pendientes"+'</span>'+
-            '</div>'+
-            '<div style="padding:14px 18px">'+_miDiaRenderTasks(tasks)+'</div>'+
-          '</div>'+
-          /* Activity column */
-          '<div>'+
-            (role==="admin" ? _miDiaTeamPulse(clients, contracts) : "")+
-            '<div class="card" style="padding:0;margin:0;margin-bottom:14px">'+
-              '<div style="padding:14px 18px;border-bottom:1px solid var(--bd);background:var(--sf2)">'+
-                '<div style="font-weight:700;font-size:.86rem;color:var(--tx);text-transform:uppercase;letter-spacing:.6px">📍 Actividad reciente</div>'+
-              '</div>'+
-              '<div style="padding:14px 18px">'+_miDiaRenderActivity(activity)+'</div>'+
-            '</div>'+
-            '<div class="card" style="padding:0;margin:0">'+
-              '<div style="padding:14px 18px;border-bottom:1px solid var(--bd);background:var(--sf2)">'+
-                '<div style="font-weight:700;font-size:.86rem;color:var(--tx);text-transform:uppercase;letter-spacing:.6px">📅 Próximamente</div>'+
-              '</div>'+
-              '<div style="padding:14px 18px">'+_miDiaUpcoming(dueSoonPayments, clients)+'</div>'+
-            '</div>'+
-          '</div>'+
-        '</div>'+
+  var ytdRevenue = monthlyRevenue.slice(0, currentMonth+1).reduce(function(s,v){return s+v;},0);
+  var ytdCierres = monthlyContracts.slice(0, currentMonth+1).reduce(function(s,v){return s+v;},0);
+  var ticketProm = ytdCierres > 0 ? Math.round(ytdRevenue / ytdCierres) : 0;
+
+  /* Pills */
+  var pills = '';
+  if(reservations.length > 0)
+    pills += '<div class="bc-greet-pill red" onclick="gv(\'contratos\',document.querySelector(\'.sb-btn[onclick*=contratos]\'))"><span>📄</span>'+reservations.length+' reservas activas</div>';
+  if(overduePayments.length > 0)
+    pills += '<div class="bc-greet-pill amb" onclick="gv(\'pagos\',document.querySelector(\'.sb-btn[onclick*=pagos]\'))"><span>💳</span>'+overduePayments.length+' pagos vencidos</div>';
+  if(missingDocs.length > 0)
+    pills += '<div class="bc-greet-pill amb" onclick="gv(\'documentos\',document.querySelector(\'.sb-btn[onclick*=documentos]\'))"><span>📁</span>'+missingDocs.length+' docs faltantes</div>';
+  if(coldLeads.length > 0)
+    pills += '<div class="bc-greet-pill grn" onclick="gv(\'clientes\',document.querySelector(\'.sb-btn[onclick*=clientes]\'))"><span>👥</span>'+coldLeads.length+' prospectos</div>';
+  if(!pills) pills = '<div class="bc-greet-pill grn"><span>✅</span>Todo en orden</div>';
+
+  /* Contratos recientes card */
+  var recentHtml = recentContracts.map(function(c){
+    var cl = clients.find(function(x){return x.id===c.clientId;});
+    var nm = cl ? cl.name : (c.clientName||'—');
+    var typeCls = c.type === 'sale' ? 'lote' : 'local';
+    var typeLbl = c.type === 'sale' ? 'Venta' : 'Reserva';
+    var lot = c.lot || c.num || '—';
+    var parts = c.date ? new Date(c.date).toLocaleDateString('es-MX',{day:'2-digit',month:'short'}).split(' ') : ['—',''];
+    return '<div class="bc-list-item">'+
+      '<div class="bc-vdate"><div class="bc-vday">'+(parts[0]||'—')+'</div><div class="bc-vmon">'+(parts[2]||parts[1]||'')+'</div></div>'+
+      '<div class="bc-li-info"><div class="bc-li-nm">'+nm+'</div><div class="bc-li-sub">'+lot+'</div></div>'+
+      '<span class="bc-vtag '+typeCls+'">'+typeLbl+'</span>'+
+    '</div>';
+  }).join('') || '<div style="padding:14px;text-align:center;font-size:.76rem;color:var(--mu)">Sin contratos recientes</div>';
+
+  /* Reservas por convertir card */
+  var reservHtml = reservations.slice(0,4).map(function(c){
+    var cl = clients.find(function(x){return x.id===c.clientId;});
+    var nm = cl ? cl.name : (c.clientName||'—');
+    var lot = c.lot || c.num || '—';
+    return '<div class="bc-firma">'+
+      '<div class="bc-firma-dot"></div>'+
+      '<div class="bc-li-info"><div class="bc-li-nm">'+nm+'</div><div class="bc-li-sub">'+lot+'</div></div>'+
+      '<button class="bc-firma-btn" onclick="event.stopPropagation();gv(\'contratos\',document.querySelector(\'.sb-btn[onclick*=contratos]\'))">Gestionar</button>'+
+    '</div>';
+  }).join('') || '<div style="padding:14px;text-align:center;font-size:.76rem;color:var(--mu)">Sin reservas activas</div>';
+
+  /* Pagos vencidos card */
+  var overdueHtml = overduePayments.slice(0,4).map(function(p){
+    var d = new Date(p.dueDate); d.setHours(0,0,0,0);
+    var daysLate = Math.round((today - d)/86400000);
+    return '<div class="bc-acc">'+
+      '<div class="bc-acc-av s">💳</div>'+
+      '<div style="flex:1;min-width:0"><div class="bc-acc-nm">'+(p.clientName||'Cliente')+' · '+(p.contractNum||'')+'</div>'+
+      '<div class="bc-acc-sub">Cuota #'+p.cuota+' · '+daysLate+' días · $'+(p.amount||0).toLocaleString('es-MX')+'</div></div>'+
+      '<div class="bc-acc-badge sal">Vencido</div>'+
+    '</div>';
+  }).join('') || '<div style="padding:14px;text-align:center;font-size:.76rem;color:var(--mu)">Sin pagos vencidos ✅</div>';
+
+  /* Notificaciones */
+  var notifHtml = '';
+  overduePayments.slice(0,2).forEach(function(p){
+    var d = new Date(p.dueDate); d.setHours(0,0,0,0);
+    var daysLate = Math.round((today - d)/86400000);
+    notifHtml += '<div class="bc-notif-item" onclick="gv(\'pagos\',document.querySelector(\'.sb-btn[onclick*=pagos]\'))">'+
+      '<div class="bc-notif-dot err"></div>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div class="bc-notif-title">Pago vencido — '+(p.clientName||'Cliente')+'</div>'+
+        '<div class="bc-notif-sub">'+(p.contractNum||'')+' · Cuota #'+p.cuota+' · $'+(p.amount||0).toLocaleString('es-MX')+' · '+daysLate+' días</div>'+
+        '<div class="bc-notif-meta"><span class="bc-notif-tag err">Pago vencido</span><span class="bc-notif-time">'+_daysAgo(p.dueDate)+'</span></div>'+
       '</div>'+
     '</div>';
+  });
+  if(reservations.length > 0){
+    notifHtml += '<div class="bc-notif-item" onclick="gv(\'contratos\',document.querySelector(\'.sb-btn[onclick*=contratos]\'))">'+
+      '<div class="bc-notif-dot warn"></div>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div class="bc-notif-title">'+reservations.length+' reservas requieren seguimiento</div>'+
+        '<div class="bc-notif-sub">Contratos en espera de conversión a compraventa</div>'+
+        '<div class="bc-notif-meta"><span class="bc-notif-tag warn">Alerta comercial</span><span class="bc-notif-time">Hoy</span></div>'+
+      '</div>'+
+    '</div>';
+  }
+  if(missingDocs.length > 0){
+    notifHtml += '<div class="bc-notif-item" onclick="gv(\'documentos\',document.querySelector(\'.sb-btn[onclick*=documentos]\'))">'+
+      '<div class="bc-notif-dot req"></div>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div class="bc-notif-title">'+missingDocs.length+' contratos sin expediente</div>'+
+        '<div class="bc-notif-sub">Documentación incompleta antes del próximo corte</div>'+
+        '<div class="bc-notif-meta"><span class="bc-notif-tag req">Documentación</span><span class="bc-notif-time">Pendiente</span></div>'+
+        '<button class="bc-notif-btn" onclick="event.stopPropagation();gv(\'documentos\',document.querySelector(\'.sb-btn[onclick*=documentos]\'))">Revisar</button>'+
+      '</div>'+
+    '</div>';
+  }
+  if(coldLeads.length > 0){
+    notifHtml += '<div class="bc-notif-item" onclick="gv(\'clientes\',document.querySelector(\'.sb-btn[onclick*=clientes]\'))">'+
+      '<div class="bc-notif-dot ok"></div>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div class="bc-notif-title">'+coldLeads.length+' prospectos sin contactar</div>'+
+        '<div class="bc-notif-sub">Asigna a un asesor o realiza seguimiento directo</div>'+
+        '<div class="bc-notif-meta"><span class="bc-notif-tag ok">Prospectos</span><span class="bc-notif-time">Pendiente</span></div>'+
+      '</div>'+
+    '</div>';
+  }
+  if(!notifHtml) notifHtml = '<div style="padding:20px;text-align:center;font-size:.78rem;color:var(--mu)">✅ Sin alertas activas</div>';
+
+  var notifCount = Math.min(overduePayments.length,2) + (reservations.length>0?1:0) + (missingDocs.length>0?1:0) + (coldLeads.length>0?1:0);
+  var notifBadge = notifCount > 0
+    ? '<span style="font-size:.62rem;font-weight:800;padding:2px 7px;border-radius:7px;background:#e0f2fe;color:#0284c7">'+notifCount+' nueva'+(notifCount>1?'s':'')+'</span>'
+    : '<span style="font-size:.62rem;font-weight:800;padding:2px 7px;border-radius:7px;background:var(--grn-lt);color:var(--grn)">Al día</span>';
+
+  view.innerHTML =
+    '<div class="bento-home">'+
+      '<div class="bento-grid">'+
+
+        /* Greeting strip */
+        '<div class="bc bc-greet gc12" style="cursor:default">'+
+          '<div style="flex:1">'+
+            '<div class="bc-greet-txt">'+greeting+', '+firstName+'. <em>'+dateStr+'.</em></div>'+
+            '<div class="bc-greet-sub">Tienes pendientes para hoy:</div>'+
+            '<div class="bc-greet-pills">'+pills+'</div>'+
+          '</div>'+
+        '</div>'+
+
+        /* Contratos recientes */
+        '<div class="bc gc4" style="display:flex;flex-direction:column" onclick="gv(\'contratos\',document.querySelector(\'.sb-btn[onclick*=contratos]\'))">'+
+          '<div class="bc-accent" style="background:#0EA5E9"></div>'+
+          '<div class="bc-list-head">'+
+            '<span class="bc-list-title">📄 Contratos recientes</span>'+
+            '<span style="font-size:.62rem;font-weight:800;padding:2px 7px;border-radius:7px;background:#e0f2fe;color:#0284c7">'+recentContracts.length+'</span>'+
+          '</div>'+
+          '<div class="bc-list-body">'+recentHtml+'</div>'+
+        '</div>'+
+
+        /* Reservas por convertir */
+        '<div class="bc gc4" style="display:flex;flex-direction:column" onclick="gv(\'contratos\',document.querySelector(\'.sb-btn[onclick*=contratos]\'))">'+
+          '<div class="bc-accent" style="background:var(--amb)"></div>'+
+          '<div class="bc-list-head">'+
+            '<span class="bc-list-title">⏳ Reservas por convertir</span>'+
+            '<span style="font-size:.62rem;font-weight:800;padding:2px 7px;border-radius:7px;background:var(--amb-lt);color:var(--amb)">'+reservations.length+'</span>'+
+          '</div>'+
+          '<div class="bc-list-body">'+reservHtml+'</div>'+
+        '</div>'+
+
+        /* Pagos vencidos */
+        '<div class="bc gc4" style="display:flex;flex-direction:column" onclick="gv(\'pagos\',document.querySelector(\'.sb-btn[onclick*=pagos]\'))">'+
+          '<div class="bc-accent" style="background:var(--red)"></div>'+
+          '<div class="bc-list-head">'+
+            '<span class="bc-list-title">💳 Pagos vencidos</span>'+
+            '<span style="font-size:.62rem;font-weight:800;padding:2px 7px;border-radius:7px;background:var(--red-lt);color:var(--red)">'+overduePayments.length+'</span>'+
+          '</div>'+
+          '<div class="bc-list-body">'+overdueHtml+'</div>'+
+        '</div>'+
+
+        /* Ventas mensuales chart */
+        '<div class="bc gc8" style="display:flex;flex-direction:column">'+
+          '<div class="bc-accent" style="background:linear-gradient(90deg,#2A7A50,#B07820)"></div>'+
+          '<div class="bc-list-head">'+
+            '<span class="bc-list-title">📈 Ventas mensuales '+year+'</span>'+
+            '<div style="display:flex;gap:12px;align-items:center">'+
+              '<span style="display:flex;align-items:center;gap:5px;font-size:.67rem;color:var(--mu)"><span style="width:9px;height:9px;border-radius:2px;background:#2A7A50;display:inline-block"></span>Cobrado</span>'+
+              '<span style="display:flex;align-items:center;gap:5px;font-size:.67rem;color:var(--mu)"><span style="width:9px;height:9px;border-radius:2px;background:rgba(42,122,80,.28);border:1px dashed #2A7A50;display:inline-block"></span>Estimado</span>'+
+            '</div>'+
+          '</div>'+
+          '<div style="flex:1;padding:8px 14px 6px;min-height:160px;position:relative">'+
+            '<canvas id="midia-ventas-chart" style="position:absolute;inset:8px 14px 6px;width:calc(100% - 28px);height:calc(100% - 14px)"></canvas>'+
+          '</div>'+
+          '<div style="display:flex;gap:20px;padding:7px 16px 10px;border-top:1px solid var(--bd)">'+
+            '<span style="font-size:.72rem;color:var(--mu)"><span style="font-weight:700;color:var(--tx);font-size:.84rem">$'+_fmtShort(ytdRevenue)+'</span> cobrado YTD</span>'+
+            '<span style="font-size:.72rem;color:var(--mu)"><span style="font-weight:700;color:var(--tx)">'+ytdCierres+'</span> cierres YTD</span>'+
+            '<span style="font-size:.72rem;color:var(--mu)"><span style="font-weight:700;color:var(--tx)">$'+_fmtShort(ticketProm)+'</span> ticket prom.</span>'+
+          '</div>'+
+        '</div>'+
+
+        /* Notificaciones */
+        '<div class="bc gc4" style="display:flex;flex-direction:column">'+
+          '<div class="bc-accent" style="background:linear-gradient(90deg,#0EA5E9,#2A7A50)"></div>'+
+          '<div class="bc-list-head">'+
+            '<span class="bc-list-title">🔔 Notificaciones</span>'+
+            notifBadge+
+          '</div>'+
+          '<div class="bc-list-body" style="flex:1;overflow-y:auto">'+notifHtml+'</div>'+
+        '</div>'+
+
+      '</div>'+
+    '</div>';
+
+  setTimeout(function(){ _initMiDiaVentasChart(chartLabels, chartCerradas, chartEstimado); }, 0);
+}
+
+function _initMiDiaVentasChart(labels, cerradas, estimado){
+  var canvas = document.getElementById('midia-ventas-chart');
+  if(!canvas || typeof Chart === 'undefined') return;
+  if(canvas._chartInstance){ canvas._chartInstance.destroy(); }
+  var isDark = document.documentElement.classList.contains('dark');
+  var gridColor = isDark ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.06)';
+  var labelColor = isDark ? '#9aada8' : '#8a9490';
+  canvas._chartInstance = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        { label:'Cobrado', data:cerradas, backgroundColor:'#2A7A50', borderRadius:4, borderSkipped:false, order:1 },
+        { label:'Estimado', data:estimado, backgroundColor:'rgba(42,122,80,.22)', borderColor:'rgba(42,122,80,.55)', borderWidth:1, borderRadius:4, borderSkipped:false, order:2 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode:'index', intersect:false },
+      plugins: {
+        legend: { display:false },
+        tooltip: {
+          backgroundColor:'#fff', titleColor:'#1a2e1e', bodyColor:'#4a6a52',
+          borderColor:'#d6e8dc', borderWidth:1, padding:10, cornerRadius:8,
+          callbacks: {
+            label: function(ctx){ var v=ctx.raw; if(!v) return null; return ctx.dataset.label+': $'+v+'k'; }
+          }
+        }
+      },
+      scales: {
+        x: { grid:{display:false}, ticks:{font:{size:10},color:labelColor} },
+        y: { grid:{color:gridColor}, border:{dash:[4,4]}, ticks:{font:{size:10},color:labelColor,callback:function(v){return v?'$'+v+'k':'';}} }
+      }
+    }
+  });
 }
 
 /* ── Hero header ── */
