@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ownterra — Gestión de Lotes e Inmuebles</title>
+<title>Ownterra — Suites de Lotes y Rentas</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -1024,6 +1024,58 @@ select.fi{cursor:pointer}
 body,button,input,select,textarea{font-family:var(--corp-font)!important}
 .tn-logo-nm,.topbar-title,.kpi-val,.donut-pct,.cl-det-nm,.pc-v,.modal-title,.ll-logo-nm,.ll-tagline,.ll-stat-v,.lf-title,.ms-header h2,.ms-card-title,.bc-kpi-val,.bc-map-sv,.bc-greet-txt,.bc-donut-pct,.vd-day,.obra-pct,.ot-title,.ot-modal-title{font-family:var(--corp-font)!important;letter-spacing:0}
 .tn-logo-nm,.ll-logo-nm{font-weight:800}.ll-tagline,.lf-title,.topbar-title{font-weight:700}
+.suite-switcher{display:flex;align-items:center;gap:5px;padding:4px;margin:0 10px;border:1px solid rgba(255,255,255,.1);border-radius:11px;background:rgba(255,255,255,.06)}
+.suite-chip{height:31px;padding:0 11px;border:0;border-radius:8px;background:transparent;color:rgba(255,255,255,.56);font-size:.73rem;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .14s;white-space:nowrap}
+.suite-chip:hover{color:#fff;background:rgba(255,255,255,.08)}
+.suite-chip.active{background:#fff;color:#183024;box-shadow:0 2px 9px rgba(0,0,0,.18)}
+.suite-chip[data-suite-target="rentas"].active{color:#113f67}
+.suite-login-strip{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0 0;max-width:390px}
+.suite-login-card{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);border-radius:13px;padding:12px 13px;color:#fff;backdrop-filter:blur(4px)}
+.suite-login-card b{display:block;font-size:.82rem;margin-bottom:4px}
+.suite-login-card span{display:block;font-size:.68rem;line-height:1.45;color:rgba(255,255,255,.56)}
+.suite-launchpad{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);gap:14px;min-height:0;flex:1}
+.suite-hero{background:linear-gradient(135deg,#183024,#274c38);border-radius:13px;padding:18px;border:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;justify-content:space-between;min-height:180px;color:#fff;box-shadow:var(--sh)}
+.suite-hero-kicker{font-size:.68rem;font-weight:900;text-transform:uppercase;letter-spacing:.7px;color:#7ef5b2;margin-bottom:8px}
+.suite-hero-title{font-size:1.45rem;font-weight:900;line-height:1.15;margin-bottom:8px}
+.suite-hero-sub{font-size:.82rem;line-height:1.55;color:rgba(255,255,255,.62);max-width:560px}
+.suite-hero-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.suite-action{border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;border-radius:9px;padding:8px 11px;font-size:.73rem;font-weight:800;cursor:pointer}
+.suite-action.primary{background:#fff;color:#183024}
+.suite-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.suite-card{background:var(--sf);border:1px solid var(--bd);border-radius:13px;padding:16px;box-shadow:var(--sh);cursor:pointer;transition:all .16s;display:flex;flex-direction:column;min-height:250px}
+.suite-card:hover{transform:translateY(-2px);box-shadow:var(--sh2)}
+.suite-card.active{border-color:#2A7A50;box-shadow:0 0 0 3px rgba(42,122,80,.12),var(--sh)}
+.suite-card.rentas.active{border-color:#1A6B8A;box-shadow:0 0 0 3px rgba(26,107,138,.12),var(--sh)}
+.suite-card-top{display:flex;align-items:flex-start;gap:11px;margin-bottom:13px}
+.suite-card-ico{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0}
+.suite-card.lotes .suite-card-ico{background:var(--forest-pale)}
+.suite-card.rentas .suite-card-ico{background:var(--sky-lt)}
+.suite-card-title{font-weight:900;font-size:1rem;color:var(--tx);line-height:1.15}
+.suite-card-sub{font-size:.72rem;color:var(--mu);line-height:1.45;margin-top:3px}
+.suite-card-status{margin-left:auto;font-size:.58rem;font-weight:900;text-transform:uppercase;letter-spacing:.5px;padding:3px 7px;border-radius:7px;background:var(--grn-lt);color:var(--grn);white-space:nowrap}
+.suite-card.rentas .suite-card-status{background:var(--sky-lt);color:var(--sky)}
+.suite-card-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:3px 0 14px}
+.suite-kpi{background:var(--sf2);border:1px solid var(--bd);border-radius:9px;padding:9px 8px;min-width:0}
+.suite-kpi b{display:block;font-size:.95rem;color:var(--tx);line-height:1}
+.suite-kpi span{display:block;font-size:.58rem;color:var(--mu);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.suite-modules{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:auto}
+.suite-module{border:1px solid var(--bd);background:var(--sf);border-radius:9px;padding:8px 9px;font-size:.7rem;font-weight:800;color:var(--tx2);cursor:pointer;text-align:left}
+.suite-module:hover{border-color:var(--forest);color:var(--forest)}
+.suite-card.rentas .suite-module:hover{border-color:var(--sky);color:var(--sky)}
+.suite-side{display:grid;grid-template-rows:auto 1fr;gap:14px;min-height:0}
+.suite-summary{background:var(--sf);border:1px solid var(--bd);border-radius:13px;padding:14px;box-shadow:var(--sh)}
+.suite-summary-title{font-size:.83rem;font-weight:900;color:var(--tx);margin-bottom:10px}
+.suite-summary-row{display:flex;align-items:center;gap:9px;padding:8px 0;border-top:1px solid var(--bd)}
+.suite-summary-row:first-of-type{border-top:0}
+.suite-summary-dot{width:8px;height:8px;border-radius:50%;background:var(--forest);flex-shrink:0}
+.suite-summary-row.rentas .suite-summary-dot{background:var(--sky)}
+.suite-summary-copy{flex:1;min-width:0}
+.suite-summary-copy b{display:block;font-size:.75rem;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.suite-summary-copy span{display:block;font-size:.64rem;color:var(--mu);margin-top:1px}
+.suite-summary-tag{font-size:.58rem;font-weight:900;padding:2px 7px;border-radius:7px;background:var(--sf2);color:var(--mu)}
+.legacy-dashboard-grid{display:none}
+body[data-suite="rentas"] .tb-p,body[data-suite="rentas"] .btn-p{background:#1A6B8A}
+body[data-suite="rentas"] .tb-p:hover,body[data-suite="rentas"] .btn-p:hover{background:#15536b}
 .ownterra-action-modal{position:fixed;inset:0;z-index:12000;display:flex;align-items:center;justify-content:center;background:rgba(15,31,61,.55);backdrop-filter:blur(5px);padding:16px;animation:fi .16s ease}
 .ownterra-modal-box{width:min(560px,100%);max-height:90vh;overflow:auto;background:var(--sf);border:1px solid var(--bd);border-radius:14px;box-shadow:var(--sh2)}
 .ownterra-modal-hd{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--bd);background:var(--sf2)}
@@ -1038,7 +1090,7 @@ body,button,input,select,textarea{font-family:var(--corp-font)!important}
 .ownterra-detail small{display:block;color:var(--mu);font-size:.62rem;text-transform:uppercase;font-weight:800;letter-spacing:.4px;margin-bottom:3px}.ownterra-detail b{font-size:.88rem;color:var(--tx)}
 .ownterra-toast-note{font-size:.78rem;color:var(--mu);line-height:1.5;margin-top:10px}
 @media(max-width:1180px){body{position:static;overflow:auto;height:auto;min-height:100vh}.topnav{height:auto;min-height:54px;align-items:flex-start;flex-wrap:wrap;padding:8px 12px;gap:6px}.tn-logo{width:100%;margin:0 0 4px}.tn-sep{display:none}.tn-group{position:relative}.tn-btn{height:38px;border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:0 10px;background:rgba(255,255,255,.04)}.tn-group.open .tn-drop{display:block}.tn-drop{top:42px;border-radius:12px;min-width:230px}.tn-right{width:100%;margin-left:0;justify-content:space-between}.tn-search{flex:1;width:auto}.main{min-height:calc(100vh - 118px)}}
-@media(max-width:760px){.topbar{height:auto;min-height:46px;flex-wrap:wrap;padding:8px 12px}.view-scroll{padding:14px 12px}.kpi-grid,.pagos-kpis{grid-template-columns:1fr 1fr!important}.grid-2,.cl-layout,.acceso-grid,.ownterra-form,.ownterra-detail-grid{grid-template-columns:1fr!important}.card-hd,[style*="display:flex;justify-content:space-between"]{flex-wrap:wrap}.tbl{min-width:760px}.card-body[style*="padding:0"]{overflow-x:auto}.visit-card,.cont-card,.obra-hd{align-items:flex-start;flex-wrap:wrap}.unit-grid{grid-template-columns:repeat(2,minmax(0,1fr));display:grid!important}.unit-cell{width:auto!important;min-width:0}#docs-kpis{grid-template-columns:1fr 1fr!important}.ot-filters{align-items:stretch;flex-direction:column}.ot-filter-chips{overflow-x:auto;padding-bottom:2px}}
+@media(max-width:760px){.topbar{height:auto;min-height:46px;flex-wrap:wrap;padding:8px 12px}.view-scroll{padding:14px 12px}.kpi-grid,.pagos-kpis{grid-template-columns:1fr 1fr!important}.grid-2,.cl-layout,.acceso-grid,.ownterra-form,.ownterra-detail-grid,.suite-launchpad,.suite-cards{grid-template-columns:1fr!important}.card-hd,[style*="display:flex;justify-content:space-between"]{flex-wrap:wrap}.tbl{min-width:760px}.card-body[style*="padding:0"]{overflow-x:auto}.visit-card,.cont-card,.obra-hd{align-items:flex-start;flex-wrap:wrap}.unit-grid{grid-template-columns:repeat(2,minmax(0,1fr));display:grid!important}.unit-cell{width:auto!important;min-width:0}#docs-kpis{grid-template-columns:1fr 1fr!important}.ot-filters{align-items:stretch;flex-direction:column}.ot-filter-chips{overflow-x:auto;padding-bottom:2px}.suite-switcher{order:2;width:100%;margin:0}.suite-chip{flex:1;justify-content:center}.suite-card{min-height:0}.suite-login-strip{grid-template-columns:1fr}}
 @media(max-width:480px){.kpi-grid,.pagos-kpis,#docs-kpis{grid-template-columns:1fr!important}.tn-btn{font-size:.7rem}.tn-search input{font-size:.7rem}.bc-greet-pills{align-items:stretch}.bc-greet-pill{justify-content:flex-start}.ownterra-modal-ft{flex-direction:column}}
 @media(max-width:760px) and (orientation:portrait){
   *,*::before,*::after{box-sizing:border-box;min-width:0}
@@ -1222,7 +1274,7 @@ body,button,input,select,textarea{font-family:var(--corp-font)!important}
           <circle cx="11" cy="13" r="2.2" fill="white"/>
         </svg>
       </div>
-      <div class="ll-logo-nm">Ownterra<small>Gestión Inmobiliaria</small></div>
+      <div class="ll-logo-nm">Ownterra<small>Workspace inmobiliario</small></div>
     </div>
 
     <!-- Map decoration SVG -->
@@ -1251,8 +1303,12 @@ body,button,input,select,textarea{font-family:var(--corp-font)!important}
     </svg>
 
     <div class="ll-hero">
-      <div class="ll-tagline">Gestiona tu<br>fraccionamiento<br><em>con precisión</em></div>
-      <div class="ll-desc">Administra lotes, clientes, contratos y amortizaciones desde un solo lugar. Diseñado para desarrolladores inmobiliarios.</div>
+      <div class="ll-tagline">Dos suites para<br>operar lotes y<br><em>rentas</em></div>
+      <div class="ll-desc">Administra inventario, clientes, contratos, pagos y operaciones desde una sola cuenta Ownterra.</div>
+      <div class="suite-login-strip">
+        <div class="suite-login-card"><b>Ownterra Lotes</b><span>Fraccionamientos, lotes, ventas, contratos y amortizaciones.</span></div>
+        <div class="suite-login-card"><b>Ownterra Rentas</b><span>Unidades en renta, visitas, acceso, mantenimiento y cobranza.</span></div>
+      </div>
     </div>
 
     <div class="ll-stats">
@@ -1261,8 +1317,8 @@ body,button,input,select,textarea{font-family:var(--corp-font)!important}
         <div class="ll-stat-l">Sin papel</div>
       </div>
       <div>
-        <div class="ll-stat-v">∞</div>
-        <div class="ll-stat-l">Lotes & Frac.</div>
+        <div class="ll-stat-v">2</div>
+        <div class="ll-stat-l">Suites activas</div>
       </div>
       <div>
         <div class="ll-stat-v">0</div>
@@ -1275,7 +1331,7 @@ body,button,input,select,textarea{font-family:var(--corp-font)!important}
   <div class="login-right">
     <div class="login-form-wrap">
       <div class="lf-title">Bienvenido</div>
-      <div class="lf-sub">Accede a tu sistema de gestión inmobiliaria</div>
+      <div class="lf-sub">Accede a Ownterra y elige la suite que necesitas operar</div>
 
       <div class="lf-error" id="lf-error">Usuario o contraseña incorrectos. Intenta de nuevo.</div>
 
@@ -1344,48 +1400,52 @@ body,button,input,select,textarea{font-family:var(--corp-font)!important}
         <circle cx="9" cy="10.5" r="1.8" fill="white"/>
       </svg>
     </div>
-    <div class="tn-logo-nm">Ownterra<small>Lotes e Inmuebles</small></div>
+    <div class="tn-logo-nm">Ownterra<small id="suite-nav-label">Suite Lotes</small></div>
   </div>
   <div class="tn-sep"></div>
 
   <!-- Home -->
   <button class="tn-btn home-btn active" id="tn-home" onclick="gv('home',this)"><span class="tn-ico">🏠</span></button>
 
+  <div class="suite-switcher" aria-label="Cambiar suite">
+    <button class="suite-chip active" id="suite-chip-lotes" data-suite-target="lotes" onclick="setSuite('lotes',true)"><span>🗺️</span>Lotes</button>
+    <button class="suite-chip" id="suite-chip-rentas" data-suite-target="rentas" onclick="setSuite('rentas',true)"><span>🔑</span>Rentas</button>
+  </div>
+
   <!-- Propiedades dropdown -->
-  <div class="tn-group">
-    <button class="tn-btn" id="tn-propiedades"><span class="tn-ico">🏘️</span>Propiedades ▾</button>
+  <div class="tn-group" data-suites="lotes rentas">
+    <button class="tn-btn" id="tn-propiedades"><span class="tn-ico">🏘️</span>Inventario ▾</button>
     <div class="tn-drop">
-      <button class="tn-drop-item" onclick="gv('lotes',null)"><span class="tn-drop-ico">🗺️</span>Lotes<span class="tn-drop-bdg grn" id="sb-frac-count" style="display:none">0</span></button>
-      <button class="tn-drop-item" onclick="gv('departamentos',null)"><span class="tn-drop-ico">🏢</span>Departamentos</button>
-      <button class="tn-drop-item" onclick="gv('locales',null)"><span class="tn-drop-ico">🏪</span>Locales Comerciales</button>
-      <div class="tn-drop-sep"></div>
-      <button class="tn-drop-item" id="sb-btn-frac" onclick="openFracGallery(null)"><span class="tn-drop-ico">🏘️</span>Fraccionamientos</button>
+      <button class="tn-drop-item" data-suites="lotes" onclick="gv('lotes',null)"><span class="tn-drop-ico">🗺️</span>Carga de lotes<span class="tn-drop-bdg grn" id="sb-frac-count" style="display:none">0</span></button>
+      <button class="tn-drop-item" data-suites="rentas" onclick="gv('departamentos',null)"><span class="tn-drop-ico">🏢</span>Departamentos en renta</button>
+      <button class="tn-drop-item" data-suites="rentas" onclick="gv('locales',null)"><span class="tn-drop-ico">🏪</span>Locales en renta</button>
+      <div class="tn-drop-sep" data-suites="lotes"></div>
+      <button class="tn-drop-item" data-suites="lotes" id="sb-btn-frac" onclick="openFracGallery(null)"><span class="tn-drop-ico">🏘️</span>Fraccionamientos</button>
     </div>
   </div>
 
   <!-- Operaciones dropdown -->
-  <div class="tn-group">
-    <button class="tn-btn" id="tn-operaciones"><span class="tn-ico">⚙️</span>Operaciones <span class="tn-bdg" id="sb-firmas-badge" style="display:none">3</span> ▾</button>
+  <div class="tn-group" data-suites="rentas">
+    <button class="tn-btn" id="tn-operaciones"><span class="tn-ico">🔑</span>Rentas <span class="tn-bdg" id="sb-firmas-badge" style="display:none">3</span> ▾</button>
     <div class="tn-drop">
-      <button class="tn-drop-item" onclick="gv('acceso',null)"><span class="tn-drop-ico">🔐</span>Control de Acceso<span class="tn-drop-bdg" id="acc-bdg">3</span></button>
-      <button class="tn-drop-item" onclick="gv('visitas',null)"><span class="tn-drop-ico">📅</span>Visitas Programadas</button>
-      <button class="tn-drop-item" onclick="gv('ordenes',null)"><span class="tn-drop-ico">📋</span>Operaciones de Inmueble<span class="tn-drop-bdg" id="ot-bdg">2</span></button>
-      <button class="tn-drop-item" onclick="gv('construccion',null)"><span class="tn-drop-ico">🏗️</span>Construcción</button>
-      <button class="tn-drop-item" onclick="gv('contratistas',null)"><span class="tn-drop-ico">👷</span>Contratistas</button>
-      <button class="tn-drop-item" onclick="gv('historial',null)"><span class="tn-drop-ico">📜</span>Historial Inmueble</button>
+      <button class="tn-drop-item" data-suites="rentas" onclick="gv('acceso',null)"><span class="tn-drop-ico">🔐</span>Control de Acceso<span class="tn-drop-bdg" id="acc-bdg">3</span></button>
+      <button class="tn-drop-item" data-suites="rentas" onclick="gv('visitas',null)"><span class="tn-drop-ico">📅</span>Visitas Programadas</button>
+      <button class="tn-drop-item" data-suites="rentas" onclick="gv('ordenes',null)"><span class="tn-drop-ico">📋</span>Mantenimiento y operaciones<span class="tn-drop-bdg" id="ot-bdg">2</span></button>
+      <button class="tn-drop-item" data-suites="rentas" onclick="gv('contratistas',null)"><span class="tn-drop-ico">👷</span>Proveedores</button>
+      <button class="tn-drop-item" data-suites="rentas" onclick="gv('historial',null)"><span class="tn-drop-ico">📜</span>Historial del inmueble</button>
     </div>
   </div>
 
   <!-- Comercial dropdown -->
-  <div class="tn-group">
-    <button class="tn-btn" id="tn-comercial"><span class="tn-ico">💼</span>Comercial <span class="tn-bdg" id="sb-pagos-badge" style="display:none">0</span> ▾</button>
+  <div class="tn-group" data-suites="lotes rentas">
+    <button class="tn-btn" id="tn-comercial"><span class="tn-ico">💼</span>Administración <span class="tn-bdg" id="sb-pagos-badge" style="display:none">0</span> ▾</button>
     <div class="tn-drop">
-      <button class="tn-drop-item" onclick="gv('clientes',null)"><span class="tn-drop-ico">👥</span>Clientes &amp; CRM<span class="tn-drop-bdg grn" id="sb-cl-count" style="display:none">0</span></button>
-      <button class="tn-drop-item" onclick="gv('contratos',null)"><span class="tn-drop-ico">📄</span>Contratos</button>
-      <button class="tn-drop-item" onclick="gv('pagos',null)"><span class="tn-drop-ico">💳</span>Pagos<span class="tn-drop-bdg" id="pay-bdg" style="display:none">0</span></button>
-      <button class="tn-drop-item" onclick="gv('documentos',null)"><span class="tn-drop-ico">📁</span>Documentos<span class="tn-drop-bdg grn" id="sb-docs-count" style="display:none">0</span></button>
+      <button class="tn-drop-item" data-suites="lotes rentas" onclick="gv('clientes',null)"><span class="tn-drop-ico">👥</span>Clientes &amp; CRM<span class="tn-drop-bdg grn" id="sb-cl-count" style="display:none">0</span></button>
+      <button class="tn-drop-item" data-suites="lotes rentas" onclick="gv('contratos',null)"><span class="tn-drop-ico">📄</span>Contratos</button>
+      <button class="tn-drop-item" data-suites="lotes rentas" onclick="gv('pagos',null)"><span class="tn-drop-ico">💳</span>Pagos<span class="tn-drop-bdg" id="pay-bdg" style="display:none">0</span></button>
+      <button class="tn-drop-item" data-suites="lotes rentas" onclick="gv('documentos',null)"><span class="tn-drop-ico">📁</span>Documentos<span class="tn-drop-bdg grn" id="sb-docs-count" style="display:none">0</span></button>
       <div class="tn-drop-sep"></div>
-      <button class="tn-drop-item" onclick="gv('calculadora',null)"><span class="tn-drop-ico">🧮</span>Calculadora</button>
+      <button class="tn-drop-item" data-suites="lotes" onclick="gv('calculadora',null)"><span class="tn-drop-ico">🧮</span>Calculadora</button>
     </div>
   </div>
 
@@ -1432,7 +1492,98 @@ body,button,input,select,textarea{font-family:var(--corp-font)!important}
   <!-- HOME BENTO -->
   <div class="view active" id="view-home">
     <div class="bento-home">
-      <div class="bento-grid">
+      <div class="suite-launchpad">
+        <div style="display:flex;flex-direction:column;gap:14px;min-height:0">
+          <section class="suite-hero">
+            <div>
+              <div class="suite-hero-kicker">Ownterra Workspace</div>
+              <div class="suite-hero-title">Elige una suite para operar tu negocio inmobiliario.</div>
+              <div class="suite-hero-sub">Ownterra agrupa Lotes y Rentas dentro del mismo ecosistema: una cuenta, datos compartidos y una experiencia modular por perfil.</div>
+            </div>
+            <div class="suite-hero-actions">
+              <button class="suite-action primary" onclick="setSuite('lotes',true)">Abrir Lotes</button>
+              <button class="suite-action" onclick="setSuite('rentas',true)">Abrir Rentas</button>
+            </div>
+          </section>
+
+          <div class="suite-cards">
+            <article class="suite-card lotes active" data-suite-card="lotes" onclick="setSuite('lotes',true)">
+              <div class="suite-card-top">
+                <div class="suite-card-ico">🗺️</div>
+                <div>
+                  <div class="suite-card-title">Ownterra Lotes</div>
+                  <div class="suite-card-sub">Fraccionamientos, lotes, ventas, clientes, contratos y amortizaciones.</div>
+                </div>
+                <div class="suite-card-status">Activa</div>
+              </div>
+              <div class="suite-card-kpis">
+                <div class="suite-kpi"><b>24</b><span>Lotes demo</span></div>
+                <div class="suite-kpi"><b>5</b><span>Pagos vencidos</span></div>
+                <div class="suite-kpi"><b>9</b><span>Contratos</span></div>
+              </div>
+              <div class="suite-modules">
+                <button class="suite-module" onclick="event.stopPropagation();setSuite('lotes');gv('lotes',null)">Carga de lotes</button>
+                <button class="suite-module" onclick="event.stopPropagation();setSuite('lotes');openFracGallery(null)">Fraccionamientos</button>
+                <button class="suite-module" onclick="event.stopPropagation();setSuite('lotes');gv('clientes',null)">Clientes</button>
+                <button class="suite-module" onclick="event.stopPropagation();setSuite('lotes');gv('pagos',null)">Pagos</button>
+              </div>
+            </article>
+
+            <article class="suite-card rentas" data-suite-card="rentas" onclick="setSuite('rentas',true)">
+              <div class="suite-card-top">
+                <div class="suite-card-ico">🔑</div>
+                <div>
+                  <div class="suite-card-title">Ownterra Rentas</div>
+                  <div class="suite-card-sub">Departamentos, locales, visitas, acceso, mantenimiento y cobranza.</div>
+                </div>
+                <div class="suite-card-status">Activa</div>
+              </div>
+              <div class="suite-card-kpis">
+                <div class="suite-kpi"><b>18</b><span>Unidades</span></div>
+                <div class="suite-kpi"><b>2</b><span>Visitas hoy</span></div>
+                <div class="suite-kpi"><b>6</b><span>Ordenes</span></div>
+              </div>
+              <div class="suite-modules">
+                <button class="suite-module" onclick="event.stopPropagation();setSuite('rentas');gv('departamentos',null)">Departamentos</button>
+                <button class="suite-module" onclick="event.stopPropagation();setSuite('rentas');gv('locales',null)">Locales</button>
+                <button class="suite-module" onclick="event.stopPropagation();setSuite('rentas');gv('visitas',null)">Visitas</button>
+                <button class="suite-module" onclick="event.stopPropagation();setSuite('rentas');gv('ordenes',null)">Mantenimiento</button>
+              </div>
+            </article>
+
+          </div>
+        </div>
+
+        <aside class="suite-side">
+          <section class="suite-summary">
+            <div class="suite-summary-title">Resumen operativo</div>
+            <div class="suite-summary-row">
+              <div class="suite-summary-dot"></div>
+              <div class="suite-summary-copy"><b>Lote 22-A con pago vencido</b><span>Mensualidad #7 · 12 dias · $18,500</span></div>
+              <div class="suite-summary-tag">Lotes</div>
+            </div>
+            <div class="suite-summary-row rentas">
+              <div class="suite-summary-dot"></div>
+              <div class="suite-summary-copy"><b>Depto 5B tiene visita pendiente</b><span>Hoy 12:30 · asesor Maria Salas</span></div>
+              <div class="suite-summary-tag">Rentas</div>
+            </div>
+            <div class="suite-summary-row rentas">
+              <div class="suite-summary-dot"></div>
+              <div class="suite-summary-copy"><b>OT-002 espera autorizacion</b><span>Limpieza profunda post-obra</span></div>
+              <div class="suite-summary-tag">Rentas</div>
+            </div>
+          </section>
+
+          <section class="suite-summary">
+            <div class="suite-summary-title">Modelo de acceso</div>
+            <div style="font-size:.76rem;color:var(--mu);line-height:1.55">
+              El usuario entra una vez, selecciona suite y Ownterra conserva el contexto entre Lotes y Rentas para operar inventario, clientes, contratos, pagos y mantenimiento.
+            </div>
+          </section>
+        </aside>
+      </div>
+
+      <div class="bento-grid legacy-dashboard-grid">
 
         <!-- GREETING + ALERTAS (full width) -->
         <div class="bc bc-greet gc12" style="cursor:default">
@@ -5324,9 +5475,65 @@ function getContracts(){return getLS('lm_contracts',_defaultContracts);}
 function setContracts(d){setLS('lm_contracts',d);}
 
 /* ── NAVIGATION ── */
+var activeSuite = (function(){
+  try { return localStorage.getItem('ot_active_suite') || 'lotes'; } catch(e) { return 'lotes'; }
+})();
+var SUITE_CFG = {
+  lotes: {
+    label: 'Lotes',
+    navLabel: 'Suite Lotes',
+    defaultView: 'lotes',
+    search: 'Buscar lote, cliente, contrato...'
+  },
+  rentas: {
+    label: 'Rentas',
+    navLabel: 'Suite Rentas',
+    defaultView: 'departamentos',
+    search: 'Buscar unidad, arrendatario, contrato...'
+  }
+};
+function suiteForView(v){
+  if(['departamentos','locales','acceso','visitas','ordenes','contratistas','historial'].indexOf(v)>-1) return 'rentas';
+  if(['lotes','frac','calculadora'].indexOf(v)>-1) return 'lotes';
+  return null;
+}
+function applySuiteShell(){
+  if(!SUITE_CFG[activeSuite]) activeSuite='lotes';
+  var cfg=SUITE_CFG[activeSuite];
+  document.body.setAttribute('data-suite',activeSuite);
+  document.querySelectorAll('.suite-chip').forEach(function(btn){
+    btn.classList.toggle('active',btn.dataset.suiteTarget===activeSuite);
+  });
+  document.querySelectorAll('[data-suite-card]').forEach(function(card){
+    card.classList.toggle('active',card.dataset.suiteCard===activeSuite);
+  });
+  document.querySelectorAll('[data-suites]').forEach(function(el){
+    var allowed=(el.dataset.suites||'').split(/\s+/);
+    var show=allowed.indexOf(activeSuite)>-1;
+    el.style.display=show?'':'none';
+  });
+  var label=document.getElementById('suite-nav-label');
+  if(label) label.textContent=cfg.navLabel;
+  var search=document.querySelector('.tn-search input');
+  if(search) search.setAttribute('placeholder',cfg.search);
+  document.querySelectorAll('.tn-group.open').forEach(function(g){g.classList.remove('open');});
+}
+function setSuite(suite,navigate){
+  if(!SUITE_CFG[suite]) return;
+  activeSuite=suite;
+  try { localStorage.setItem('ot_active_suite',suite); } catch(e) {}
+  applySuiteShell();
+  if(navigate===true) gv(SUITE_CFG[suite].defaultView,null);
+}
 function gv(v,btn){
   /* fall-through: treat 'midia' and 'dashboard' as home */
   if(v==='midia'||v==='dashboard') v='home';
+  var nextSuite=suiteForView(v);
+  if(nextSuite && nextSuite!==activeSuite){
+    activeSuite=nextSuite;
+    try { localStorage.setItem('ot_active_suite',activeSuite); } catch(e) {}
+  }
+  applySuiteShell();
   var sellerLotsRequested=false;
   if(v==='lotes' && isSellerUser()){
     sellerLotsRequested=true;
@@ -5350,11 +5557,11 @@ function gv(v,btn){
   if(comGroup.indexOf(v)>-1){ var b=document.getElementById('tn-comercial'); if(b) b.classList.add('active'); }
 
   /* sub-topbar */
-  var titles={home:'Inicio',lotes:'Carga de Lotes',frac:'Fraccionamiento',clientes:'Clientes & CRM',contratos:'Contratos',documentos:'Gestión Documental',pagos:'Control de Pagos',calculadora:'Calculadora de Amortización',departamentos:'Departamentos',locales:'Locales Comerciales',acceso:'Control de Acceso — Portería',visitas:'Visitas Programadas',ordenes:'Órdenes de Trabajo',construccion:'Seguimiento de Construcción',contratistas:'Contratistas Externos',historial:'Historial del Inmueble'};
+  var titles={home:'Inicio',lotes:'Carga de Lotes',frac:'Fraccionamiento',clientes:'Clientes & CRM',contratos:'Contratos',documentos:'Gestión Documental',pagos:'Control de Pagos',calculadora:'Calculadora de Amortización',departamentos:'Departamentos en renta',locales:'Locales en renta',acceso:'Control de Acceso',visitas:'Visitas Programadas',ordenes:'Mantenimiento y operaciones',construccion:'Seguimiento de Construcción',contratistas:'Proveedores',historial:'Historial del Inmueble'};
   var subBar=document.getElementById('subTopbar');
   if(subBar){ subBar.style.display=(v==='home')?'none':'flex'; }
   var titleEl=document.getElementById('topTitle');
-  if(titleEl) titleEl.textContent=sellerLotsRequested?'Mis lotes':(titles[v]||v);
+  if(titleEl) titleEl.textContent=sellerLotsRequested?'Mis lotes':(v==='home'?'Inicio':(SUITE_CFG[activeSuite].label+' · '+(titles[v]||v)));
 
   /* contextual nav buttons */
   var edNav=document.getElementById('editorNav');
@@ -8239,6 +8446,7 @@ function _buildHistoryPage(paidPays, contracts, pageStyle, dateStr, timeStr){
 /* ── INIT ── */
 renderDashboard();
 calcAmort();
+applySuiteShell();
 /* show home bento on load */
 var _subBar=document.getElementById('subTopbar');
 if(_subBar) _subBar.style.display='none';

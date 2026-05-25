@@ -15,7 +15,7 @@ export default defineConfig({
       manifest: {
         name: "Ownterra",
         short_name: "Ownterra",
-        description: "Plataforma de gestión y administración de lotes y propiedades inmobiliarias.",
+        description: "Ecosistema Ownterra con suites para lotes y rentas inmobiliarias.",
         theme_color: "#183024",
         background_color: "#F6F0E6",
         orientation: "portrait-primary",
@@ -41,9 +41,15 @@ export default defineConfig({
         ],
         shortcuts: [
           {
-            name: "Dashboard",
-            short_name: "Dashboard",
-            description: "Abrir resumen operativo",
+            name: "Lotes",
+            short_name: "Lotes",
+            description: "Abrir suite de lotes",
+            url: "/dashboard"
+          },
+          {
+            name: "Rentas",
+            short_name: "Rentas",
+            description: "Abrir suite de rentas",
             url: "/dashboard"
           },
           {
@@ -51,12 +57,6 @@ export default defineConfig({
             short_name: "Clientes",
             description: "Abrir cartera de clientes",
             url: "/clientes"
-          },
-          {
-            name: "Alertas",
-            short_name: "Alertas",
-            description: "Revisar alertas críticas",
-            url: "/alertas"
           }
         ]
       }
