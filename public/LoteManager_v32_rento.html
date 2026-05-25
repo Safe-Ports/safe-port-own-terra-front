@@ -5883,9 +5883,11 @@ function renderMiDia(){
     var typeCls = c.type === 'sale' ? 'lote' : 'local';
     var typeLbl = c.type === 'sale' ? 'Venta' : 'Reserva';
     var lot = c.lot || c.num || '—';
-    var parts = c.date ? new Date(c.date).toLocaleDateString('es-MX',{day:'2-digit',month:'short'}).split(' ') : ['—',''];
+    var _cd = c.date ? new Date(c.date) : null;
+    var _cday = _cd ? String(_cd.getDate()).padStart(2,'0') : '—';
+    var _cmon = _cd ? _cd.toLocaleDateString('es-MX',{month:'short'}).replace('.','') : '';
     return '<div class="bc-list-item">'+
-      '<div class="bc-vdate"><div class="bc-vday">'+(parts[0]||'—')+'</div><div class="bc-vmon">'+(parts[2]||parts[1]||'')+'</div></div>'+
+      '<div class="bc-vdate"><div class="bc-vday">'+_cday+'</div><div class="bc-vmon">'+_cmon+'</div></div>'+
       '<div class="bc-li-info"><div class="bc-li-nm">'+nm+'</div><div class="bc-li-sub">'+lot+'</div></div>'+
       '<span class="bc-vtag '+typeCls+'">'+typeLbl+'</span>'+
     '</div>';
