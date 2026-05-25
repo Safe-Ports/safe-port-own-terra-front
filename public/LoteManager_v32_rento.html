@@ -5780,7 +5780,12 @@ function renderMiDia(){
 
   var hr = new Date().getHours();
   var greeting = hr < 12 ? "Buenos días" : hr < 19 ? "Buenas tardes" : "Buenas noches";
-  var dateStr = new Date().toLocaleDateString("es-MX", { weekday:"long", day:"numeric", month:"long" });
+  var _now = new Date();
+  var _weekday = _now.toLocaleDateString("es-MX", { weekday:"long" });
+  _weekday = _weekday.charAt(0).toUpperCase() + _weekday.slice(1);
+  var _day = _now.getDate();
+  var _month = _now.toLocaleDateString("es-MX", { month:"long" });
+  var dateStr = _weekday + " " + _day + " de " + _month + ".";
 
   var clients = getClients();
   var contracts = getContracts();
@@ -5969,7 +5974,7 @@ function renderMiDia(){
         /* Greeting strip */
         '<div class="bc bc-greet gc12" style="cursor:default">'+
           '<div style="flex:1">'+
-            '<div class="bc-greet-txt">'+greeting+', '+firstName+'. <em>'+dateStr+'.</em></div>'+
+            '<div class="bc-greet-txt">'+greeting+', '+firstName+'. <em>'+dateStr+'</em></div>'+
             '<div class="bc-greet-sub">Tienes pendientes para hoy:</div>'+
             '<div class="bc-greet-pills">'+pills+'</div>'+
           '</div>'+
