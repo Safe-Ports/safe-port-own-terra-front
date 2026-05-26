@@ -50,7 +50,7 @@ function InlineDocumentsPanel({ entityType, entityId, entityLabel, compact = fal
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-semibold text-[#16120F]">{document.name}</div>
                 <div className="mt-1 text-xs text-[#7A6D5F]">
-                  {document.category} · {document.sizeKb || "—"} KB
+                  {document.category} · {document.file_size ? `${Math.round(document.file_size / 1024)} KB` : "—"}
                 </div>
               </div>
               <div className="flex items-center gap-1">

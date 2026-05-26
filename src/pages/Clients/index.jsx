@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
 import Modal from "@/components/ui/Modal";
 import InlineDocumentsPanel from "@/components/shared/InlineDocumentsPanel";
+import { clientService } from "@/services/clientService";
 import { currency, progress } from "@/services/formatters";
 
 function ClientModal() {
@@ -52,16 +54,16 @@ function ClientModal() {
       <div className="fr-row">
         <div className="fg" style={{ flex: 1 }}>
           <label className="fl">Nombre completo</label>
-          <input className="fi" value={form.name} onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))} />
+          <input className="fi" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
         </div>
         <div className="fg" style={{ flex: 1 }}>
           <label className="fl">Teléfono</label>
-          <input className="fi" value={form.phone} onChange={(event) => setForm((prev) => ({ ...prev, phone: event.target.value }))} />
+          <input className="fi" value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))} />
         </div>
       </div>
       <div className="fg">
         <label className="fl">Correo electrónico</label>
-        <input className="fi" value={form.email} onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))} />
+        <input className="fi" type="email" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
       </div>
       <div className="fr-row">
         <div className="fg" style={{ flex: 1 }}>
@@ -95,7 +97,6 @@ function ClientModal() {
 function ClientsPage() {
   const {
     clients,
-    contracts,
     selectedClientId,
     setSelectedClientId,
     openModal,
@@ -103,7 +104,7 @@ function ClientsPage() {
     openClientReport,
     sendReminder,
     sendClientMessage,
-    openContractCreate
+    openContractCreate,
   } = useAppContext();
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -112,14 +113,30 @@ function ClientsPage() {
     () =>
       clients.filter((client) => {
         const matchesFilter = filter === "all" || client.type === filter;
-        const matchesSearch = `${client.name} ${client.email}`.toLowerCase().includes(search.toLowerCase());
+        const matchesSearch = `${client.name} ${client.email || ""}`.toLowerCase().includes(search.toLowerCase());
         return matchesFilter && matchesSearch;
       }),
     [clients, filter, search]
   );
 
-  const selected = clients.find((client) => client.id === selectedClientId) || filtered[0] || null;
-  const selectedContracts = contracts.filter((contract) => contract.clientId === selected?.id);
+  const selected = clients.find((c) => c.id === selectedClientId) ||
+    (typeof filtered[0]?.id === "string" ? filtered[0] : filtered[0]) ||
+    null;
+
+  // Fetch full detail (with summary) for the selected client
+  const { data: selectedDetail } = useQuery({
+    queryKey: ["client", selected?.id],
+    queryFn: () => clientService.get(selected.id),
+    enabled: !!selected?.id,
+  });
+
+  const summary = selectedDetail?.summary;
+  const sellerName = selected?.seller?.name || selected?.seller || "—";
+  const sellerInitials = selected?.seller?.initials || sellerName.slice(0, 2).toUpperCase();
+
+  const paidM = summary?.total_paid != null ? Math.round(Number(summary.total_paid)) : null;
+  const totalM = summary?.total_invested != null ? Math.round(Number(summary.total_invested)) : null;
+  const monthlyAmt = summary?.next_payment?.amount ? Number(summary.next_payment.amount) : null;
 
   return (
     <>
@@ -132,7 +149,7 @@ function ClientsPage() {
             </div>
             <div className="cl-src">
               <span style={{ color: "var(--mu)" }}>🔍</span>
-              <input type="text" placeholder="Buscar..." value={search} onChange={(event) => setSearch(event.target.value)} />
+              <input type="text" placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
           </div>
           <div className="cl-filters">
@@ -140,7 +157,7 @@ function ClientsPage() {
               ["all", "Todos"],
               ["buyer", "Compradores"],
               ["tenant", "Arrendatarios"],
-              ["lead", "Prospectos"]
+              ["lead", "Prospectos"],
             ].map(([value, label]) => (
               <div key={value} className={`cl-fp ${filter === value ? "act" : ""}`} onClick={() => setFilter(value)}>{label}</div>
             ))}
@@ -148,14 +165,21 @@ function ClientsPage() {
           <div className="cl-list-body">
             {filtered.map((client) => (
               <div key={client.id} className={`cl-item ${selected?.id === client.id ? "act" : ""}`} onClick={() => setSelectedClientId(client.id)}>
-                <div className="cl-av" style={{ background: client.color }}>{client.initials}</div>
+                <div className="cl-av" style={{ background: client.color || "#2A7A50" }}>
+                  {client.initials || client.name?.slice(0, 2).toUpperCase()}
+                </div>
                 <div className="cl-info">
                   <div className="cl-name">{client.name}</div>
-                  <div className="cl-sub">{client.email}</div>
+                  <div className="cl-sub">{client.email || "Sin correo"}</div>
                 </div>
                 <div className="cl-type-chip chip ch-lo">{client.type}</div>
               </div>
             ))}
+            {clients.length === 0 && (
+              <div style={{ padding: "24px 16px", textAlign: "center", color: "var(--mu)", fontSize: ".8rem" }}>
+                Sin clientes aún. Crea el primero.
+              </div>
+            )}
           </div>
         </div>
 
@@ -163,10 +187,12 @@ function ClientsPage() {
           {selected ? (
             <>
               <div className="cl-det-hd">
-                <div className="cl-det-av" style={{ background: selected.color }}>{selected.initials}</div>
+                <div className="cl-det-av" style={{ background: selected.color || "#2A7A50" }}>
+                  {selected.initials || selected.name?.slice(0, 2).toUpperCase()}
+                </div>
                 <div style={{ flex: 1 }}>
                   <div className="cl-det-nm">{selected.name}</div>
-                  <div className="cl-det-sub">{selected.email} · {selected.phone}</div>
+                  <div className="cl-det-sub">{selected.email || "Sin correo"} · {selected.phone || "Sin teléfono"}</div>
                 </div>
                 <button className="btn-s" style={{ padding: "6px 12px", fontSize: ".76rem" }} onClick={() => { setEditingClient(selected); openModal("clientModal"); }}>
                   Editar
@@ -174,31 +200,49 @@ function ClientsPage() {
               </div>
 
               <div className="cl-det-body">
-                <div className="owner-card">
-                  <div className="ow-av" style={{ background: "#183024" }}>{selected.seller?.slice(0, 2).toUpperCase()}</div>
-                  <div>
-                    <div className="ow-nm">{selected.seller}</div>
-                    <div className="ow-mt">Asesor asignado</div>
+                {sellerName !== "—" && (
+                  <div className="owner-card">
+                    <div className="ow-av" style={{ background: "#183024" }}>{sellerInitials}</div>
+                    <div>
+                      <div className="ow-nm">{sellerName}</div>
+                      <div className="ow-mt">Asesor asignado</div>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div className="price-row">
-                  <div className="price-c">
-                    <div className="pc-l">Mensualidad</div>
-                    <div className="pc-v">{currency(selected.monthlyAmt)}</div>
+                {summary && (
+                  <div className="price-row">
+                    <div className="price-c">
+                      <div className="pc-l">Total pagado</div>
+                      <div className="pc-v">{currency(Number(summary.total_paid))}</div>
+                    </div>
+                    <div className="price-c">
+                      <div className="pc-l">Saldo pendiente</div>
+                      <div className="pc-v">{currency(Number(summary.balance))}</div>
+                    </div>
                   </div>
-                  <div className="price-c">
-                    <div className="pc-l">Avance</div>
-                    <div className="pc-v">{progress(selected.paidM, selected.totalM)}%</div>
-                  </div>
-                </div>
+                )}
 
                 <div className="d-sec">
                   <div className="sec-hd">Seguimiento</div>
-                  <div className="prog-bg"><div className="prog-fill" style={{ width: `${progress(selected.paidM, selected.totalM)}%` }} /></div>
-                  <div className="d-row"><span className="d-lbl">Pagos realizados</span><span className="d-val">{selected.paidM}</span></div>
-                  <div className="d-row"><span className="d-lbl">Total de pagos</span><span className="d-val">{selected.totalM}</span></div>
-                  <div className="d-row"><span className="d-lbl">Notas</span><span className="d-val">{selected.notes || "Sin notas"}</span></div>
+                  {summary ? (
+                    <>
+                      <div className="d-row"><span className="d-lbl">Contratos activos</span><span className="d-val">{summary.contracts_count}</span></div>
+                      <div className="d-row"><span className="d-lbl">Pagos vencidos</span><span className="d-val">{summary.overdue_payments}</span></div>
+                      <div className="d-row"><span className="d-lbl">Pagos pendientes</span><span className="d-val">{summary.pending_payments}</span></div>
+                      {summary.next_payment && (
+                        <div className="d-row">
+                          <span className="d-lbl">Próximo pago</span>
+                          <span className="d-val">{summary.next_payment.due_date} · {currency(Number(summary.next_payment.amount))}</span>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="d-row"><span className="d-lbl">Cargando resumen...</span></div>
+                  )}
+                  {selected.notes && (
+                    <div className="d-row"><span className="d-lbl">Notas</span><span className="d-val">{selected.notes}</span></div>
+                  )}
                 </div>
 
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
@@ -213,20 +257,6 @@ function ClientsPage() {
                   {selected.status === "overdue" ? (
                     <button className="btn-dan" style={{ padding: "6px 12px", fontSize: ".76rem" }} onClick={() => sendReminder(selected.name)}>📲 Recordar</button>
                   ) : null}
-                </div>
-
-                <div className="d-sec">
-                  <div className="sec-hd">Contratos del cliente</div>
-                  {selectedContracts.length ? (
-                    selectedContracts.map((contract) => (
-                      <div key={contract.id} className="d-row">
-                        <span className="contract-badge" onClick={() => openContractCreate({ clientId: selected.id, lot: contract.lot })}>📄 {contract.number}</span>
-                        <span className="d-val">{currency(contract.amount)}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="d-row"><span className="d-lbl">Sin contratos registrados</span><span className="d-val">—</span></div>
-                  )}
                 </div>
 
                 <InlineDocumentsPanel entityType="client" entityId={selected.id} entityLabel={selected.name} />

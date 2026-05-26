@@ -1,17 +1,10 @@
+import { useAppContext } from "@/context/AppContext";
+import LoginScreen from "@/components/forms/LoginScreen";
+import AppRouter from "@/routes/AppRouter";
+
 function App() {
-  return (
-    <iframe
-      title="Ownterra"
-      src="/LoteManager_v32_rento.html?v=ownterra-v30-v1"
-      style={{
-        width: "100vw",
-        height: "100vh",
-        border: 0,
-        display: "block",
-        background: "#F4F1EB"
-      }}
-    />
-  );
+  const { currentUser } = useAppContext();
+  return currentUser ? <AppRouter /> : <LoginScreen />;
 }
 
 export default App;

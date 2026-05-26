@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
 import EmptyState from "@/components/ui/EmptyState";
 import InlineDocumentsPanel from "@/components/shared/InlineDocumentsPanel";
+import { lotService } from "@/services/lotService";
 import { currency } from "@/services/formatters";
 
 function monthlyEstimate(price) {
@@ -17,14 +19,28 @@ function FracsPage() {
   const [sectionFilter, setSectionFilter] = useState("");
   const [selectedLotId, setSelectedLotId] = useState(null);
 
-  const selectedFrac = fracs.find((frac) => frac.id === selectedFracId) || fracs[0];
+  const selectedFrac = fracs.find((f) => f.id === selectedFracId) || fracs[0] || null;
+
+  // Fetch lots for the selected inmueble
+  const { data: lotsData, isLoading: lotsLoading } = useQuery({
+    queryKey: ["lots", selectedFrac?.id],
+    queryFn: () => lotService.list({ inmueble_id: selectedFrac.id, limit: 200 }).then((r) => r.items),
+    enabled: !!selectedFrac?.id,
+  });
+  const lots = lotsData || [];
 
   useEffect(() => {
-    setSelectedLotId(selectedFrac?.lots[0]?.id || null);
-    setSectionFilter("");
+    setSelectedLotId(null);
     setStatusFilter("all");
     setSearch("");
+    setSectionFilter("");
   }, [selectedFrac?.id]);
+
+  useEffect(() => {
+    if (!selectedLotId && lots[0]) {
+      setSelectedLotId(lots[0].id);
+    }
+  }, [lots, selectedLotId]);
 
   if (!selectedFrac) {
     return (
@@ -41,14 +57,18 @@ function FracsPage() {
     );
   }
 
-  const sections = [...new Set(selectedFrac.lots.map((lot) => lot.section || "General"))];
-  const filteredLots = selectedFrac.lots.filter((lot) => {
+  const sections = [...new Set(lots.map((lot) => lot.section || "General"))];
+
+  const filteredLots = lots.filter((lot) => {
     const matchesStatus = statusFilter === "all" || lot.status === statusFilter;
     const matchesSection = !sectionFilter || (lot.section || "General") === sectionFilter;
     const matchesSearch = !search.trim() || `${lot.code} ${lot.section || ""}`.toLowerCase().includes(search.toLowerCase());
     return matchesStatus && matchesSection && matchesSearch;
   });
-  const selectedLot = filteredLots.find((lot) => lot.id === selectedLotId) || filteredLots[0] || selectedFrac.lots[0];
+
+  const selectedLot = filteredLots.find((lot) => lot.id === selectedLotId) || filteredLots[0] || null;
+  const price = Number(selectedLot?.price_contado || 0);
+  const area = Number(selectedLot?.area_m2 || 0);
 
   return (
     <div className="grid gap-4 xl:grid-cols-[320px_1fr]">
@@ -66,7 +86,9 @@ function FracsPage() {
               onClick={() => setSelectedFracId(frac.id)}
             >
               <div className="font-semibold text-[#1A1410]">{frac.name}</div>
-              <div className="mt-1 text-xs text-[#8C8070]">{frac.lots.length} lotes · {frac.createdAt}</div>
+              <div className="mt-1 text-xs text-[#8C8070]">
+                {frac.total_lots ?? 0} lotes · {frac.created_at ? new Date(frac.created_at).toLocaleDateString("es-MX") : ""}
+              </div>
             </button>
           ))}
         </div>
@@ -89,15 +111,15 @@ function FracsPage() {
           <div className="mt-4 grid grid-cols-3 gap-3">
             <div className="rounded-[22px] bg-[#FBF7F1] p-3">
               <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#8A7A69]">Disponibles</div>
-              <div className="mt-2 text-lg font-bold text-[#183024]">{selectedFrac.lots.filter((lot) => lot.status === "available").length}</div>
+              <div className="mt-2 text-lg font-bold text-[#183024]">{selectedFrac.available_lots ?? 0}</div>
             </div>
             <div className="rounded-[22px] bg-[#FBF7F1] p-3">
               <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#8A7A69]">Vendidos</div>
-              <div className="mt-2 text-lg font-bold text-[#16120F]">{selectedFrac.lots.filter((lot) => lot.status === "sold").length}</div>
+              <div className="mt-2 text-lg font-bold text-[#16120F]">{selectedFrac.sold_lots ?? 0}</div>
             </div>
             <div className="rounded-[22px] bg-[#FBF7F1] p-3">
               <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#8A7A69]">Reservados</div>
-              <div className="mt-2 text-lg font-bold text-[#16120F]">{selectedFrac.lots.filter((lot) => lot.status === "reserved").length}</div>
+              <div className="mt-2 text-lg font-bold text-[#16120F]">{selectedFrac.reserved_lots ?? 0}</div>
             </div>
           </div>
         </section>
@@ -108,7 +130,7 @@ function FracsPage() {
               <input
                 className="mobile-input"
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar lote o sección"
               />
               <select className="mobile-input" value={sectionFilter} onChange={(event) => setSectionFilter(event.target.value)}>
@@ -124,44 +146,55 @@ function FracsPage() {
                 ["all", "Todos"],
                 ["available", "🟢 Disponible"],
                 ["sold", "🔴 Vendido"],
-                ["reserved", "🟡 Reservado"]
+                ["reserved", "🟡 Reservado"],
               ].map(([value, label]) => (
-                <button key={value} className={`mobile-chip ${statusFilter === value ? "is-active" : ""}`} onClick={() => setStatusFilter(value)}>
+                <button
+                  key={value}
+                  className={`mobile-chip ${statusFilter === value ? "is-active" : ""}`}
+                  onClick={() => setStatusFilter(value)}
+                >
                   {label}
                 </button>
               ))}
             </div>
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {filteredLots.map((lot) => (
-                <button
-                  key={lot.id}
-                  className={`rounded-[22px] border p-4 text-left transition ${
-                    selectedLot?.id === lot.id
-                      ? "border-[#183024] bg-[#183024] text-[#F7F3ED]"
-                      : "border-[#E2D8CB] bg-[#FBF7F1] text-[#16120F]"
-                  }`}
-                  onClick={() => setSelectedLotId(lot.id)}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-semibold">{lot.code}</div>
-                      <div className={`mt-1 text-xs ${selectedLot?.id === lot.id ? "text-white/58" : "text-[#7A6D5F]"}`}>
-                        {lot.section || "General"}
+            {lotsLoading ? (
+              <div className="mt-4 text-sm text-[#8A7A69]">Cargando lotes...</div>
+            ) : (
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {filteredLots.map((lot) => (
+                  <button
+                    key={lot.id}
+                    className={`rounded-[22px] border p-4 text-left transition ${
+                      selectedLot?.id === lot.id
+                        ? "border-[#183024] bg-[#183024] text-[#F7F3ED]"
+                        : "border-[#E2D8CB] bg-[#FBF7F1] text-[#16120F]"
+                    }`}
+                    onClick={() => setSelectedLotId(lot.id)}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-semibold">{lot.code}</div>
+                        <div className={`mt-1 text-xs ${selectedLot?.id === lot.id ? "text-white/58" : "text-[#7A6D5F]"}`}>
+                          {lot.section || "General"}
+                        </div>
                       </div>
+                      <span className={`rounded-full px-3 py-1 text-[0.66rem] font-bold uppercase tracking-[0.14em] ${
+                        selectedLot?.id === lot.id ? "bg-white/12 text-white" : "bg-[#EDE3D3] text-[#183024]"
+                      }`}>
+                        {lot.status}
+                      </span>
                     </div>
-                    <span className={`rounded-full px-3 py-1 text-[0.66rem] font-bold uppercase tracking-[0.14em] ${
-                      selectedLot?.id === lot.id ? "bg-white/12 text-white" : "bg-[#EDE3D3] text-[#183024]"
-                    }`}>
-                      {lot.status}
-                    </span>
-                  </div>
-                  <div className={`mt-4 text-sm ${selectedLot?.id === lot.id ? "text-white/68" : "text-[#5F5346]"}`}>
-                    {lot.area} m² · {currency(lot.price)}
-                  </div>
-                </button>
-              ))}
-            </div>
+                    <div className={`mt-4 text-sm ${selectedLot?.id === lot.id ? "text-white/68" : "text-[#5F5346]"}`}>
+                      {lot.area_m2 ? `${lot.area_m2} m²` : "—"} · {lot.price_contado ? currency(Number(lot.price_contado)) : "Sin precio"}
+                    </div>
+                  </button>
+                ))}
+                {filteredLots.length === 0 && (
+                  <div className="col-span-2 py-8 text-center text-sm text-[#8A7A69]">Sin lotes que coincidan</div>
+                )}
+              </div>
+            )}
           </div>
 
           {selectedLot ? (
@@ -181,26 +214,36 @@ function FracsPage() {
                 <div className="mt-4 grid grid-cols-2 gap-3">
                   <div className="rounded-[22px] bg-[#FBF7F1] p-3">
                     <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#8A7A69]">Superficie</div>
-                    <div className="mt-2 text-lg font-bold text-[#16120F]">{selectedLot.area} m²</div>
+                    <div className="mt-2 text-lg font-bold text-[#16120F]">{area ? `${area} m²` : "—"}</div>
                   </div>
                   <div className="rounded-[22px] bg-[#FBF7F1] p-3">
-                    <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#8A7A69]">Precio</div>
-                    <div className="mt-2 text-lg font-bold text-[#183024]">{currency(selectedLot.price)}</div>
+                    <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#8A7A69]">Precio contado</div>
+                    <div className="mt-2 text-lg font-bold text-[#183024]">{price ? currency(price) : "—"}</div>
                   </div>
-                  <div className="rounded-[22px] bg-[#FBF7F1] p-3">
-                    <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#8A7A69]">Mensualidad aprox.</div>
-                    <div className="mt-2 text-lg font-bold text-[#16120F]">{currency(monthlyEstimate(selectedLot.price))}</div>
-                  </div>
-                  <div className="rounded-[22px] bg-[#FBF7F1] p-3">
-                    <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#8A7A69]">Precio / m²</div>
-                    <div className="mt-2 text-lg font-bold text-[#16120F]">{currency(Math.round(selectedLot.price / Math.max(selectedLot.area, 1)))}</div>
-                  </div>
+                  {selectedLot.price_financiado && (
+                    <div className="rounded-[22px] bg-[#FBF7F1] p-3">
+                      <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#8A7A69]">Precio financiado</div>
+                      <div className="mt-2 text-lg font-bold text-[#16120F]">{currency(Number(selectedLot.price_financiado))}</div>
+                    </div>
+                  )}
+                  {price > 0 && (
+                    <div className="rounded-[22px] bg-[#FBF7F1] p-3">
+                      <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#8A7A69]">Mensualidad aprox.</div>
+                      <div className="mt-2 text-lg font-bold text-[#16120F]">{currency(monthlyEstimate(price))}</div>
+                    </div>
+                  )}
+                  {price > 0 && area > 0 && (
+                    <div className="rounded-[22px] bg-[#FBF7F1] p-3">
+                      <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#8A7A69]">Precio / m²</div>
+                      <div className="mt-2 text-lg font-bold text-[#16120F]">{currency(Math.round(price / area))}</div>
+                    </div>
+                  )}
                 </div>
               </section>
 
               <InlineDocumentsPanel
                 entityType="lot"
-                entityId={selectedLot.code}
+                entityId={selectedLot.id}
                 entityLabel={`${selectedFrac.name} · ${selectedLot.code}`}
               />
             </div>

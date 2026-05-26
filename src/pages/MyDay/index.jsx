@@ -1,20 +1,33 @@
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
+import { activityService } from "@/services/activityService";
 import { compactCurrency, currency, dateLabel, relativeDays } from "@/services/formatters";
 
 function MyDayPage() {
   const navigate = useNavigate();
   const { currentUser, clients, contracts, payments, documents } = useAppContext();
 
+  const { data: recentActivity = [] } = useQuery({
+    queryKey: ["activity-recent"],
+    queryFn: activityService.recent,
+    staleTime: 60_000,
+  });
+
+  const teamRevenue = payments
+    .filter((p) => p.status === "paid")
+    .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+
   const overdue = payments.filter((payment) => payment.status === "overdue");
   const weekDue = payments.filter((payment) => {
-    const days = relativeDays(payment.dueDate);
+    const days = relativeDays(payment.due_date);
     return days >= 0 && days <= 7;
   });
   const missingDocs = contracts.filter(
-    (contract) => !documents.some((document) => document.contractId === contract.id)
+    (contract) => !documents.some(
+      (doc) => doc.entity_type === "contract" && String(doc.entity_id) === String(contract.id)
+    )
   );
-  const teamRevenue = clients.reduce((sum, client) => sum + client.monthlyAmt * client.paidM, 0);
 
   const actions = [
     {
@@ -22,37 +35,39 @@ function MyDayPage() {
       description: "Prioriza cobranza con clientes que ya cruzaron la fecha límite.",
       tone: "urgent",
       action: "Ver pagos",
-      onClick: () => navigate("/pagos")
+      onClick: () => navigate("/pagos"),
     },
     {
       title: `${weekDue.length} vencimientos en la próxima semana`,
       description: "Anticipa recordatorios para sostener la cobranza proyectada.",
       tone: "warn",
       action: "Planificar",
-      onClick: () => navigate("/pagos")
+      onClick: () => navigate("/pagos"),
     },
     {
       title: `${missingDocs.length} contratos aún sin expediente documental`,
       description: "Completa documentación antes del siguiente corte operativo.",
       tone: "info",
       action: "Revisar",
-      onClick: () => navigate("/documentos")
-    }
+      onClick: () => navigate("/documentos"),
+    },
   ];
 
-  const activity = [
-    ...payments
-      .filter((payment) => payment.status === "paid")
-      .slice(0, 3)
-      .map((payment) => ({
-        label: `Pago aplicado · cuota ${payment.cuota}`,
-        meta: `${payment.contractId} · ${currency(payment.amount)}`
-      })),
-    ...contracts.slice(0, 2).map((contract) => ({
-      label: `Contrato firmado · ${contract.number}`,
-      meta: `${contract.lot} · ${dateLabel(contract.date)}`
-    }))
-  ];
+  const activity = recentActivity.length
+    ? recentActivity.slice(0, 8).map((log) => ({
+        label: log.description || `${log.action} · ${log.entity_type}`,
+        meta: `${log.user?.name || "—"} · ${log.relative_time}`,
+      }))
+    : [
+        ...payments.filter((p) => p.status === "paid").slice(0, 3).map((payment) => ({
+          label: `Pago aplicado · cuota ${payment.installment_n}`,
+          meta: `${payment.contract?.contract_number || "—"} · ${currency(payment.amount)}`,
+        })),
+        ...contracts.slice(0, 2).map((contract) => ({
+          label: `Contrato firmado · ${contract.contract_number}`,
+          meta: `${contract.lot?.code || "—"} · ${dateLabel(contract.contract_date)}`,
+        })),
+      ];
 
   return (
     <div className="space-y-4">
@@ -75,7 +90,9 @@ function MyDayPage() {
               </div>
               <div className="rounded-2xl border border-line bg-[#f0ede5] px-4 py-3">
                 <div className="text-xs uppercase tracking-[0.2em] text-[#8C8070]">Cobranza semanal</div>
-                <div className="mt-2 text-2xl font-bold text-[#2A7A50]">{compactCurrency(weekDue.reduce((sum, item) => sum + item.amount, 0))}</div>
+                <div className="mt-2 text-2xl font-bold text-[#2A7A50]">
+                  {compactCurrency(weekDue.reduce((sum, item) => sum + Number(item.amount || 0), 0))}
+                </div>
               </div>
             </div>
           </div>
@@ -130,12 +147,12 @@ function MyDayPage() {
             {weekDue.slice(0, 5).map((payment) => (
               <div key={payment.id} className="flex items-center justify-between rounded-xl border border-line bg-[#fffdf8] px-4 py-3">
                 <div>
-                  <div className="text-sm font-semibold text-[#1A1410]">Cuota {payment.cuota} · {payment.contractId}</div>
-                  <div className="text-xs text-[#8C8070]">{dateLabel(payment.dueDate)}</div>
+                  <div className="text-sm font-semibold text-[#1A1410]">Cuota {payment.installment_n} · {payment.contract?.contract_number || "—"}</div>
+                  <div className="text-xs text-[#8C8070]">{dateLabel(payment.due_date)}</div>
                 </div>
                 <div className="text-right">
                   <div className="text-sm font-bold text-[#2A7A50]">{currency(payment.amount)}</div>
-                  <div className="text-xs text-[#8C8070]">{relativeDays(payment.dueDate)} días</div>
+                  <div className="text-xs text-[#8C8070]">{relativeDays(payment.due_date)} días</div>
                 </div>
               </div>
             ))}
@@ -147,13 +164,17 @@ function MyDayPage() {
             <div className="card-title">Pulso comercial</div>
           </div>
           <div className="card-body space-y-3">
-            {[...new Set(clients.map((client) => client.seller))].map((seller) => {
-              const sellerClients = clients.filter((client) => client.seller === seller);
+            {[...new Set(clients.map((client) => client.type || "cliente"))].map((type) => {
+              const typeClients = clients.filter((c) => (c.type || "cliente") === type);
+              const typeRevenue = payments
+                .filter((p) => p.status === "paid" && typeClients.some((c) => String(c.id) === String(p.client?.id)))
+                .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+              const label = type === "buyer" ? "Compradores" : type === "lead" ? "Prospectos" : type;
               return (
-                <div key={seller} className="rounded-xl border border-line bg-[#fffdf8] px-4 py-3">
-                  <div className="text-sm font-semibold text-[#1A1410]">{seller}</div>
+                <div key={type} className="rounded-xl border border-line bg-[#fffdf8] px-4 py-3">
+                  <div className="text-sm font-semibold text-[#1A1410]">{label}</div>
                   <div className="mt-1 text-xs text-[#8C8070]">
-                    {sellerClients.length} clientes · {compactCurrency(sellerClients.reduce((sum, client) => sum + client.monthlyAmt * client.paidM, 0))}
+                    {typeClients.length} clientes · {compactCurrency(typeRevenue)}
                   </div>
                 </div>
               );

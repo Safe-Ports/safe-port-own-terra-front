@@ -4,32 +4,24 @@ import Modal from "@/components/ui/Modal";
 import { currency, dateLabel, progress } from "@/services/formatters";
 
 function ClientReportModal() {
-  const {
-    ui,
-    clients,
-    contracts,
-    payments,
-    reportClientId,
-    closeClientReport
-  } = useAppContext();
+  const { ui, clients, contracts, payments, reportClientId, closeClientReport } = useAppContext();
 
   const data = useMemo(() => {
     const client = clients.find((item) => item.id === reportClientId);
     if (!client) return null;
-    const clientContracts = contracts.filter((item) => item.clientId === client.id);
-    const clientPayments = payments.filter((item) => item.clientId === client.id);
-    const totalInvestment = clientContracts.reduce((sum, item) => sum + item.amount, 0);
+    const clientContracts = contracts.filter((c) => String(c.client?.id) === String(client.id));
+    const clientPayments = payments.filter((p) => String(p.client?.id) === String(client.id));
+    const totalInvestment = clientContracts.reduce((sum, c) => sum + Number(c.amount || 0), 0);
     const totalPaid = clientPayments
-      .filter((item) => item.status === "paid")
-      .reduce((sum, item) => sum + item.amount, 0);
-
+      .filter((p) => p.status === "paid")
+      .reduce((sum, p) => sum + Number(p.amount || 0), 0);
     return {
       client,
       clientContracts,
       clientPayments,
       totalInvestment,
       totalPaid,
-      balance: Math.max(0, totalInvestment - totalPaid)
+      balance: Math.max(0, totalInvestment - totalPaid),
     };
   }, [clients, contracts, payments, reportClientId]);
 
@@ -69,20 +61,26 @@ function ClientReportModal() {
         <div className="rounded-[24px] border border-[#E8DFD2] bg-[#FBF7F1] p-4">
           <div className="text-sm font-semibold text-[#16120F]">Contratos</div>
           <div className="mt-3 space-y-3">
-            {data.clientContracts.map((contract) => (
-              <div key={contract.id} className="rounded-[20px] border border-[#E8DFD2] bg-white p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-semibold text-[#16120F]">{contract.number}</div>
-                    <div className="mt-1 text-xs text-[#7E7061]">{contract.lot} · {dateLabel(contract.date)}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-bold text-[#183024]">{currency(contract.amount)}</div>
-                    <div className="mt-1 text-xs text-[#7E7061]">{progress(contract.paidM, contract.totalM)}%</div>
+            {data.clientContracts.map((contract) => {
+              const paid = contract.payments_summary?.paid ?? 0;
+              const total = contract.payments_summary?.total ?? 0;
+              return (
+                <div key={contract.id} className="rounded-[20px] border border-[#E8DFD2] bg-white p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold text-[#16120F]">{contract.contract_number}</div>
+                      <div className="mt-1 text-xs text-[#7E7061]">
+                        {contract.lot?.code || "—"} · {dateLabel(contract.contract_date)}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-bold text-[#183024]">{currency(contract.amount)}</div>
+                      <div className="mt-1 text-xs text-[#7E7061]">{progress(paid, total)}%</div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -92,8 +90,8 @@ function ClientReportModal() {
             {data.clientPayments.slice(0, 12).map((payment) => (
               <div key={payment.id} className="flex items-center justify-between rounded-[20px] border border-[#E8DFD2] bg-white p-4">
                 <div>
-                  <div className="text-sm font-semibold text-[#16120F]">Cuota {payment.cuota}</div>
-                  <div className="mt-1 text-xs text-[#7E7061]">{dateLabel(payment.dueDate)}</div>
+                  <div className="text-sm font-semibold text-[#16120F]">Cuota {payment.installment_n}</div>
+                  <div className="mt-1 text-xs text-[#7E7061]">{dateLabel(payment.due_date)}</div>
                 </div>
                 <div className="text-right">
                   <div className="text-sm font-bold text-[#183024]">{currency(payment.amount)}</div>

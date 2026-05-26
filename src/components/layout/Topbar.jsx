@@ -1,4 +1,4 @@
-import { HiBars3, HiMagnifyingGlass } from "react-icons/hi2";
+import { HiBars3, HiBell, HiMagnifyingGlass } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
 
@@ -14,7 +14,8 @@ const titleMap = {
   "/pagos": "Control de Pagos",
   "/calculadora": "Calculadora de Amortización",
   "/alertas": "Alertas",
-  "/perfil": "Perfil"
+  "/perfil": "Perfil",
+  "/configuracion": "Configuración",
 };
 
 function Topbar({ pathname }) {
@@ -27,7 +28,9 @@ function Topbar({ pathname }) {
     startNewProject,
     draftProject,
     saveFrac,
-    openContractCreate
+    openContractCreate,
+    notificationCount,
+    markAllNotificationsRead,
   } = useAppContext();
   const draftLotCount = draftProject.sections.reduce((sum, section) => sum + section.lots.length, 0);
 
@@ -86,6 +89,19 @@ function Topbar({ pathname }) {
             ⬆ Subir Documento
           </button>
         ) : null}
+
+        <button
+          title="Notificaciones"
+          onClick={() => { markAllNotificationsRead(); navigate("/alertas"); }}
+          style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 8, border: "1px solid var(--bd)", background: "var(--sf2)", color: "var(--tx2)", cursor: "pointer" }}
+        >
+          <HiBell />
+          {notificationCount > 0 && (
+            <span style={{ position: "absolute", top: -4, right: -4, background: "var(--danger)", color: "#fff", fontSize: "0.55rem", fontWeight: 800, borderRadius: 999, minWidth: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px" }}>
+              {notificationCount > 99 ? "99+" : notificationCount}
+            </span>
+          )}
+        </button>
 
         <div className="hidden rounded-xl border border-line bg-[#f0ede5] px-3 py-2 md:block">
           <div className="text-[0.62rem] uppercase tracking-[0.2em] text-[#8C8070]">{currentUser?.role}</div>

@@ -10,7 +10,9 @@ const items = [
   { label: "Contratos", to: "/contratos", emoji: "📄", section: "Gestión" },
   { label: "Pagos", to: "/pagos", emoji: "💳", section: "Gestión" },
   { label: "Documentos", to: "/documentos", emoji: "📁", section: "Gestión" },
-  { label: "Calculadora", to: "/calculadora", emoji: "🧮", section: "Gestión" }
+  { label: "Calculadora", to: "/calculadora", emoji: "🧮", section: "Gestión" },
+  { label: "Alertas", to: "/alertas", emoji: "🔔", section: "Sistema" },
+  { label: "Configuración", to: "/configuracion", emoji: "⚙️", section: "Sistema" },
 ];
 
 function Logo() {
@@ -32,7 +34,7 @@ function Logo() {
 }
 
 function Sidebar() {
-  const { ui, closeSidebar, fracs, clients, payments, documents } = useAppContext();
+  const { ui, closeSidebar, fracs, clients, payments, documents, notificationCount } = useAppContext();
 
   let lastSection = "";
 
@@ -49,8 +51,9 @@ function Sidebar() {
             let badge = null;
             if (item.to === "/fraccionamientos" && fracs.length) badge = fracs.length;
             if (item.to === "/clientes" && clients.length) badge = clients.length;
-            if (item.to === "/pagos") badge = payments.filter((payment) => payment.status === "overdue").length;
+            if (item.to === "/pagos") badge = payments.filter((p) => p.status === "overdue").length;
             if (item.to === "/documentos" && documents.length) badge = documents.length;
+            if (item.to === "/alertas" && notificationCount > 0) badge = notificationCount;
 
             return (
               <div key={item.to}>
@@ -71,7 +74,9 @@ function Sidebar() {
           })}
         </div>
         <div className="sb-foot">
-          <div className="sb-foot-item">⚙️ &nbsp;Configuración</div>
+          <NavLink to="/perfil" onClick={closeSidebar} className="sb-foot-item" style={{ textDecoration: "none" }}>
+            👤 &nbsp;Perfil
+          </NavLink>
         </div>
       </aside>
     </>

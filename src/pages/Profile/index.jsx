@@ -1,11 +1,20 @@
-import { HiArrowDownTray, HiArrowLeftOnRectangle, HiDevicePhoneMobile, HiShieldCheck, HiSparkles } from "react-icons/hi2";
+import { HiArrowLeftOnRectangle, HiBuildingOffice2, HiCog6Tooth, HiShieldCheck } from "react-icons/hi2";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
 import { useDashboardQuery } from "@/hooks/queries/useAppQueries";
+import { orgService } from "@/services/orgService";
 import { compactCurrency } from "@/services/formatters";
 
 function ProfilePage() {
+  const navigate = useNavigate();
   const { currentUser, logout } = useAppContext();
   const { data } = useDashboardQuery();
+
+  const { data: org } = useQuery({
+    queryKey: ["organization"],
+    queryFn: orgService.get,
+  });
 
   return (
     <div className="space-y-4">
@@ -22,59 +31,56 @@ function ProfilePage() {
         <div className="mt-5 grid grid-cols-2 gap-3">
           <div className="rounded-[22px] bg-white/8 p-3">
             <div className="text-[0.62rem] uppercase tracking-[0.14em] text-white/55">Clientes</div>
-            <div className="mt-2 text-lg font-bold">{data?.totals.clients ?? 0}</div>
+            <div className="mt-2 text-lg font-bold">{data?.totals?.clients ?? 0}</div>
           </div>
           <div className="rounded-[22px] bg-white/8 p-3">
             <div className="text-[0.62rem] uppercase tracking-[0.14em] text-white/55">Cobranza</div>
-            <div className="mt-2 text-lg font-bold">{compactCurrency(data?.totals.paidRevenue ?? 0)}</div>
+            <div className="mt-2 text-lg font-bold">{compactCurrency(data?.totals?.paidRevenue ?? 0)}</div>
           </div>
         </div>
       </section>
 
-      <section className="rounded-[28px] border border-[#DED5C8] bg-white/88 p-4 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
-        <div className="text-sm font-bold uppercase tracking-[0.22em] text-[#7E7061]">Experiencia instalada</div>
-        <div className="mt-4 space-y-3">
-          {[
-            {
-              icon: HiDevicePhoneMobile,
-              title: "Safe areas listas",
-              description: "Viewport con `fit=cover`, barras inferiores adaptadas e interacción optimizada para iPhone y Android."
-            },
-            {
-              icon: HiArrowDownTray,
-              title: "PWA instalable",
-              description: "Manifest, auto update, iconos y modo standalone configurados para operar como app real."
-            },
-            {
-              icon: HiShieldCheck,
-              title: "Base de producción",
-              description: "React Query, Axios y estructura preparada para FastAPI y autenticación JWT."
-            }
-          ].map(({ icon: Icon, title, description }) => (
-            <div key={title} className="rounded-[22px] border border-[#E8DFD2] bg-[#FBF7F1] p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#EFE4D5] text-[#183024]">
-                  <Icon className="text-lg" />
-                </div>
-                <div>
-                  <div className="text-sm font-semibold text-[#16120F]">{title}</div>
-                  <div className="mt-1 text-sm leading-6 text-[#5F5346]">{description}</div>
-                </div>
+      {org && (
+        <section className="rounded-[28px] border border-[#DED5C8] bg-white/88 p-4 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
+          <div className="flex items-center gap-2">
+            <HiBuildingOffice2 className="text-xl text-[#183024]" />
+            <div className="text-sm font-bold uppercase tracking-[0.22em] text-[#7E7061]">Organización</div>
+          </div>
+          <div className="mt-4 space-y-2">
+            {[
+              ["Nombre", org.name],
+              ["Plan", org.plan],
+              ["Estado", org.subscription_status],
+              ["Correo", org.email || "—"],
+              ["Teléfono", org.phone || "—"],
+            ].map(([label, value]) => (
+              <div key={label} className="d-row">
+                <span className="d-lbl">{label}</span>
+                <span className="d-val">{value}</span>
               </div>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="rounded-[28px] border border-[#DED5C8] bg-white/88 p-4 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
         <div className="flex items-center gap-2">
-          <HiSparkles className="text-xl text-[#183024]" />
-          <div className="text-sm font-bold uppercase tracking-[0.22em] text-[#7E7061]">Roadmap</div>
+          <HiShieldCheck className="text-xl text-[#183024]" />
+          <div className="text-sm font-bold uppercase tracking-[0.22em] text-[#7E7061]">Acceso rápido</div>
         </div>
-        <div className="mt-4 space-y-3 text-sm text-[#5F5346]">
-          <div className="rounded-[22px] border border-[#E8DFD2] bg-[#FBF7F1] p-4">Conectar API FastAPI real para vendedores, clientes y documentos.</div>
-          <div className="rounded-[22px] border border-[#E8DFD2] bg-[#FBF7F1] p-4">Activar JWT, permisos por rol y sincronización offline avanzada.</div>
-          <div className="rounded-[22px] border border-[#E8DFD2] bg-[#FBF7F1] p-4">Añadir push notifications y recordatorios de cobranza instalados en pantalla principal.</div>
+        <div className="mt-4 space-y-3">
+          <button
+            className="flex w-full items-center gap-3 rounded-[22px] border border-[#E8DFD2] bg-[#FBF7F1] p-4 text-left"
+            onClick={() => navigate("/configuracion")}
+          >
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#EFE4D5] text-[#183024]">
+              <HiCog6Tooth className="text-lg" />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-[#16120F]">Configuración</div>
+              <div className="mt-1 text-xs text-[#5F5346]">Gestionar organización y usuarios del equipo</div>
+            </div>
+          </button>
         </div>
       </section>
 

@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
 import Modal from "@/components/ui/Modal";
 import { currency, progress } from "@/services/formatters";
+import { lotService } from "@/services/lotService";
+import { contractService } from "@/services/contractService";
 
 function ContractModal() {
   const { ui, closeModal, clients, editingContract, contractDraft, saveContract, deleteContract, resetContractDraft } = useAppContext();
@@ -15,6 +18,12 @@ function ContractModal() {
     paidM: 0,
     totalM: 96,
     notes: ""
+  });
+
+  const { data: availableLots = [] } = useQuery({
+    queryKey: ["lots", "available"],
+    queryFn: () => lotService.list({ status: "available", limit: 200 }).then((r) => r.items),
+    enabled: ui.contractModal && !editingContract,
   });
 
   useEffect(() => {
@@ -47,7 +56,7 @@ function ContractModal() {
         <>
           <button className="btn-s" onClick={() => { resetContractDraft(); closeModal("contractModal"); }}>Cancelar</button>
           {editingContract ? <button className="btn-dan" onClick={() => deleteContract(editingContract.id)}>🗑 Eliminar</button> : null}
-          <button className="btn-p" onClick={() => saveContract({ ...(editingContract || {}), ...form })}>✓ Registrar</button>
+          <button className="btn-p" onClick={() => saveContract({ ...(editingContract || {}), ...form, client_id: form.clientId, lot_id: Number(form.lot), contract_date: form.date, first_payment_date: form.date, total_months: form.totalM })}>✓ Registrar</button>
         </>
       }
     >
@@ -58,7 +67,12 @@ function ContractModal() {
       <div className="fr-row">
         <div className="fg" style={{ flex: 1 }}>
           <label className="fl">Propiedad / Lote</label>
-          <input className="fi" value={form.lot} onChange={(event) => setForm((prev) => ({ ...prev, lot: event.target.value }))} />
+          <select className="fi" value={form.lot} onChange={(event) => setForm((prev) => ({ ...prev, lot: event.target.value }))}>
+            <option value="">— Seleccionar lote —</option>
+            {availableLots.map((lot) => (
+              <option key={lot.id} value={lot.id}>{lot.code}{lot.inmueble_name ? ` · ${lot.inmueble_name}` : ""}</option>
+            ))}
+          </select>
         </div>
         <div className="fg" style={{ flex: 1 }}>
           <label className="fl">Cliente</label>
@@ -132,26 +146,29 @@ function SalesPage() {
               </tr>
             </thead>
             <tbody>
-              {contracts.length ? contracts.map((contract) => {
-                const client = clients.find((item) => item.id === contract.clientId);
-                return (
-                  <tr key={contract.id}>
-                    <td><span className="contract-badge" onClick={() => { setEditingContract(contract); openModal("contractModal"); }}>📄 {contract.number}</span></td>
-                    <td>{contract.type}</td>
-                    <td>{contract.lot}</td>
-                    <td>{client?.name || "—"}</td>
-                    <td>{currency(contract.amount)}</td>
-                    <td>{progress(contract.paidM, contract.totalM)}%</td>
-                    <td><span className={`pc-chip ${contract.type === "reserve" ? "pending" : "paid"}`}>{contract.type}</span></td>
-                    <td style={{ whiteSpace: "nowrap" }}>
-                      <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => { setEditingContract(contract); openModal("contractModal"); }}>Editar</button>{" "}
-                      <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => openDocumentUpload({ linkType: "contract", contractId: contract.id, clientId: contract.clientId, linkedId: contract.id })}>📁</button>{" "}
-                      <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => openClientReport(contract.clientId)}>🖨</button>{" "}
-                      <button className="btn-p" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => showToast(`Descargando ${contract.number}...`)}>⬇ PDF</button>
-                    </td>
-                  </tr>
-                );
-              }) : (
+              {contracts.length ? contracts.map((contract) => (
+                <tr key={contract.id}>
+                  <td>
+                    <span className="contract-badge" onClick={() => { setEditingContract(contract); openModal("contractModal"); }}>
+                      📄 {contract.contract_number}
+                    </span>
+                  </td>
+                  <td>{contract.type}</td>
+                  <td>{contract.lot?.code || "—"}</td>
+                  <td>{contract.client?.name || "—"}</td>
+                  <td>{currency(contract.amount)}</td>
+                  <td>{progress(contract.payments_summary?.paid ?? 0, contract.payments_summary?.total ?? 0)}%</td>
+                  <td>
+                    <span className={`pc-chip ${contract.type === "reserve" ? "pending" : "paid"}`}>{contract.status || contract.type}</span>
+                  </td>
+                  <td style={{ whiteSpace: "nowrap" }}>
+                    <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => { setEditingContract(contract); openModal("contractModal"); }}>Editar</button>{" "}
+                    <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => openDocumentUpload({ linkType: "contract", linkedId: contract.id })}>📁</button>{" "}
+                    <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => openClientReport(contract.client?.id)}>🖨</button>{" "}
+                    <button className="btn-p" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => { window.open(contractService.downloadPdf(contract.id), "_blank"); showToast(`Descargando ${contract.contract_number}...`); }}>⬇ PDF</button>
+                  </td>
+                </tr>
+              )) : (
                 <tr>
                   <td colSpan="8" style={{ textAlign: "center", padding: 24, color: "var(--mu)" }}>
                     Sin contratos. <a href="#" onClick={(event) => { event.preventDefault(); openContractCreate(); }} style={{ color: "var(--tan-dk)" }}>Generar el primero →</a>

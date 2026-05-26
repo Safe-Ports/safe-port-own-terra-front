@@ -1,6 +1,7 @@
 import {
   HiBellAlert,
   HiCalculator,
+  HiCog6Tooth,
   HiDocumentDuplicate,
   HiHome,
   HiMap,
@@ -17,13 +18,14 @@ export const routeMeta = {
   "/lotes": { title: "Lotes", icon: HiOutlineSquares2X2 },
   "/fraccionamientos": { title: "Fraccionamientos", icon: HiMap },
   "/clientes": { title: "Clientes", icon: HiOutlineUserGroup },
-  "/ventas": { title: "Ventas", icon: HiWallet },
+  "/ventas": { title: "Contratos", icon: HiWallet },
   "/contratos": { title: "Contratos", icon: HiWallet },
   "/documentos": { title: "Documentos", icon: HiDocumentDuplicate },
   "/alertas": { title: "Alertas", icon: HiBellAlert },
   "/pagos": { title: "Pagos", icon: HiBellAlert },
   "/calculadora": { title: "Calculadora", icon: HiCalculator },
-  "/perfil": { title: "Perfil", icon: HiUserCircle }
+  "/perfil": { title: "Perfil", icon: HiUserCircle },
+  "/configuracion": { title: "Configuración", icon: HiCog6Tooth },
 };
 
 export const desktopNav = [
@@ -36,7 +38,7 @@ export const desktopNav = [
   { path: "/documentos", label: "Documentos", icon: HiDocumentDuplicate },
   { path: "/pagos", label: "Pagos", icon: HiBellAlert },
   { path: "/calculadora", label: "Calculadora", icon: HiCalculator },
-  { path: "/perfil", label: "Perfil", icon: HiUserCircle }
+  { path: "/perfil", label: "Perfil", icon: HiUserCircle },
 ];
 
 export const mobileNav = [
@@ -45,7 +47,7 @@ export const mobileNav = [
   { path: "/lotes", label: "Lotes", icon: HiOutlineSquares2X2 },
   { path: "/clientes", label: "Clientes", icon: HiOutlineUserGroup },
   { path: "/pagos", label: "Pagos", icon: HiBellAlert },
-  { path: "/perfil", label: "Perfil", icon: HiUserCircle }
+  { path: "/perfil", label: "Perfil", icon: HiUserCircle },
 ];
 
 export const secondaryMobileRoutes = [
@@ -53,5 +55,7 @@ export const secondaryMobileRoutes = [
   { path: "/contratos", label: "Contratos", icon: HiWallet },
   { path: "/documentos", label: "Documentos", icon: HiDocumentDuplicate },
   { path: "/fraccionamientos", label: "Fraccionamientos", icon: HiMap },
-  { path: "/calculadora", label: "Calculadora", icon: HiCalculator }
+  { path: "/calculadora", label: "Calculadora", icon: HiCalculator },
+  { path: "/alertas", label: "Alertas", icon: HiBellAlert },
+  { path: "/configuracion", label: "Configuración", icon: HiCog6Tooth },
 ];

@@ -3,33 +3,44 @@ import { useAppContext } from "@/context/AppContext";
 import Modal from "@/components/ui/Modal";
 import { currency, dateLabel, relativeDays } from "@/services/formatters";
 
+const STATUS_LABEL = { pending: "Pendiente", paid: "Pagado", overdue: "Vencido" };
+
 function PaymentModal() {
   const { ui, closeModal, clients, contracts, editingPayment, paymentDraft, savePayment, deletePayment, resetPaymentDraft } = useAppContext();
-  const [form, setForm] = useState(
-    editingPayment || paymentDraft || {
-      clientId: clients[0]?.id || "",
-      contractId: contracts[0]?.id || "",
-      cuota: 1,
-      amount: 0,
-      dueDate: new Date().toISOString().split("T")[0],
-      paidDate: "",
-      status: "pending",
-      notes: ""
-    }
-  );
+  const [form, setForm] = useState({
+    clientId: clients[0]?.id || "",
+    contractId: contracts[0]?.id || "",
+    cuota: 1,
+    amount: 0,
+    dueDate: new Date().toISOString().split("T")[0],
+    paidDate: "",
+    status: "pending",
+    notes: ""
+  });
 
   useEffect(() => {
     setForm(
-      editingPayment || paymentDraft || {
-        clientId: clients[0]?.id || "",
-        contractId: contracts[0]?.id || "",
-        cuota: 1,
-        amount: 0,
-        dueDate: new Date().toISOString().split("T")[0],
-        paidDate: "",
-        status: "pending",
-        notes: ""
-      }
+      editingPayment
+        ? {
+            clientId: editingPayment.client?.id || clients[0]?.id || "",
+            contractId: editingPayment.contract?.id || contracts[0]?.id || "",
+            cuota: editingPayment.installment_n || 1,
+            amount: editingPayment.amount || 0,
+            dueDate: editingPayment.due_date || new Date().toISOString().split("T")[0],
+            paidDate: editingPayment.paid_date || "",
+            status: editingPayment.status || "pending",
+            notes: ""
+          }
+        : paymentDraft || {
+            clientId: clients[0]?.id || "",
+            contractId: contracts[0]?.id || "",
+            cuota: 1,
+            amount: 0,
+            dueDate: new Date().toISOString().split("T")[0],
+            paidDate: "",
+            status: "pending",
+            notes: ""
+          }
     );
   }, [clients, contracts, editingPayment, paymentDraft, ui.paymentModal]);
 
@@ -79,7 +90,7 @@ function PaymentModal() {
             <label className="fl">Contrato</label>
             <select className="fi" value={form.contractId} onChange={(event) => setForm((prev) => ({ ...prev, contractId: event.target.value }))}>
               {contracts.map((contract) => (
-                <option key={contract.id} value={contract.id}>{contract.number}</option>
+                <option key={contract.id} value={contract.id}>{contract.contract_number}</option>
               ))}
             </select>
           </div>
@@ -118,13 +129,13 @@ function PaymentModal() {
 }
 
 function PaymentsPage() {
-  const { payments, clients, contracts, openModal, setEditingPayment, quickPay, sendReminder, openPaymentCreate } = useAppContext();
+  const { payments, openModal, setEditingPayment, quickPay, sendReminder, openPaymentCreate } = useAppContext();
   const [filter, setFilter] = useState("all");
 
   const normalized = payments
     .map((payment) => ({
       ...payment,
-      days: relativeDays(payment.dueDate)
+      days: relativeDays(payment.due_date)
     }))
     .sort((left, right) => left.days - right.days);
 
@@ -140,7 +151,7 @@ function PaymentsPage() {
     ["Pendientes", normalized.filter((item) => item.status === "pending").length],
     ["Vencidos", normalized.filter((item) => item.status === "overdue").length],
     ["Pagados", normalized.filter((item) => item.status === "paid").length],
-    ["Cobro 30 días", currency(upcoming.reduce((sum, item) => sum + item.amount, 0))],
+    ["Cobro 30 días", currency(upcoming.reduce((sum, item) => sum + Number(item.amount || 0), 0))],
     ["Tickets", normalized.length]
   ];
 
@@ -168,10 +179,7 @@ function PaymentsPage() {
           </button>
         ))}
         <div className="spacer" />
-        <button
-          className="btn-p"
-          onClick={() => openPaymentCreate()}
-        >
+        <button className="btn-p" onClick={() => openPaymentCreate()}>
           + Registrar Pago
         </button>
       </div>
@@ -196,48 +204,44 @@ function PaymentsPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((payment) => {
-                const client = clients.find((item) => item.id === payment.clientId);
-                const contract = contracts.find((item) => item.id === payment.contractId);
-                return (
-                  <tr key={payment.id} className={payment.status === "overdue" ? "pago-row-overdue" : payment.days <= 7 && payment.days >= 0 ? "pago-row-upcoming" : ""}>
-                    <td>{client?.name || "Sin cliente"}</td>
-                    <td>{contract?.number || payment.contractId}</td>
-                    <td>{payment.cuota}</td>
-                    <td>{currency(payment.amount)}</td>
-                    <td>{dateLabel(payment.dueDate)}</td>
-                    <td>
-                      <span className={`pc-chip ${payment.status}`}>{payment.status}</span>
-                    </td>
-                    <td>
-                      <span className={`days-badge ${payment.status === "paid" ? "paid" : payment.days < 0 ? "overdue" : payment.days <= 7 ? "upcoming" : "ok"}`}>
-                        {payment.status === "paid" ? "Aplicado" : `${payment.days} días`}
-                      </span>
-                    </td>
-                    <td>
-                      {payment.status !== "paid" ? (
-                        <button className="btn-p !px-3 !py-2 !text-xs" onClick={() => quickPay(payment.id)}>
-                          Pagar
-                        </button>
-                      ) : null}
-                      <button
-                        className="btn-s !ml-2"
-                        onClick={() => {
-                          setEditingPayment(payment);
-                          openModal("paymentModal");
-                        }}
-                      >
-                        Editar
+              {filtered.map((payment) => (
+                <tr key={payment.id} className={payment.status === "overdue" ? "pago-row-overdue" : payment.days <= 7 && payment.days >= 0 ? "pago-row-upcoming" : ""}>
+                  <td>{payment.client?.name || "—"}</td>
+                  <td>{payment.contract?.contract_number || "—"}</td>
+                  <td>{payment.installment_n}</td>
+                  <td>{currency(payment.amount)}</td>
+                  <td>{dateLabel(payment.due_date)}</td>
+                  <td>
+                    <span className={`pc-chip ${payment.status}`}>{STATUS_LABEL[payment.status] || payment.status}</span>
+                  </td>
+                  <td>
+                    <span className={`days-badge ${payment.status === "paid" ? "paid" : payment.days < 0 ? "overdue" : payment.days <= 7 ? "upcoming" : "ok"}`}>
+                      {payment.status === "paid" ? "Aplicado" : `${payment.days} días`}
+                    </span>
+                  </td>
+                  <td>
+                    {payment.status !== "paid" ? (
+                      <button className="btn-p !px-3 !py-2 !text-xs" onClick={() => quickPay(payment.id, Number(payment.amount))}>
+                        Pagar
                       </button>
-                      {payment.status === "overdue" ? (
-                        <button className="btn-dan !ml-2 !px-3 !py-2 !text-xs" onClick={() => sendReminder(client?.name || "cliente")}>
-                          Recordar
-                        </button>
-                      ) : null}
-                    </td>
-                  </tr>
-                );
-              })}
+                    ) : null}
+                    <button
+                      className="btn-s !ml-2"
+                      onClick={() => {
+                        setEditingPayment(payment);
+                        openModal("paymentModal");
+                      }}
+                    >
+                      Editar
+                    </button>
+                    {payment.status === "overdue" ? (
+                      <button className="btn-dan !ml-2 !px-3 !py-2 !text-xs" onClick={() => sendReminder(payment)}>
+                        Recordar
+                      </button>
+                    ) : null}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -248,21 +252,18 @@ function PaymentsPage() {
           <div className="card-title">📅 Próximos vencimientos — 30 días</div>
         </div>
         <div className="card-body space-y-3">
-          {upcoming.slice(0, 8).map((payment) => {
-            const client = clients.find((item) => item.id === payment.clientId);
-            return (
-              <div key={payment.id} className="flex items-center justify-between rounded-xl border border-line bg-[#fffdf8] px-4 py-3">
-                <div>
-                  <div className="text-sm font-semibold text-[#1A1410]">{client?.name || "Cliente"} · cuota {payment.cuota}</div>
-                  <div className="text-xs text-[#8C8070]">{payment.contractId} · {dateLabel(payment.dueDate)}</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-bold text-[#2A7A50]">{currency(payment.amount)}</div>
-                  <div className="text-xs text-[#8C8070]">{payment.days} días</div>
-                </div>
+          {upcoming.slice(0, 8).map((payment) => (
+            <div key={payment.id} className="flex items-center justify-between rounded-xl border border-line bg-[#fffdf8] px-4 py-3">
+              <div>
+                <div className="text-sm font-semibold text-[#1A1410]">{payment.client?.name || "Cliente"} · cuota {payment.installment_n}</div>
+                <div className="text-xs text-[#8C8070]">{payment.contract?.contract_number || "—"} · {dateLabel(payment.due_date)}</div>
               </div>
-            );
-          })}
+              <div className="text-right">
+                <div className="text-sm font-bold text-[#2A7A50]">{currency(payment.amount)}</div>
+                <div className="text-xs text-[#8C8070]">{payment.days} días</div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 

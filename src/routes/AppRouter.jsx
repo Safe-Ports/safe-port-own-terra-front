@@ -13,6 +13,7 @@ const AlertsPage = lazy(() => import("@/pages/Alerts"));
 const PaymentsPage = lazy(() => import("@/pages/Payments"));
 const CalculatorPage = lazy(() => import("@/pages/Calculator"));
 const ProfilePage = lazy(() => import("@/pages/Profile"));
+const SettingsPage = lazy(() => import("@/pages/Settings"));
 
 function PageLoader() {
   return (
@@ -42,6 +43,7 @@ function AppRouter() {
           <Route path="/pagos" element={<PaymentsPage />} />
           <Route path="/calculadora" element={<CalculatorPage />} />
           <Route path="/perfil" element={<ProfilePage />} />
+          <Route path="/configuracion" element={<SettingsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

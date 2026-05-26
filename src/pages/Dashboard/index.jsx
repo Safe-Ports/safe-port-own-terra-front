@@ -4,10 +4,6 @@ import { useAppContext } from "@/context/AppContext";
 import { useDashboardQuery } from "@/hooks/queries/useAppQueries";
 import { compactCurrency, currency, progress } from "@/services/formatters";
 
-function monthLabel(dateValue) {
-  return new Intl.DateTimeFormat("es-MX", { month: "short" }).format(new Date(`${dateValue}T12:00:00`));
-}
-
 function DashboardPage() {
   const navigate = useNavigate();
   const { clients, contracts, payments } = useAppContext();
@@ -23,16 +19,16 @@ function DashboardPage() {
     }));
 
     contracts.forEach((contract) => {
-      const date = new Date(`${contract.date}T12:00:00`);
+      const date = new Date(`${contract.contract_date}T12:00:00`);
       if (date.getFullYear() === year) {
         stats[date.getMonth()].sales += 1;
       }
     });
 
     payments.forEach((payment) => {
-      const date = payment.paidDate ? new Date(`${payment.paidDate}T12:00:00`) : null;
+      const date = payment.paid_date ? new Date(`${payment.paid_date}T12:00:00`) : null;
       if (date && date.getFullYear() === year && payment.status === "paid") {
-        stats[date.getMonth()].revenue += payment.amount;
+        stats[date.getMonth()].revenue += Number(payment.amount || 0);
       }
     });
 
@@ -41,20 +37,20 @@ function DashboardPage() {
 
   const maxSales = Math.max(...monthlyStats.map((item) => item.sales), 1);
   const maxRevenue = Math.max(...monthlyStats.map((item) => item.revenue), 1);
-  const topClients = [...clients]
-    .sort((left, right) => right.paidM - left.paidM)
-    .slice(0, 5);
+  const topClients = [...clients].slice(0, 5);
 
   if (!data) return null;
+
+  const { totals, alerts, recentContracts } = data;
 
   return (
     <div>
       <div className="kpi-grid">
         {[
-          { className: "k1", icon: "💰", value: compactCurrency(data.totals.paidRevenue), label: "Cobranza", sub: "Ingresos aplicados" },
-          { className: "k2", icon: "🏗️", value: data.totals.availableLots, label: "Inventario", sub: `${data.totals.totalLots} lotes totales` },
-          { className: "k3", icon: "👥", value: data.totals.clients, label: "Clientes", sub: `${data.totals.contracts} contratos` },
-          { className: "k4", icon: "⚠️", value: data.alerts.length, label: "Alertas", sub: "Pendientes críticos" }
+          { className: "k1", icon: "💰", value: compactCurrency(totals.paidRevenue), label: "Cobranza", sub: "Ingresos aplicados" },
+          { className: "k2", icon: "🏗️", value: totals.availableLots, label: "Inventario", sub: `${totals.totalLots} lotes totales` },
+          { className: "k3", icon: "👥", value: totals.clients, label: "Clientes", sub: `${totals.contracts} contratos` },
+          { className: "k4", icon: "⚠️", value: alerts.length, label: "Alertas", sub: "Pendientes críticos" }
         ].map((kpi) => (
           <div key={kpi.label} className={`kpi ${kpi.className}`}>
             <div className="kpi-ico">{kpi.icon}</div>
@@ -106,11 +102,11 @@ function DashboardPage() {
             <div style={{ display: "flex", gap: 10, marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--bd)" }}>
               <div className="price-c">
                 <div className="pc-l">Ventas cerradas</div>
-                <div className="pc-v">{data.totals.contracts}</div>
+                <div className="pc-v">{totals.contracts}</div>
               </div>
               <div className="price-c">
                 <div className="pc-l">Cobro abierto</div>
-                <div className="pc-v">{compactCurrency(data.totals.openRevenue)}</div>
+                <div className="pc-v">{compactCurrency(totals.openRevenue)}</div>
               </div>
             </div>
           </div>
@@ -133,19 +129,19 @@ function DashboardPage() {
                       fill="none"
                       stroke="var(--forest)"
                       strokeWidth="12"
-                      strokeDasharray={`${(data.totals.availableLots / Math.max(data.totals.totalLots, 1)) * 214} 214`}
+                      strokeDasharray={`${(totals.availableLots / Math.max(totals.totalLots, 1)) * 214} 214`}
                       strokeLinecap="round"
                     />
                   </svg>
                   <div className="donut-center">
-                    <div className="donut-pct">{progress(data.totals.availableLots, data.totals.totalLots)}%</div>
+                    <div className="donut-pct">{progress(totals.availableLots, totals.totalLots)}%</div>
                     <div className="donut-lbl">Disponible</div>
                   </div>
                 </div>
                 <div className="donut-legend">
-                  <div className="dl-i"><span className="dl-d" style={{ background: "var(--forest)" }} /><span className="dl-lbl">Disponibles</span><span className="dl-v">{data.totals.availableLots}</span></div>
-                  <div className="dl-i"><span className="dl-d" style={{ background: "var(--danger)" }} /><span className="dl-lbl">Vendidos</span><span className="dl-v">{data.totals.soldLots}</span></div>
-                  <div className="dl-i"><span className="dl-d" style={{ background: "var(--earth)" }} /><span className="dl-lbl">Apartados</span><span className="dl-v">{data.totals.reservedLots}</span></div>
+                  <div className="dl-i"><span className="dl-d" style={{ background: "var(--forest)" }} /><span className="dl-lbl">Disponibles</span><span className="dl-v">{totals.availableLots}</span></div>
+                  <div className="dl-i"><span className="dl-d" style={{ background: "var(--danger)" }} /><span className="dl-lbl">Vendidos</span><span className="dl-v">{totals.soldLots}</span></div>
+                  <div className="dl-i"><span className="dl-d" style={{ background: "var(--earth)" }} /><span className="dl-lbl">Apartados</span><span className="dl-v">{totals.reservedLots}</span></div>
                 </div>
               </div>
             </div>
@@ -153,16 +149,16 @@ function DashboardPage() {
           <div className="card" style={{ marginBottom: 0 }}>
             <div className="card-hd"><div className="card-title">⚠️ Alertas</div></div>
             <div className="card-body" style={{ maxHeight: 130, overflowY: "auto" }}>
-              {data.alerts.slice(0, 4).map((alert) => (
+              {alerts.slice(0, 4).map((alert) => (
                 <div key={alert.id} className="alert-item">
-                  <div className={`alert-ico ${alert.priority === "high" ? "red" : alert.priority === "medium" ? "amber" : "blue"}`}>
-                    {alert.type === "payment" ? "💳" : alert.type === "document" ? "📄" : "👤"}
+                  <div className={`alert-ico ${alert.priority === "high" || alert.priority === "urgent" ? "red" : alert.priority === "medium" || alert.priority === "warn" ? "amber" : "blue"}`}>
+                    {alert.icon || (alert.type === "payment" ? "💳" : alert.type === "document" ? "📄" : "👤")}
                   </div>
                   <div className="alert-info">
                     <div className="alert-nm">{alert.title}</div>
                     <div className="alert-dt">{alert.subtitle}</div>
                   </div>
-                  <div className="alert-date">{alert.dueDate ? monthLabel(alert.dueDate) : "Hoy"}</div>
+                  <div className="alert-date">{alert.due_date || alert.dueDate ? new Intl.DateTimeFormat("es-MX", { month: "short" }).format(new Date(`${alert.due_date || alert.dueDate}T12:00:00`)) : "Hoy"}</div>
                 </div>
               ))}
             </div>
@@ -179,8 +175,8 @@ function DashboardPage() {
                 <tr>
                   <th>#</th>
                   <th>Cliente</th>
-                  <th>Pagado</th>
-                  <th>Avance</th>
+                  <th>Tipo</th>
+                  <th>Estado</th>
                 </tr>
               </thead>
               <tbody>
@@ -188,8 +184,8 @@ function DashboardPage() {
                   <tr key={client.id} onClick={() => navigate("/clientes")}>
                     <td>{index + 1}</td>
                     <td>{client.name}</td>
-                    <td>{client.paidM}</td>
-                    <td>{progress(client.paidM, client.totalM)}%</td>
+                    <td>{client.type}</td>
+                    <td><span className={`pc-chip ${client.status === "overdue" ? "overdue" : "paid"}`}>{client.status || "activo"}</span></td>
                   </tr>
                 ))}
               </tbody>
@@ -213,11 +209,15 @@ function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.recentContracts.map((contract) => (
+                {recentContracts.map((contract) => (
                   <tr key={contract.id} onClick={() => navigate("/contratos")}>
-                    <td>{contract.number}</td>
+                    <td>{contract.contract_number}</td>
                     <td>{currency(contract.amount)}</td>
-                    <td><span className={`pc-chip ${contract.type === "reserve" ? "pending" : "paid"}`}>{contract.type}</span></td>
+                    <td>
+                      <span className={`pc-chip ${contract.status === "active" ? "paid" : "pending"}`}>
+                        {contract.status}
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -1,141 +1,186 @@
 import { useState } from "react";
-import { HiArrowRight, HiLockClosed, HiUser } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 
 function LoginScreen() {
   const { login } = useAppContext();
-  const [form, setForm] = useState({
-    identifier: "admin",
-    password: "admin123",
-    remember: true
-  });
+  const [form, setForm] = useState({ identifier: "", password: "", remember: false });
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showPass, setShowPass] = useState(false);
 
   const submit = async () => {
+    if (!form.identifier || !form.password) return;
     setLoading(true);
     setError(false);
-    await new Promise((resolve) => setTimeout(resolve, 320));
-    const result = login(form);
+    const result = await login(form);
     setLoading(false);
     if (!result.ok) setError(true);
   };
 
+  const fillDemo = (identifier, password) => {
+    setForm({ identifier, password, remember: true });
+    setError(false);
+  };
+
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#234434,#12100D_58%)] px-4 pb-8 pt-[calc(env(safe-area-inset-top)+20px)] text-[#F7F3ED]">
-      <div className="mx-auto flex min-h-[calc(100vh-env(safe-area-inset-top)-32px)] max-w-[1160px] flex-col xl:grid xl:grid-cols-[0.9fr_1.1fr] xl:gap-10">
-        <div className="hidden xl:flex xl:flex-col xl:justify-between xl:rounded-[40px] xl:border xl:border-white/10 xl:bg-white/5 xl:p-10 xl:backdrop-blur-sm">
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-[linear-gradient(135deg,#D9B07D,#8B6A46)] text-2xl font-black text-[#16120F]">
-              O
-            </div>
-            <div>
-              <div className="font-['Playfair_Display'] text-3xl">Ownterra</div>
-              <div className="mt-1 text-sm uppercase tracking-[0.34em] text-white/42">Mobile property ops</div>
-            </div>
+    <div className="lf-screen">
+      {/* LEFT — branding */}
+      <div className="ll-panel">
+        <div className="ll-logo">
+          <div className="ll-logo-ico">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <path d="M3 19L11 3L19 19Z" fill="none" stroke="white" strokeWidth="2" strokeLinejoin="round" />
+              <path d="M7 19h8" stroke="white" strokeWidth="2" strokeLinecap="round" />
+              <circle cx="11" cy="13" r="2.2" fill="white" />
+            </svg>
           </div>
-
-          <div>
-            <div className="font-['Playfair_Display'] text-6xl leading-[0.98]">
-              Gestiona lotes, clientes y ventas como una app instalada.
-            </div>
-            <p className="mt-6 max-w-lg text-base leading-8 text-white/64">
-              La experiencia principal nace en celular: navegación táctil, paneles compactos, cobranza rápida y operación diaria desde campo.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            {[
-              ["PWA", "Instalable"],
-              ["390px", "Diseño base"],
-              ["Field ready", "Operación móvil"]
-            ].map(([value, label]) => (
-              <div key={value} className="rounded-[24px] border border-white/10 bg-white/6 p-4">
-                <div className="font-['Playfair_Display'] text-2xl">{value}</div>
-                <div className="mt-2 text-sm text-white/52">{label}</div>
-              </div>
-            ))}
+          <div className="ll-logo-nm">
+            LoteManager
+            <small>Sistema Inmobiliario</small>
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col justify-center py-4">
-          <div className="mx-auto w-full max-w-[430px]">
-            <div className="mb-6 xl:hidden">
-              <div className="inline-flex items-center rounded-full border border-white/10 bg-white/8 px-3 py-2 text-[0.68rem] font-bold uppercase tracking-[0.26em] text-[#D9B07D]">
-                Ownterra
-              </div>
-              <div className="mt-4 font-['Playfair_Display'] text-[2.5rem] leading-none">
-                La operación inmobiliaria, ahora mobile-first.
-              </div>
-              <div className="mt-3 text-sm leading-7 text-white/64">
-                Abre la plataforma como app instalada y trabaja desde iPhone o Android sin fricción.
-              </div>
+        <svg className="ll-map-deco" width="340" height="320" viewBox="0 0 340 320" fill="none">
+          <rect x="20" y="20" width="90" height="70" rx="4" stroke="white" strokeWidth="2" />
+          <rect x="125" y="20" width="90" height="70" rx="4" stroke="white" strokeWidth="2" />
+          <rect x="230" y="20" width="90" height="70" rx="4" stroke="white" strokeWidth="2" />
+          <rect x="20" y="110" width="90" height="70" rx="4" stroke="white" strokeWidth="2" />
+          <rect x="125" y="110" width="90" height="70" rx="4" stroke="white" strokeWidth="2" />
+          <rect x="230" y="110" width="90" height="70" rx="4" stroke="white" strokeWidth="2" />
+          <rect x="20" y="200" width="90" height="100" rx="4" stroke="white" strokeWidth="2" />
+          <rect x="125" y="200" width="90" height="100" rx="4" stroke="white" strokeWidth="2" />
+          <rect x="230" y="200" width="90" height="100" rx="4" stroke="white" strokeWidth="2" />
+          <line x1="0" y1="105" x2="340" y2="105" stroke="white" strokeWidth="3" strokeDasharray="8,4" />
+          <line x1="0" y1="195" x2="340" y2="195" stroke="white" strokeWidth="3" strokeDasharray="8,4" />
+          <line x1="115" y1="0" x2="115" y2="320" stroke="white" strokeWidth="3" strokeDasharray="8,4" />
+          <line x1="220" y1="0" x2="220" y2="320" stroke="white" strokeWidth="3" strokeDasharray="8,4" />
+          <rect x="20" y="20" width="90" height="70" rx="4" fill="white" fillOpacity="0.06" />
+          <rect x="230" y="110" width="90" height="70" rx="4" fill="white" fillOpacity="0.1" />
+          <rect x="125" y="200" width="90" height="100" rx="4" fill="white" fillOpacity="0.07" />
+          <text x="65" y="60" textAnchor="middle" fontFamily="sans-serif" fontSize="11" fill="white" opacity="0.5">Lote 1</text>
+          <text x="170" y="60" textAnchor="middle" fontFamily="sans-serif" fontSize="11" fill="white" opacity="0.5">Lote 2</text>
+          <text x="275" y="60" textAnchor="middle" fontFamily="sans-serif" fontSize="11" fill="white" opacity="0.5">Lote 3</text>
+          <text x="275" y="150" textAnchor="middle" fontFamily="sans-serif" fontSize="10" fill="white" opacity="0.8">Vendido</text>
+          <text x="170" y="255" textAnchor="middle" fontFamily="sans-serif" fontSize="10" fill="white" opacity="0.8">Apartado</text>
+        </svg>
+
+        <div className="ll-hero">
+          <div className="ll-tagline">
+            Gestiona tu<br />fraccionamiento<br /><em>con precisión</em>
+          </div>
+          <div className="ll-desc">
+            Administra lotes, clientes, contratos y amortizaciones desde un solo lugar. Diseñado para desarrolladores inmobiliarios.
+          </div>
+        </div>
+
+        <div className="ll-stats">
+          <div>
+            <div className="ll-stat-v">100%</div>
+            <div className="ll-stat-l">Sin papel</div>
+          </div>
+          <div>
+            <div className="ll-stat-v">∞</div>
+            <div className="ll-stat-l">Lotes &amp; Frac.</div>
+          </div>
+          <div>
+            <div className="ll-stat-v">0</div>
+            <div className="ll-stat-l">Pagos perdidos</div>
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT — form */}
+      <div className="ll-form-side">
+        <div className="lf-wrap">
+          <div className="lf-title">Bienvenido</div>
+          <div className="lf-sub">Accede a tu sistema de gestión inmobiliaria</div>
+
+          {error && (
+            <div className="lf-error">
+              Usuario o contraseña incorrectos. Intenta de nuevo.
             </div>
+          )}
 
-            <div className="rounded-[34px] border border-white/10 bg-[rgba(247,243,237,.96)] p-5 text-[#16120F] shadow-[0_28px_60px_rgba(7,7,7,.35)] backdrop-blur-2xl sm:p-6">
-              <div className="text-[0.72rem] font-bold uppercase tracking-[0.24em] text-[#8A7A69]">Acceso</div>
-              <div className="mt-2 font-['Playfair_Display'] text-[2.2rem] leading-none">Bienvenido</div>
-              <div className="mt-3 text-sm leading-6 text-[#5F5346]">
-                Inicia sesión para entrar al workspace móvil de lotes, clientes, ventas y documentos.
-              </div>
+          <div className="lf-field">
+            <label className="lf-label">Usuario / Correo</label>
+            <div className="lf-input-wrap">
+              <span className="lf-ico">👤</span>
+              <input
+                className={`lf-input${error ? " error" : ""}`}
+                type="text"
+                placeholder="admin@lotemanager.mx"
+                value={form.identifier}
+                onChange={(e) => setForm((p) => ({ ...p, identifier: e.target.value }))}
+                onKeyDown={(e) => e.key === "Enter" && submit()}
+                autoComplete="username"
+              />
+            </div>
+          </div>
 
-              <div className="mt-6 space-y-3">
-                <label className="mobile-auth-field">
-                  <span><HiUser className="text-lg" /></span>
-                  <input
-                    value={form.identifier}
-                    onChange={(event) => setForm((previous) => ({ ...previous, identifier: event.target.value }))}
-                    placeholder="Usuario o correo"
-                  />
-                </label>
-                <label className="mobile-auth-field">
-                  <span><HiLockClosed className="text-lg" /></span>
-                  <input
-                    type="password"
-                    value={form.password}
-                    onChange={(event) => setForm((previous) => ({ ...previous, password: event.target.value }))}
-                    placeholder="Contraseña"
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") submit();
-                    }}
-                  />
-                </label>
-              </div>
-
-              {error ? (
-                <div className="mt-4 rounded-2xl border border-[#F0C0BC] bg-[#FDECEA] px-4 py-3 text-sm font-medium text-[#C0392B]">
-                  Usuario o contraseña incorrectos.
-                </div>
-              ) : null}
-
-              <div className="mt-4 flex items-center justify-between gap-4">
-                <label className="flex items-center gap-2 text-sm text-[#5F5346]">
-                  <input
-                    type="checkbox"
-                    checked={form.remember}
-                    onChange={(event) => setForm((previous) => ({ ...previous, remember: event.target.checked }))}
-                  />
-                  Recordarme
-                </label>
-                <button className="text-sm font-semibold text-[#183024]">Acceso rápido</button>
-              </div>
-
-              <button className="mobile-primary-button mt-5 w-full justify-center" onClick={submit} disabled={loading}>
-                {loading ? "Ingresando..." : "Entrar a Ownterra"}
-                <HiArrowRight className="text-lg" />
+          <div className="lf-field">
+            <label className="lf-label">Contraseña</label>
+            <div className="lf-input-wrap">
+              <span className="lf-ico">🔒</span>
+              <input
+                className={`lf-input${error ? " error" : ""}`}
+                type={showPass ? "text" : "password"}
+                placeholder="••••••••"
+                value={form.password}
+                onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
+                onKeyDown={(e) => e.key === "Enter" && submit()}
+                autoComplete="current-password"
+              />
+              <button className="lf-eye" type="button" onClick={() => setShowPass((v) => !v)} tabIndex={-1}>
+                {showPass ? "🙈" : "👁"}
               </button>
-
-              <div className="mt-5 grid grid-cols-2 gap-3">
-                <button className="rounded-[22px] border border-[#DED5C8] bg-[#FBF7F1] px-4 py-4 text-left" onClick={() => setForm({ identifier: "admin", password: "admin123", remember: true })}>
-                  <div className="text-sm font-semibold text-[#16120F]">Administrador</div>
-                  <div className="mt-1 text-xs text-[#7F7363]">Acceso total demo</div>
-                </button>
-                <button className="rounded-[22px] border border-[#DED5C8] bg-[#FBF7F1] px-4 py-4 text-left" onClick={() => setForm({ identifier: "vendedor", password: "vende123", remember: true })}>
-                  <div className="text-sm font-semibold text-[#16120F]">Vendedor</div>
-                  <div className="mt-1 text-xs text-[#7F7363]">Flujo comercial móvil</div>
-                </button>
-              </div>
             </div>
+          </div>
+
+          <div className="lf-row">
+            <label className="lf-remember">
+              <input
+                type="checkbox"
+                checked={form.remember}
+                onChange={(e) => setForm((p) => ({ ...p, remember: e.target.checked }))}
+              />
+              Recordarme
+            </label>
+            <span className="lf-forgot">¿Olvidaste tu contraseña?</span>
+          </div>
+
+          <button className={`lf-btn${loading ? " loading" : ""}`} onClick={submit} disabled={loading}>
+            {loading ? <span className="btn-spinner" /> : null}
+            {loading ? "Ingresando..." : "Iniciar sesión"}
+          </button>
+
+          <div className="lf-divider">Acceso rápido con demo</div>
+
+          <div className="lf-demo-box">
+            <div className="lf-demo-title">Usuarios de prueba</div>
+            <div className="lf-demo-user" onClick={() => fillDemo("admin", "admin123")}>
+              <div className="lf-demo-info">
+                <div className="lf-demo-av" style={{ background: "var(--forest)" }}>AD</div>
+                <div>
+                  <div className="lf-demo-nm">Administrador</div>
+                  <div className="lf-demo-role">admin · Acceso total</div>
+                </div>
+              </div>
+              <div className="lf-demo-fill">Usar →</div>
+            </div>
+            <div className="lf-demo-user" onClick={() => fillDemo("vendedor", "vende123")} style={{ marginTop: 4 }}>
+              <div className="lf-demo-info">
+                <div className="lf-demo-av" style={{ background: "#8B6A46" }}>VN</div>
+                <div>
+                  <div className="lf-demo-nm">Vendedor</div>
+                  <div className="lf-demo-role">vendedor · Solo lectura</div>
+                </div>
+              </div>
+              <div className="lf-demo-fill">Usar →</div>
+            </div>
+          </div>
+
+          <div className="lf-footer">
+            LoteManager v2.0 &nbsp;·&nbsp; © 2025 &nbsp;·&nbsp; <a href="#">Privacidad</a>
           </div>
         </div>
       </div>

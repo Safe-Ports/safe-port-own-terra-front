@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
+import { searchService } from "@/services/searchService";
 import Modal from "@/components/ui/Modal";
 
 function GlobalSearchModal() {
@@ -18,10 +20,17 @@ function GlobalSearchModal() {
     setSelectedFracId,
     openContractCreate,
     openDocumentUpload,
-    openPaymentCreate,
     startNewProject
   } = useAppContext();
   const [query, setQuery] = useState("");
+  const trimmedQuery = query.trim();
+
+  const { data: backendSearch, isFetching: searching } = useQuery({
+    queryKey: ["global-search", trimmedQuery],
+    queryFn: () => searchService.search(trimmedQuery, { limit: 5 }),
+    enabled: trimmedQuery.length >= 2,
+    staleTime: 30_000,
+  });
 
   const quickActions = useMemo(
     () => [
@@ -79,13 +88,12 @@ function GlobalSearchModal() {
       },
       {
         id: "qa_payment",
-        title: "Registrar pago",
+        title: "Ver pagos",
         subtitle: "Cobranza y seguimiento",
         type: "Acción",
         action: () => {
           closeModal("globalSearch");
           navigate("/pagos");
-          openPaymentCreate();
         }
       },
       {
@@ -110,12 +118,63 @@ function GlobalSearchModal() {
         }
       }
     ],
-    [closeModal, navigate, openContractCreate, openDocumentUpload, openModal, openPaymentCreate, startNewProject]
+    [closeModal, navigate, openContractCreate, openDocumentUpload, openModal, startNewProject]
   );
 
+  const backendResults = useMemo(() => {
+    if (!backendSearch?.results) return null;
+    const { results: r } = backendSearch;
+    const mapped = [
+      ...(r.clients || []).map((c) => ({
+        id: c.id,
+        title: c.name,
+        subtitle: c.subtitle,
+        type: "Cliente",
+        action: () => { setSelectedClientId(c.id); closeModal("globalSearch"); navigate("/clientes"); },
+      })),
+      ...(r.contracts || []).map((c) => ({
+        id: c.id,
+        title: c.number,
+        subtitle: c.subtitle,
+        type: "Contrato",
+        action: () => { closeModal("globalSearch"); navigate("/contratos"); },
+      })),
+      ...(r.lots || []).map((l) => ({
+        id: l.id,
+        title: l.name,
+        subtitle: l.subtitle,
+        type: "Lote",
+        action: () => { closeModal("globalSearch"); navigate("/fraccionamientos"); },
+      })),
+      ...(r.fraccionamientos || []).map((f) => ({
+        id: f.id,
+        title: f.name,
+        subtitle: f.subtitle,
+        type: "Fraccionamiento",
+        action: () => { setSelectedFracId(f.id); closeModal("globalSearch"); navigate("/fraccionamientos"); },
+      })),
+      ...(r.payments || []).map((p) => ({
+        id: p.id,
+        title: p.name,
+        subtitle: p.subtitle,
+        type: "Pago",
+        action: () => { closeModal("globalSearch"); navigate("/pagos"); },
+      })),
+      ...(r.documents || []).map((d) => ({
+        id: d.id,
+        title: d.name,
+        subtitle: d.subtitle,
+        type: "Documento",
+        action: () => { closeModal("globalSearch"); navigate("/documentos"); },
+      })),
+    ];
+    return mapped.slice(0, 16);
+  }, [backendSearch, closeModal, navigate, setSelectedClientId, setSelectedFracId]);
+
   const results = useMemo(() => {
-    const term = query.trim().toLowerCase();
+    const term = trimmedQuery.toLowerCase();
     if (!term) return quickActions;
+    if (backendResults) return backendResults;
 
     const clientResults = clients
       .filter((client) => `${client.name} ${client.email} ${client.phone}`.toLowerCase().includes(term))
@@ -133,13 +192,13 @@ function GlobalSearchModal() {
 
     const contractResults = contracts
       .filter((contract) => {
-        const client = clients.find((item) => item.id === contract.clientId);
-        return `${contract.number} ${contract.lot} ${client?.name || ""}`.toLowerCase().includes(term);
+        const lotCode = contract.lot?.code || "";
+        return `${contract.contract_number} ${lotCode} ${contract.client?.name || ""}`.toLowerCase().includes(term);
       })
       .map((contract) => ({
         id: contract.id,
-        title: contract.number,
-        subtitle: contract.lot,
+        title: contract.contract_number,
+        subtitle: contract.lot ? `${contract.lot.code} · ${contract.lot.inmueble_name || ""}` : "—",
         type: "Contrato",
         action: () => {
           closeModal("globalSearch");
@@ -149,31 +208,23 @@ function GlobalSearchModal() {
 
     const paymentResults = payments
       .filter((payment) => {
-        const client = clients.find((item) => item.id === payment.clientId);
-        const contract = contracts.find((item) => item.id === payment.contractId);
-        return `${payment.cuota} ${payment.status} ${client?.name || ""} ${contract?.number || ""}`.toLowerCase().includes(term);
+        return `${payment.installment_n} ${payment.status} ${payment.client?.name || ""} ${payment.contract?.contract_number || ""}`.toLowerCase().includes(term);
       })
       .slice(0, 5)
-      .map((payment) => {
-        const client = clients.find((item) => item.id === payment.clientId);
-        const contract = contracts.find((item) => item.id === payment.contractId);
-        return {
-          id: payment.id,
-          title: `Cuota ${payment.cuota} · ${contract?.number || payment.contractId}`,
-          subtitle: `${client?.name || "Cliente"} · ${payment.status}`,
-          type: "Pago",
-          action: () => {
-            closeModal("globalSearch");
-            navigate("/pagos");
-          }
-        };
-      });
+      .map((payment) => ({
+        id: payment.id,
+        title: `Cuota ${payment.installment_n} · ${payment.contract?.contract_number || "—"}`,
+        subtitle: `${payment.client?.name || "Cliente"} · ${payment.status}`,
+        type: "Pago",
+        action: () => {
+          closeModal("globalSearch");
+          navigate("/pagos");
+        }
+      }));
 
     const documentResults = documents
       .filter((document) => {
-        const client = clients.find((item) => item.id === document.clientId);
-        const contract = contracts.find((item) => item.id === document.contractId);
-        return `${document.name} ${document.category} ${client?.name || ""} ${contract?.number || ""}`.toLowerCase().includes(term);
+        return `${document.name} ${document.category} ${document.entity_label || ""}`.toLowerCase().includes(term);
       })
       .map((document) => ({
         id: document.id,
@@ -186,30 +237,14 @@ function GlobalSearchModal() {
         }
       }));
 
-    const lotResults = fracs
-      .flatMap((frac) =>
-        frac.lots
-          .filter((lot) => `${lot.code} ${lot.section || ""} ${frac.name}`.toLowerCase().includes(term))
-          .map((lot) => ({
-            id: `${frac.id}_${lot.id}`,
-            title: lot.code,
-            subtitle: `${frac.name} · ${lot.section || "General"}`,
-            type: "Lote",
-            action: () => {
-              setSelectedFracId(frac.id);
-              closeModal("globalSearch");
-              navigate("/fraccionamientos");
-            }
-          }))
-      )
-      .slice(0, 5);
+    const lotResults = [];
 
     const fracResults = fracs
       .filter((frac) => frac.name.toLowerCase().includes(term))
       .map((frac) => ({
         id: frac.id,
         title: frac.name,
-        subtitle: `${frac.lots.length} lotes`,
+        subtitle: `${frac.total_lots || 0} lotes`,
         type: "Fraccionamiento",
         action: () => {
           setSelectedFracId(frac.id);
@@ -220,6 +255,7 @@ function GlobalSearchModal() {
 
     return [...clientResults, ...contractResults, ...lotResults, ...fracResults, ...paymentResults, ...documentResults].slice(0, 16);
   }, [
+    backendResults,
     clients,
     closeModal,
     contracts,
@@ -227,7 +263,7 @@ function GlobalSearchModal() {
     fracs,
     navigate,
     payments,
-    query,
+    trimmedQuery,
     quickActions,
     setSelectedClientId,
     setSelectedFracId
@@ -255,6 +291,9 @@ function GlobalSearchModal() {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
+        {searching && (
+          <div className="text-xs text-[#8C8070] text-center">Buscando...</div>
+        )}
         <div className="space-y-2">
           {results.length ? (
             results.map((item) => (
