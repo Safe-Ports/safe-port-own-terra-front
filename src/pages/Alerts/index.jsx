@@ -165,7 +165,7 @@ function AlertsPage() {
                 </div>
                 <div className="text-right">
                   <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#8A7A69]">Fecha límite</div>
-                  <div className="mt-2 text-sm font-semibold text-[#183024]">{dateLabel(payment.due_date)}</div>
+                  <div className="mt-2 text-sm font-semibold text-[#1B2B18]">{dateLabel(payment.due_date)}</div>
                 </div>
               </div>
               <button
@@ -185,7 +185,7 @@ function AlertsPage() {
         <section className="rounded-[28px] border border-[#DED5C8] bg-white/88 p-4 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <HiClock className="text-xl text-[#183024]" />
+              <HiClock className="text-xl text-[#1B2B18]" />
               <h2 className="text-sm font-bold uppercase tracking-[0.22em] text-[#7E7061]">Seguimientos mixtos</h2>
             </div>
             {notifications.length > 0 && (

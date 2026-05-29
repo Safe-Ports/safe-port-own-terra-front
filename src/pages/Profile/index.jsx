@@ -43,7 +43,7 @@ function ProfilePage() {
       {org && (
         <section className="rounded-[28px] border border-[#DED5C8] bg-white/88 p-4 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
           <div className="flex items-center gap-2">
-            <HiBuildingOffice2 className="text-xl text-[#183024]" />
+            <HiBuildingOffice2 className="text-xl text-[#1B2B18]" />
             <div className="text-sm font-bold uppercase tracking-[0.22em] text-[#7E7061]">Organización</div>
           </div>
           <div className="mt-4 space-y-2">
@@ -65,7 +65,7 @@ function ProfilePage() {
 
       <section className="rounded-[28px] border border-[#DED5C8] bg-white/88 p-4 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
         <div className="flex items-center gap-2">
-          <HiShieldCheck className="text-xl text-[#183024]" />
+          <HiShieldCheck className="text-xl text-[#1B2B18]" />
           <div className="text-sm font-bold uppercase tracking-[0.22em] text-[#7E7061]">Acceso rápido</div>
         </div>
         <div className="mt-4 space-y-3">
@@ -73,7 +73,7 @@ function ProfilePage() {
             className="flex w-full items-center gap-3 rounded-[22px] border border-[#E8DFD2] bg-[#FBF7F1] p-4 text-left"
             onClick={() => navigate("/configuracion")}
           >
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#EFE4D5] text-[#183024]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#EFE4D5] text-[#1B2B18]">
               <HiCog6Tooth className="text-lg" />
             </div>
             <div>

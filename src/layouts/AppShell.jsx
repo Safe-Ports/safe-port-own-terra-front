@@ -4,6 +4,8 @@ import Topbar from "@/components/layout/Topbar";
 import GlobalSearchModal from "@/components/ui/GlobalSearchModal";
 import DocumentPreviewModal from "@/components/shared/DocumentPreviewModal";
 import ClientReportModal from "@/components/shared/ClientReportModal";
+import ContractModal from "@/components/shared/ContractModal";
+import DocumentModal from "@/components/shared/DocumentModal";
 import Toast from "@/components/shared/Toast";
 
 function AppShell() {
@@ -26,6 +28,8 @@ function AppShell() {
       <GlobalSearchModal />
       <DocumentPreviewModal />
       <ClientReportModal />
+      <ContractModal />
+      <DocumentModal />
       <Toast />
     </div>
   );

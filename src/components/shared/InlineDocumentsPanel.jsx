@@ -32,7 +32,7 @@ function InlineDocumentsPanel({ entityType, entityId, entityLabel, compact = fal
           {entityLabel ? <div className="mt-1 text-sm font-semibold text-[#16120F]">{entityLabel}</div> : null}
         </div>
         <button
-          className="flex items-center gap-2 rounded-2xl bg-[#183024] px-3 py-2 text-xs font-semibold text-[#F7F3ED]"
+          className="flex items-center gap-2 rounded-2xl bg-[#1B2B18] px-3 py-2 text-xs font-semibold text-[#F7F3ED]"
           onClick={() => openDocumentUpload({ linkType: entityType, linkedId: entityId, lotCode: entityType === "lot" ? entityId : "" })}
         >
           <HiPlus className="text-base" />
@@ -54,10 +54,10 @@ function InlineDocumentsPanel({ entityType, entityId, entityLabel, compact = fal
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <button className="rounded-xl border border-[#DDD4C7] p-2 text-[#183024]" onClick={() => openDocumentPreview(document.id)} aria-label="Ver documento">
+                <button className="rounded-xl border border-[#DDD4C7] p-2 text-[#1B2B18]" onClick={() => openDocumentPreview(document.id)} aria-label="Ver documento">
                   <HiEye className="text-base" />
                 </button>
-                <button className="rounded-xl border border-[#DDD4C7] p-2 text-[#183024]" onClick={() => downloadDocument(document.id)} aria-label="Descargar documento">
+                <button className="rounded-xl border border-[#DDD4C7] p-2 text-[#1B2B18]" onClick={() => downloadDocument(document.id)} aria-label="Descargar documento">
                   <HiArrowDownTray className="text-base" />
                 </button>
                 <button className="rounded-xl border border-[#E3C8C2] p-2 text-[#B24A3C]" onClick={() => deleteDocument(document.id)} aria-label="Eliminar documento">

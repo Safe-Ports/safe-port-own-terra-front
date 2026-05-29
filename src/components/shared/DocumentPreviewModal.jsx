@@ -41,7 +41,7 @@ function DocumentPreviewModal() {
         ) : (
           <div className="rounded-[22px] border border-[#DED5C8] bg-white p-5 text-sm text-[#5F5346]">
             Vista previa no disponible para este tipo de archivo.{" "}
-            <button className="underline text-[#183024]" onClick={() => downloadDocument(document.id)}>
+            <button className="underline text-[#1B2B18]" onClick={() => downloadDocument(document.id)}>
               Descargar para abrir
             </button>
           </div>

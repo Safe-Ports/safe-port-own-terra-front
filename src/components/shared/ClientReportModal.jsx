@@ -50,7 +50,7 @@ function ClientReportModal() {
           </div>
           <div className="rounded-[22px] bg-[#FBF7F1] p-4">
             <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#8A7A69]">Pagado</div>
-            <div className="mt-2 text-lg font-bold text-[#183024]">{currency(data.totalPaid)}</div>
+            <div className="mt-2 text-lg font-bold text-[#1B2B18]">{currency(data.totalPaid)}</div>
           </div>
           <div className="rounded-[22px] bg-[#FBF7F1] p-4">
             <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#8A7A69]">Saldo</div>
@@ -74,7 +74,7 @@ function ClientReportModal() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-bold text-[#183024]">{currency(contract.amount)}</div>
+                      <div className="text-sm font-bold text-[#1B2B18]">{currency(contract.amount)}</div>
                       <div className="mt-1 text-xs text-[#7E7061]">{progress(paid, total)}%</div>
                     </div>
                   </div>
@@ -94,7 +94,7 @@ function ClientReportModal() {
                   <div className="mt-1 text-xs text-[#7E7061]">{dateLabel(payment.due_date)}</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm font-bold text-[#183024]">{currency(payment.amount)}</div>
+                  <div className="text-sm font-bold text-[#1B2B18]">{currency(payment.amount)}</div>
                   <div className="mt-1 text-xs text-[#7E7061]">{payment.status}</div>
                 </div>
               </div>

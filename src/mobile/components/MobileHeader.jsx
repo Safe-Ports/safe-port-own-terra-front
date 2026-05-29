@@ -22,7 +22,7 @@ function MobileHeader({ pathname }) {
           >
             <HiMagnifyingGlass className="text-lg" />
           </button>
-          <div className="flex h-11 min-w-[44px] items-center justify-center rounded-2xl bg-[#183024] px-3 text-sm font-bold text-[#F6F0E6]">
+          <div className="flex h-11 min-w-[44px] items-center justify-center rounded-2xl bg-[#1B2B18] px-3 text-sm font-bold text-[#F6F0E6]">
             {currentUser?.initials || "OT"}
           </div>
         </div>
@@ -35,7 +35,7 @@ function MobileHeader({ pathname }) {
             className={({ isActive }) =>
               `shrink-0 rounded-full px-3.5 py-2 text-[0.72rem] font-semibold transition ${
                 isActive
-                  ? "bg-[#183024] text-[#F7F3ED]"
+                  ? "bg-[#1B2B18] text-[#F7F3ED]"
                   : "border border-[#DDD4C7] bg-white/88 text-[#5A4E41]"
               }`
             }

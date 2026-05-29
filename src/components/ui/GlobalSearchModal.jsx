@@ -306,7 +306,7 @@ function GlobalSearchModal() {
                   <div className="text-sm font-semibold text-[#1A1410]">{item.title}</div>
                   <div className="text-xs text-[#8C8070]">{item.subtitle}</div>
                 </div>
-                <span className="rounded-full bg-[#d4eae0] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.18em] text-[#1A5C3C]">
+                <span className="rounded-full bg-[var(--tan-lt)] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.18em] text-[#1A5C3C]">
                   {item.type}
                 </span>
               </button>

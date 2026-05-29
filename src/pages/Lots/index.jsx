@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { useAppContext } from "@/context/AppContext";
 import { useProjectsQuery } from "@/hooks/queries/useAppQueries";
+import { lotService } from "@/services/lotService";
 import { compactCurrency, currency } from "@/services/formatters";
 
 const LOT_COLORS = {
@@ -127,13 +128,59 @@ function cropPlanImage(dataUrl) {
 function LotsPage() {
   const navigate = useNavigate();
   const { data: projects = [] } = useProjectsQuery();
-  const { draftProject, setDraftProject, saveFrac, setSelectedFracId, showToast } = useAppContext();
+  const { draftProject, setDraftProject, saveFrac, saveEditedFrac, setSelectedFracId, showToast } = useAppContext();
+  const isEditing = !!draftProject._editingFracId;
   const [sectionName, setSectionName] = useState("");
   const [sectionTotal, setSectionTotal] = useState(20);
   const [mapFileName, setMapFileName] = useState("");
   const [lotEditDraft, setLotEditDraft] = useState(null); // null | { sectionId, ...lot }
+  const [loadingEditId, setLoadingEditId] = useState(null);
   const changeImageRef = useRef(null);
   const excelInputRef = useRef(null);
+
+  const openProjectEditor = async (project) => {
+    setLoadingEditId(project.id);
+    try {
+      const { items: lots } = await lotService.list({ inmueble_id: project.id, limit: 200 });
+      const sectionMap = {};
+      lots.forEach((lot) => {
+        const sec = lot.section || "General";
+        if (!sectionMap[sec]) sectionMap[sec] = { id: `sec_${sec}`, name: sec, lots: [] };
+        sectionMap[sec].lots.push({
+          id:              lot.id,
+          _backendId:      lot.id,
+          _orig: {
+            area:            lot.area_m2 ?? "",
+            price:           lot.price_contado ?? "",
+            priceFinanciado: lot.price_financiado ?? "",
+            frente:          lot.frente_ml ?? "",
+            fondo:           lot.fondo_ml ?? "",
+            servicios:       JSON.stringify(lot.services || {}),
+          },
+          code:            lot.code,
+          status:          lot.status || "available",
+          area:            lot.area_m2 ?? "",
+          price:           lot.price_contado ?? "",
+          priceFinanciado: lot.price_financiado ?? "",
+          frente:          lot.frente_ml ?? "",
+          fondo:           lot.fondo_ml ?? "",
+          servicios:       lot.services || {},
+        });
+      });
+      setDraftProject({
+        mode:           "editor",
+        name:           project.name,
+        mapUrl:         "",
+        cadProcessing:  false,
+        sections:       Object.values(sectionMap),
+        _editingFracId: project.id,
+      });
+    } catch {
+      showToast("Error al cargar los lotes para editar");
+    } finally {
+      setLoadingEditId(null);
+    }
+  };
 
   const STATUS_MAP = {
     disponible: "available", libre: "available", available: "available", vacante: "available",
@@ -342,15 +389,31 @@ function LotsPage() {
       >
         {/* Top bar */}
         <div className="flex flex-shrink-0 items-center gap-2.5 border-b-[1.5px] border-[#DDD8CE] bg-[#F0EDE5] px-4 py-2">
-          <button
-            className="rounded-[7px] border-[1.5px] border-[#DDD8CE] bg-[#FFFDF8] px-[11px] py-[5px] text-[0.74rem] font-bold text-[#8C8070]"
-            onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
-          >
-            ← Cambiar mapa
-          </button>
-          <div className="h-[18px] w-px bg-[#DDD8CE]" />
-          {mapFileName && (
-            <div className="text-[0.75rem] font-bold text-[#2A7A50]">📄 {mapFileName}</div>
+          {isEditing ? (
+            <div className="flex items-center gap-2">
+              <button
+                className="rounded-[7px] border-[1.5px] border-[#DDD8CE] bg-[#FFFDF8] px-[11px] py-[5px] text-[0.74rem] font-bold text-[#8C8070]"
+                onClick={() => { setDraftProject((p) => ({ ...p, _editingFracId: null })); navigate("/fraccionamientos"); }}
+              >
+                ← Cancelar
+              </button>
+              <span className="rounded-full bg-[#fef3c7] px-3 py-1 text-[0.68rem] font-bold text-[#92400e]">
+                ✏ Editando: {draftProject.name}
+              </span>
+            </div>
+          ) : (
+            <>
+              <button
+                className="rounded-[7px] border-[1.5px] border-[#DDD8CE] bg-[#FFFDF8] px-[11px] py-[5px] text-[0.74rem] font-bold text-[#8C8070]"
+                onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
+              >
+                ← Cambiar mapa
+              </button>
+              <div className="h-[18px] w-px bg-[#DDD8CE]" />
+              {mapFileName && (
+                <div className="text-[0.75rem] font-bold text-[#2A7A50]">📄 {mapFileName}</div>
+              )}
+            </>
           )}
           <div className="flex-1" />
           <div className="flex items-center gap-[9px]">
@@ -369,10 +432,10 @@ function LotsPage() {
           </div>
           <button
             className="rounded-[8px] bg-[#2A7A50] px-4 py-[7px] text-[0.76rem] font-bold text-white disabled:opacity-40"
-            onClick={() => saveFrac(draftProject)}
+            onClick={() => isEditing ? saveEditedFrac(draftProject) : saveFrac(draftProject)}
             disabled={!draftProject.sections.length}
           >
-            🏘️ Crear Fraccionamiento
+            {isEditing ? "✓ Guardar cambios" : "🏘️ Crear Fraccionamiento"}
           </button>
         </div>
 
@@ -584,7 +647,7 @@ function LotsPage() {
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex flex-shrink-0 items-center justify-between bg-[#183024] px-5 py-3.5">
+              <div className="flex flex-shrink-0 items-center justify-between bg-[#1B2B18] px-5 py-3.5">
                 <div className="font-bold text-[0.95rem] text-white">Editar — {d.code}</div>
                 <button
                   onClick={() => setLotEditDraft(null)}
@@ -731,7 +794,7 @@ function LotsPage() {
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold uppercase tracking-[0.22em] text-[#7E7061]">Portafolio</h2>
-          <span className="text-sm font-semibold text-[#183024]">
+          <span className="text-sm font-semibold text-[#1B2B18]">
             {projects.reduce((sum, item) => sum + (item.lots?.length || 0), 0)} lotes
           </span>
         </div>
@@ -748,7 +811,7 @@ function LotsPage() {
                     {project.lots?.length ?? 0} propiedades
                   </div>
                 </div>
-                <div className="rounded-full bg-[#EDE3D3] px-3 py-1 text-[0.68rem] font-bold text-[#183024]">
+                <div className="rounded-full bg-[#EDE3D3] px-3 py-1 text-[0.68rem] font-bold text-[#1B2B18]">
                   {project.available} libres
                 </div>
               </div>
@@ -766,15 +829,24 @@ function LotsPage() {
                   <div className="mt-2 text-lg font-bold text-[#16120F]">{compactCurrency(project.inventoryValue)}</div>
                 </div>
               </div>
-              <button
-                className="mt-4 btn-s w-full"
-                onClick={() => {
-                  setSelectedFracId(project.id);
-                  navigate("/fraccionamientos");
-                }}
-              >
-                Ver fraccionamiento
-              </button>
+              <div className="mt-4 flex gap-2">
+                <button
+                  className="btn-s flex-1"
+                  onClick={() => {
+                    setSelectedFracId(project.id);
+                    navigate("/fraccionamientos");
+                  }}
+                >
+                  Ver
+                </button>
+                <button
+                  className="flex-1 rounded-[10px] border-[1.5px] border-[#2A7A50] bg-[#2A7A50] px-3 py-[7px] text-[0.76rem] font-bold text-white transition-colors hover:bg-[#21643F] disabled:opacity-60"
+                  onClick={() => openProjectEditor(project)}
+                  disabled={loadingEditId === project.id}
+                >
+                  {loadingEditId === project.id ? "Cargando..." : "✏ Editar lotes"}
+                </button>
+              </div>
             </article>
           ))}
         </div>
@@ -806,13 +878,13 @@ function LotsPage() {
               </div>
 
               <div
-                className="relative cursor-pointer overflow-hidden rounded-[16px] border-2 border-[#DDD8CE] bg-[#FFFDF8] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#183024] hover:shadow-[0_8px_24px_rgba(27,47,69,.15)]"
+                className="relative cursor-pointer overflow-hidden rounded-[16px] border-2 border-[#DDD8CE] bg-[#FFFDF8] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#1B2B18] hover:shadow-[0_8px_24px_rgba(27,47,69,.15)]"
                 onClick={() => {}}
               >
-                <div className="absolute right-3 top-3 rounded-[8px] bg-[#183024] px-2 py-0.5 text-[0.58rem] font-extrabold uppercase tracking-[0.5px] text-white">
+                <div className="absolute right-3 top-3 rounded-[8px] bg-[#1B2B18] px-2 py-0.5 text-[0.58rem] font-extrabold uppercase tracking-[0.5px] text-white">
                   Nuevo
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#183024]" />
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#1B2B18]" />
                 <div className="mx-auto mb-3 flex h-[62px] w-[62px] items-center justify-center rounded-[15px] bg-[rgba(27,47,69,0.08)] text-[1.8rem]">
                   📐
                 </div>
@@ -820,7 +892,7 @@ function LotsPage() {
                 <div className="mb-5 text-[0.76rem] leading-relaxed text-[#8C8070]">
                   Sube archivos CAD (.dwg, .dxf, .shp, .kml) y el sistema detecta y genera los lotes automáticamente con sus coordenadas reales.
                 </div>
-                <button className="pointer-events-none w-full rounded-[9px] bg-[#183024] px-4 py-2.5 text-[0.8rem] font-bold text-white">
+                <button className="pointer-events-none w-full rounded-[9px] bg-[#1B2B18] px-4 py-2.5 text-[0.8rem] font-bold text-white">
                   Subir archivo CAD →
                 </button>
               </div>
