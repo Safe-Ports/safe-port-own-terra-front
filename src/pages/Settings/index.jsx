@@ -73,7 +73,7 @@ function SettingsPage() {
         </div>
         <div className="card-body">
           {orgLoading ? (
-            <div className="text-sm text-[#8C8070]">Cargando...</div>
+            <div className="text-sm text-[#83867C]">Cargando...</div>
           ) : org ? (
             <div>
               <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4" style={{ marginBottom: 16 }}>
@@ -107,7 +107,7 @@ function SettingsPage() {
               </div>
             </div>
           ) : (
-            <div className="text-sm text-[#8C8070]">Sin datos</div>
+            <div className="text-sm text-[#83867C]">Sin datos</div>
           )}
         </div>
       </div>
@@ -153,7 +153,7 @@ function SettingsPage() {
           )}
 
           {usersLoading ? (
-            <div className="text-sm text-[#8C8070]">Cargando usuarios...</div>
+            <div className="text-sm text-[#83867C]">Cargando usuarios...</div>
           ) : (
             <table className="tbl">
               <thead>
@@ -170,7 +170,7 @@ function SettingsPage() {
                   <tr key={user.id}>
                     <td>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ width: 30, height: 30, borderRadius: "50%", background: user.color || "#2A7A50", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: ".72rem", fontWeight: 800, flexShrink: 0 }}>
+                        <div style={{ width: 30, height: 30, borderRadius: "50%", background: user.color || "#355E3B", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: ".72rem", fontWeight: 800, flexShrink: 0 }}>
                           {user.initials || user.name?.slice(0, 2).toUpperCase()}
                         </div>
                         {user.name}

@@ -20,18 +20,18 @@ function OwnTerraLogo({ size = 44 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" fill="none">
       {/* círculo de fondo claro */}
-      <circle cx="32" cy="32" r="30" fill="#F3F0E4" stroke="#2A5020" strokeWidth="1.5"/>
+      <circle cx="32" cy="32" r="30" fill="#F3F0E4" stroke="#355E3B" strokeWidth="1.5"/>
       {/* hoja izquierda */}
-      <path d="M14 22c0-5 4-9 9-9 .5 3-1 7-5 8.5-1.5.5-4 1.5-4 .5z" fill="#2A5020" opacity="0.9"/>
+      <path d="M14 22c0-5 4-9 9-9 .5 3-1 7-5 8.5-1.5.5-4 1.5-4 .5z" fill="#355E3B" opacity="0.9"/>
       {/* hoja derecha pequeña */}
-      <path d="M40 18c2-3 5-3 6-1-.5 2-3 4-5 3.5-.5-.1-1.3-1-1-2.5z" fill="#2A5020" opacity="0.7"/>
+      <path d="M40 18c2-3 5-3 6-1-.5 2-3 4-5 3.5-.5-.1-1.3-1-1-2.5z" fill="#355E3B" opacity="0.7"/>
       {/* casita */}
-      <path d="M24 36l8-6 8 6v10h-5v-6h-6v6h-5V36z" fill="#2A5020"/>
+      <path d="M24 36l8-6 8 6v10h-5v-6h-6v6h-5V36z" fill="#355E3B"/>
       {/* segunda casita (más alta) */}
-      <path d="M40 32l5-4 5 4v14h-3v-7h-4v7h-3V32z" fill="#2A5020"/>
+      <path d="M40 32l5-4 5 4v14h-3v-7h-4v7h-3V32z" fill="#355E3B"/>
       {/* colinas */}
-      <path d="M10 50 Q22 42 32 50 Q42 42 54 50 L54 56 L10 56 Z" fill="#2A5020" opacity="0.85"/>
-      <path d="M8 54 Q24 48 32 54 Q40 48 56 54 L56 58 L8 58 Z" fill="#2A5020" opacity="0.9"/>
+      <path d="M10 50 Q22 42 32 50 Q42 42 54 50 L54 56 L10 56 Z" fill="#355E3B" opacity="0.85"/>
+      <path d="M8 54 Q24 48 32 54 Q40 48 56 54 L56 58 L8 58 Z" fill="#355E3B" opacity="0.9"/>
     </svg>
   );
 }
@@ -54,7 +54,7 @@ function OwnTerraWordmark() {
 }
 
 /* ── Lista de clientes (izquierda) ───────────────────────────── */
-const AV_COLORS = ["#2A5020", "#7B5C38", "#1B2B18", "#2A5020", "#6B4E2A"];
+const AV_COLORS = ["#355E3B", "#7B5C38", "#1E3D2B", "#355E3B", "#6B4E2A"];
 function Avatar({ name = "?", size = 32 }) {
   const col = AV_COLORS[(name.charCodeAt(0) || 0) % AV_COLORS.length];
   const init = name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
@@ -150,7 +150,7 @@ function ProgressRing({ percent, size = 70 }) {
     <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: "rotate(-90deg)" }}>
         <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#E4DDD3" strokeWidth="6" />
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#2A5020" strokeWidth="6"
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#355E3B" strokeWidth="6"
           strokeDasharray={`${dash} ${c - dash}`} strokeLinecap="round" />
       </svg>
       <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center",
@@ -214,7 +214,7 @@ function PaymentBehaviorChart({ payments }) {
               <line x1={PAD_L} x2={W - 4} y1={y} y2={y}
                 stroke="#E4DDD3" strokeWidth={1}
                 strokeDasharray={p > 0 ? "2 3" : "none"} />
-              <text x={PAD_L - 6} y={y + 3.5} textAnchor="end" fontSize="9" fill="#8A7E6E" fontWeight="600">
+              <text x={PAD_L - 6} y={y + 3.5} textAnchor="end" fontSize="9" fill="#83867C" fontWeight="600">
                 {p === 0 ? "0" : compactCurrency(Math.round(p * maxV)).replace("$", "")}
               </text>
             </g>
@@ -236,7 +236,7 @@ function PaymentBehaviorChart({ payments }) {
               {/* paid encima */}
               {paidH > 0 && (
                 <rect x={x} y={PAD_T + H - paidH} width={BW} height={paidH}
-                  fill="#2A5020" rx={3} opacity={isHov ? 1 : 0.92} />
+                  fill="#355E3B" rx={3} opacity={isHov ? 1 : 0.92} />
               )}
               {/* overdue marker */}
               {overdueH > 0 && (
@@ -246,7 +246,7 @@ function PaymentBehaviorChart({ payments }) {
               {/* valor encima de la barra (solo si paid > 0) */}
               {paidH > 0 && (
                 <text x={x + BW / 2} y={PAD_T + H - paidH - 4}
-                  textAnchor="middle" fontSize="8" fill="#2A5020" fontWeight="800">
+                  textAnchor="middle" fontSize="8" fill="#355E3B" fontWeight="800">
                   ${Math.round(d.paid)}
                 </text>
               )}
@@ -256,7 +256,7 @@ function PaymentBehaviorChart({ payments }) {
                 {d.label}
               </text>
               <text x={x + BW / 2} y={H + PAD_T + 22}
-                textAnchor="middle" fontSize="7.5" fill="#8A7E6E">
+                textAnchor="middle" fontSize="7.5" fill="#83867C">
                 {d.year}
               </text>
             </g>
@@ -265,13 +265,13 @@ function PaymentBehaviorChart({ payments }) {
         {/* línea de tendencia (paid) */}
         <polyline
           points={linePoints.map(p => p.join(",")).join(" ")}
-          fill="none" stroke="#2A5020" strokeWidth="1.8"
+          fill="none" stroke="#355E3B" strokeWidth="1.8"
           strokeLinecap="round" strokeLinejoin="round"
           opacity={0.6}
         />
         {linePoints.map(([x, y], i) => (
           data[i].paid > 0 && (
-            <circle key={i} cx={x} cy={y} r={2.5} fill="#2A5020" />
+            <circle key={i} cx={x} cy={y} r={2.5} fill="#355E3B" />
           )
         ))}
       </svg>
@@ -289,7 +289,7 @@ function PaymentBehaviorChart({ payments }) {
             textTransform: "capitalize" }}>{data[hover].fullLabel}</div>
           {[
             ["Programado", data[hover].due,     "#A09080"],
-            ["Pagado",     data[hover].paid,    "#2A5020"],
+            ["Pagado",     data[hover].paid,    "#355E3B"],
             ["Vencido",    data[hover].overdue, "#C0392B"],
           ].map(([l, v, c]) => (
             <div key={l} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
@@ -456,7 +456,7 @@ function ClientReport({ clientId }) {
               <div style={{ display: "flex", gap: 10 }}>
                 {[
                   ["#EDE8DF", "Programado"],
-                  ["#2A5020", "Pagado"],
+                  ["#355E3B", "Pagado"],
                   ["#C0392B", "Vencido"],
                 ].map(([c, l]) => (
                   <div key={l} style={{ display: "flex", alignItems: "center", gap: 4,
@@ -483,7 +483,7 @@ function ClientReport({ clientId }) {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
               {[
-                { val: cntPaid,    lbl: "Al corriente", bg: "#D5ECC0", border: "#2A5020", color: "#2A5020" },
+                { val: cntPaid,    lbl: "Al corriente", bg: "#D5ECC0", border: "#355E3B", color: "#355E3B" },
                 { val: cntPending, lbl: "Por vencer",   bg: "#F4ECD8", border: "#A88B58", color: "#7B5C38" },
                 { val: cntOverdue, lbl: "Vencidas",     bg: cntOverdue > 0 ? "#FCE0DC" : "#EDE8DF", border: cntOverdue > 0 ? "#C0392B" : "#A09080", color: cntOverdue > 0 ? "#C0392B" : "var(--mu)" },
               ].map((c, i) => (
@@ -649,7 +649,7 @@ export default function ReportsPage() {
         /* ── Estilos exclusivos del reporte ── */
         .rp-table th {
           background: #F4ECD8;
-          color: #2A5020 !important;
+          color: #355E3B !important;
           font-size: .65rem !important;
           padding: 8px 10px !important;
           font-weight: 800 !important;
@@ -672,7 +672,7 @@ export default function ReportsPage() {
           text-transform: uppercase;
           letter-spacing: .05em;
         }
-        .rp-badge-active  { background:#D5ECC0; color:#2A5020; border:1px solid #2A5020; }
+        .rp-badge-active  { background:#D5ECC0; color:#355E3B; border:1px solid #355E3B; }
         .rp-badge-pending { background:#F4ECD8; color:#7B5C38; border:1px solid #A88B58; }
         .rp-badge-overdue { background:#FCE0DC; color:#C0392B; border:1px solid #C0392B; }
 
@@ -683,7 +683,7 @@ export default function ReportsPage() {
           border-radius: 99px;
           letter-spacing: .03em;
         }
-        .rp-pill-paid    { background:#D5ECC0; color:#2A5020; }
+        .rp-pill-paid    { background:#D5ECC0; color:#355E3B; }
         .rp-pill-pending { background:#EDE8DF; color:#3A3228; }
         .rp-pill-overdue { background:#FCE0DC; color:#C0392B; }
 

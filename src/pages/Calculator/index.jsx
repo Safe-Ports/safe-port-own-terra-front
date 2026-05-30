@@ -87,7 +87,7 @@ function CalculatorPage() {
       <div className="card">
         <div className="card-hd">
           <div className="card-title">Tabla de Amortización</div>
-          <div className="text-xs text-[#8C8070]">{rows.length} cuotas proyectadas</div>
+          <div className="text-xs text-[#83867C]">{rows.length} cuotas proyectadas</div>
         </div>
         <div className="card-body overflow-x-auto p-0">
           <table className="amort-table">

@@ -12,17 +12,17 @@ function MobileHeader({ pathname }) {
       <div className="flex items-center justify-between gap-3">
         <div>
           <div className="text-[0.68rem] font-bold uppercase tracking-[0.26em] text-[#7F7363]">Ownterra</div>
-          <div className="mt-1 font-['Playfair_Display'] text-[1.65rem] leading-none text-[#16120F]">{title}</div>
+          <div className="mt-1 font-['Playfair_Display'] text-[1.65rem] leading-none text-[#1E3D2B]">{title}</div>
         </div>
         <div className="flex items-center gap-2">
           <button
-            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#DDD4C7] bg-white/85 text-[#16120F] shadow-[0_10px_24px_rgba(22,18,15,.08)]"
+            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#DCDAD2] bg-white/85 text-[#1E3D2B] shadow-[0_10px_24px_rgba(22,18,15,.08)]"
             onClick={() => openModal("globalSearch")}
             aria-label="Buscar"
           >
             <HiMagnifyingGlass className="text-lg" />
           </button>
-          <div className="flex h-11 min-w-[44px] items-center justify-center rounded-2xl bg-[#1B2B18] px-3 text-sm font-bold text-[#F6F0E6]">
+          <div className="flex h-11 min-w-[44px] items-center justify-center rounded-2xl bg-[#1E3D2B] px-3 text-sm font-bold text-[#F6F0E6]">
             {currentUser?.initials || "OT"}
           </div>
         </div>
@@ -35,8 +35,8 @@ function MobileHeader({ pathname }) {
             className={({ isActive }) =>
               `shrink-0 rounded-full px-3.5 py-2 text-[0.72rem] font-semibold transition ${
                 isActive
-                  ? "bg-[#1B2B18] text-[#F7F3ED]"
-                  : "border border-[#DDD4C7] bg-white/88 text-[#5A4E41]"
+                  ? "bg-[#1E3D2B] text-[#E9E5DB]"
+                  : "border border-[#DCDAD2] bg-white/88 text-[#5A4E41]"
               }`
             }
           >

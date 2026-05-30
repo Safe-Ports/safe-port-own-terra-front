@@ -198,12 +198,12 @@ function LoginView({ onForgot, onRegister }) {
         </div>
       </div>
 
-      <div style={{ textAlign: "center", marginTop: 16, fontSize: ".82rem", color: "#8A7A69" }}>
+      <div style={{ textAlign: "center", marginTop: 16, fontSize: ".82rem", color: "#83867C" }}>
         ¿No tienes cuenta?{" "}
         <button
           type="button"
           onClick={onRegister}
-          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--forest, #2A7A50)", fontWeight: 700, fontSize: "inherit", padding: 0 }}
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--forest, #355E3B)", fontWeight: 700, fontSize: "inherit", padding: 0 }}
         >
           Crear cuenta nueva
         </button>
@@ -257,7 +257,7 @@ function ForgotView({ onBack }) {
       <button
         type="button"
         onClick={onBack}
-        style={{ background: "none", border: "none", cursor: "pointer", color: "#8A7A69", fontSize: ".82rem", padding: 0, marginBottom: 12, display: "flex", alignItems: "center", gap: 4 }}
+        style={{ background: "none", border: "none", cursor: "pointer", color: "#83867C", fontSize: ".82rem", padding: 0, marginBottom: 12, display: "flex", alignItems: "center", gap: 4 }}
       >
         ← Volver
       </button>
@@ -348,7 +348,7 @@ function RegisterView({ onBack }) {
       <button
         type="button"
         onClick={onBack}
-        style={{ background: "none", border: "none", cursor: "pointer", color: "#8A7A69", fontSize: ".82rem", padding: 0, marginBottom: 12, display: "flex", alignItems: "center", gap: 4 }}
+        style={{ background: "none", border: "none", cursor: "pointer", color: "#83867C", fontSize: ".82rem", padding: 0, marginBottom: 12, display: "flex", alignItems: "center", gap: 4 }}
       >
         ← Volver al inicio de sesión
       </button>

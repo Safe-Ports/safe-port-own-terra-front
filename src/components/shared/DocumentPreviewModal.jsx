@@ -37,11 +37,11 @@ function DocumentPreviewModal() {
         {isImage ? (
           <img src={previewUrl} alt={document.name} className="max-h-[70vh] w-full rounded-[20px] object-contain" />
         ) : isPdf ? (
-          <iframe title={document.name} src={previewUrl} className="h-[70vh] w-full rounded-[20px] border border-[#DCCFBE] bg-white" />
+          <iframe title={document.name} src={previewUrl} className="h-[70vh] w-full rounded-[20px] border border-[#D9D7CF] bg-white" />
         ) : (
-          <div className="rounded-[22px] border border-[#DED5C8] bg-white p-5 text-sm text-[#5F5346]">
+          <div className="rounded-[22px] border border-[#DCDAD2] bg-white p-5 text-sm text-[#43453F]">
             Vista previa no disponible para este tipo de archivo.{" "}
-            <button className="underline text-[#1B2B18]" onClick={() => downloadDocument(document.id)}>
+            <button className="underline text-[#1E3D2B]" onClick={() => downloadDocument(document.id)}>
               Descargar para abrir
             </button>
           </div>

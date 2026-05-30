@@ -1,0 +1,562 @@
+/* ════════════════════════════════════════════════════════════════════
+   OwnTerra · Aurora Bento — Hub del ecosistema
+   Todos los selectores están aislados bajo .eco-root para no colisionar
+   con los estilos de la app (index.css).
+   ════════════════════════════════════════════════════════════════════ */
+
+.eco-root {
+  --deep:#1E3D2B; --mid:#355E3B; --leaf:#6FAF6B; --light:#A7CBA1;
+  --cream:#E9E5DB; --grey:#43453F;
+  --bg:#F4F1EA; --bg2:#EDE9DF; --surface:#FBFAF6; --surface2:#F1EEE6;
+  --border:rgba(67,69,63,.10); --border2:rgba(67,69,63,.18);
+  --text:#1E3D2B; --text2:#43453F; --text3:#83867C;
+  --radius:22px; --radius-sm:14px; --sidebar-w:256px;
+
+  display:flex;height:100vh;width:100%;overflow:hidden;background:var(--bg);color:var(--text2);
+  font-family:'Outfit',sans-serif;font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;
+  position:fixed;inset:0;z-index:0;
+}
+.eco-root *,.eco-root *::before,.eco-root *::after{box-sizing:border-box;margin:0;padding:0}
+
+/* mesh gradient backdrop */
+.eco-root .main::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:
+   radial-gradient(620px 420px at 88% -8%, rgba(111,175,107,.16), transparent 60%),
+   radial-gradient(520px 420px at -6% 12%, rgba(53,94,59,.12), transparent 55%),
+   radial-gradient(700px 500px at 50% 120%, rgba(167,203,161,.14), transparent 60%);}
+
+/* ───── SIDEBAR ───── */
+.eco-root .sidebar{width:var(--sidebar-w);flex-shrink:0;background:var(--deep);display:flex;
+  flex-direction:column;overflow:hidden;position:relative}
+.eco-root .sidebar::before{content:'';position:absolute;top:-70px;left:-70px;width:300px;height:300px;
+  background:radial-gradient(circle,rgba(111,175,107,.16) 0%,transparent 70%);pointer-events:none}
+.eco-root .sidebar-inner{flex:1;overflow-y:auto;padding:26px 18px 22px;position:relative;z-index:1;scrollbar-width:none}
+.eco-root .sidebar-inner::-webkit-scrollbar{display:none}
+.eco-root .brand{display:flex;align-items:center;gap:12px;margin-bottom:30px;padding-bottom:22px;
+  border-bottom:1px solid rgba(233,229,219,.1)}
+.eco-root .brand-logo{width:42px;height:42px;border-radius:13px;flex-shrink:0;
+  background:linear-gradient(145deg,var(--leaf),var(--mid));
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 16px rgba(111,175,107,.35)}
+.eco-root .brand-logo svg{width:24px;height:24px}
+.eco-root .brand-name{font-family:'Playfair Display',serif;font-size:19px;color:#fff;letter-spacing:-.3px;line-height:1.05}
+.eco-root .brand-name span{color:var(--light);font-style:italic}
+.eco-root .brand-tag{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(167,203,161,.6);
+  font-family:'JetBrains Mono',monospace;margin-top:2px}
+.eco-root .nav-group{margin-bottom:24px}
+.eco-root .nav-label{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:rgba(167,203,161,.45);
+  font-family:'JetBrains Mono',monospace;padding:0 12px;margin-bottom:8px}
+.eco-root .nav-item{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:11px;
+  color:rgba(233,229,219,.72);text-decoration:none;font-size:13px;transition:all .18s;
+  margin-bottom:2px;cursor:pointer;border:1px solid transparent;width:100%;text-align:left;background:none;font-family:'Outfit',sans-serif}
+.eco-root .nav-item:hover{background:rgba(111,175,107,.09);color:#fff;border-color:rgba(111,175,107,.12)}
+.eco-root .nav-item.active{background:rgba(111,175,107,.15);color:#fff;font-weight:500;border-color:rgba(111,175,107,.22)}
+.eco-root .ni-ico{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;background:rgba(255,255,255,.05)}
+.eco-root .ni-ico svg{width:15px;height:15px}
+.eco-root .nav-item.active .ni-ico{background:rgba(111,175,107,.22)}
+.eco-root .nav-mini{width:24px;height:24px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.eco-root .tenant-selector{background:rgba(255,255,255,.05);border:1px solid rgba(233,229,219,.08);
+  border-radius:13px;padding:12px 14px;margin-top:8px;cursor:pointer;transition:border-color .18s}
+.eco-root .tenant-selector:hover{border-color:rgba(111,175,107,.25)}
+.eco-root .ts-label{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:rgba(167,203,161,.4);
+  font-family:'JetBrains Mono',monospace;margin-bottom:4px}
+.eco-root .ts-name{font-size:13px;color:rgba(233,229,219,.9);font-weight:500}
+.eco-root .ts-schema{font-size:10px;color:var(--leaf);font-family:'JetBrains Mono',monospace;opacity:.75;margin-top:1px}
+
+/* ───── MAIN ───── */
+.eco-root .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;position:relative}
+.eco-root .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 38px;height:66px;
+  background:rgba(251,250,246,.7);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);
+  flex-shrink:0;position:relative;z-index:2}
+.eco-root .topbar-title{font-family:'Playfair Display',serif;font-size:20px;color:var(--deep);letter-spacing:-.3px}
+.eco-root .topbar-sub{font-size:12px;color:var(--text3)}
+.eco-root .topbar-right{display:flex;align-items:center;gap:10px}
+.eco-root .tb-btn{display:flex;align-items:center;gap:7px;padding:9px 15px;border-radius:11px;font-size:12.5px;
+  font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--surface);color:var(--text2);transition:all .15s;font-family:'Outfit',sans-serif}
+.eco-root .tb-btn:hover{background:var(--surface2);transform:translateY(-1px)}
+.eco-root .tb-btn.primary{background:linear-gradient(140deg,var(--mid),var(--deep));color:var(--cream);border-color:transparent;
+  box-shadow:0 6px 16px rgba(30,61,43,.22)}
+.eco-root .tb-btn.primary:hover{filter:brightness(1.08)}
+.eco-root .avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(145deg,var(--leaf),var(--mid));
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#fff}
+.eco-root .scroll-area{flex:1;overflow-y:auto;padding:30px 38px 40px;position:relative;z-index:1;
+  scrollbar-width:thin;scrollbar-color:var(--border2) transparent}
+.eco-root .scroll-area::-webkit-scrollbar{width:5px}
+.eco-root .scroll-area::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+/* ───── APP LAUNCHER ───── */
+.eco-root .section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px}
+.eco-root .section-head h3{font-family:'Playfair Display',serif;font-size:19px;color:var(--deep);letter-spacing:-.2px}
+.eco-root .section-head .sh-link{font-size:12px;color:var(--mid);text-decoration:none;font-weight:500}
+.eco-root .section-head .sh-link:hover{color:var(--deep)}
+
+.eco-root .app-launcher{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:30px}
+.eco-root .app-card{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:24px;overflow:hidden;cursor:pointer;transition:transform .22s cubic-bezier(.2,.8,.2,1),box-shadow .22s,border-color .22s;
+  animation:eco-fadeUp .5s ease both}
+.eco-root .app-card:nth-child(2){animation-delay:.07s}
+.eco-root .app-card:nth-child(3){animation-delay:.14s}
+.eco-root .app-card::after{content:'';position:absolute;inset:0;border-radius:inherit;opacity:0;transition:opacity .22s;
+  background:radial-gradient(420px 200px at 100% 0%,var(--glow),transparent 70%)}
+.eco-root .app-card:hover{transform:translateY(-5px);box-shadow:0 18px 40px rgba(30,61,43,.12);border-color:var(--border2)}
+.eco-root .app-card:hover::after{opacity:1}
+.eco-root .app-card.is-disabled{cursor:default}
+.eco-root .app-card.is-disabled:hover{transform:none;box-shadow:none;border-color:var(--border)}
+.eco-root .app-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;position:relative;z-index:1}
+
+.eco-root .app-icon{width:64px;height:64px;border-radius:20px;display:flex;align-items:center;justify-content:center;
+  position:relative;flex-shrink:0;box-shadow:0 10px 22px var(--shadow);transition:transform .25s}
+.eco-root .app-card:hover .app-icon{transform:scale(1.06) rotate(-2deg)}
+.eco-root .app-icon svg{width:38px;height:38px;position:relative;z-index:1}
+.eco-root .app-icon::before{content:'';position:absolute;inset:0;border-radius:inherit;
+  background:linear-gradient(160deg,rgba(255,255,255,.28),transparent 55%)}
+.eco-root .ic-lands {background:linear-gradient(150deg,#84C07E,#3E7B43);--shadow:rgba(78,123,67,.4);}
+.eco-root .ic-neighb{background:linear-gradient(150deg,#3E7B43,#1E3D2B);--shadow:rgba(30,61,43,.4);}
+.eco-root .ic-homes {background:linear-gradient(150deg,#B7D7B0,#6FAF6B);--shadow:rgba(111,175,107,.4);}
+
+.eco-root .app-status{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:5px 11px;
+  border-radius:30px;font-family:'JetBrains Mono',monospace}
+.eco-root .st-active{background:rgba(111,175,107,.14);color:#2F6A38;border:1px solid rgba(111,175,107,.3)}
+.eco-root .st-soon{background:var(--bg2);color:var(--text3);border:1px solid var(--border2)}
+.eco-root .app-name{font-family:'Playfair Display',serif;font-size:19px;color:var(--deep);margin-bottom:5px;position:relative;z-index:1}
+.eco-root .app-handle{font-size:11px;color:var(--leaf);font-family:'JetBrains Mono',monospace;margin-bottom:12px;position:relative;z-index:1}
+.eco-root .app-desc{font-size:12.5px;color:var(--text3);line-height:1.6;margin-bottom:18px;position:relative;z-index:1;min-height:60px}
+.eco-root .app-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;position:relative;z-index:1}
+.eco-root .atag{font-size:10.5px;padding:4px 10px;border-radius:30px;background:var(--bg2);color:var(--text2);
+  border:1px solid var(--border);font-family:'JetBrains Mono',monospace}
+.eco-root .app-cta{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1;
+  padding-top:16px;border-top:1px solid var(--border)}
+.eco-root .app-open{font-size:12px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;
+  color:var(--mid);display:flex;align-items:center;gap:6px;transition:gap .2s}
+.eco-root .app-card:hover .app-open{gap:10px}
+.eco-root .app-open.disabled{color:var(--text3)}
+.eco-root .app-arrow{width:30px;height:30px;border-radius:50%;background:var(--deep);color:var(--cream);
+  display:flex;align-items:center;justify-content:center;font-size:14px;transition:transform .2s}
+.eco-root .app-card:hover .app-arrow{transform:translateX(3px)}
+.eco-root .app-arrow.disabled{background:var(--bg2);color:var(--text3)}
+
+/* ───── BENTO / KPIs ───── */
+.eco-root .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px}
+.eco-root .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;animation:eco-fadeUp .5s ease both}
+.eco-root .kpi:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(30,61,43,.08)}
+.eco-root .kpi-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.eco-root .kpi-label{font-size:12px;color:var(--text3);font-weight:500}
+.eco-root .kpi-trend{font-size:11px;font-family:'JetBrains Mono',monospace;padding:3px 8px;border-radius:30px;white-space:nowrap}
+.eco-root .tr-up{background:rgba(111,175,107,.14);color:#2F6A38;border:1px solid rgba(111,175,107,.28)}
+.eco-root .tr-down{background:rgba(167,203,161,.14);color:var(--mid);border:1px solid var(--border2)}
+.eco-root .kpi-val{font-family:'Playfair Display',serif;font-size:27px;color:var(--deep);line-height:1;margin-top:12px}
+.eco-root .kpi-foot{font-size:11px;color:var(--text3);margin-top:4px}
+.eco-root .kpi-spark{width:100%;height:34px;margin-top:12px;display:block}
+
+/* charts grid */
+.eco-root .charts-grid{display:grid;grid-template-columns:1.9fr 1fr;gap:16px;margin-bottom:16px}
+.eco-root .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:24px;animation:eco-fadeUp .5s ease both}
+.eco-root .chart-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:20px}
+.eco-root .chart-title{font-family:'Playfair Display',serif;font-size:16px;color:var(--deep);letter-spacing:-.2px}
+.eco-root .chart-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.eco-root .seg{display:flex;gap:2px;background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:3px}
+.eco-root .seg span{font-size:11px;padding:5px 11px;border-radius:6px;cursor:pointer;color:var(--text3);font-weight:500;transition:all .15s}
+.eco-root .seg span.on{background:var(--surface);color:var(--deep);box-shadow:0 1px 3px rgba(30,61,43,.1)}
+.eco-root .legend{display:flex;gap:16px;flex-wrap:wrap}
+.eco-root .lg{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2)}
+.eco-root .lg-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.eco-root .area-svg{width:100%;height:auto;display:block;overflow:visible}
+
+/* donut */
+.eco-root .donut-wrap{display:flex;flex-direction:column;align-items:center}
+.eco-root .donut-svg{transform:rotate(-90deg)}
+.eco-root .donut-legend{width:100%;margin-top:20px;display:flex;flex-direction:column;gap:10px}
+.eco-root .dl-row{display:flex;align-items:center;gap:10px;font-size:12.5px}
+.eco-root .dl-name{color:var(--text2)}
+.eco-root .dl-val{margin-left:auto;font-family:'JetBrains Mono',monospace;color:var(--deep);font-weight:500}
+
+/* bars */
+.eco-root .bars{display:flex;align-items:flex-end;gap:14px;height:190px;padding-top:10px}
+.eco-root .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:10px;height:100%;justify-content:flex-end}
+.eco-root .bar-track{width:100%;display:flex;align-items:flex-end;justify-content:center;flex:1}
+.eco-root .bar{width:54%;min-width:18px;border-radius:8px 8px 3px 3px;background:linear-gradient(180deg,var(--leaf),var(--mid));
+  position:relative;transition:filter .15s;transform-origin:bottom;animation:eco-barGrow .7s cubic-bezier(.2,.8,.2,1) both}
+.eco-root .bar:hover{filter:brightness(1.08)}
+.eco-root .bar.muted{background:linear-gradient(180deg,var(--light),var(--leaf));opacity:.65}
+.eco-root .bar-val{position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:11px;
+  font-family:'JetBrains Mono',monospace;color:var(--mid);white-space:nowrap}
+.eco-root .bar-x{font-size:11px;color:var(--text3)}
+
+/* ───── TENANTS ───── */
+.eco-root .tenant-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.eco-root .tc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;
+  transition:border-color .18s,transform .18s,box-shadow .18s}
+.eco-root .tc:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 10px 24px rgba(30,61,43,.07)}
+.eco-root .tc-top{display:flex;align-items:center;gap:11px;margin-bottom:14px}
+.eco-root .tc-badge{width:38px;height:38px;border-radius:11px;background:linear-gradient(145deg,var(--leaf),var(--mid));
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:14px;flex-shrink:0}
+.eco-root .tc-name{font-family:'Playfair Display',serif;font-size:15px;color:var(--deep)}
+.eco-root .tc-schema{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--leaf)}
+.eco-root .tc-mods{display:flex;flex-wrap:wrap;gap:5px}
+.eco-root .tcm{font-size:10px;padding:3px 8px;border-radius:6px;font-family:'JetBrains Mono',monospace}
+.eco-root .tcm-on{background:rgba(111,175,107,.12);color:#2F6A38;border:1px solid rgba(111,175,107,.22)}
+.eco-root .tcm-off{background:transparent;color:var(--text3);border:1px solid var(--border);opacity:.5;text-decoration:line-through}
+
+/* ───── CLIENTES DEL ECOSISTEMA (gestión de usuarios + asignación) ───── */
+.eco-root .usr-layout{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
+.eco-root .usr-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;animation:eco-fadeUp .5s ease both}
+.eco-root .usr-list-head{padding:16px 18px;border-bottom:1px solid var(--border)}
+.eco-root .usr-list-title{font-family:'Playfair Display',serif;font-size:15px;color:var(--deep);margin-bottom:12px}
+.eco-root .usr-search{display:flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:8px 12px}
+.eco-root .usr-search input{border:none;background:none;outline:none;font:inherit;font-size:13px;color:var(--text);width:100%;font-family:'Outfit',sans-serif}
+.eco-root .usr-search svg{width:15px;height:15px;color:var(--text3);flex-shrink:0}
+.eco-root .usr-list{max-height:580px;overflow-y:auto;scrollbar-width:thin}
+.eco-root .usr-list::-webkit-scrollbar{width:5px}
+.eco-root .usr-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+.eco-root .usr-item{display:flex;align-items:center;gap:11px;padding:12px 16px;border-bottom:1px solid var(--border);
+  cursor:pointer;transition:background .14s;border-left:3px solid transparent;background:none;width:100%;text-align:left;font-family:'Outfit',sans-serif}
+.eco-root .usr-item:hover{background:var(--surface2)}
+.eco-root .usr-item.active{background:rgba(111,175,107,.08);border-left-color:var(--leaf)}
+.eco-root .usr-av{width:38px;height:38px;border-radius:50%;background:linear-gradient(145deg,var(--leaf),var(--mid));
+  color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;flex-shrink:0}
+.eco-root .usr-info{flex:1;min-width:0}
+.eco-root .usr-name{font-size:13.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eco-root .usr-mail{font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eco-root .usr-dots{display:flex;gap:4px;flex-shrink:0}
+.eco-root .usr-dot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--border2)}
+.eco-root .usr-dot.on-lands{background:#6FAF6B;border-color:#6FAF6B}
+.eco-root .usr-dot.on-neighb{background:#355E3B;border-color:#355E3B}
+.eco-root .usr-dot.on-homes{background:#A7CBA1;border-color:#A7CBA1}
+
+.eco-root .usr-d-head{display:flex;align-items:center;gap:14px;padding:20px;border-bottom:1px solid var(--border)}
+.eco-root .usr-d-av{width:54px;height:54px;border-radius:16px;background:linear-gradient(145deg,var(--leaf),var(--mid));
+  color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:19px;flex-shrink:0;box-shadow:0 8px 18px rgba(111,175,107,.32)}
+.eco-root .usr-d-name{font-family:'Playfair Display',serif;font-size:20px;color:var(--deep);line-height:1.1}
+.eco-root .usr-d-meta{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:3px}
+.eco-root .usr-d-type{margin-left:auto;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;
+  padding:5px 12px;border-radius:30px;font-family:'JetBrains Mono',monospace;background:var(--bg2);color:var(--text2);border:1px solid var(--border2);align-self:flex-start}
+.eco-root .usr-d-body{padding:20px}
+.eco-root .usr-d-intro{font-size:12.5px;color:var(--text3);margin-bottom:18px;line-height:1.6}
+
+.eco-root .usr-app-block{border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:14px;transition:border-color .18s,background .18s}
+.eco-root .usr-app-block.is-on{border-color:rgba(111,175,107,.4);background:rgba(111,175,107,.04)}
+.eco-root .usr-app-top{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.eco-root .usr-app-ico{width:40px;height:40px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 6px 14px var(--shadow)}
+.eco-root .usr-app-ico svg{width:24px;height:24px}
+.eco-root .usr-app-name{font-family:'Playfair Display',serif;font-size:15px;color:var(--deep)}
+.eco-root .usr-app-handle{font-size:10px;color:var(--leaf);font-family:'JetBrains Mono',monospace}
+.eco-root .usr-app-badge{margin-left:auto;font-size:10px;font-weight:600;padding:4px 11px;border-radius:30px;font-family:'JetBrains Mono',monospace}
+.eco-root .usr-app-badge.on{background:rgba(111,175,107,.14);color:#2F6A38;border:1px solid rgba(111,175,107,.3)}
+.eco-root .usr-app-badge.off{background:var(--bg2);color:var(--text3);border:1px solid var(--border2)}
+.eco-root .usr-app-soon{margin-left:8px;font-size:9px;font-weight:600;padding:3px 8px;border-radius:30px;font-family:'JetBrains Mono',monospace;background:var(--bg2);color:var(--text3);border:1px solid var(--border2)}
+.eco-root .usr-types{display:flex;flex-wrap:wrap;gap:8px}
+.eco-root .usr-type{display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border-radius:30px;border:1px solid var(--border);
+  background:var(--bg2);color:var(--text2);font-size:12px;cursor:pointer;transition:all .15s;font-family:'Outfit',sans-serif}
+.eco-root .usr-type:hover{border-color:var(--leaf)}
+.eco-root .usr-type.on{background:rgba(111,175,107,.15);border-color:rgba(111,175,107,.4);color:#2F6A38;font-weight:600}
+.eco-root .usr-type .chk{width:15px;height:15px;border-radius:5px;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:9px;color:transparent}
+.eco-root .usr-type.on .chk{background:var(--leaf);border-color:var(--leaf);color:#fff}
+
+.eco-root .usr-switch{width:46px;height:26px;border-radius:30px;background:var(--border2);position:relative;
+  transition:background .18s;flex-shrink:0;cursor:pointer;border:none;padding:0;margin-left:auto}
+.eco-root .usr-switch.on{background:var(--leaf)}
+.eco-root .usr-switch::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;
+  background:#fff;transition:transform .18s;box-shadow:0 1px 3px rgba(30,61,43,.25)}
+.eco-root .usr-switch.on::after{transform:translateX(20px)}
+
+.eco-root .usr-summary{margin-top:18px;padding:14px 16px;border-radius:14px;background:var(--bg2);border:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--text2)}
+.eco-root .usr-summary b{color:var(--deep)}
+.eco-root .usr-empty{padding:60px 20px;text-align:center;color:var(--text3);font-size:13px}
+
+/* ── Información administrativa del cliente ── */
+.eco-root .usr-sec-label{margin:26px 0 14px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--text3);font-family:'JetBrains Mono',monospace;font-weight:600;display:flex;align-items:center;gap:10px}
+.eco-root .usr-sec-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.eco-root .usr-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+.eco-root .usr-stat{border:1px solid var(--border);border-radius:14px;padding:14px;background:var(--surface);position:relative;overflow:hidden}
+.eco-root .usr-stat::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.eco-root .usr-stat.ok::before{background:var(--leaf)}
+.eco-root .usr-stat.overdue::before{background:#C0392B}
+.eco-root .usr-stat.pending::before{background:#C99A3B}
+.eco-root .usr-stat-val{font-family:'Playfair Display',serif;font-size:24px;color:var(--deep);line-height:1}
+.eco-root .usr-stat.overdue .usr-stat-val{color:#C0392B}
+.eco-root .usr-stat.pending .usr-stat-val{color:#9D6B18}
+.eco-root .usr-stat-lbl{font-size:11px;color:var(--text3);margin-top:6px}
+.eco-root .usr-stat-sub{font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;margin-top:3px}
+
+.eco-root .usr-tabs{display:inline-flex;margin-bottom:14px}
+.eco-root .usr-rows{display:flex;flex-direction:column;gap:8px}
+.eco-root .usr-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border:1px solid var(--border);
+  border-radius:13px;background:var(--surface);transition:border-color .15s}
+.eco-root .usr-row:hover{border-color:var(--border2)}
+.eco-root .usr-row-ico{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;box-shadow:0 4px 10px var(--shadow)}
+.eco-root .usr-row-ico svg{width:19px;height:19px}
+.eco-root .usr-row-ico.doc{background:var(--bg2);box-shadow:none;color:var(--mid)}
+.eco-root .usr-row-info{flex:1;min-width:0}
+.eco-root .usr-row-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eco-root .usr-row-meta{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eco-root .usr-row-val{font-size:12.5px;font-weight:600;color:var(--deep);font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.eco-root .usr-chip{font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:4px 9px;
+  border-radius:30px;font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.eco-root .usr-chip.active{background:rgba(111,175,107,.14);color:#2F6A38;border:1px solid rgba(111,175,107,.3)}
+.eco-root .usr-chip.closed{background:var(--bg2);color:var(--text3);border:1px solid var(--border2)}
+.eco-root .usr-chip.overdue{background:#FDECEA;color:#C0392B;border:1px solid #F2C4BE}
+.eco-root .usr-dl{width:30px;height:30px;border-radius:9px;border:1px solid var(--border2);background:var(--surface);
+  color:var(--mid);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:background .15s}
+.eco-root .usr-dl:hover{background:var(--bg2)}
+.eco-root .usr-dl svg{width:15px;height:15px}
+.eco-root .usr-rows-empty{padding:26px;text-align:center;color:var(--text3);font-size:12.5px;
+  border:1px dashed var(--border2);border-radius:13px}
+
+/* barra de tabs + botón agregar + filtro por app */
+.eco-root .usr-list-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.eco-root .usr-add-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:11px;font-size:12px;
+  font-weight:600;cursor:pointer;border:none;background:linear-gradient(140deg,var(--mid),var(--deep));color:var(--cream);
+  box-shadow:0 6px 16px rgba(30,61,43,.22);font-family:'Outfit',sans-serif;transition:filter .15s}
+.eco-root .usr-add-btn:hover{filter:brightness(1.08)}
+.eco-root .usr-fil-row{display:flex;align-items:center;gap:7px;margin-bottom:14px;flex-wrap:wrap}
+.eco-root .usr-fil-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--text3);
+  font-family:'JetBrains Mono',monospace;margin-right:2px}
+.eco-root .usr-fil{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:30px;border:1px solid var(--border);
+  background:var(--surface);color:var(--text2);font-size:11.5px;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .15s}
+.eco-root .usr-fil:hover{border-color:var(--leaf)}
+.eco-root .usr-fil.on{background:rgba(111,175,107,.15);border-color:rgba(111,175,107,.4);color:#2F6A38;font-weight:600}
+.eco-root .usr-fil-dot{width:8px;height:8px;border-radius:50%}
+
+/* carpetas de documentos del core */
+.eco-root .usr-folders{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.eco-root .usr-folder{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:11px;border:1px solid var(--border);
+  background:var(--surface);cursor:pointer;font-size:12px;color:var(--text2);transition:all .15s;font-family:'Outfit',sans-serif}
+.eco-root .usr-folder:hover{border-color:var(--leaf)}
+.eco-root .usr-folder.active{background:rgba(111,175,107,.12);border-color:rgba(111,175,107,.4);color:#2F6A38;font-weight:600}
+.eco-root .usr-folder .f-cnt{font-family:'JetBrains Mono',monospace;font-size:10px;opacity:.7}
+.eco-root .usr-folder .f-lock{font-size:10px;opacity:.7}
+.eco-root .usr-folder-del{margin-left:1px;border:none;background:none;color:var(--text3);cursor:pointer;font-size:14px;line-height:1;padding:0}
+.eco-root .usr-folder-del:hover{color:#C0392B}
+.eco-root .usr-folder-new{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:11px;border:1px dashed var(--border2);
+  background:transparent;color:var(--mid);cursor:pointer;font-size:12px;font-weight:600;font-family:'Outfit',sans-serif;transition:all .15s}
+.eco-root .usr-folder-new:hover{border-color:var(--leaf);background:rgba(111,175,107,.06)}
+.eco-root .usr-folder-grp{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);
+  font-family:'JetBrains Mono',monospace;align-self:center;margin-right:2px}
+
+/* bóveda de documentos (Vault) — filas de carpeta verticales */
+.eco-root .vlt-frow{display:flex;align-items:center;gap:11px;width:100%;padding:12px 16px;border:none;background:none;cursor:pointer;
+  text-align:left;border-left:3px solid transparent;border-bottom:1px solid var(--border);font-family:'Outfit',sans-serif;transition:background .14s}
+.eco-root .vlt-frow:hover{background:var(--surface2)}
+.eco-root .vlt-frow.active{background:rgba(111,175,107,.08);border-left-color:var(--leaf)}
+.eco-root .vlt-fico{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  background:rgba(111,175,107,.12);font-size:15px;flex-shrink:0}
+.eco-root .vlt-finfo{flex:1;min-width:0}
+.eco-root .vlt-fname{font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px}
+.eco-root .vlt-fdesc{font-size:10.5px;color:var(--text3);font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eco-root .vlt-fcnt{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);flex-shrink:0}
+.eco-root .vlt-fdel{border:none;background:none;color:var(--text3);cursor:pointer;font-size:15px;line-height:1;padding:0 2px;flex-shrink:0}
+.eco-root .vlt-fdel:hover{color:#C0392B}
+.eco-root .vlt-caret{width:14px;flex-shrink:0;color:var(--text3);font-size:9px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.eco-root .vlt-fadd{border:none;background:none;color:var(--leaf);cursor:pointer;font-size:16px;line-height:1;padding:0 3px;flex-shrink:0;font-weight:700}
+.eco-root .vlt-fadd:hover{color:var(--mid)}
+.eco-root .vlt-bc{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:14px}
+.eco-root .vlt-bc b{color:var(--text2)}
+.eco-root .vlt-frow{position:relative}
+.eco-root .vlt-menu-btn{opacity:0;background:none;border:none;cursor:pointer;color:var(--text3);font-size:17px;line-height:1;
+  padding:2px 5px;border-radius:7px;flex-shrink:0;display:flex;align-items:center}
+.eco-root .vlt-frow:hover .vlt-menu-btn{opacity:.65}
+.eco-root .vlt-menu-btn:hover{opacity:1 !important;background:rgba(67,69,63,.08)}
+.eco-root .vlt-menu{position:absolute;right:8px;top:calc(100% - 6px);z-index:50;background:var(--surface);
+  border:1px solid var(--border2);border-radius:12px;padding:5px;min-width:182px;box-shadow:0 14px 32px rgba(30,61,43,.18)}
+.eco-root .vlt-menu button{display:flex;align-items:center;gap:9px;width:100%;padding:8px 11px;background:none;border:none;
+  cursor:pointer;font-size:12.5px;color:var(--text2);text-align:left;border-radius:8px;font-family:'Outfit',sans-serif}
+.eco-root .vlt-menu button:hover{background:var(--surface2)}
+.eco-root .vlt-menu button.danger{color:#C0392B}
+.eco-root .vlt-menu button:disabled{opacity:.4;cursor:not-allowed}
+.eco-root .vlt-newrow{display:flex;gap:6px;align-items:center}
+.eco-root .vlt-newrow .usr-input{padding:7px 10px;font-size:12.5px}
+.eco-root .vlt-newrow .vlt-ok{flex-shrink:0;border:none;border-radius:9px;background:linear-gradient(140deg,var(--mid),var(--deep));
+  color:var(--cream);padding:7px 11px;font-size:13px;cursor:pointer;font-weight:700}
+.eco-root .vlt-rename{flex:1;min-width:0;border:1px solid var(--leaf);border-radius:8px;padding:4px 8px;font-size:12.5px;
+  outline:none;font-family:'Outfit',sans-serif;color:var(--text);background:var(--surface)}
+.eco-root .vlt-search{display:flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--border);
+  border-radius:11px;padding:8px 12px;margin-bottom:14px}
+.eco-root .vlt-search input{border:none;background:none;outline:none;font:inherit;font-size:13px;color:var(--text);width:100%;font-family:'Outfit',sans-serif}
+.eco-root .vlt-search svg{width:15px;height:15px;color:var(--text3);flex-shrink:0}
+.eco-root .vlt-grp{padding:12px 16px 6px;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.eco-root .vlt-d-head{display:flex;align-items:center;gap:12px;padding:18px 20px;border-bottom:1px solid var(--border)}
+.eco-root .vlt-d-name{font-family:'Playfair Display',serif;font-size:18px;color:var(--deep);display:flex;align-items:center;gap:8px}
+.eco-root .vlt-d-desc{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:2px}
+.eco-root .vlt-d-body{padding:18px 20px}
+
+/* modal de alta (contrato / documento) */
+.eco-root .usr-modal-overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+  background:rgba(20,30,22,.45);backdrop-filter:blur(6px);padding:18px}
+.eco-root .usr-modal{width:min(100%,520px);max-height:90vh;overflow:auto;background:var(--surface);border:1px solid var(--border2);
+  border-radius:22px;box-shadow:0 30px 70px rgba(15,25,18,.4);animation:eco-fadeUp .25s ease both}
+.eco-root .usr-modal-head{display:flex;align-items:flex-start;gap:12px;padding:20px 22px 14px;border-bottom:1px solid var(--border)}
+.eco-root .usr-modal-title{font-family:'Playfair Display',serif;font-size:18px;color:var(--deep)}
+.eco-root .usr-modal-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.eco-root .usr-modal-close{margin-left:auto;width:32px;height:32px;border-radius:50%;border:1px solid var(--border2);
+  background:var(--surface);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.eco-root .usr-modal-body{padding:18px 22px}
+.eco-root .usr-modal-foot{display:flex;gap:10px;justify-content:flex-end;padding:14px 22px 20px;border-top:1px solid var(--border)}
+.eco-root .usr-field{margin-bottom:14px}
+.eco-root .usr-field-lbl{display:block;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:6px}
+.eco-root .usr-input,.eco-root .usr-select{width:100%;border:1px solid var(--border2);background:var(--surface);border-radius:11px;
+  padding:10px 12px;font-size:13px;color:var(--text);outline:none;font-family:'Outfit',sans-serif;transition:border-color .15s}
+.eco-root .usr-input:focus,.eco-root .usr-select:focus{border-color:var(--leaf)}
+.eco-root .usr-field-row{display:flex;gap:10px}
+.eco-root .usr-field-row .usr-field{flex:1}
+.eco-root .usr-btn-ghost{padding:9px 16px;border-radius:11px;border:1px solid var(--border2);background:var(--surface);
+  color:var(--text2);font-size:12.5px;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif}
+.eco-root .usr-btn-primary{padding:9px 16px;border-radius:11px;border:none;background:linear-gradient(140deg,var(--mid),var(--deep));
+  color:var(--cream);font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:0 6px 16px rgba(30,61,43,.22);font-family:'Outfit',sans-serif}
+.eco-root .usr-btn-primary:hover{filter:brightness(1.08)}
+
+@media (max-width:1024px){ .eco-root .usr-layout{grid-template-columns:1fr} }
+
+/* ───── MI DÍA (cockpit consolidado del ecosistema) ───── */
+.eco-root .md-grid{display:grid;grid-template-columns:1.55fr 1fr;gap:16px;margin-bottom:16px;align-items:start}
+.eco-root .md-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;animation:eco-fadeUp .5s ease both}
+.eco-root .md-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.eco-root .md-card-title{font-family:'Playfair Display',serif;font-size:16px;color:var(--deep)}
+.eco-root .md-card-sub{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.eco-root .md-side{display:flex;flex-direction:column;gap:16px}
+.eco-root .md-tag{display:inline-flex;align-items:center;gap:5px;font-size:10px;padding:3px 9px;border-radius:30px;
+  background:var(--bg2);color:var(--text2);border:1px solid var(--border2);font-family:'JetBrains Mono',monospace;flex-shrink:0;white-space:nowrap}
+.eco-root .md-tag .dot{width:7px;height:7px;border-radius:50%}
+.eco-root .md-open{font-size:11px;font-weight:600;color:var(--mid);cursor:pointer;white-space:nowrap;flex-shrink:0}
+.eco-root .md-open:hover{color:var(--deep)}
+
+.eco-root .md-visit{display:flex;align-items:center;gap:13px;padding:13px 0;border-bottom:1px solid var(--border)}
+.eco-root .md-visit:last-child{border-bottom:none}
+.eco-root .md-time{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:52px;padding:7px 6px;
+  border-radius:12px;background:rgba(111,175,107,.1);border:1px solid rgba(111,175,107,.25);flex-shrink:0}
+.eco-root .md-time b{font-family:'Playfair Display',serif;font-size:15px;color:var(--deep);line-height:1}
+.eco-root .md-time span{font-size:8.5px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:2px;letter-spacing:.05em}
+.eco-root .md-info{flex:1;min-width:0}
+.eco-root .md-name{font-size:13.5px;font-weight:600;color:var(--text)}
+.eco-root .md-meta{font-size:11.5px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.eco-root .md-row{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--border)}
+.eco-root .md-row:last-child{border-bottom:none}
+.eco-root .md-row-ico{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px}
+.eco-root .md-row-info{flex:1;min-width:0}
+.eco-root .md-row-name{font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eco-root .md-row-meta{font-size:11px;color:var(--text3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eco-root .md-amount{font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;color:#C0392B;flex-shrink:0}
+.eco-root .md-late{font-size:9.5px;font-weight:600;font-family:'JetBrains Mono',monospace;padding:3px 8px;border-radius:30px;
+  background:#FDECEA;color:#C0392B;border:1px solid #F2C4BE;flex-shrink:0}
+.eco-root .md-empty{padding:22px;text-align:center;color:var(--text3);font-size:12.5px}
+
+/* ── hero motivador + progreso + acciones rápidas ── */
+.eco-root .md-hero{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:22px 24px;display:flex;align-items:center;justify-content:space-between;gap:28px;flex-wrap:wrap;margin-bottom:18px;
+  position:relative;overflow:hidden;animation:eco-fadeUp .5s ease both}
+.eco-root .md-hero::before{content:'';position:absolute;top:-60px;right:-40px;width:220px;height:220px;border-radius:50%;
+  background:radial-gradient(circle,rgba(111,175,107,.12),transparent 70%);pointer-events:none}
+.eco-root .md-greet{font-family:'Playfair Display',serif;font-size:25px;color:var(--deep);line-height:1.15}
+.eco-root .md-greet-sub{font-size:13px;color:var(--text2);margin-top:5px;max-width:340px;line-height:1.5}
+.eco-root .md-prog{min-width:200px}
+.eco-root .md-prog-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.eco-root .md-prog-label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.eco-root .md-prog-pct{font-family:'Playfair Display',serif;font-size:16px;color:var(--deep)}
+.eco-root .md-prog-bar{height:8px;border-radius:30px;background:var(--bg2);overflow:hidden;margin:8px 0 6px}
+.eco-root .md-prog-fill{height:100%;border-radius:30px;background:linear-gradient(90deg,var(--leaf),var(--mid))}
+.eco-root .md-prog-meta{font-size:11px;color:var(--text3)}
+.eco-root .md-qa-label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:8px}
+.eco-root .md-qa{display:flex;gap:8px;flex-wrap:wrap}
+.eco-root .md-qa-btn{display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:11px;border:1px solid var(--border2);
+  background:var(--surface);color:var(--text2);font-size:12.5px;font-weight:500;cursor:pointer;transition:all .15s;font-family:'Outfit',sans-serif}
+.eco-root .md-qa-btn:hover{background:var(--surface2);transform:translateY(-1px);border-color:var(--leaf)}
+
+/* ── KPIs con icono en círculo ── */
+.eco-root .md-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px}
+.eco-root .md-kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;
+  display:flex;align-items:center;gap:15px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;animation:eco-fadeUp .5s ease both}
+.eco-root .md-kpi:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(30,61,43,.08)}
+.eco-root .md-kpi.danger{background:rgba(192,57,43,.04);border-color:rgba(192,57,43,.25)}
+.eco-root .md-kpi-ico{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:rgba(111,175,107,.12);font-size:21px;flex-shrink:0}
+.eco-root .md-kpi.danger .md-kpi-ico{background:rgba(192,57,43,.1)}
+.eco-root .md-kpi-body{min-width:0}
+.eco-root .md-kpi-label{font-size:12px;color:var(--text3);font-weight:500}
+.eco-root .md-kpi-val{font-family:'Playfair Display',serif;font-size:28px;color:var(--deep);line-height:1;margin-top:4px}
+.eco-root .md-kpi.danger .md-kpi-val{color:#C0392B}
+.eco-root .md-kpi-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.eco-root .md-kpi-badge{position:absolute;top:14px;right:14px;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  padding:4px 9px;border-radius:30px;font-family:'JetBrains Mono',monospace;background:#FDECEA;color:#C0392B;border:1px solid #F2C4BE}
+.eco-root .md-kpi-cta{margin-top:7px;font-size:11px;font-weight:600;padding:5px 11px;border-radius:9px;cursor:pointer;
+  background:var(--surface);color:#C0392B;border:1px solid #F2C4BE;font-family:'Outfit',sans-serif}
+.eco-root .md-kpi-cta:hover{background:#FDECEA}
+
+/* ── agenda: estados / timeline ── */
+.eco-root .md-st{position:relative;width:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center;align-self:stretch}
+.eco-root .md-st::before{content:'';position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--border);transform:translateX(-50%)}
+.eco-root .md-visit:first-child .md-st::before{top:50%}
+.eco-root .md-visit:last-child .md-st::before{bottom:50%}
+.eco-root .md-sdot{position:relative;z-index:1;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:9px;line-height:1;background:var(--surface);box-sizing:border-box}
+.eco-root .md-sdot.completed{background:var(--leaf);color:#fff}
+.eco-root .md-sdot.active{background:var(--deep);color:#fff;box-shadow:0 0 0 4px rgba(30,61,43,.1)}
+.eco-root .md-sdot.upcoming,.eco-root .md-sdot.pending{border:2px solid var(--border2)}
+.eco-root .md-visit.is-active .md-time{background:var(--deep);border-color:var(--deep)}
+.eco-root .md-visit.is-active .md-time b{color:#fff}
+.eco-root .md-visit.is-active .md-time span{color:rgba(255,255,255,.6)}
+.eco-root .md-legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.eco-root .md-legend-item{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--text2)}
+.eco-root .md-legend-dot{width:13px;height:13px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff}
+
+/* ── prioridad firmas + botón firmar ── */
+.eco-root .md-prio{font-size:9.5px;font-weight:700;padding:4px 9px;border-radius:7px;font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.eco-root .md-prio.alta{background:#FDECEA;color:#C0392B}
+.eco-root .md-prio.media{background:#FEF3E2;color:#9D6B18}
+.eco-root .md-prio.baja{background:var(--bg2);color:var(--text3)}
+.eco-root .md-btn{padding:7px 15px;border-radius:9px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);
+  font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;transition:all .15s;font-family:'Outfit',sans-serif}
+.eco-root .md-btn:hover{background:var(--surface2);border-color:var(--leaf);color:var(--deep)}
+
+/* ── notificaciones: pestañas + columnas por día ── */
+.eco-root .md-ngrid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.eco-root .md-ngroup-label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);
+  font-family:'JetBrains Mono',monospace;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+
+@media (max-width:1024px){
+  .eco-root .md-kpis{grid-template-columns:repeat(2,1fr)}
+  .eco-root .md-grid{grid-template-columns:1fr}
+  .eco-root .md-ngrid{grid-template-columns:1fr}
+}
+
+/* ── Estados financieros: tarjetas por app ── */
+.eco-root .fin-apps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+.eco-root .fin-appcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;
+  transition:transform .2s,box-shadow .2s;animation:eco-fadeUp .5s ease both}
+.eco-root .fin-appcard:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(30,61,43,.08)}
+.eco-root .fin-appcard-top{display:flex;align-items:center;gap:11px;margin-bottom:16px}
+.eco-root .fin-appcard-ico{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 6px 14px var(--shadow)}
+.eco-root .fin-appcard-ico svg{width:22px;height:22px}
+.eco-root .fin-appcard-name{font-family:'Playfair Display',serif;font-size:15px;color:var(--deep)}
+.eco-root .fin-appcard-handle{font-size:10px;color:var(--leaf);font-family:'JetBrains Mono',monospace}
+.eco-root .fin-metrics{display:flex;gap:20px}
+.eco-root .fin-metric-l{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.eco-root .fin-metric-v{font-family:'Playfair Display',serif;font-size:19px;color:var(--deep);line-height:1;margin-top:5px}
+.eco-root .fin-metric-v.red{color:#C0392B}
+.eco-root .fin-bar{height:6px;border-radius:30px;background:var(--bg2);overflow:hidden;margin-top:16px}
+.eco-root .fin-bar-fill{height:100%;border-radius:30px;background:linear-gradient(90deg,var(--leaf),var(--mid))}
+.eco-root .fin-bar-meta{display:flex;justify-content:space-between;font-size:10.5px;color:var(--text3);margin-top:6px;font-family:'JetBrains Mono',monospace}
+
+@keyframes eco-fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes eco-barGrow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+
+/* ───── responsive ───── */
+@media (max-width:1024px){
+  .eco-root .app-launcher{grid-template-columns:1fr}
+  .eco-root .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .eco-root .charts-grid{grid-template-columns:1fr}
+  .eco-root .tenant-grid{grid-template-columns:1fr}
+}
+@media (max-width:760px){
+  .eco-root .sidebar{display:none}
+  .eco-root .topbar{padding:0 18px}
+  .eco-root .scroll-area{padding:20px 18px 32px}
+  .eco-root .kpi-row{grid-template-columns:1fr}
+}

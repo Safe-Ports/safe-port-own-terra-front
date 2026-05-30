@@ -44,38 +44,38 @@ function ClientReportModal() {
     >
       <div className="space-y-4">
         <div className="grid gap-3 md:grid-cols-3">
-          <div className="rounded-[22px] bg-[#FBF7F1] p-4">
-            <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#8A7A69]">Inversión</div>
-            <div className="mt-2 text-lg font-bold text-[#16120F]">{currency(data.totalInvestment)}</div>
+          <div className="rounded-[22px] bg-[#FBFAF6] p-4">
+            <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Inversión</div>
+            <div className="mt-2 text-lg font-bold text-[#1E3D2B]">{currency(data.totalInvestment)}</div>
           </div>
-          <div className="rounded-[22px] bg-[#FBF7F1] p-4">
-            <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#8A7A69]">Pagado</div>
-            <div className="mt-2 text-lg font-bold text-[#1B2B18]">{currency(data.totalPaid)}</div>
+          <div className="rounded-[22px] bg-[#FBFAF6] p-4">
+            <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Pagado</div>
+            <div className="mt-2 text-lg font-bold text-[#1E3D2B]">{currency(data.totalPaid)}</div>
           </div>
-          <div className="rounded-[22px] bg-[#FBF7F1] p-4">
-            <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#8A7A69]">Saldo</div>
+          <div className="rounded-[22px] bg-[#FBFAF6] p-4">
+            <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Saldo</div>
             <div className="mt-2 text-lg font-bold text-[#C0392B]">{currency(data.balance)}</div>
           </div>
         </div>
 
-        <div className="rounded-[24px] border border-[#E8DFD2] bg-[#FBF7F1] p-4">
-          <div className="text-sm font-semibold text-[#16120F]">Contratos</div>
+        <div className="rounded-[24px] border border-[#E7E4DB] bg-[#FBFAF6] p-4">
+          <div className="text-sm font-semibold text-[#1E3D2B]">Contratos</div>
           <div className="mt-3 space-y-3">
             {data.clientContracts.map((contract) => {
               const paid = contract.payments_summary?.paid ?? 0;
               const total = contract.payments_summary?.total ?? 0;
               return (
-                <div key={contract.id} className="rounded-[20px] border border-[#E8DFD2] bg-white p-4">
+                <div key={contract.id} className="rounded-[20px] border border-[#E7E4DB] bg-white p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <div className="text-sm font-semibold text-[#16120F]">{contract.contract_number}</div>
-                      <div className="mt-1 text-xs text-[#7E7061]">
+                      <div className="text-sm font-semibold text-[#1E3D2B]">{contract.contract_number}</div>
+                      <div className="mt-1 text-xs text-[#83867C]">
                         {contract.lot?.code || "—"} · {dateLabel(contract.contract_date)}
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-bold text-[#1B2B18]">{currency(contract.amount)}</div>
-                      <div className="mt-1 text-xs text-[#7E7061]">{progress(paid, total)}%</div>
+                      <div className="text-sm font-bold text-[#1E3D2B]">{currency(contract.amount)}</div>
+                      <div className="mt-1 text-xs text-[#83867C]">{progress(paid, total)}%</div>
                     </div>
                   </div>
                 </div>
@@ -84,18 +84,18 @@ function ClientReportModal() {
           </div>
         </div>
 
-        <div className="rounded-[24px] border border-[#E8DFD2] bg-[#FBF7F1] p-4">
-          <div className="text-sm font-semibold text-[#16120F]">Historial de pagos</div>
+        <div className="rounded-[24px] border border-[#E7E4DB] bg-[#FBFAF6] p-4">
+          <div className="text-sm font-semibold text-[#1E3D2B]">Historial de pagos</div>
           <div className="mt-3 space-y-3">
             {data.clientPayments.slice(0, 12).map((payment) => (
-              <div key={payment.id} className="flex items-center justify-between rounded-[20px] border border-[#E8DFD2] bg-white p-4">
+              <div key={payment.id} className="flex items-center justify-between rounded-[20px] border border-[#E7E4DB] bg-white p-4">
                 <div>
-                  <div className="text-sm font-semibold text-[#16120F]">Cuota {payment.installment_n}</div>
-                  <div className="mt-1 text-xs text-[#7E7061]">{dateLabel(payment.due_date)}</div>
+                  <div className="text-sm font-semibold text-[#1E3D2B]">Cuota {payment.installment_n}</div>
+                  <div className="mt-1 text-xs text-[#83867C]">{dateLabel(payment.due_date)}</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm font-bold text-[#1B2B18]">{currency(payment.amount)}</div>
-                  <div className="mt-1 text-xs text-[#7E7061]">{payment.status}</div>
+                  <div className="text-sm font-bold text-[#1E3D2B]">{currency(payment.amount)}</div>
+                  <div className="mt-1 text-xs text-[#83867C]">{payment.status}</div>
                 </div>
               </div>
             ))}

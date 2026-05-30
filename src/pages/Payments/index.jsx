@@ -104,9 +104,9 @@ function BarChart({ data }) {
         return (
           <g key={d.key}>
             <title>{d.label}: Ingresos {currency(d.ingresos)} / Egresos {currency(d.egresos)}</title>
-            <rect x={x}             y={H - inH} width={BW} height={inH} fill="#2A5020" rx={2} opacity={0.85} />
-            <rect x={x + BW + GAP}  y={H - egH} width={BW} height={egH} fill="#7B5C38" rx={2} opacity={0.85} />
-            <text x={x + BW} y={H + 14} textAnchor="middle" fontSize="8" fill="#8c8070">{d.label}</text>
+            <rect x={x}             y={H - inH} width={BW} height={inH} fill="#355E3B" rx={2} opacity={0.85} />
+            <rect x={x + BW + GAP}  y={H - egH} width={BW} height={egH} fill="#43453F" rx={2} opacity={0.85} />
+            <text x={x + BW} y={H + 14} textAnchor="middle" fontSize="8" fill="#83867C">{d.label}</text>
           </g>
         );
       })}
@@ -115,7 +115,7 @@ function BarChart({ data }) {
 }
 
 /* ── Avatar ──────────────────────────────────────────────────── */
-const AV_COLORS = ["#2A5020","#7B5C38","#1B2B18","#6366F1","#0EA5E9","#8B5CF6"];
+const AV_COLORS = ["#355E3B","#1E3D2B","#6FAF6B","#43453F","#2F6A38","#5C7C4E"];
 function Avatar({ name = "?" }) {
   const idx = name.charCodeAt(0) % AV_COLORS.length;
   return (
@@ -134,17 +134,17 @@ function SmartFilterBar({ search, onSearch, estado, onEstado, periodo, onPeriodo
     cursor: "pointer", fontFamily: "inherit", outline: "none" };
   return (
     <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 14,
-      background: "var(--sf)", border: "1px solid var(--bd)", borderRadius: 14,
-      padding: "10px 14px", boxShadow: "var(--sh)" }}>
+      background: "var(--sf)", border: "1px solid rgba(67,69,63,.1)", borderRadius: 18,
+      padding: "12px 16px", boxShadow: "0 12px 30px rgba(30,61,43,.06)" }}>
 
       {/* Búsqueda */}
       <div style={{ position: "relative", flex: "1 1 200px", minWidth: 180 }}>
-        <HiOutlineMagnifyingGlass style={{ position: "absolute", left: 10, top: "50%",
-          transform: "translateY(-50%)", color: "var(--mu)", fontSize: "1rem", pointerEvents: "none" }} />
+        <HiOutlineMagnifyingGlass style={{ position: "absolute", left: 12, top: "50%",
+          transform: "translateY(-50%)", color: "var(--mu)", fontSize: ".95rem", pointerEvents: "none" }} />
         <input value={search} onChange={e => onSearch(e.target.value)}
           placeholder="Buscar por asociado, concepto o cuota…"
-          style={{ width: "100%", padding: "7px 10px 7px 34px", border: "1.5px solid var(--bd)",
-            borderRadius: 10, fontSize: ".82rem", background: "var(--sf2)", fontFamily: "inherit",
+          style={{ width: "100%", padding: "8px 12px 8px 35px", border: "1px solid rgba(67,69,63,.1)",
+            borderRadius: 11, fontSize: ".82rem", background: "#EDE9DF", fontFamily: "'Outfit',sans-serif",
             color: "var(--tx)", outline: "none", boxSizing: "border-box" }} />
       </div>
 
@@ -220,8 +220,8 @@ function Pagination({ total, page, limit, onPage, onLimit }) {
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
         <button style={btnStyle(page === 1)}     disabled={page === 1}     onClick={() => onPage(1)}>«</button>
         <button style={btnStyle(page === 1)}     disabled={page === 1}     onClick={() => onPage(page - 1)}>‹</button>
-        <span style={{ padding: "4px 12px", borderRadius: 8, background: "#1B2B18",
-          color: "#F7F3ED", fontSize: ".8rem", fontWeight: 700 }}>{page}</span>
+        <span style={{ padding: "4px 12px", borderRadius: 8, background: "#1E3D2B",
+          color: "#E9E5DB", fontSize: ".8rem", fontWeight: 700 }}>{page}</span>
         <button style={btnStyle(page >= pages)} disabled={page >= pages} onClick={() => onPage(page + 1)}>›</button>
         <button style={btnStyle(page >= pages)} disabled={page >= pages} onClick={() => onPage(pages)}>»</button>
       </div>
@@ -236,7 +236,7 @@ function Pagination({ total, page, limit, onPage, onLimit }) {
 
 /* ── Tabla homologada ────────────────────────────────────────── */
 function PagoTable({ rows, isEgreso, historial, onPagar, onRecordar, onEdit, onDelete }) {
-  const accent = isEgreso ? "#7B5C38" : "#1B2B18";
+  const accent = isEgreso ? "#43453F" : "#1E3D2B";
   return (
     <table className="tbl">
       <thead>
@@ -304,27 +304,21 @@ function PagoTable({ rows, isEgreso, historial, onPagar, onRecordar, onEdit, onD
                 <td>
                   <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                     {status !== "paid" && (
-                      <button onClick={() => onPagar(r)} style={{ padding: "5px 12px", borderRadius: 8,
-                        border: "none", cursor: "pointer", background: accent, color: "#F7F3ED",
-                        fontSize: ".75rem", fontWeight: 700, fontFamily: "inherit", whiteSpace: "nowrap" }}>
+                      <button onClick={() => onPagar(r)} className={isEgreso ? "btn-s" : "btn-p"} style={{ padding: "6px 12px", fontSize: ".74rem", whiteSpace: "nowrap" }}>
                         {isEgreso ? "Pagar" : "Cobrar"}
                       </button>
                     )}
                     {status === "overdue" && !isEgreso && (
-                      <button onClick={() => onRecordar?.(r)} style={{ background: "none", border: "none",
-                        cursor: "pointer", fontSize: ".75rem", fontWeight: 700,
-                        color: "var(--earth)", fontFamily: "inherit" }}>
+                      <button onClick={() => onRecordar?.(r)} className="btn-s" style={{ padding: "6px 10px", fontSize: ".75rem", fontWeight: 700, color: "var(--earth)", borderColor: "rgba(67,69,63,.12)" }}>
                         Recordar
                       </button>
                     )}
                     {isEgreso && (
                       <>
-                        <button onClick={() => onEdit?.(r)} style={{ background: "none", border: "none",
-                          cursor: "pointer", color: "var(--mu)", padding: "4px 6px", display: "flex" }}>
+                        <button onClick={() => onEdit?.(r)} className="btn-s" style={{ padding: "6px 8px", fontSize: ".78rem", display: "inline-flex", alignItems: "center" }}>
                           <HiOutlinePencil />
                         </button>
-                        <button onClick={() => onDelete?.(r.id)} style={{ background: "none", border: "none",
-                          cursor: "pointer", color: "var(--danger)", padding: "4px 6px", display: "flex" }}>
+                        <button onClick={() => onDelete?.(r.id)} className="btn-s" style={{ padding: "6px 8px", fontSize: ".78rem", display: "inline-flex", alignItems: "center", color: "var(--danger)" }}>
                           <HiOutlineTrash />
                         </button>
                       </>
@@ -389,9 +383,7 @@ function EgresoModal({ initial, onClose, onSave }) {
         </div>
         <div className="modal-foot">
           <button className="btn-s" style={{ flex: 1 }} onClick={onClose}>Cancelar</button>
-          <button onClick={() => onSave(form)} style={{ flex: 2, padding: "12px 16px", borderRadius: 18,
-            border: "none", background: "#7B5C38", color: "#F7F3ED", fontWeight: 600,
-            fontSize: ".875rem", cursor: "pointer", fontFamily: "inherit" }}>
+          <button className="btn-p" style={{ flex: 2 }} onClick={() => onSave(form)}>
             {initial ? "Guardar cambios" : "Guardar egreso"}
           </button>
         </div>
@@ -465,8 +457,8 @@ function TipoModal({ onSelect, onClose }) {
         </div>
         <div className="modal-body" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {[
-            ["cobro",  "💰", "#1B2B18", "var(--tan-lt)", "Cobro de cliente", "Un cliente pagó su cuota de lote"],
-            ["egreso", "💸", "#7B5C38", "#fef3e2",       "Egreso de empresa","Nómina, servicios, impuestos…"],
+            ["cobro",  "💰", "#1E3D2B", "var(--tan-lt)", "Cobro de cliente", "Un cliente pagó su cuota de lote"],
+            ["egreso", "💸", "#43453F", "#fef3e2",       "Egreso de empresa","Nómina, servicios, impuestos…"],
           ].map(([type, icon, border, bg, title, sub]) => (
             <button key={type} onClick={() => onSelect(type)} style={{
               display: "flex", alignItems: "center", gap: 14, padding: "16px 18px",
@@ -639,33 +631,36 @@ export default function PaymentsPage() {
   return (
     <>
       <style>{`
-        .pv2-tabs { display:flex;gap:4px;background:#fff;border:1px solid var(--bd);border-radius:14px;padding:4px;width:fit-content; }
-        .pv2-tab  { padding:8px 22px;border-radius:10px;border:none;background:transparent;font-size:.83rem;font-weight:600;cursor:pointer;color:var(--mu);font-family:inherit;display:flex;align-items:center;gap:6px; }
-        .pv2-tab.act-in { background:var(--navy); color:#F7F3ED; }
-        .pv2-tab.act-eg { background:var(--earth); color:#F7F3ED; }
-        .pv2-tab.act-al { background:var(--danger); color:#fff; }
+        .pv2-tabs { display:flex;gap:3px;background:#EDE9DF;border:1px solid rgba(67,69,63,.1);border-radius:12px;padding:4px;width:fit-content; }
+        .pv2-tab  { padding:8px 18px;border-radius:9px;border:none;background:transparent;font-size:.82rem;font-weight:600;cursor:pointer;color:var(--mu);font-family:inherit;display:flex;align-items:center;gap:6px;transition:all .15s; }
+        .pv2-tab.act-in { background:rgba(111,175,107,.18); color:#2F6A38; }
+        .pv2-tab.act-eg { background:rgba(67,69,63,.1); color:#43453F; }
+        .pv2-tab.act-al { background:#FDECEA; color:#C0392B; }
         .pv2-subtabs { display:flex;background:var(--sf2);border-radius:10px;padding:3px;width:fit-content; }
-        .pv2-subtab  { padding:6px 18px;border-radius:8px;border:none;background:transparent;font-size:.78rem;font-weight:600;cursor:pointer;color:var(--mu);font-family:inherit; }
-        .pv2-subtab.act { background:#fff;color:var(--tx);box-shadow:0 1px 4px rgba(0,0,0,.1); }
-        .pv2-wrap { background:#fff;border:1px solid var(--bd);border-radius:20px;overflow:hidden;box-shadow:var(--sh); }
-        .pv2-sect-hd { font-size:.63rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--mu);padding:10px 18px 6px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;gap:8px; }
-        .pv2-pill { padding:6px 14px;border-radius:99px;border:1.5px solid var(--bd);background:#fff;font-size:.73rem;font-weight:600;color:var(--mu);cursor:pointer;font-family:inherit; }
-        .pv2-pill.act-g { background:var(--navy);color:#F7F3ED;border-color:var(--navy); }
-        .pv2-pill.act-r { background:var(--danger);color:#fff;border-color:var(--danger); }
-        .pv2-pill.act-e { background:var(--earth);color:#fff;border-color:var(--earth); }
-        .al-row { display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--line-soft); }
+        .pv2-subtab  { padding:6px 16px;border-radius:8px;border:none;background:transparent;font-size:.78rem;font-weight:600;cursor:pointer;color:var(--mu);font-family:inherit; }
+        .pv2-subtab.act { background:var(--sf);color:var(--tx);box-shadow:0 1px 3px rgba(30,61,43,.1); }
+        .pv2-wrap { background:var(--sf);border:1px solid rgba(67,69,63,.1);border-radius:22px;overflow:hidden;box-shadow:0 12px 30px rgba(30,61,43,.06); }
+        .pv2-sect-hd { font-size:.6rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--mu);padding:14px 18px 8px;border-bottom:1px solid rgba(67,69,63,.08);display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace; }
+        .pv2-pill { padding:6px 13px;border-radius:30px;border:1px solid rgba(67,69,63,.12);background:var(--sf);font-size:.72rem;font-weight:600;color:var(--tx2);cursor:pointer;font-family:inherit;transition:all .15s; }
+        .pv2-pill:hover { border-color:var(--leaf); }
+        .pv2-pill.act-g { background:rgba(111,175,107,.15);color:#2F6A38;border-color:rgba(111,175,107,.4); }
+        .pv2-pill.act-r { background:#FDECEA;color:#C0392B;border-color:#F2C4BE; }
+        .pv2-pill.act-e { background:rgba(67,69,63,.1);color:#43453F;border-color:rgba(67,69,63,.18); }
+        .al-row { display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid rgba(67,69,63,.08); }
         .al-row:last-child { border-bottom:none; }
         .al-row:hover { background:var(--sf2); }
         .al-badge { width:34px;height:34px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.95rem; }
-        .al-badge.roja { background:#fdecea; }
-        .al-badge.amarilla { background:#fef3e2; }
-        .al-tipo { font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;padding:2px 7px;border-radius:99px; }
-        .al-tipo.ingreso { background:var(--tan-lt);color:var(--tan-dk); }
-        .al-tipo.egreso  { background:#fef3e2;color:var(--earth); }
-        .al-action { margin-left:auto;padding:6px 14px;border-radius:10px;border:none;cursor:pointer;font-size:.75rem;font-weight:700;white-space:nowrap;font-family:inherit; }
-        .al-action.cobrar { background:var(--navy);color:#F7F3ED; }
-        .al-action.pagar  { background:var(--earth);color:#fff; }
-        .al-action.recordar { background:#fef3e2;color:var(--earth);border:1px solid #e6c88d; }
+        .al-badge.roja { background:#FDECEA; }
+        .al-badge.amarilla { background:#FEF3E2; }
+        .al-tipo { font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:3px 8px;border-radius:30px;font-family:'JetBrains Mono',monospace; }
+        .al-tipo.ingreso { background:rgba(111,175,107,.14);color:#2F6A38; }
+        .al-tipo.egreso  { background:rgba(67,69,63,.1);color:#43453F; }
+        .al-action { margin-left:auto;padding:7px 15px;border-radius:9px;border:1px solid rgba(67,69,63,.18);cursor:pointer;font-size:.74rem;font-weight:600;white-space:nowrap;font-family:inherit;transition:all .15s; }
+        .al-action.cobrar { background:rgba(111,175,107,.13);color:#2F6A38;border-color:rgba(111,175,107,.3); }
+        .al-action.cobrar:hover { background:rgba(111,175,107,.2); }
+        .al-action.pagar  { background:var(--sf);color:var(--tx2); }
+        .al-action.pagar:hover { background:var(--sf2); }
+        .al-action.recordar { background:#FEF3E2;color:#9D6B18;border-color:#F0DCB8; }
       `}</style>
 
       {/* ── KPIs + gráfica ── */}
@@ -684,7 +679,7 @@ export default function PaymentsPage() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div className="kpi-lbl" style={{ margin: 0 }}>Tendencia — últimos 6 meses</div>
             <div style={{ display: "flex", gap: 12 }}>
-              {[["var(--forest)", "Ingresos"], ["#7B5C38", "Egresos"]].map(([c, l]) => (
+              {[["var(--forest)", "Ingresos"], ["#43453F", "Egresos"]].map(([c, l]) => (
                 <div key={l} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: ".68rem", color: "var(--mu)" }}>
                   <div style={{ width: 8, height: 8, background: c, borderRadius: 2, flexShrink: 0 }} />{l}
                 </div>

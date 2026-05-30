@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
 
 const titleMap = {
-  "/mi-dia": "Mi Día",
   "/dashboard": "Dashboard",
   "/lotes": "Carga de Lotes",
   "/fraccionamientos": "Fraccionamientos",
@@ -103,9 +102,9 @@ function Topbar({ pathname }) {
           )}
         </button>
 
-        <div className="hidden rounded-xl border border-line bg-[#f0ede5] px-3 py-2 md:block">
-          <div className="text-[0.62rem] uppercase tracking-[0.2em] text-[#8C8070]">{currentUser?.role}</div>
-          <div className="text-sm font-semibold text-[#1A1410]">{currentUser?.name}</div>
+        <div className="hidden rounded-xl border border-line bg-[#F1EEE6] px-3 py-2 md:block">
+          <div className="text-[0.62rem] uppercase tracking-[0.2em] text-[#83867C]">{currentUser?.role}</div>
+          <div className="text-sm font-semibold text-[#1E3D2B]">{currentUser?.name}</div>
         </div>
       </div>
     </header>

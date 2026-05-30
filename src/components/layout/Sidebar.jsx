@@ -2,8 +2,8 @@ import { NavLink } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
 
 const items = [
+  { label: "Ecosistema", to: "/ecosistema", emoji: "🌐", section: "General" },
   { label: "Dashboard", to: "/dashboard", emoji: "📊", section: "General" },
-  { label: "Mi Día", to: "/mi-dia", emoji: "☀️", section: "Inicio" },
   { label: "Carga de Lotes", to: "/lotes", emoji: "🗺️", section: "Propiedades" },
   { label: "Fraccionamientos", to: "/fraccionamientos", emoji: "🏘️", section: "Propiedades" },
   { label: "Clientes & CRM", to: "/clientes", emoji: "👥", section: "Gestión" },

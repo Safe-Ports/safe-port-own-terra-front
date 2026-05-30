@@ -292,27 +292,27 @@ function GlobalSearchModal() {
           onChange={(event) => setQuery(event.target.value)}
         />
         {searching && (
-          <div className="text-xs text-[#8C8070] text-center">Buscando...</div>
+          <div className="text-xs text-[#83867C] text-center">Buscando...</div>
         )}
         <div className="space-y-2">
           {results.length ? (
             results.map((item) => (
               <button
                 key={item.id}
-                className="flex w-full items-center justify-between rounded-xl border border-line bg-[#fffdf8] px-4 py-3 text-left transition hover:border-[#2A7A50] hover:bg-[#f0ede5]"
+                className="flex w-full items-center justify-between rounded-xl border border-line bg-[#FBFAF6] px-4 py-3 text-left transition hover:border-[#355E3B] hover:bg-[#F1EEE6]"
                 onClick={item.action}
               >
                 <div>
-                  <div className="text-sm font-semibold text-[#1A1410]">{item.title}</div>
-                  <div className="text-xs text-[#8C8070]">{item.subtitle}</div>
+                  <div className="text-sm font-semibold text-[#1E3D2B]">{item.title}</div>
+                  <div className="text-xs text-[#83867C]">{item.subtitle}</div>
                 </div>
-                <span className="rounded-full bg-[var(--tan-lt)] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.18em] text-[#1A5C3C]">
+                <span className="rounded-full bg-[var(--tan-lt)] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.18em] text-[#355E3B]">
                   {item.type}
                 </span>
               </button>
             ))
           ) : (
-            <div className="rounded-2xl border border-dashed border-line bg-[#f0ede5] px-5 py-8 text-center text-sm text-[#8C8070]">
+            <div className="rounded-2xl border border-dashed border-line bg-[#F1EEE6] px-5 py-8 text-center text-sm text-[#83867C]">
               No hay resultados con ese criterio.
             </div>
           )}

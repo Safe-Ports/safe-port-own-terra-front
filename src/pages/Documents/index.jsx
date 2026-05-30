@@ -4,7 +4,7 @@ import {
   HiDocumentArrowUp, HiOutlineFolder, HiFolderOpen, HiOutlineFolderPlus,
   HiOutlineTrash, HiOutlineArrowDownTray, HiOutlineEye, HiOutlinePencil,
   HiOutlineChevronRight, HiOutlineChevronDown, HiOutlineEllipsisVertical,
-  HiOutlineArrowRight,
+  HiOutlineArrowRight, HiOutlineMagnifyingGlass,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 import { folderService } from "@/services/folderService";
@@ -61,10 +61,10 @@ function FolderNode({ node, folders, activeId, onSelect, onAddChild, onRename, o
         onClick={() => { onSelect(node.id); if (kids.length) setOpen(v => !v); }}
       >
         <span className="doc-folder-chevron">
-          {kids.length ? (open ? <HiOutlineChevronDown /> : <HiOutlineChevronRight />) : null}
+          {kids.length ? (open ? "▾" : "▸") : null}
         </span>
         <span className="doc-folder-icon">
-          {open && kids.length ? <HiFolderOpen /> : <HiOutlineFolder />}
+          {open && kids.length ? "📂" : "📁"}
         </span>
 
         {editing ? (
@@ -260,125 +260,121 @@ export default function DocumentsPage() {
   return (
     <>
       <style>{`
-        .doc-layout { display:flex; gap:16px; align-items:flex-start; }
+        .doc-layout { display:grid; grid-template-columns:320px 1fr; gap:16px; align-items:start; }
         .doc-sidebar {
-          width:260px; flex-shrink:0;
-          background:#fff; border:1px solid #ded5c8; border-radius:20px;
-          padding:12px 8px; box-shadow:0 4px 20px rgba(24,18,14,.06);
+          background:var(--sf); border:1px solid rgba(67,69,63,.1); border-radius:22px;
+          padding:0; overflow:hidden; box-shadow:0 12px 30px rgba(30,61,43,.06);
           position:sticky; top:16px;
         }
         .doc-sidebar-label {
-          font-size:.62rem; font-weight:800; letter-spacing:.16em;
-          text-transform:uppercase; color:#8b7d6c;
-          padding:8px 8px 4px;
+          font-size:.56rem; font-weight:600; letter-spacing:.14em;
+          text-transform:uppercase; color:#83867C; font-family:'JetBrains Mono',monospace;
+          padding:14px 16px 6px;
         }
         .doc-sidebar-item {
-          display:flex; align-items:center; gap:8px; width:100%;
-          padding:7px 10px; border-radius:10px; border:none; cursor:pointer;
-          background:transparent; color:#3f352c; font-size:.82rem; text-align:left;
+          display:flex; align-items:center; gap:11px; width:100%;
+          padding:11px 16px; border:none; border-left:3px solid transparent; cursor:pointer;
+          background:transparent; color:#43453F; font-size:.82rem; text-align:left;
+          border-bottom:1px solid rgba(67,69,63,.08); transition:background .14s;
+          font-family:'Outfit',sans-serif;
         }
-        .doc-sidebar-item:hover { background:#f5f0ea; }
-        .doc-sidebar-item.active { background:var(--navy); color:#F7F3ED; font-weight:600; }
+        .doc-sidebar-item:hover { background:#F1EEE6; }
+        .doc-sidebar-item.active { background:rgba(111,175,107,.08); color:#1E3D2B; font-weight:600; border-left-color:#6FAF6B; }
         .doc-sidebar-item .count {
-          margin-left:auto; font-size:.68rem; font-weight:700;
-          background:#EFE4D5; color:#6f5c3e; border-radius:99px; padding:1px 7px;
+          margin-left:auto; font-size:.7rem; font-weight:500; font-family:'JetBrains Mono',monospace;
+          color:#83867C; background:none; padding:0;
         }
-        .doc-sidebar-item.active .count { background:rgba(255,255,255,.2); color:#F7F3ED; }
+        .doc-sidebar-item.active .count { color:#2F6A38; }
 
-        /* folder tree */
+        /* folder tree (lista plana con separadores, igual que el Vault) */
         .doc-folder-row {
-          display:flex; align-items:center; gap:6px;
-          padding:6px 10px; border-radius:10px; cursor:pointer;
-          color:#3f352c; font-size:.82rem; position:relative;
+          display:flex; align-items:center; gap:11px;
+          padding:11px 16px; border-left:3px solid transparent; cursor:pointer;
+          color:#43453F; font-size:.82rem; position:relative;
+          border-bottom:1px solid rgba(67,69,63,.08); transition:background .14s;
+          font-family:'Outfit',sans-serif;
         }
-        .doc-folder-row:hover { background:#f5f0ea; }
-        .doc-folder-row.active { background:var(--navy); color:#F7F3ED; font-weight:600; }
-        .doc-folder-chevron { width:14px; font-size:.72rem; display:flex; align-items:center; flex-shrink:0; }
-        .doc-folder-icon { font-size:.95rem; flex-shrink:0; }
-        .doc-folder-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
-        .doc-folder-count {
-          font-size:.66rem; font-weight:700; background:#EFE4D5; color:#6f5c3e;
-          border-radius:99px; padding:1px 6px; flex-shrink:0;
-        }
-        .doc-folder-row.active .doc-folder-count { background:rgba(255,255,255,.2); color:#F7F3ED; }
+        .doc-folder-row:hover { background:#F1EEE6; }
+        .doc-folder-row.active { background:rgba(111,175,107,.08); color:#1E3D2B; font-weight:600; border-left-color:#6FAF6B; }
+        .doc-folder-chevron { width:13px; font-size:.58rem; color:#83867C; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+        .doc-folder-icon { width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:rgba(111,175,107,.12); font-size:.95rem; flex-shrink:0; }
+        .doc-folder-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; font-size:.82rem; }
+        .doc-folder-count { font-size:.7rem; font-weight:500; font-family:'JetBrains Mono',monospace; color:#83867C; flex-shrink:0; }
+        .doc-folder-row.active .doc-folder-count { color:#2F6A38; }
         .doc-folder-menu-btn {
           opacity:0; background:none; border:none; cursor:pointer;
-          color:inherit; font-size:1rem; padding:2px; border-radius:4px;
+          color:#83867C; font-size:1.05rem; padding:2px 5px; border-radius:7px;
           display:flex; align-items:center;
         }
-        .doc-folder-row:hover .doc-folder-menu-btn { opacity:.7; }
-        .doc-folder-menu-btn:hover { opacity:1 !important; }
+        .doc-folder-row:hover .doc-folder-menu-btn { opacity:.65; }
+        .doc-folder-menu-btn:hover { opacity:1 !important; background:rgba(67,69,63,.08); }
         .doc-folder-menu {
-          position:absolute; right:4px; top:calc(100% + 2px); z-index:200;
-          background:#fff; border:1px solid #ded5c8; border-radius:12px;
-          padding:4px 0; min-width:170px;
-          box-shadow:0 8px 24px rgba(0,0,0,.12);
+          position:absolute; right:8px; top:calc(100% - 6px); z-index:200;
+          background:var(--sf); border:1px solid var(--bd); border-radius:12px;
+          padding:5px; min-width:182px;
+          box-shadow:0 14px 32px rgba(30,61,43,.18);
         }
         .doc-folder-menu button {
-          display:flex; align-items:center; gap:8px; width:100%;
-          padding:8px 14px; background:none; border:none; cursor:pointer;
-          font-size:.8rem; color:#3f352c; text-align:left;
+          display:flex; align-items:center; gap:9px; width:100%;
+          padding:8px 11px; background:none; border:none; cursor:pointer; border-radius:8px;
+          font-size:.78rem; color:#43453F; text-align:left; font-family:'Outfit',sans-serif;
         }
-        .doc-folder-menu button:hover { background:#f5f0ea; }
+        .doc-folder-menu button:hover { background:#F1EEE6; }
         .doc-folder-menu button.danger { color:#C0392B; }
         .doc-folder-rename {
-          flex:1; font-size:.8rem; padding:2px 6px; border-radius:6px;
-          border:1px solid #dccfbe; outline:none; color:inherit; background:rgba(255,255,255,.9);
+          flex:1; font-size:.8rem; padding:4px 8px; border-radius:8px;
+          border:1px solid #6FAF6B; outline:none; color:#1E3D2B; background:var(--sf); font-family:'Outfit',sans-serif;
         }
         .doc-add-folder-btn {
-          display:flex; align-items:center; gap:6px; width:100%;
-          padding:7px 10px; border-radius:10px; border:none; background:transparent;
-          color:var(--forest); font-size:.78rem; font-weight:600; cursor:pointer; margin-top:2px;
+          display:flex; align-items:center; gap:7px; width:calc(100% - 24px); margin:10px 12px;
+          padding:9px 11px; border-radius:11px; border:1px dashed rgba(67,69,63,.18); background:transparent;
+          color:var(--mid); font-size:.78rem; font-weight:600; cursor:pointer; justify-content:center;
+          font-family:'Outfit',sans-serif;
         }
-        .doc-add-folder-btn:hover { background:#f5f0ea; }
-        .doc-new-folder-row {
-          display:flex; gap:6px; padding:4px 8px; margin-top:2px;
-        }
+        .doc-add-folder-btn:hover { background:rgba(111,175,107,.06); border-color:#6FAF6B; }
+        .doc-new-folder-row { display:flex; gap:6px; padding:8px 12px; align-items:center; }
 
-        /* main */
-        .doc-main { flex:1; min-width:0; }
-        .doc-toolbar {
-          display:flex; align-items:flex-end; justify-content:space-between;
-          gap:12px; margin-bottom:12px; flex-wrap:wrap;
+        /* main = tarjeta (igual que el panel derecho del Vault) */
+        .doc-main {
+          min-width:0; background:var(--sf); border:1px solid rgba(67,69,63,.1);
+          border-radius:22px; overflow:hidden; box-shadow:0 12px 30px rgba(30,61,43,.06);
         }
+        .doc-main-head {
+          display:flex; align-items:center; justify-content:space-between;
+          gap:12px; padding:18px 20px; border-bottom:1px solid rgba(67,69,63,.1); flex-wrap:wrap;
+        }
+        .doc-main-body { padding:18px 20px; }
         .doc-breadcrumb {
           display:flex; align-items:center; gap:4px;
-          font-size:.72rem; color:var(--mu); margin-bottom:3px;
+          font-size:.66rem; color:#83867C; margin-bottom:4px; font-family:'JetBrains Mono',monospace;
         }
         .doc-breadcrumb span { cursor:pointer; }
-        .doc-breadcrumb span:last-child { color:#3f352c; font-weight:600; cursor:default; }
+        .doc-breadcrumb span:last-child { color:#43453F; font-weight:600; cursor:default; }
         .doc-page-title {
-          font-size:1.5rem; font-weight:700; color:#1a130d; line-height:1.2;
+          font-family:'Playfair Display',serif; font-size:1.35rem; font-weight:600; color:#1E3D2B; line-height:1.15;
         }
         .doc-actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-
-        /* table */
-        .doc-table-wrap {
-          background:#fff; border:1px solid #ded5c8; border-radius:20px;
-          overflow:hidden; box-shadow:0 4px 20px rgba(24,18,14,.06);
-        }
         .doc-empty {
-          padding:52px 24px; text-align:center; color:var(--mu); font-size:.85rem;
+          padding:48px 24px; text-align:center; color:#83867C; font-size:.84rem;
+          border:1px dashed rgba(67,69,63,.18); border-radius:14px;
         }
-        .doc-row-actions {
-          display:flex; gap:2px; justify-content:flex-end;
-        }
+        .doc-row-actions { display:flex; gap:2px; justify-content:flex-end; }
         .doc-row-btn {
           background:none; border:none; cursor:pointer; font-size:1rem;
-          padding:5px 6px; border-radius:8px; color:var(--forest); opacity:.6; transition:opacity .12s,background .12s;
+          padding:6px 7px; border-radius:9px; color:var(--mid); opacity:.6; transition:opacity .12s,background .12s;
         }
-        .doc-row-btn:hover { opacity:1; background:#f0f7f3; }
+        .doc-row-btn:hover { opacity:1; background:rgba(111,175,107,.1); }
         .doc-row-btn.danger { color:#C0392B; }
-        .doc-row-btn.danger:hover { background:#fdf0ee; }
-        .doc-count { font-size:.72rem; color:var(--mu); margin-top:8px; padding-left:4px; }
+        .doc-row-btn.danger:hover { background:#FDECEA; }
+        .doc-count { font-size:.68rem; color:#83867C; margin-top:12px; font-family:'JetBrains Mono',monospace; }
 
         /* move modal tree */
         .move-tree-row {
           display:flex; align-items:center; gap:8px; padding:8px 12px;
-          border-radius:8px; cursor:pointer; font-size:.83rem; color:#3f352c;
+          border-radius:8px; cursor:pointer; font-size:.83rem; color:#43453F;
         }
-        .move-tree-row:hover { background:#f5f0ea; }
-        .move-tree-row.current { background:#f0f7f3; font-weight:600; }
+        .move-tree-row:hover { background:#F1EEE6; }
+        .move-tree-row.current { background:rgba(111,175,107,.1); font-weight:600; }
         .move-current-badge {
           font-size:.65rem; background:var(--forest); color:#fff;
           border-radius:99px; padding:2px 8px; font-weight:700;
@@ -386,9 +382,22 @@ export default function DocumentsPage() {
         .move-chevron { width:14px; font-size:.72rem; cursor:pointer; }
 
         /* confirm modal */
-        .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:9000; display:flex; align-items:center; justify-content:center; }
-        .modal-box { background:#FFFCF8; border-radius:20px; padding:24px; width:100%; box-shadow:0 24px 60px rgba(0,0,0,.22); }
-        .modal-title { font-weight:700; font-size:1rem; margin-bottom:8px; color:#1a130d; }
+        .modal-overlay { position:fixed; inset:0; background:rgba(20,30,22,.45); backdrop-filter:blur(6px); z-index:9000; display:flex; align-items:center; justify-content:center; }
+        .modal-box { background:#FBFAF6; border:1px solid var(--bd); border-radius:22px; padding:24px; width:100%; box-shadow:0 24px 60px rgba(0,0,0,.22); }
+        .modal-title { font-family:'Playfair Display',serif; font-weight:600; font-size:1.15rem; margin-bottom:8px; color:#1E3D2B; }
+
+        /* header chip + buscador pill + tarjetas de documento (idéntico a usr-row del Vault) */
+        .doc-dhead-ico { width:44px; height:44px; border-radius:13px; display:flex; align-items:center; justify-content:center; background:rgba(111,175,107,.12); font-size:1.25rem; flex-shrink:0; }
+        .doc-search { display:flex; align-items:center; gap:8px; background:var(--bg2); border:1px solid rgba(67,69,63,.1); border-radius:11px; padding:8px 12px; margin-bottom:14px; }
+        .doc-search input { border:none; background:none; outline:none; width:100%; font-size:.82rem; color:var(--tx); font-family:'Outfit',sans-serif; }
+        .doc-search svg { color:#83867C; flex-shrink:0; font-size:.95rem; }
+        .doc-rows { display:flex; flex-direction:column; gap:8px; }
+        .doc-card-row { display:flex; align-items:center; gap:12px; padding:11px 14px; border:1px solid rgba(67,69,63,.1); border-radius:13px; background:var(--sf); transition:border-color .15s; }
+        .doc-card-row:hover { border-color:rgba(67,69,63,.18); }
+        .doc-card-ico { width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:var(--bg2); color:var(--mid); font-size:1rem; flex-shrink:0; }
+        .doc-card-info { flex:1; min-width:0; }
+        .doc-card-name { font-size:.82rem; font-weight:600; color:#1E3D2B; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .doc-card-meta { font-size:.69rem; color:#83867C; font-family:'JetBrains Mono',monospace; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
       `}</style>
 
       <div className="doc-layout">
@@ -407,7 +416,7 @@ export default function DocumentsPage() {
               onClick={() => setActiveId(item.id)}
               title={item.label}
             >
-              <span>{item.icon}</span>
+              <span className="doc-folder-icon">{item.icon}</span>
               <span style={{flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{item.label}</span>
               <span className="count">{item.count}</span>
             </button>
@@ -447,31 +456,29 @@ export default function DocumentsPage() {
         {/* ══ MAIN ═════════════════════════════════════════════════════ */}
         <div className="doc-main">
 
-          {/* toolbar */}
-          <div className="doc-toolbar">
-            <div>
-              {breadcrumb.length > 0 && (
-                <div className="doc-breadcrumb">
-                  <span onClick={() => setActiveId("all")}>Documentos</span>
-                  {breadcrumb.map((crumb, i) => (
-                    <span key={crumb.id} style={{display:"flex",alignItems:"center",gap:4}}>
-                      <HiOutlineChevronRight style={{fontSize:".65rem",opacity:.5}}/>
-                      <span
-                        style={{cursor: i<breadcrumb.length-1?"pointer":"default", color: i===breadcrumb.length-1?"#3f352c":"var(--mu)"}}
-                        onClick={() => i<breadcrumb.length-1 && setActiveId(crumb.id)}
-                      >{crumb.name}</span>
-                    </span>
-                  ))}
-                </div>
-              )}
-              <div className="doc-page-title">{activeLabel}</div>
+          {/* header */}
+          <div className="doc-main-head">
+            <div style={{display:"flex",alignItems:"center",gap:12,minWidth:0}}>
+              <span className="doc-dhead-ico">{activeId==="all"?"🗂":activeId==="unfiled"?"📋":"📁"}</span>
+              <div style={{minWidth:0}}>
+                {breadcrumb.length > 0 && (
+                  <div className="doc-breadcrumb">
+                    <span onClick={() => setActiveId("all")}>Documentos</span>
+                    {breadcrumb.map((crumb, i) => (
+                      <span key={crumb.id} style={{display:"flex",alignItems:"center",gap:4}}>
+                        <HiOutlineChevronRight style={{fontSize:".65rem",opacity:.5}}/>
+                        <span
+                          style={{cursor: i<breadcrumb.length-1?"pointer":"default", color: i===breadcrumb.length-1?"#43453F":"var(--mu)"}}
+                          onClick={() => i<breadcrumb.length-1 && setActiveId(crumb.id)}
+                        >{crumb.name}</span>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="doc-page-title">{activeLabel}</div>
+              </div>
             </div>
             <div className="doc-actions">
-              <input
-                value={search} onChange={e => setSearch(e.target.value)}
-                placeholder="Buscar…" className="fi"
-                style={{width:160,padding:"8px 12px",fontSize:".8rem"}}
-              />
               <select className="fi" value={sortBy} onChange={e => setSortBy(e.target.value)}
                 style={{width:"auto",padding:"8px 12px",fontSize:".8rem"}}>
                 <option value="recent">Más recientes</option>
@@ -488,81 +495,63 @@ export default function DocumentsPage() {
             </div>
           </div>
 
-          {/* table */}
-          <div className="doc-table-wrap">
-            {filtered.length === 0 ? (
-              <div className="doc-empty">
-                {search ? "Sin resultados para esa búsqueda." : "Esta carpeta está vacía."}
-                {!search && (
-                  <div style={{marginTop:10}}>
-                    <button className="btn-s" style={{fontSize:".78rem",padding:"8px 14px"}}
-                      onClick={() => openDocumentUpload({
-                        folderId: activeId !== "all" && activeId !== "unfiled" ? activeId : undefined
-                      })}>
-                      + Subir primer archivo
+          <div className="doc-main-body">
+
+          {/* buscador */}
+          <label className="doc-search">
+            <HiOutlineMagnifyingGlass />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar documento…" />
+          </label>
+
+          {/* documentos (tarjetas) */}
+          {filtered.length === 0 ? (
+            <div className="doc-empty">
+              {search ? "Sin resultados para esa búsqueda." : "Esta carpeta está vacía."}
+              {!search && (
+                <div style={{marginTop:10}}>
+                  <button className="btn-s" style={{fontSize:".78rem",padding:"8px 14px"}}
+                    onClick={() => openDocumentUpload({
+                      folderId: activeId !== "all" && activeId !== "unfiled" ? activeId : undefined
+                    })}>
+                    + Subir primer archivo
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="doc-rows">
+              {filtered.map(doc => (
+                <div key={doc.id} className="doc-card-row">
+                  <span className="doc-card-ico">{fileIcon(doc.name)}</span>
+                  <div className="doc-card-info">
+                    <div className="doc-card-name" title={doc.name}>{doc.name}</div>
+                    <div className="doc-card-meta">
+                      {CAT_LABEL[doc.category] || doc.category} · {fmtSize(doc.file_size)} · {fmtDate(doc.uploaded_at)}{doc.entity_label ? ` · ${doc.entity_label}` : ""}
+                    </div>
+                  </div>
+                  <div className="doc-row-actions">
+                    <button className="doc-row-btn" title="Mover a carpeta" onClick={() => setMoveTarget(doc)}>
+                      <HiOutlineArrowRight />
+                    </button>
+                    <button className="doc-row-btn" title="Ver" onClick={() => openDocumentPreview(doc.id)}>
+                      <HiOutlineEye />
+                    </button>
+                    <button className="doc-row-btn" title="Descargar" onClick={() => downloadDocument(doc.id, doc.download_url, doc.name)}>
+                      <HiOutlineArrowDownTray />
+                    </button>
+                    <button className="doc-row-btn danger" title="Eliminar" onClick={() => setDelDoc(doc.id)}>
+                      <HiOutlineTrash />
                     </button>
                   </div>
-                )}
-              </div>
-            ) : (
-              <table className="tbl">
-                <thead>
-                  <tr>
-                    <th>Nombre</th>
-                    <th>Categoría</th>
-                    <th>Tamaño</th>
-                    <th>Vínculo</th>
-                    <th>Fecha</th>
-                    <th/>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(doc => (
-                    <tr key={doc.id}>
-                      <td style={{maxWidth:220}}>
-                        <div style={{display:"flex",alignItems:"center",gap:8}}>
-                          <span style={{fontSize:"1.15rem",flexShrink:0}}>{fileIcon(doc.name)}</span>
-                          <span style={{fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={doc.name}>
-                            {doc.name}
-                          </span>
-                        </div>
-                      </td>
-                      <td>
-                        <span className="pc-chip pending" style={{fontSize:".7rem",padding:"3px 8px"}}>
-                          {CAT_LABEL[doc.category] || doc.category}
-                        </span>
-                      </td>
-                      <td style={{color:"var(--mu)",whiteSpace:"nowrap"}}>{fmtSize(doc.file_size)}</td>
-                      <td style={{color:"var(--mu)",maxWidth:150,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                        {doc.entity_label || "—"}
-                      </td>
-                      <td style={{color:"var(--mu)",whiteSpace:"nowrap",fontSize:".78rem"}}>{fmtDate(doc.uploaded_at)}</td>
-                      <td>
-                        <div className="doc-row-actions">
-                          <button className="doc-row-btn" title="Mover a carpeta" onClick={() => setMoveTarget(doc)}>
-                            <HiOutlineArrowRight />
-                          </button>
-                          <button className="doc-row-btn" title="Ver" onClick={() => openDocumentPreview(doc.id)}>
-                            <HiOutlineEye />
-                          </button>
-                          <button className="doc-row-btn" title="Descargar" onClick={() => downloadDocument(doc.id, doc.download_url, doc.name)}>
-                            <HiOutlineArrowDownTray />
-                          </button>
-                          <button className="doc-row-btn danger" title="Eliminar" onClick={() => setDelDoc(doc.id)}>
-                            <HiOutlineTrash />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {filtered.length > 0 && (
             <div className="doc-count">{filtered.length} archivo{filtered.length!==1?"s":""}</div>
           )}
+          </div>
         </div>
       </div>
 

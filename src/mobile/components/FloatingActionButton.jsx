@@ -43,8 +43,9 @@ function FloatingActionButton({ pathname }) {
   const Icon = config.icon;
 
   return (
-    <button className="mobile-fab xl:hidden" onClick={config.onClick} aria-label={config.label}>
+    <button className="mobile-fab xl:hidden mobile-primary-button" onClick={config.onClick} aria-label={config.label} style={{padding:"10px 14px",borderRadius:18}}>
       <Icon className="text-[1.35rem]" />
+      <span style={{marginLeft:8}}>{config.label}</span>
     </button>
   );
 }

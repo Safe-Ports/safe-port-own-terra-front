@@ -366,12 +366,12 @@ function FracsPage() {
             <button
               key={frac.id}
               className={`w-full rounded-2xl border px-4 py-4 text-left transition ${
-                frac.id === selectedFrac.id ? "border-[#2A7A50] bg-[var(--tan-lt)]" : "border-line bg-[#fffdf8]"
+                frac.id === selectedFrac.id ? "border-[#355E3B] bg-[var(--tan-lt)]" : "border-line bg-[#FBFAF6]"
               }`}
               onClick={() => setSelectedFracId(frac.id)}
             >
-              <div className="font-semibold text-[#1A1410]">{frac.name}</div>
-              <div className="mt-1 text-xs text-[#8C8070]">
+              <div className="font-semibold text-[#1E3D2B]">{frac.name}</div>
+              <div className="mt-1 text-xs text-[#83867C]">
                 {frac.total_lots ?? 0} lotes · {frac.created_at ? new Date(frac.created_at).toLocaleDateString("es-MX") : ""}
               </div>
             </button>
@@ -386,10 +386,10 @@ function FracsPage() {
         <div
           style={{
             borderRadius: 22,
-            border: "1.5px solid #DED5C8",
+            border: "1.5px solid #DCDAD2",
             background: "linear-gradient(150deg,#1A3428,#101511)",
             padding: "14px 18px",
-            color: "#F7F3ED",
+            color: "#E9E5DB",
             display: "flex",
             flexWrap: "wrap",
             alignItems: "center",
@@ -397,7 +397,7 @@ function FracsPage() {
           }}
         >
           <div>
-            <div style={{ fontSize: ".64rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".2em", color: "#D9B07D" }}>
+            <div style={{ fontSize: ".64rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".2em", color: "#6FAF6B" }}>
               Fraccionamiento activo
             </div>
             <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.6rem", lineHeight: 1.1, marginTop: 4 }}>
@@ -408,7 +408,7 @@ function FracsPage() {
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginLeft: "auto", alignItems: "center" }}>
             <div style={{ display: "flex", gap: 6 }}>
               {[
-                { lbl: "Total", val: lots.length, col: "#F7F3ED" },
+                { lbl: "Total", val: lots.length, col: "#E9E5DB" },
                 { lbl: "Disp.", val: statsAvailable, col: "#86efac" },
                 { lbl: "Vend.", val: statsSold,      col: "#fca5a5" },
                 { lbl: "Res.",  val: statsReserved,   col: "#fcd34d" },
@@ -419,10 +419,10 @@ function FracsPage() {
                 </div>
               ))}
             </div>
-            <button className="btn-s" onClick={openEditor} style={{ color: "#F7F3ED", borderColor: "rgba(255,255,255,.2)", background: "rgba(255,255,255,.08)" }}>
+            <button className="btn-s" onClick={openEditor} style={{ color: "#E9E5DB", borderColor: "rgba(255,255,255,.2)", background: "rgba(255,255,255,.08)" }}>
               ✏ Editar
             </button>
-            <button className="btn-s" onClick={exportAppData} style={{ color: "#F7F3ED", borderColor: "rgba(255,255,255,.2)", background: "rgba(255,255,255,.08)" }}>
+            <button className="btn-s" onClick={exportAppData} style={{ color: "#E9E5DB", borderColor: "rgba(255,255,255,.2)", background: "rgba(255,255,255,.08)" }}>
               ⬇ Exportar
             </button>
             {showDeleteConfirm ? (
@@ -436,7 +436,7 @@ function FracsPage() {
                 </button>
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
-                  style={{ background: "rgba(255,255,255,.12)", border: "none", color: "#F7F3ED", borderRadius: 7, padding: "3px 8px", fontSize: ".68rem", cursor: "pointer" }}
+                  style={{ background: "rgba(255,255,255,.12)", border: "none", color: "#E9E5DB", borderRadius: 7, padding: "3px 8px", fontSize: ".68rem", cursor: "pointer" }}
                 >
                   Cancelar
                 </button>
@@ -451,8 +451,8 @@ function FracsPage() {
         <div
           style={{
             borderRadius: 18,
-            border: "1.5px solid #DED5C8",
-            background: "#FBF7F1",
+            border: "1.5px solid #DCDAD2",
+            background: "#FBFAF6",
             padding: "10px 14px",
             display: "flex",
             flexWrap: "wrap",
@@ -504,7 +504,7 @@ function FracsPage() {
               width: 220,
               flexShrink: 0,
               borderRadius: 18,
-              border: "1.5px solid #DED5C8",
+              border: "1.5px solid #DCDAD2",
               background: "#fff",
               overflow: "hidden",
               maxHeight: "calc(100vh - 18rem)",
@@ -513,7 +513,7 @@ function FracsPage() {
             }}
           >
             <div style={{ padding: "8px 10px 6px", borderBottom: "1px solid #EDE8E0" }}>
-              <div style={{ fontSize: ".58rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".14em", color: "#8A7A69" }}>
+              <div style={{ fontSize: ".58rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".14em", color: "#83867C" }}>
                 🗺 Plano de referencia
               </div>
             </div>
@@ -543,7 +543,7 @@ function FracsPage() {
               )}
             </div>
             <div style={{ padding: "7px 10px", borderTop: "1px solid #EDE8E0", background: "#FDFAF6" }}>
-              <div style={{ fontSize: ".6rem", color: "#8A7A69", marginBottom: 4, fontWeight: 600 }}>Leyenda</div>
+              <div style={{ fontSize: ".6rem", color: "#83867C", marginBottom: 4, fontWeight: 600 }}>Leyenda</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                 {[
                   { color: "#dcfce7", border: "#86efac", lbl: "Disponible" },
@@ -564,7 +564,7 @@ function FracsPage() {
             style={{
               flex: 1,
               borderRadius: 22,
-              border: "1.5px solid #DED5C8",
+              border: "1.5px solid #DCDAD2",
               background: "#fff",
               padding: 14,
               maxHeight: "calc(100vh - 18rem)",
@@ -573,7 +573,7 @@ function FracsPage() {
             }}
           >
             {lotsLoading ? (
-              <div style={{ padding: 20, textAlign: "center", color: "#8A7A69", fontSize: ".82rem" }}>Cargando lotes...</div>
+              <div style={{ padding: 20, textAlign: "center", color: "#83867C", fontSize: ".82rem" }}>Cargando lotes...</div>
             ) : (
               <>
                 {sections
@@ -583,7 +583,7 @@ function FracsPage() {
                     if (sectionLots.length === 0) return null;
                     return (
                       <div key={sec} style={{ marginBottom: 18 }}>
-                        <div style={{ fontSize: ".62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".14em", color: "#8A7A69", marginBottom: 8 }}>
+                        <div style={{ fontSize: ".62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".14em", color: "#83867C", marginBottom: 8 }}>
                           {sec} · {sectionLots.length} lotes
                         </div>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -620,7 +620,7 @@ function FracsPage() {
                     );
                   })}
                 {filteredLots.length === 0 && (
-                  <div style={{ padding: 24, textAlign: "center", color: "#8A7A69", fontSize: ".82rem" }}>
+                  <div style={{ padding: 24, textAlign: "center", color: "#83867C", fontSize: ".82rem" }}>
                     Sin lotes que coincidan
                   </div>
                 )}
@@ -654,14 +654,14 @@ function FracsPage() {
               {/* Modal header */}
               <div style={{ background: "linear-gradient(135deg,#1a3428,#101511)", padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: ".6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".2em", color: "#D9B07D", marginBottom: 2 }}>Detalle del Lote</div>
-                  <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.1rem", color: "#F7F3ED", lineHeight: 1.1 }}>
+                  <div style={{ fontSize: ".6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".2em", color: "#6FAF6B", marginBottom: 2 }}>Detalle del Lote</div>
+                  <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.1rem", color: "#E9E5DB", lineHeight: 1.1 }}>
                     {selectedFrac.name} · {selectedLot.code}
                   </div>
                 </div>
                 <button
                   onClick={() => { setShowLotModal(false); setEditMode(false); setShowCotizador(false); }}
-                  style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(255,255,255,.12)", color: "#F7F3ED", border: "1px solid rgba(255,255,255,.2)", fontSize: "1.1rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+                  style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(255,255,255,.12)", color: "#E9E5DB", border: "1px solid rgba(255,255,255,.2)", fontSize: "1.1rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
                 >
                   ×
                 </button>
@@ -803,7 +803,7 @@ function FracsPage() {
                           { ico: "↕", lbl: "Fondo",  val: draft.fondo  ? `${draft.fondo} ml`  : "—" },
                           { ico: "⊡", lbl: "Superficie", val: selectedLot.area_m2 ? `${selectedLot.area_m2} m²` : "—" },
                         ].map((m) => (
-                          <div key={m.lbl} style={{ background: "#f7f3ed", border: "1.5px solid #e8e0d8", borderRadius: 9, padding: "8px 6px", textAlign: "center" }}>
+                          <div key={m.lbl} style={{ background: "#E9E5DB", border: "1.5px solid #e8e0d8", borderRadius: 9, padding: "8px 6px", textAlign: "center" }}>
                             <div style={{ fontSize: ".95rem", marginBottom: 2 }}>{m.ico}</div>
                             <div style={{ fontWeight: 800, fontSize: ".82rem", color: "#0f1f3d" }}>{m.val}</div>
                             <div style={{ fontSize: ".58rem", color: "#9b8478", marginTop: 1 }}>{m.lbl}</div>
@@ -831,7 +831,7 @@ function FracsPage() {
                                 fontSize: ".76rem",
                                 fontFamily: "DM Sans, sans-serif",
                                 color: "#0f1f3d",
-                                background: editMode ? "#fff" : "#f7f3ed",
+                                background: editMode ? "#fff" : "#E9E5DB",
                                 outline: "none",
                                 opacity: editMode ? 1 : .65,
                               }}
@@ -857,7 +857,7 @@ function FracsPage() {
                                 alignItems: "center",
                                 justifyContent: "space-between",
                                 padding: "6px 10px",
-                                background: on ? "rgba(45,122,79,.06)" : "#f7f3ed",
+                                background: on ? "rgba(45,122,79,.06)" : "#E9E5DB",
                                 border: `1.5px solid ${on ? "rgba(45,122,79,.2)" : "#e8e0d8"}`,
                                 borderRadius: 8,
                               }}
@@ -907,7 +907,7 @@ function FracsPage() {
                                 padding: "8px 4px",
                                 borderRadius: 9,
                                 border: `2px solid ${isActive ? opt.bc : "#e8e0d8"}`,
-                                background: isActive ? opt.bg : "#f7f3ed",
+                                background: isActive ? opt.bg : "#E9E5DB",
                                 cursor: "pointer",
                                 fontFamily: "DM Sans, sans-serif",
                                 fontSize: ".65rem",
@@ -941,7 +941,7 @@ function FracsPage() {
                             </button>
                             <button
                               onClick={() => { setShowApptForm((v) => !v); }}
-                              style={{ width: "100%", padding: 8, borderRadius: 9, background: "#f7f3ed", color: "#0f1f3d", border: "1.5px solid #e8e0d8", fontWeight: 600, fontSize: ".74rem", cursor: "pointer", fontFamily: "DM Sans, sans-serif" }}
+                              style={{ width: "100%", padding: 8, borderRadius: 9, background: "#E9E5DB", color: "#0f1f3d", border: "1.5px solid #e8e0d8", fontWeight: 600, fontSize: ".74rem", cursor: "pointer", fontFamily: "DM Sans, sans-serif" }}
                             >
                               📅 Agendar Cita
                             </button>
@@ -966,14 +966,14 @@ function FracsPage() {
                         {selectedLot.status === "sold" && (
                           <button
                             onClick={() => navigate("/contratos")}
-                            style={{ width: "100%", padding: 9, borderRadius: 9, background: "#f7f3ed", color: "#0f1f3d", border: "1.5px solid #e8e0d8", fontWeight: 700, fontSize: ".76rem", cursor: "pointer", fontFamily: "DM Sans, sans-serif" }}
+                            style={{ width: "100%", padding: 9, borderRadius: 9, background: "#E9E5DB", color: "#0f1f3d", border: "1.5px solid #e8e0d8", fontWeight: 700, fontSize: ".76rem", cursor: "pointer", fontFamily: "DM Sans, sans-serif" }}
                           >
                             📄 Ver Contrato →
                           </button>
                         )}
                         <button
                           onClick={() => showToast("PDF en desarrollo")}
-                          style={{ width: "100%", padding: 8, borderRadius: 9, background: "#f7f3ed", color: "#0f1f3d", border: "1.5px solid #e8e0d8", fontWeight: 600, fontSize: ".74rem", cursor: "pointer", fontFamily: "DM Sans, sans-serif" }}
+                          style={{ width: "100%", padding: 8, borderRadius: 9, background: "#E9E5DB", color: "#0f1f3d", border: "1.5px solid #e8e0d8", fontWeight: 600, fontSize: ".74rem", cursor: "pointer", fontFamily: "DM Sans, sans-serif" }}
                         >
                           🖨 Imprimir Ficha
                         </button>
@@ -1029,7 +1029,7 @@ function FracsPage() {
                           <div style={{ display: "flex", gap: 6 }}>
                             <button
                               onClick={() => { setShowApptForm(false); setApptDraft({ contact_name: "", contact_phone: "", scheduled_at: "", notes: "" }); }}
-                              style={{ flex: 1, padding: "7px", borderRadius: 8, background: "#f7f3ed", color: "#9b8478", border: "1.5px solid #e8e0d8", fontWeight: 600, fontSize: ".72rem", cursor: "pointer", fontFamily: "DM Sans,sans-serif" }}
+                              style={{ flex: 1, padding: "7px", borderRadius: 8, background: "#E9E5DB", color: "#9b8478", border: "1.5px solid #e8e0d8", fontWeight: 600, fontSize: ".72rem", cursor: "pointer", fontFamily: "DM Sans,sans-serif" }}
                             >
                               Cancelar
                             </button>
@@ -1055,7 +1055,7 @@ function FracsPage() {
                           {apptData.map((appt) => (
                             <div
                               key={appt.id}
-                              style={{ background: "#f7f3ed", border: "1.5px solid #e8e0d8", borderRadius: 10, padding: "9px 10px" }}
+                              style={{ background: "#E9E5DB", border: "1.5px solid #e8e0d8", borderRadius: 10, padding: "9px 10px" }}
                             >
                               <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
                                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -1108,7 +1108,7 @@ function FracsPage() {
                         padding: "10px 14px",
                         borderRadius: 11,
                         background: "linear-gradient(135deg,#1a3428,#101511)",
-                        color: "#F7F3ED",
+                        color: "#E9E5DB",
                         border: "none",
                         fontWeight: 700,
                         fontSize: ".8rem",
@@ -1171,7 +1171,7 @@ function FracsPage() {
           <div style={{ background: "linear-gradient(135deg,#1a3428,#101511)", padding: "14px 18px", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
             <span style={{ fontSize: "1.4rem" }}>🧮</span>
             <div>
-              <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.1rem", color: "#F7F3ED", lineHeight: 1.1 }}>
+              <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.1rem", color: "#E9E5DB", lineHeight: 1.1 }}>
                 Cotizador — {selectedLot.code}
               </div>
               <div style={{ fontSize: ".66rem", color: "rgba(247,243,237,.55)", marginTop: 2 }}>
@@ -1181,19 +1181,19 @@ function FracsPage() {
             <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
               <button
                 onClick={() => showToast("PDF en desarrollo")}
-                style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 14px", borderRadius: 8, background: "rgba(255,255,255,.12)", color: "#F7F3ED", border: "1px solid rgba(255,255,255,.2)", fontSize: ".72rem", fontWeight: 700, cursor: "pointer", fontFamily: "DM Sans,sans-serif" }}
+                style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 14px", borderRadius: 8, background: "rgba(255,255,255,.12)", color: "#E9E5DB", border: "1px solid rgba(255,255,255,.2)", fontSize: ".72rem", fontWeight: 700, cursor: "pointer", fontFamily: "DM Sans,sans-serif" }}
               >
                 ⬇ PDF
               </button>
               <button
                 onClick={() => showToast("Email en desarrollo")}
-                style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 14px", borderRadius: 8, background: "rgba(255,255,255,.12)", color: "#F7F3ED", border: "1px solid rgba(255,255,255,.2)", fontSize: ".72rem", fontWeight: 700, cursor: "pointer", fontFamily: "DM Sans,sans-serif" }}
+                style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 14px", borderRadius: 8, background: "rgba(255,255,255,.12)", color: "#E9E5DB", border: "1px solid rgba(255,255,255,.2)", fontSize: ".72rem", fontWeight: 700, cursor: "pointer", fontFamily: "DM Sans,sans-serif" }}
               >
                 ✉ Email
               </button>
               <button
                 onClick={() => setShowCotizador(false)}
-                style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(255,255,255,.12)", color: "#F7F3ED", border: "1px solid rgba(255,255,255,.2)", fontSize: "1rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(255,255,255,.12)", color: "#E9E5DB", border: "1px solid rgba(255,255,255,.2)", fontSize: "1rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
               >
                 ×
               </button>
@@ -1222,7 +1222,7 @@ function FracsPage() {
                       value={f.val}
                       step={f.step}
                       onChange={(e) => f.set(Number(e.target.value))}
-                      style={{ width: "100%", padding: "8px 12px", border: "1.5px solid #e8e0d8", borderRadius: 9, fontSize: ".9rem", fontFamily: "DM Sans,sans-serif", color: "#0f1f3d", background: "#f7f3ed", outline: "none", boxSizing: "border-box" }}
+                      style={{ width: "100%", padding: "8px 12px", border: "1.5px solid #e8e0d8", borderRadius: 9, fontSize: ".9rem", fontFamily: "DM Sans,sans-serif", color: "#0f1f3d", background: "#E9E5DB", outline: "none", boxSizing: "border-box" }}
                     />
                   </div>
                 ))}
@@ -1241,18 +1241,18 @@ function FracsPage() {
                         borderRadius: 13,
                         background: "linear-gradient(135deg,#1a3428,#101511)",
                         padding: "14px 16px",
-                        color: "#F7F3ED",
+                        color: "#E9E5DB",
                         marginBottom: 10,
                       }}
                     >
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
                         <div>
                           <div style={{ fontSize: ".58rem", color: "rgba(247,243,237,.5)", textTransform: "uppercase", letterSpacing: ".5px" }}>Mensualidad</div>
-                          <div style={{ fontWeight: 900, fontSize: "1.5rem", color: "#F7F3ED", lineHeight: 1, marginTop: 3 }}>{currency(Math.round(m))}</div>
+                          <div style={{ fontWeight: 900, fontSize: "1.5rem", color: "#E9E5DB", lineHeight: 1, marginTop: 3 }}>{currency(Math.round(m))}</div>
                         </div>
                         <div>
                           <div style={{ fontSize: ".58rem", color: "rgba(247,243,237,.5)", textTransform: "uppercase", letterSpacing: ".5px" }}>A financiar</div>
-                          <div style={{ fontWeight: 900, fontSize: "1.5rem", color: "#D9B07D", lineHeight: 1, marginTop: 3 }}>{currency(Math.round(pv))}</div>
+                          <div style={{ fontWeight: 900, fontSize: "1.5rem", color: "#6FAF6B", lineHeight: 1, marginTop: 3 }}>{currency(Math.round(pv))}</div>
                         </div>
                       </div>
                     </div>
@@ -1262,7 +1262,7 @@ function FracsPage() {
                         { lbl: "Enganche",        val: cotEnganche,    col: "#0f1f3d" },
                         { lbl: "Total a pagar",   val: totalPagos + cotEnganche, col: "#15803d", bold: true },
                       ].map((row) => (
-                        <div key={row.lbl} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 10px", background: "#f7f3ed", borderRadius: 8, border: "1px solid #e8e0d8" }}>
+                        <div key={row.lbl} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 10px", background: "#E9E5DB", borderRadius: 8, border: "1px solid #e8e0d8" }}>
                           <span style={{ fontSize: ".75rem", color: "#5c4033", fontWeight: row.bold ? 700 : 500 }}>{row.lbl}</span>
                           <span style={{ fontSize: ".82rem", fontWeight: 800, color: row.col }}>{currency(Math.round(row.val))}</span>
                         </div>
@@ -1302,7 +1302,7 @@ function FracsPage() {
                         <thead>
                           <tr style={{ background: "#1a3428", position: "sticky", top: 0 }}>
                             {["#", "SALDO INICIAL", "CAPITAL", "INTERÉS", "CUOTA", "SALDO FINAL"].map((h, i) => (
-                              <th key={h} style={{ padding: "9px 10px", textAlign: i === 0 ? "center" : "right", color: i === 2 ? "#86efac" : i === 3 ? "#fcd34d" : "#F7F3ED", fontSize: ".6rem", textTransform: "uppercase", letterSpacing: ".5px", fontWeight: 700, whiteSpace: "nowrap" }}>
+                              <th key={h} style={{ padding: "9px 10px", textAlign: i === 0 ? "center" : "right", color: i === 2 ? "#86efac" : i === 3 ? "#fcd34d" : "#E9E5DB", fontSize: ".6rem", textTransform: "uppercase", letterSpacing: ".5px", fontWeight: 700, whiteSpace: "nowrap" }}>
                                 {h}
                               </th>
                             ))}
@@ -1310,7 +1310,7 @@ function FracsPage() {
                         </thead>
                         <tbody>
                           {rows.map((row, idx) => (
-                            <tr key={row.n} style={{ background: idx % 2 === 0 ? "#fff" : "#f7f3ed", borderBottom: "1px solid #f0ebe3" }}>
+                            <tr key={row.n} style={{ background: idx % 2 === 0 ? "#fff" : "#E9E5DB", borderBottom: "1px solid #f0ebe3" }}>
                               <td style={{ padding: "6px 10px", textAlign: "center", color: "#9b8478", fontWeight: 600 }}>{row.n}</td>
                               <td style={{ padding: "6px 10px", textAlign: "right", color: "#5c4033" }}>${Math.round(row.saldoInicial).toLocaleString("es-MX")}</td>
                               <td style={{ padding: "6px 10px", textAlign: "right", color: "#15803d", fontWeight: 700 }}>${Math.round(row.capital).toLocaleString("es-MX")}</td>
@@ -1322,7 +1322,7 @@ function FracsPage() {
                         </tbody>
                       </table>
                     </div>
-                    <div style={{ padding: "10px 18px", borderTop: "1.5px solid #e8e0d8", background: "#f7f3ed", display: "flex", gap: 24, flexShrink: 0, fontSize: ".72rem" }}>
+                    <div style={{ padding: "10px 18px", borderTop: "1.5px solid #e8e0d8", background: "#E9E5DB", display: "flex", gap: 24, flexShrink: 0, fontSize: ".72rem" }}>
                       <span style={{ color: "#5c4033" }}>Capital total: <strong style={{ color: "#15803d" }}>{currency(Math.round(totalCapital))}</strong></span>
                       <span style={{ color: "#5c4033" }}>Intereses totales: <strong style={{ color: "#b45309" }}>{currency(Math.round(totalIntereses))}</strong></span>
                       <span style={{ marginLeft: "auto", color: "#5c4033" }}>Cuotas: <strong>{rows.length}</strong></span>
@@ -1348,10 +1348,10 @@ function FracsPage() {
           <div style={{ width: "min(420px, 100%)", borderRadius: 20, background: "#fff", overflow: "hidden", boxShadow: "0 32px 64px rgba(0,0,0,.35)" }}>
             {/* Header */}
             <div style={{ background: "linear-gradient(135deg,#1a3428,#101511)", padding: "16px 20px" }}>
-              <div style={{ fontSize: ".6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".2em", color: "#D9B07D", marginBottom: 4 }}>
+              <div style={{ fontSize: ".6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".2em", color: "#6FAF6B", marginBottom: 4 }}>
                 Confirmación de cambio
               </div>
-              <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.15rem", color: "#F7F3ED" }}>
+              <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.15rem", color: "#E9E5DB" }}>
                 {selectedFrac.name} · {selectedLot.code}
               </div>
             </div>
@@ -1385,7 +1385,7 @@ function FracsPage() {
                   value={confirmName}
                   onChange={(e) => setConfirmName(e.target.value)}
                   placeholder="Nombre del responsable"
-                  style={{ width: "100%", padding: "10px 14px", border: "1.5px solid #e8e0d8", borderRadius: 10, fontSize: ".88rem", fontFamily: "DM Sans,sans-serif", color: "#0f1f3d", background: "#f7f3ed", outline: "none", boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "10px 14px", border: "1.5px solid #e8e0d8", borderRadius: 10, fontSize: ".88rem", fontFamily: "DM Sans,sans-serif", color: "#0f1f3d", background: "#E9E5DB", outline: "none", boxSizing: "border-box" }}
                   onFocus={(e) => { e.target.style.borderColor = toC.barColor; }}
                   onBlur={(e) => { e.target.style.borderColor = "#e8e0d8"; }}
                 />
@@ -1399,7 +1399,7 @@ function FracsPage() {
             <div style={{ padding: "12px 20px 20px", display: "flex", gap: 10 }}>
               <button
                 onClick={() => { setPendingStatus(null); setConfirmName(""); }}
-                style={{ flex: 1, padding: "10px", borderRadius: 10, background: "#f7f3ed", color: "#5c4033", border: "1.5px solid #e8e0d8", fontWeight: 600, fontSize: ".82rem", cursor: "pointer", fontFamily: "DM Sans,sans-serif" }}
+                style={{ flex: 1, padding: "10px", borderRadius: 10, background: "#E9E5DB", color: "#5c4033", border: "1.5px solid #e8e0d8", fontWeight: 600, fontSize: ".82rem", cursor: "pointer", fontFamily: "DM Sans,sans-serif" }}
               >
                 Cancelar
               </button>

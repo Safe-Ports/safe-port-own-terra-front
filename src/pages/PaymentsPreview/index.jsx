@@ -9,10 +9,10 @@ import {
    --forest var(--forest)   verde medio
    --earth  var(--earth)   dorado/tierra  ← acento para egresos
    --danger #c0392b   rojo peligro
-   --mu     #8c8070   texto muted
-   --sf     #fffdf8   fondo blanco cálido
-   --sf2    #f0ede5   fondo gris cálido
-   --bd     #ddd8ce   borde
+   --mu     #83867C   texto muted
+   --sf     #FBFAF6   fondo blanco cálido
+   --sf2    #F1EEE6   fondo gris cálido
+   --bd     #DCDAD2   borde
    --tan-lt var(--tan-lt)   verde muy claro
    --tan-dk var(--tan-dk)   verde oscuro
    ────────────────────────────────────────────────────────────── */
@@ -49,10 +49,10 @@ const ALERTAS = [
 
 /* categorías — colores dentro de la paleta del proyecto */
 const CAT_STYLE = {
-  "Nómina":       { bg:"#e8f7ee", color:"#2A6B1A" },
-  "Servicios":    { bg:"#D5ECC0", color:"#2A5020" },
+  "Nómina":       { bg:"#e8f7ee", color:"#2F6A38" },
+  "Servicios":    { bg:"#D5ECC0", color:"#355E3B" },
   "Impuestos":    { bg:"#fdecea", color:"#c0392b" },
-  "Proveedores":  { bg:"#f0ede5", color:"#5c4a32" },
+  "Proveedores":  { bg:"#F1EEE6", color:"#5c4a32" },
   "Mantenimiento":{ bg:"#fef3e2", color:"#9d6b18" },
   "Otro":         { bg:"#ede8e0", color:"#6f5c4e" },
 };
@@ -95,34 +95,25 @@ function FilterBar({ filters, onChange }) {
         <HiOutlineMagnifyingGlass style={{position:"absolute",left:10,top:"50%",
           transform:"translateY(-50%)",color:"var(--mu)",fontSize:"1rem",pointerEvents:"none"}} />
         <input
+          className="mobile-input"
           value={filters.search}
           onChange={e => onChange("search", e.target.value)}
           placeholder="Buscar por concepto o asociado…"
-          style={{width:"100%",padding:"7px 10px 7px 32px",border:"1px solid var(--bd)",
-            borderRadius:10,fontSize:".8rem",background:"var(--sf2)",boxSizing:"border-box",
-            outline:"none",fontFamily:"inherit",color:"var(--tx)"}}
         />
       </div>
 
       <div style={{display:"flex",alignItems:"center",gap:6}}>
         <span style={{fontSize:".72rem",fontWeight:700,color:"var(--mu)",whiteSpace:"nowrap"}}>Desde</span>
-        <input type="date" value={filters.desde} onChange={e=>onChange("desde",e.target.value)}
-          style={{border:"1px solid var(--bd)",borderRadius:10,padding:"6px 10px",
-            fontSize:".8rem",background:"var(--sf2)",cursor:"pointer",outline:"none",fontFamily:"inherit"}} />
+        <input className="mobile-input" type="date" value={filters.desde} onChange={e=>onChange("desde",e.target.value)} />
       </div>
 
       <div style={{display:"flex",alignItems:"center",gap:6}}>
         <span style={{fontSize:".72rem",fontWeight:700,color:"var(--mu)",whiteSpace:"nowrap"}}>Hasta</span>
-        <input type="date" value={filters.hasta} onChange={e=>onChange("hasta",e.target.value)}
-          style={{border:"1px solid var(--bd)",borderRadius:10,padding:"6px 10px",
-            fontSize:".8rem",background:"var(--sf2)",cursor:"pointer",outline:"none",fontFamily:"inherit"}} />
+        <input className="mobile-input" type="date" value={filters.hasta} onChange={e=>onChange("hasta",e.target.value)} />
       </div>
 
       {hasActive && (
-        <button onClick={()=>onChange("__clear__")}
-          style={{display:"flex",alignItems:"center",gap:4,padding:"6px 12px",borderRadius:10,
-            border:"1px solid var(--bd)",background:"#fff",cursor:"pointer",
-            fontSize:".72rem",fontWeight:700,color:"var(--mu)",fontFamily:"inherit"}}>
+        <button onClick={()=>onChange("__clear__")} className="btn-s" style={{padding:"6px 12px",fontSize:".72rem",fontWeight:700}}>
           <HiOutlineXMark /> Limpiar
         </button>
       )}
@@ -132,7 +123,7 @@ function FilterBar({ filters, onChange }) {
 
 /* ── Tabla homologada ────────────────────────────────────────── */
 function PagoTable({ rows, isEgreso, historial }) {
-  const accentColor = isEgreso ? "#7B5C38" : "#1B2B18";
+  const accentColor = isEgreso ? "#7B5C38" : "#1E3D2B";
   return (
     <table className="tbl">
       <thead>
@@ -198,26 +189,21 @@ function PagoTable({ rows, isEgreso, historial }) {
                 <td>
                   <div style={{display:"flex",gap:4,alignItems:"center"}}>
                     {r.estado !== "paid" && (
-                      <button style={{padding:"5px 12px",borderRadius:8,border:"none",
-                        cursor:"pointer",background:accentColor,color:"#F7F3ED",
-                        fontSize:".75rem",fontWeight:700,fontFamily:"inherit",whiteSpace:"nowrap"}}>
+                      <button className={isEgreso ? "btn-s" : "btn-p"} style={{padding:"6px 12px",fontSize:".75rem",whiteSpace:"nowrap"}}>
                         {isEgreso ? "Pagar" : "Cobrar"}
                       </button>
                     )}
                     {r.estado === "overdue" && !isEgreso && (
-                      <button style={{background:"none",border:"none",cursor:"pointer",
-                        fontSize:".75rem",fontWeight:700,color:"var(--earth)",fontFamily:"inherit"}}>
+                      <button className="btn-s" style={{padding:"6px 10px",fontSize:".75rem",fontWeight:700,color:"var(--earth)",borderColor:"rgba(67,69,63,.12)"}}>
                         Recordar
                       </button>
                     )}
                     {isEgreso && (
                       <>
-                        <button style={{background:"none",border:"none",cursor:"pointer",
-                          color:"var(--mu)",padding:"4px 6px",display:"flex"}}>
+                        <button className="btn-s" style={{padding:"6px 8px",fontSize:".78rem",display:"inline-flex",alignItems:"center"}}>
                           <HiOutlinePencil />
                         </button>
-                        <button style={{background:"none",border:"none",cursor:"pointer",
-                          color:"var(--danger)",padding:"4px 6px",display:"flex"}}>
+                        <button className="btn-s" style={{padding:"6px 8px",fontSize:".78rem",display:"inline-flex",alignItems:"center",color:"var(--danger)"}}>
                           <HiOutlineTrash />
                         </button>
                       </>
@@ -279,7 +265,7 @@ function NuevoPagoModal({ onClose }) {
               }}>
                 <span style={{fontSize:"1.8rem"}}>💰</span>
                 <div>
-                  <div style={{fontWeight:800,fontSize:".9rem",color:"#1B2B18"}}>Cobro de cliente</div>
+                  <div style={{fontWeight:800,fontSize:".9rem",color:"#1E3D2B"}}>Cobro de cliente</div>
                   <div style={{fontSize:".75rem",color:"var(--tan-dk)",marginTop:2}}>
                     Un cliente pagó su cuota de lote
                   </div>
@@ -369,11 +355,7 @@ function NuevoPagoModal({ onClose }) {
           <button className="btn-s" style={{flex:1}} onClick={onClose}>Cancelar</button>
           {step === "cobro" && <button className="btn-p" style={{flex:2}}>Registrar cobro</button>}
           {step === "egreso" && (
-            <button style={{flex:2,padding:"12px 16px",borderRadius:18,border:"none",
-              background:"#7B5C38",color:"#F7F3ED",fontWeight:600,fontSize:".875rem",cursor:"pointer",
-              fontFamily:"inherit"}}>
-              Guardar egreso
-            </button>
+            <button className="btn-p" style={{flex:2}}>Guardar egreso</button>
           )}
         </div>
       </div>
@@ -425,8 +407,8 @@ export default function PaymentsPreview() {
         .pv2-kpis { display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); margin-bottom:20px; }
         .pv2-tabs { display:flex;gap:4px;background:#fff;border:1px solid var(--bd);border-radius:14px;padding:4px;width:fit-content; }
         .pv2-tab  { padding:8px 22px;border-radius:10px;border:none;background:transparent;font-size:.83rem;font-weight:600;cursor:pointer;color:var(--mu);font-family:inherit;display:flex;align-items:center;gap:6px; }
-        .pv2-tab.act-in { background:var(--navy); color:#F7F3ED; }
-        .pv2-tab.act-eg { background:var(--earth); color:#F7F3ED; }
+        .pv2-tab.act-in { background:var(--navy); color:#E9E5DB; }
+        .pv2-tab.act-eg { background:var(--earth); color:#E9E5DB; }
         .pv2-tab.act-al { background:var(--danger); color:#fff; }
 
         .pv2-subtabs { display:flex;background:var(--sf2);border-radius:10px;padding:3px;width:fit-content;margin-bottom:0; }
@@ -438,7 +420,7 @@ export default function PaymentsPreview() {
         .pv2-cnt     { font-size:.72rem;color:var(--mu);margin-top:8px;padding-left:4px; }
 
         .pv2-pill        { padding:6px 14px;border-radius:99px;border:1.5px solid var(--bd);background:#fff;font-size:.73rem;font-weight:600;color:var(--mu);cursor:pointer;font-family:inherit; }
-        .pv2-pill.act-g  { background:var(--navy);color:#F7F3ED;border-color:var(--navy); }
+        .pv2-pill.act-g  { background:var(--navy);color:#E9E5DB;border-color:var(--navy); }
         .pv2-pill.act-r  { background:var(--danger);color:#fff;border-color:var(--danger); }
         .pv2-pill.act-e  { background:var(--earth);color:#fff;border-color:var(--earth); }
 
@@ -455,7 +437,7 @@ export default function PaymentsPreview() {
         .al-tipo.ingreso  { background:var(--tan-lt);color:var(--tan-dk); }
         .al-tipo.egreso   { background:#fef3e2;color:var(--earth); }
         .al-action { margin-left:auto;padding:6px 14px;border-radius:10px;border:none;cursor:pointer;font-size:.75rem;font-weight:700;white-space:nowrap;font-family:inherit; }
-        .al-action.cobrar  { background:var(--navy);color:#F7F3ED; }
+        .al-action.cobrar  { background:var(--navy);color:#E9E5DB; }
         .al-action.pagar   { background:var(--earth);color:#fff; }
         .al-action.recordar{ background:#fef3e2;color:var(--earth);border:1px solid #e6c88d; }
       `}</style>

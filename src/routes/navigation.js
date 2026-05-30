@@ -7,14 +7,12 @@ import {
   HiMap,
   HiOutlineSquares2X2,
   HiOutlineUserGroup,
-  HiSun,
   HiUserCircle,
   HiWallet
 } from "react-icons/hi2";
 
 export const routeMeta = {
   "/dashboard": { title: "Dashboard", icon: HiHome },
-  "/mi-dia": { title: "Mi Día", icon: HiSun },
   "/lotes": { title: "Lotes", icon: HiOutlineSquares2X2 },
   "/fraccionamientos": { title: "Fraccionamientos", icon: HiMap },
   "/clientes": { title: "Clientes", icon: HiOutlineUserGroup },
@@ -30,7 +28,6 @@ export const routeMeta = {
 
 export const desktopNav = [
   { path: "/dashboard", label: "Dashboard", icon: HiHome },
-  { path: "/mi-dia", label: "Mi Día", icon: HiSun },
   { path: "/lotes", label: "Lotes", icon: HiOutlineSquares2X2 },
   { path: "/fraccionamientos", label: "Fraccionamientos", icon: HiMap },
   { path: "/clientes", label: "Clientes", icon: HiOutlineUserGroup },
@@ -43,7 +40,6 @@ export const desktopNav = [
 
 export const mobileNav = [
   { path: "/dashboard", label: "Inicio", icon: HiHome },
-  { path: "/mi-dia", label: "Mi Día", icon: HiSun },
   { path: "/lotes", label: "Lotes", icon: HiOutlineSquares2X2 },
   { path: "/clientes", label: "Clientes", icon: HiOutlineUserGroup },
   { path: "/pagos", label: "Pagos", icon: HiBellAlert },

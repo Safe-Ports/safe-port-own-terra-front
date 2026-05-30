@@ -56,7 +56,7 @@ function KpiCard({ icon: Icon, iconBg, label, value, sub, change }) {
         <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
           {change !== null ? (
             <span style={{ display: "flex", alignItems: "center", gap: 2, fontSize: ".72rem",
-              fontWeight: 700, color: up ? "#2A6B1A" : "#c0392b" }}>
+              fontWeight: 700, color: up ? "#2F6A38" : "#c0392b" }}>
               {up ? <HiMiniArrowTrendingUp /> : <HiMiniArrowTrendingDown />}
               {Math.abs(change)}% vs mes anterior
             </span>
@@ -180,11 +180,11 @@ function MiniChart({ data, bars, sharedScale = true, H = 120 }) {
           position: "absolute", top: 4,
           left: `${Math.min((hovered / data.length) * 100 + 4, 55)}%`,
           transform: hovered > data.length * 0.6 ? "translateX(-110%)" : "none",
-          background: "#1a1410", color: "#fff", borderRadius: 10, padding: "8px 12px",
+          background: "#1E3D2B", color: "#fff", borderRadius: 10, padding: "8px 12px",
           fontSize: ".75rem", pointerEvents: "none", zIndex: 10, minWidth: 160,
           boxShadow: "0 4px 16px rgba(0,0,0,.2)",
         }}>
-          <div style={{ fontWeight: 700, marginBottom: 5, color: "#e8dfd2" }}>
+          <div style={{ fontWeight: 700, marginBottom: 5, color: "#E7E4DB" }}>
             {data[hovered].fullLabel}
           </div>
           {bars.map(b => (
@@ -201,7 +201,7 @@ function MiniChart({ data, bars, sharedScale = true, H = 120 }) {
 }
 
 /* ── Avatar (top vendedores) ─────────────────────────────────── */
-const AV_COLORS = ["#2A5020","#7B5C38","#1B2B18","#6366F1","#0EA5E9"];
+const AV_COLORS = ["#355E3B","#7B5C38","#1E3D2B","#6366F1","#0EA5E9"];
 function Av({ name = "?", size = 32, rank }) {
   const col = AV_COLORS[(name.charCodeAt(0) || 0) % AV_COLORS.length];
   const badgeCol = rank === 1 ? "#f59e0b" : rank === 2 ? "#94a3b8" : rank === 3 ? "#cd7f32" : "#e5e7eb";
@@ -336,7 +336,7 @@ export default function DashboardPage() {
 
       {/* ── 6 KPIs ── */}
       <div className="db-grid6">
-        <KpiCard icon={HiOutlineBanknotes}    iconBg="#2A5020" label="Ingresos del mes"
+        <KpiCard icon={HiOutlineBanknotes}    iconBg="#355E3B" label="Ingresos del mes"
           value={compactCurrency(revThisMonth)}
           sub="Cobros aplicados"
           change={pct(revThisMonth, revLastMonth)} />
@@ -348,7 +348,7 @@ export default function DashboardPage() {
           value={availLots}
           sub={`${totalLots} en inventario`}
           change={null} />
-        <KpiCard icon={HiOutlineCheckCircle}   iconBg="#2A6B1A" label="Lotes vendidos (mes)"
+        <KpiCard icon={HiOutlineCheckCircle}   iconBg="#2F6A38" label="Lotes vendidos (mes)"
           value={soldLots}
           sub="Total histórico"
           change={null} />
@@ -371,7 +371,7 @@ export default function DashboardPage() {
             <div>
               <div className="db-card-title">Ingresos vs Egresos</div>
               <div style={{ display: "flex", gap: 12, marginTop: 5 }}>
-                {[["#2A5020","Ingresos"], ["#7B5C38","Egresos"]].map(([c,l]) => (
+                {[["#355E3B","Ingresos"], ["#7B5C38","Egresos"]].map(([c,l]) => (
                   <div key={l} style={{ display:"flex", alignItems:"center", gap:5 }}>
                     <div style={{ width:8, height:8, borderRadius:2, background:c }} />
                     <span style={{ fontSize:".7rem", color:"var(--mu)" }}>{l}</span>
@@ -389,7 +389,7 @@ export default function DashboardPage() {
             <MiniChart
               data={monthlyChart}
               bars={[
-                { key:"ingresos", color:"#2A5020", label:"Ingresos", fmt: compactCurrency },
+                { key:"ingresos", color:"#355E3B", label:"Ingresos", fmt: compactCurrency },
                 { key:"egresos",  color:"#7B5C38", label:"Egresos",  fmt: compactCurrency },
               ]}
               sharedScale={true}
@@ -416,7 +416,7 @@ export default function DashboardPage() {
           <div style={{ padding:"12px 16px 10px" }}>
             <MiniChart
               data={monthlyChart}
-              bars={[{ key:"contratos", color:"#1B2B18", label:"Contratos", fmt: n => String(Math.round(n)) }]}
+              bars={[{ key:"contratos", color:"#1E3D2B", label:"Contratos", fmt: n => String(Math.round(n)) }]}
               sharedScale={false}
               H={110}
             />
@@ -431,7 +431,7 @@ export default function DashboardPage() {
           <div style={{ padding:"16px 18px" }}>
             <DonutChart
               segments={[
-                { label:"Disponibles", value:availLots,    color:"#2A5020" },
+                { label:"Disponibles", value:availLots,    color:"#355E3B" },
                 { label:"Vendidos",    value:soldLots,     color:"#c0392b" },
                 { label:"Apartados",   value:reservedLots, color:"#7B5C38" },
                 { label:"En trámite",  value:inTramite,    color:"#94a3b8" },
@@ -479,7 +479,7 @@ export default function DashboardPage() {
                 <tr key={c.id} style={{ cursor: "pointer" }} onClick={() => navigate("/contratos")}>
                   <td style={{ fontWeight: 700, fontSize: ".8rem" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#2A5020", flexShrink: 0 }} />
+                      <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#355E3B", flexShrink: 0 }} />
                       {c.lot?.sku || c.contract_number}
                     </div>
                   </td>
@@ -574,7 +574,7 @@ export default function DashboardPage() {
                     const maxR = Math.max(...arr.map(x => x.ingresos), 1);
                     return `${i * (60 / Math.max(arr.length - 1, 1))},${30 - (m.ingresos / maxR) * 26}`;
                   }).join(" ")}
-                  fill="none" stroke="#2A5020" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  fill="none" stroke="#355E3B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                 />
               </svg>
             </div>
@@ -590,7 +590,7 @@ export default function DashboardPage() {
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           {[
-            { icon: HiOutlineShoppingCart, bg: "#e8f7ee", color: "#2A5020", label: "Registrar venta",   path: "/ventas"    },
+            { icon: HiOutlineShoppingCart, bg: "#e8f7ee", color: "#355E3B", label: "Registrar venta",   path: "/ventas"    },
             { icon: HiOutlineHome,         bg: "#ede9fe", color: "#6366F1", label: "Agregar lote",      path: "/lotes"     },
             { icon: HiOutlinePlus,         bg: "#e0f2fe", color: "#0EA5E9", label: "Nuevo cliente",     path: "/clientes"  },
             { icon: HiOutlineDocumentText, bg: "#fdecea", color: "#c0392b", label: "Generar contrato",  path: "/contratos" },

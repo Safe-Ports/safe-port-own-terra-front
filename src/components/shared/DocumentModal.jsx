@@ -82,7 +82,7 @@ function DocumentModal() {
             className="hidden"
             onChange={(e) => handleFile(e.target.files?.[0])}
           />
-          <span className="text-xs font-semibold text-[#1B2B18]">Examinar</span>
+          <span className="text-xs font-semibold text-[#1E3D2B]">Examinar</span>
         </label>
 
         <input

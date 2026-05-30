@@ -1,20 +1,28 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
 import Modal from "@/components/ui/Modal";
 import InlineDocumentsPanel from "@/components/shared/InlineDocumentsPanel";
 import { clientService } from "@/services/clientService";
 import { currency } from "@/services/formatters";
+import { getClientEcosystem, CORE_APPS } from "@/services/ecosystemCore";
 
 const TYPE_LABEL = { buyer: "Comprador", tenant: "Arrendatario", lead: "Prospecto" };
-const TYPE_COLOR = { buyer: "#2A7A50", tenant: "#1B2B18", lead: "#B07820" };
+const TYPE_COLOR = { buyer: "#355E3B", tenant: "#1E3D2B", lead: "#9D6B18" };
 const CONTRACT_STATUS_LABEL = { active: "Activo", completed: "Completado", cancelled: "Cancelado", reserved: "Apartado" };
 const LOT_STATUS_LABEL = { available: "Disponible", sold: "Vendido", reserved: "Apartado" };
-const LOT_STATUS_COLOR = { available: "#2A7A50", sold: "#C0392B", reserved: "#B07820" };
+const LOT_STATUS_COLOR = { available: "#355E3B", sold: "#C0392B", reserved: "#9D6B18" };
 
 function ClientModal() {
-  const { ui, closeModal, saveClient, editingClient, deleteClient } = useAppContext();
+  const { ui, closeModal, saveClient, editingClient, deleteClient, clients } = useAppContext();
+  const navigate = useNavigate();
   const [form, setForm] = useState({ name: "", phone: "", email: "", type: "buyer", notes: "" });
+
+  // Detección de identidad ya existente en el core (vincular en vez de duplicar)
+  const dupe = !editingClient && form.email
+    ? clients.find((c) => c.email && c.email.toLowerCase() === form.email.trim().toLowerCase())
+    : null;
 
   useEffect(() => {
     setForm(
@@ -28,17 +36,41 @@ function ClientModal() {
     <Modal
       open={ui.clientModal}
       icon="👤"
-      title={editingClient ? "Editar cliente" : "Nuevo cliente"}
-      subtitle="Registro en el CRM"
+      title={editingClient ? "Editar cliente" : "Vincular o crear cliente"}
+      subtitle={editingClient ? "Identidad del ecosistema" : "Identidad única del ecosistema"}
       onClose={() => closeModal("clientModal")}
       footer={
         <>
           <button className="btn-s" onClick={() => closeModal("clientModal")}>Cancelar</button>
           {editingClient && <button className="btn-dan" onClick={() => deleteClient(editingClient.id)}>🗑 Eliminar</button>}
-          <button className="btn-p" onClick={() => saveClient({ ...(editingClient || {}), ...form })}>✓ Guardar</button>
+          <button className="btn-p" onClick={() => saveClient({ ...(editingClient || {}), ...form })}>
+            {dupe ? "🔗 Vincular a Lands" : "✓ Guardar"}
+          </button>
         </>
       }
     >
+      {!editingClient && (
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", background: "rgba(111,175,107,.1)", border: "1px solid rgba(111,175,107,.3)", borderRadius: 12, padding: "10px 12px", marginBottom: 14, fontSize: ".76rem", color: "#2F6A38", lineHeight: 1.5 }}>
+          <span>🌐</span>
+          <span>Se registra en el <b>ecosistema</b> como identidad única y se le da acceso a Lands. Si el correo o teléfono ya existe en el core, se <b>vincula</b> en lugar de duplicar.</span>
+        </div>
+      )}
+
+      {dupe && (
+        <div style={{ display: "flex", gap: 8, alignItems: "center", background: "rgba(201,168,76,.14)", border: "1px solid rgba(201,168,76,.4)", borderRadius: 12, padding: "10px 12px", marginBottom: 14, fontSize: ".76rem", color: "#8A6D1E", lineHeight: 1.5 }}>
+          <span>⚠️</span>
+          <span>Ya existe en el core: <b>{dupe.name}</b>. Al guardar se <b>vinculará</b> a Lands en vez de crear un duplicado.</span>
+        </div>
+      )}
+
+      {editingClient && (
+        <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", background: "var(--sf2)", border: "1px solid var(--bd)", borderRadius: 12, padding: "9px 12px", marginBottom: 14, fontSize: ".74rem", color: "var(--mu)" }}>
+          <span>🌐 La identidad se sincroniza con el ecosistema.</span>
+          <button type="button" onClick={() => { closeModal("clientModal"); navigate("/ecosistema/clientes"); }} style={{ color: "var(--forest)", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+            Editar en el core →
+          </button>
+        </div>
+      )}
       <div className="fr-row">
         <div className="fg" style={{ flex: 1 }}>
           <label className="fl">Nombre completo</label>
@@ -76,6 +108,7 @@ function ClientsPage() {
     openModal, setEditingClient,
     openClientReport, sendReminder, sendClientMessage, openContractCreate,
   } = useAppContext();
+  const navigate = useNavigate();
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
 
@@ -89,6 +122,7 @@ function ClientsPage() {
   );
 
   const selected = clients.find((c) => c.id === selectedClientId) || filtered[0] || null;
+  const eco = selected ? getClientEcosystem(selected) : null;
 
   const { data: selectedDetail } = useQuery({
     queryKey: ["client", selected?.id],
@@ -125,8 +159,11 @@ function ClientsPage() {
         <div className="cl-list-card">
           <div className="cl-hd">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ fontWeight: 700, fontSize: ".87rem" }}>Clientes</div>
-              <button className="btn-p" style={{ padding: "5px 12px", fontSize: ".74rem" }} onClick={() => openModal("clientModal")}>+ Nuevo</button>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: ".87rem" }}>Clientes</div>
+                <div style={{ fontSize: ".58rem", color: "var(--mu)", fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", marginTop: 1 }}>Del ecosistema · con acceso a Lands</div>
+              </div>
+              <button className="btn-p" style={{ padding: "5px 12px", fontSize: ".74rem" }} onClick={() => openModal("clientModal")}>+ Vincular</button>
             </div>
             <div className="cl-src">
               <span style={{ color: "var(--mu)" }}>🔍</span>
@@ -139,20 +176,31 @@ function ClientsPage() {
             ))}
           </div>
           <div className="cl-list-body">
-            {filtered.map((client) => (
-              <div key={client.id} className={`cl-item ${selected?.id === client.id ? "act" : ""}`} onClick={() => setSelectedClientId(client.id)}>
-                <div className="cl-av" style={{ background: client.color || TYPE_COLOR[client.type] || "#2A7A50" }}>
-                  {client.initials || client.name?.slice(0, 2).toUpperCase()}
+            {filtered.map((client) => {
+              const cEco = getClientEcosystem(client);
+              return (
+                <div key={client.id} className={`cl-item ${selected?.id === client.id ? "act" : ""}`} onClick={() => setSelectedClientId(client.id)}>
+                  <div className="cl-av">
+                    {client.initials || client.name?.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="cl-info">
+                    <div className="cl-name">{client.name}</div>
+                    <div className="cl-sub">{client.email || client.phone || "Sin contacto"}</div>
+                    {cEco.multiApp && (
+                      <div style={{ display: "flex", gap: 4, marginTop: 4, alignItems: "center" }} title={`También en ${cEco.otherApps.map((a) => a.short).join(", ")}`}>
+                        {CORE_APPS.filter((a) => cEco.apps[a.key]).map((a) => (
+                          <span key={a.key} style={{ width: 7, height: 7, borderRadius: "50%", background: a.color }} />
+                        ))}
+                        <span style={{ fontSize: ".56rem", color: "var(--mu)", marginLeft: 2, fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase" }}>multi-app</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="cl-type-chip chip ch-lo" style={{ background: `${TYPE_COLOR[client.type]}18`, color: TYPE_COLOR[client.type], border: `1px solid ${TYPE_COLOR[client.type]}30` }}>
+                    {TYPE_LABEL[client.type] || client.type}
+                  </div>
                 </div>
-                <div className="cl-info">
-                  <div className="cl-name">{client.name}</div>
-                  <div className="cl-sub">{client.email || client.phone || "Sin contacto"}</div>
-                </div>
-                <div className="cl-type-chip chip ch-lo" style={{ background: `${TYPE_COLOR[client.type]}18`, color: TYPE_COLOR[client.type], border: `1px solid ${TYPE_COLOR[client.type]}30` }}>
-                  {TYPE_LABEL[client.type] || client.type}
-                </div>
-              </div>
-            ))}
+              );
+            })}
             {clients.length === 0 && (
               <div style={{ padding: "24px 16px", textAlign: "center", color: "var(--mu)", fontSize: ".8rem" }}>
                 Sin clientes aún. Crea el primero.
@@ -167,7 +215,7 @@ function ClientsPage() {
             <>
               {/* Header */}
               <div className="cl-det-hd">
-                <div className="cl-det-av" style={{ background: selected.color || TYPE_COLOR[selected.type] || "#2A7A50" }}>
+                <div className="cl-det-av">
                   {selected.initials || selected.name?.slice(0, 2).toUpperCase()}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -177,9 +225,9 @@ function ClientsPage() {
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                  <a href={`tel:${selected.phone}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DED5C8", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}>📞</a>
-                  <a href={`mailto:${selected.email}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DED5C8", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}>✉️</a>
-                  <a href={`https://wa.me/${(selected.phone || "").replace(/\D/g,"")}`} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DED5C8", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}>💬</a>
+                  <a href={`tel:${selected.phone}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DCDAD2", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}>📞</a>
+                  <a href={`mailto:${selected.email}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DCDAD2", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}>✉️</a>
+                  <a href={`https://wa.me/${(selected.phone || "").replace(/\D/g,"")}`} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DCDAD2", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}>💬</a>
                   <button className="btn-s" style={{ padding: "6px 14px", fontSize: ".76rem" }} onClick={() => { setEditingClient(selected); openModal("clientModal"); }}>
                     Editar
                   </button>
@@ -187,10 +235,28 @@ function ClientsPage() {
               </div>
 
               <div className="cl-det-body">
+                {/* Identidad del ecosistema (core) */}
+                {eco && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", background: "rgba(111,175,107,.09)", border: "1px solid rgba(111,175,107,.28)", borderRadius: 12, padding: "9px 13px", marginBottom: 14 }}>
+                    <span style={{ fontSize: ".72rem", fontWeight: 800, color: "#2F6A38", display: "flex", alignItems: "center", gap: 6 }}>
+                      🌐 Identidad del ecosistema
+                    </span>
+                    <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".64rem", color: "var(--mu)" }}>{eco.coreId}</span>
+                    {eco.multiApp && (
+                      <span style={{ fontSize: ".68rem", color: "var(--tx2)" }}>
+                        · También en {eco.otherApps.map((a) => a.short).join(", ")}
+                      </span>
+                    )}
+                    <button onClick={() => navigate("/ecosistema/clientes")} style={{ marginLeft: "auto", fontSize: ".7rem", fontWeight: 700, color: "var(--forest)", cursor: "pointer", whiteSpace: "nowrap" }}>
+                      Gestionar en el core →
+                    </button>
+                  </div>
+                )}
+
                 {/* Seller */}
                 {sellerName && (
                   <div className="owner-card">
-                    <div className="ow-av" style={{ background: "#1B2B18" }}>{sellerInitials}</div>
+                    <div className="ow-av" style={{ background: "#1E3D2B" }}>{sellerInitials}</div>
                     <div>
                       <div className="ow-nm">{sellerName}</div>
                       <div className="ow-mt">Asesor asignado</div>
@@ -246,9 +312,9 @@ function ClientsPage() {
                     <div style={{ overflowX: "auto" }}>
                       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".78rem" }}>
                         <thead>
-                          <tr style={{ borderBottom: "1.5px solid #EDE8E0" }}>
+                          <tr style={{ borderBottom: "1.5px solid #E7E4DB" }}>
                             {["ID Lote", "Proyecto", "Estado", "Medidas", "Progreso"].map((h) => (
-                              <th key={h} style={{ textAlign: "left", padding: "5px 8px", fontSize: ".6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#8C8070", whiteSpace: "nowrap" }}>{h}</th>
+                              <th key={h} style={{ textAlign: "left", padding: "5px 8px", fontSize: ".6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#83867C", whiteSpace: "nowrap" }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
@@ -258,20 +324,20 @@ function ClientsPage() {
                             const prog = paidCountByContract[String(contract.id)];
                             const lotStatus = lot?.lot_status || (contract.type === "reserve" ? "reserved" : "sold");
                             const statusLabel = LOT_STATUS_LABEL[lotStatus] || lotStatus;
-                            const statusColor = LOT_STATUS_COLOR[lotStatus] || "#8C8070";
+                            const statusColor = LOT_STATUS_COLOR[lotStatus] || "#83867C";
                             return (
-                              <tr key={contract.id} style={{ borderBottom: "1px solid #F0EDE6" }}>
-                                <td style={{ padding: "7px 8px", fontWeight: 700, color: "#1A1410" }}>{lot?.code || "—"}</td>
-                                <td style={{ padding: "7px 8px", color: "#5C5040" }}>{lot?.inmueble_name || "—"}</td>
+                              <tr key={contract.id} style={{ borderBottom: "1px solid #EDEAE1" }}>
+                                <td style={{ padding: "7px 8px", fontWeight: 700, color: "#1E3D2B" }}>{lot?.code || "—"}</td>
+                                <td style={{ padding: "7px 8px", color: "#43453F" }}>{lot?.inmueble_name || "—"}</td>
                                 <td style={{ padding: "7px 8px" }}>
                                   <span style={{ background: `${statusColor}18`, color: statusColor, border: `1px solid ${statusColor}30`, borderRadius: 6, padding: "2px 8px", fontSize: ".65rem", fontWeight: 700 }}>
                                     {statusLabel}
                                   </span>
                                 </td>
-                                <td style={{ padding: "7px 8px", color: "#5C5040" }}>
+                                <td style={{ padding: "7px 8px", color: "#43453F" }}>
                                   {lot?.area_m2 ? `${lot.area_m2} m²` : "—"}
                                 </td>
-                                <td style={{ padding: "7px 8px", color: "#5C5040" }}>
+                                <td style={{ padding: "7px 8px", color: "#43453F" }}>
                                   {prog
                                     ? `${contract.type === "reserve" ? "Enganche" : "Pagos"} (${prog.paid}/${prog.total} cuotas)`
                                     : CONTRACT_STATUS_LABEL[contract.status] || contract.status}
@@ -287,24 +353,24 @@ function ClientsPage() {
 
                 {/* Actions */}
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-                  <button className="btn-s" style={{ padding: "7px 14px", fontSize: ".78rem" }} onClick={() => sendClientMessage(selected)}>
+                  <button className="btn-soft" style={{ padding: "8px 15px", fontSize: ".78rem" }} onClick={() => sendClientMessage(selected)}>
                     💬 Mensaje
                   </button>
-                  <button className="btn-s" style={{ padding: "7px 14px", fontSize: ".78rem" }} onClick={() => openContractCreate({ clientId: selected.id })}>
+                  <button className="btn-soft" style={{ padding: "8px 15px", fontSize: ".78rem" }} onClick={() => openContractCreate({ clientId: selected.id })}>
                     📄 Nuevo Contrato
                   </button>
                   {selected.type === "lead" && (
-                    <button className="btn-p" style={{ padding: "7px 14px", fontSize: ".78rem" }} onClick={() => openContractCreate({ clientId: selected.id, type: "reserve" })}>
+                    <button className="btn-soft" style={{ padding: "8px 15px", fontSize: ".78rem" }} onClick={() => openContractCreate({ clientId: selected.id, type: "reserve" })}>
                       🔒 Registrar Apartado
                     </button>
                   )}
                   {selected.type !== "lead" && (
-                    <button className="btn-p" style={{ padding: "7px 14px", fontSize: ".78rem", background: "#C9A84C", color: "#1F1F1F" }} onClick={() => openClientReport(selected.id)}>
+                    <button className="btn-soft" style={{ padding: "8px 15px", fontSize: ".78rem" }} onClick={() => openClientReport(selected.id)}>
                       🖨 Estado de Cuenta
                     </button>
                   )}
                   {selected.status === "overdue" && (
-                    <button className="btn-dan" style={{ padding: "7px 14px", fontSize: ".78rem" }} onClick={() => sendReminder(selected.name)}>
+                    <button className="btn-dan" style={{ padding: "8px 15px", fontSize: ".78rem", borderRadius: 30 }} onClick={() => sendReminder(selected.name)}>
                       📲 Recordar
                     </button>
                   )}
