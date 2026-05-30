@@ -7,6 +7,7 @@ const EcosystemClientes = lazy(() => import("@/pages/Ecosystem/Clientes"));
 const EcosystemVault = lazy(() => import("@/pages/Ecosystem/Vault"));
 const EcosystemDia = lazy(() => import("@/pages/Ecosystem/Dia"));
 const EcosystemFinanzas = lazy(() => import("@/pages/Ecosystem/Finanzas"));
+const EcosystemAgenda = lazy(() => import("@/pages/Ecosystem/Agenda"));
 const DashboardPage = lazy(() => import("@/pages/Dashboard"));
 const LotsPage = lazy(() => import("@/pages/Lots"));
 const FracsPage = lazy(() => import("@/pages/Fracs"));
@@ -41,6 +42,7 @@ function AppRouter() {
         <Route path="/ecosistema/documentos" element={<EcosystemVault />} />
         <Route path="/ecosistema/mi-dia" element={<EcosystemDia />} />
         <Route path="/ecosistema/finanzas" element={<EcosystemFinanzas />} />
+        <Route path="/ecosistema/agenda" element={<EcosystemAgenda />} />
         <Route element={<AppShell />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/lotes" element={<LotsPage />} />
@@ -57,7 +59,7 @@ function AppRouter() {
           <Route path="/perfil" element={<ProfilePage />} />
           <Route path="/configuracion" element={<SettingsPage />} />
         </Route>
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/ecosistema" replace />} />
       </Routes>
     </Suspense>
   );

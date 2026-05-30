@@ -8,7 +8,7 @@ import Avatar from "@/components/Avatar";
    `active` marca el item activo del menú. */
 function EcoLayout({ active = "panel", title, subtitle, children }) {
   const navigate = useNavigate();
-  const { currentUser } = useAppContext();
+  const { currentUser, logout } = useAppContext();
 
   const initials = (currentUser?.name || "Usuario")
     .split(" ")
@@ -18,6 +18,9 @@ function EcoLayout({ active = "panel", title, subtitle, children }) {
     .toUpperCase();
 
   const today = new Date().toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
+  const handleLogout = () => {
+    if (window.confirm("¿Cerrar sesión?")) logout();
+  };
 
   const navItem = (key, label, icon, onClick, disabled) => (
     <button
@@ -47,6 +50,7 @@ function EcoLayout({ active = "panel", title, subtitle, children }) {
           <div className="nav-group">
             <div className="nav-label">Núcleo central</div>
             {navItem("miday", "Mi Día", "eco-n-sun", () => navigate("/ecosistema/mi-dia"))}
+            {navItem("agenda", "Agenda", "eco-n-calendar", () => navigate("/ecosistema/agenda"))}
             {navItem("panel", "Panel General", "eco-n-grid", () => navigate("/ecosistema"))}
             {navItem("vault", "OwnTerra Vault", "eco-n-vault", () => navigate("/ecosistema/documentos"))}
             {navItem("users", "Clientes del core", "eco-n-users", () => navigate("/ecosistema/clientes"))}
@@ -92,6 +96,7 @@ function EcoLayout({ active = "panel", title, subtitle, children }) {
             <button className="tb-btn">Alertas <span style={{ background: "var(--leaf)", color: "var(--deep)", borderRadius: 10, fontSize: 10, padding: "1px 7px", fontWeight: 600 }}>3</span></button>
             <button className="tb-btn primary">+ Nuevo documento</button>
             <Avatar name={currentUser?.name || "Usuario"} size={36} />
+            <button className="tb-btn eco-logout" onClick={handleLogout}>Cerrar sesión</button>
           </div>
         </div>
 

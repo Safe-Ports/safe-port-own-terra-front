@@ -116,7 +116,7 @@ function LoginView({ onForgot, onRegister }) {
       <div className="lf-field">
         <label className="lf-label">Usuario / Correo</label>
         <div className="lf-input-wrap">
-          <span className="lf-ico">👤</span>
+          <span className="lf-ico">ID</span>
           <input
             className={`lf-input${error ? " error" : ""}`}
             type="text"
@@ -132,7 +132,7 @@ function LoginView({ onForgot, onRegister }) {
       <div className="lf-field">
         <label className="lf-label">Contraseña</label>
         <div className="lf-input-wrap">
-          <span className="lf-ico">🔒</span>
+          <span className="lf-ico">PW</span>
           <input
             className={`lf-input${error ? " error" : ""}`}
             type={showPass ? "text" : "password"}
@@ -143,7 +143,7 @@ function LoginView({ onForgot, onRegister }) {
             autoComplete="current-password"
           />
           <button className="lf-eye" type="button" onClick={() => setShowPass((v) => !v)} tabIndex={-1}>
-            {showPass ? "🙈" : "👁"}
+            {showPass ? "Ocultar" : "Ver"}
           </button>
         </div>
       </div>
@@ -172,7 +172,7 @@ function LoginView({ onForgot, onRegister }) {
         {loading ? "Ingresando..." : "Iniciar sesión"}
       </button>
 
-      <div className="lf-divider">Acceso rápido con demo</div>
+      <div className="lf-divider">Ambientes de prueba</div>
 
       <div className="lf-demo-box">
         <div className="lf-demo-title">Usuarios de prueba</div>
@@ -184,17 +184,17 @@ function LoginView({ onForgot, onRegister }) {
               <div className="lf-demo-role">admin · Acceso total</div>
             </div>
           </div>
-          <div className="lf-demo-fill">Usar →</div>
+          <div className="lf-demo-fill">Usar</div>
         </div>
         <div className="lf-demo-user" onClick={() => fillDemo("vendedor", "vende123")} style={{ marginTop: 4 }}>
           <div className="lf-demo-info">
-            <div className="lf-demo-av" style={{ background: "#8B6A46" }}>VN</div>
+            <div className="lf-demo-av" style={{ background: "var(--mid)" }}>VN</div>
             <div>
               <div className="lf-demo-nm">Vendedor</div>
               <div className="lf-demo-role">vendedor · Solo lectura</div>
             </div>
           </div>
-          <div className="lf-demo-fill">Usar →</div>
+          <div className="lf-demo-fill">Usar</div>
         </div>
       </div>
 

@@ -189,11 +189,11 @@ function ClientsPage() {
                     <div className="cl-name">{client.name}</div>
                     <div className="cl-sub">{client.email || client.phone || "Sin contacto"}</div>
                     {cEco.multiApp && (
-                      <div style={{ display: "flex", gap: 4, marginTop: 4, alignItems: "center" }} title={`También en ${cEco.otherApps.map((a) => a.short).join(", ")}`}>
+                      <div className="cl-eco-dots" title={`También en ${cEco.otherApps.map((a) => a.short).join(", ")}`}>
                         {CORE_APPS.filter((a) => cEco.apps[a.key]).map((a) => (
                           <span key={a.key} style={{ width: 7, height: 7, borderRadius: "50%", background: a.color }} />
                         ))}
-                        <span style={{ fontSize: ".56rem", color: "var(--mu)", marginLeft: 2, fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase" }}>multi-app</span>
+                        <span>multi-app</span>
                       </div>
                     )}
                   </div>

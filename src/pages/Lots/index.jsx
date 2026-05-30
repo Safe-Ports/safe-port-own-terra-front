@@ -385,65 +385,65 @@ function LotsPage() {
     return (
       <>
       <div
-        className="flex flex-col overflow-hidden rounded-[12px] border border-[#DCDAD2]"
-        style={{ height: "calc(100vh - 8rem)" }}
+        className="lots-editor-shell"
       >
         {/* Top bar */}
-        <div className="flex flex-shrink-0 items-center gap-2.5 border-b-[1.5px] border-[#DCDAD2] bg-[#F1EEE6] px-4 py-2">
+        <div className="lots-editor-topbar">
           {isEditing ? (
             <div className="flex items-center gap-2">
               <button
-                className="rounded-[7px] border-[1.5px] border-[#DCDAD2] bg-[#FBFAF6] px-[11px] py-[5px] text-[0.74rem] font-bold text-[#83867C]"
+                className="lots-editor-btn"
                 onClick={() => { setDraftProject((p) => ({ ...p, _editingFracId: null })); navigate("/fraccionamientos"); }}
               >
-                ← Cancelar
+                Cancelar
               </button>
-              <span className="rounded-full bg-[#fef3c7] px-3 py-1 text-[0.68rem] font-bold text-[#92400e]">
-                ✏ Editando: {draftProject.name}
+              <span className="lots-editor-state">
+                <span className="lots-editor-dot warn" />
+                Editando: {draftProject.name}
               </span>
             </div>
           ) : (
             <>
               <button
-                className="rounded-[7px] border-[1.5px] border-[#DCDAD2] bg-[#FBFAF6] px-[11px] py-[5px] text-[0.74rem] font-bold text-[#83867C]"
+                className="lots-editor-btn"
                 onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
               >
-                ← Cambiar mapa
+                Cambiar mapa
               </button>
-              <div className="h-[18px] w-px bg-[#DCDAD2]" />
+              <div className="lots-editor-separator" />
               {mapFileName && (
-                <div className="text-[0.75rem] font-bold text-[#355E3B]">📄 {mapFileName}</div>
+                <div className="lots-editor-file"><span>MAP</span>{mapFileName}</div>
               )}
             </>
           )}
           <div className="flex-1" />
-          <div className="flex items-center gap-[9px]">
-            <span className="flex items-center gap-1 text-[0.67rem] text-[#83867C]">
-              <span className="inline-block h-2.5 w-2.5 rounded-[3px] border-[1.5px] border-[#86efac] bg-[#dcfce7]" />
+          <div className="lots-editor-legend">
+            <span>
+              <span className="lots-legend-mark available" />
               Disponible
             </span>
-            <span className="flex items-center gap-1 text-[0.67rem] text-[#83867C]">
-              <span className="inline-block h-2.5 w-2.5 rounded-[3px] border-[1.5px] border-[#fca5a5] bg-[#fee2e2]" />
+            <span>
+              <span className="lots-legend-mark sold" />
               Vendido
             </span>
-            <span className="flex items-center gap-1 text-[0.67rem] text-[#83867C]">
-              <span className="inline-block h-2.5 w-2.5 rounded-[3px] border-[1.5px] border-[#fcd34d] bg-[#fef3c7]" />
+            <span>
+              <span className="lots-legend-mark reserved" />
               Apartado
             </span>
           </div>
           <button
-            className="rounded-[8px] bg-[#355E3B] px-4 py-[7px] text-[0.76rem] font-bold text-white disabled:opacity-40"
+            className="lots-editor-btn lots-editor-primary"
             onClick={() => isEditing ? saveEditedFrac(draftProject) : saveFrac(draftProject)}
             disabled={!draftProject.sections.length}
           >
-            {isEditing ? "✓ Guardar cambios" : "🏘️ Crear Fraccionamiento"}
+            {isEditing ? "Guardar cambios" : "Crear fraccionamiento"}
           </button>
         </div>
 
         {/* Split */}
         <div className="flex min-h-0 flex-1 overflow-hidden">
           {/* Left: map */}
-          <div className="relative flex min-w-0 flex-1 items-center justify-center overflow-hidden bg-[#1a1a2e]">
+          <div className="lots-map-pane">
             {draftProject.mapUrl ? (
               <img
                 src={draftProject.mapUrl}
@@ -451,25 +451,25 @@ function LotsPage() {
                 className="max-h-full max-w-full object-contain"
               />
             ) : (
-              <div className="flex flex-col items-center gap-2.5 p-5 text-center">
-                <div className="text-[3.5rem] opacity-30">🗺️</div>
-                <div className="text-[0.85rem] leading-relaxed text-white/20">
-                  Sin imagen de plano<br />
-                  <span className="text-[0.72rem] opacity-60">Usa el botón inferior para subir una</span>
+              <div className="lots-map-empty">
+                <div className="lots-map-empty-code">PL</div>
+                <div className="lots-map-empty-title">Sin imagen de plano</div>
+                <div className="lots-map-empty-sub">
+                  Sube o cambia el archivo para visualizar el mapa del fraccionamiento.
                 </div>
                 <button
-                  className="mt-1 rounded-[8px] border-[1.5px] border-white/20 bg-white/10 px-4 py-[7px] text-[0.74rem] font-bold text-white/60"
+                  className="lots-map-action"
                   onClick={() => changeImageRef.current?.click()}
                 >
-                  📂 Subir imagen
+                  Subir imagen
                 </button>
               </div>
             )}
             <button
-              className="absolute bottom-3 right-3 rounded-[8px] border-[1.5px] border-white/20 bg-white/12 px-[13px] py-[6px] text-[0.72rem] font-bold text-white backdrop-blur-sm"
+              className="lots-map-change"
               onClick={() => changeImageRef.current?.click()}
             >
-              🖼 Cambiar imagen
+              Cambiar imagen
             </button>
             <input
               ref={changeImageRef}
@@ -484,21 +484,21 @@ function LotsPage() {
           </div>
 
           {/* Divider */}
-          <div className="w-1 flex-shrink-0 bg-[#DCDAD2]" />
+          <div className="lots-editor-divider" />
 
           {/* Right: builder panel */}
-          <div className="relative flex w-[420px] min-h-0 flex-shrink-0 flex-col overflow-hidden bg-[#FBFAF6]">
+          <div className="lots-builder-panel">
             {/* Panel header */}
-            <div className="flex-shrink-0 border-b-[1.5px] border-[#DCDAD2] bg-[#F1EEE6] px-4 py-3">
-              <div className="mb-2.5 flex items-center justify-between">
-                <div className="text-[0.86rem] font-extrabold text-[#1E3D2B]">Tablero de Lotes</div>
-                <div className="text-[0.72rem] text-[#83867C]">
+            <div className="lots-builder-head">
+              <div className="lots-builder-title-row">
+                <div className="lots-builder-title">Tablero de lotes</div>
+                <div className="lots-builder-count">
                   {totalDraftLots} lotes · {draftProject.sections.length} sec
                 </div>
               </div>
-              <div className="mb-[9px] flex items-end gap-[7px]">
-                <div className="flex-1">
-                  <div className="mb-1 text-[0.58rem] font-bold uppercase tracking-[0.5px] text-[#83867C]">
+              <div className="lots-section-form">
+                <div className="lots-section-name">
+                  <div className="lots-builder-label">
                     Nombre de sección
                   </div>
                   <input
@@ -506,35 +506,37 @@ function LotsPage() {
                     onChange={(event) => setSectionName(event.target.value)}
                     onKeyDown={(event) => event.key === "Enter" && addSection()}
                     placeholder="Ej: Manzana A, Frente Norte..."
-                    className="w-full rounded-[8px] border-[1.5px] border-[#DCDAD2] bg-[#FBFAF6] px-2.5 py-[7px] text-[0.78rem] text-[#1E3D2B] outline-none"
+                    className="lots-builder-input"
                   />
                 </div>
-                <div className="w-20">
-                  <div className="mb-1 text-[0.58rem] font-bold uppercase tracking-[0.5px] text-[#83867C]">
+                <div className="lots-section-total">
+                  <div className="lots-builder-label">
                     N° de lotes
                   </div>
                   <input
                     type="number"
                     value={sectionTotal}
                     onChange={(event) => setSectionTotal(Number(event.target.value))}
-                    className="w-full rounded-[8px] border-[1.5px] border-[#DCDAD2] bg-[#FBFAF6] px-1.5 py-[7px] text-center text-[0.78rem] text-[#1E3D2B] outline-none"
+                    className="lots-builder-input center"
                   />
                 </div>
                 <button
                   onClick={addSection}
-                  className="flex-shrink-0 rounded-[8px] bg-[#355E3B] px-[13px] py-[7px] text-[0.78rem] font-bold text-white"
+                  className="lots-add-section"
                 >
-                  + Sección
+                  Agregar
                 </button>
               </div>
-              <div className="flex items-center gap-[7px] rounded-[9px] border-[1.5px] border-[#DCDAD2] bg-[#FBFAF6] px-2.5 py-2">
-                <span className="text-[0.74rem] font-bold text-[#43453F]">📊 Llenar con Excel</span>
-                <span className="text-[0.72rem] text-[#83867C]">— importa lotes desde archivo</span>
+              <div className="lots-excel-row">
+                <div>
+                  <span className="lots-excel-title">Llenar con Excel</span>
+                  <span className="lots-excel-sub">Importa lotes desde archivo</span>
+                </div>
                 <button
-                  className="ml-auto flex-shrink-0 rounded-[7px] bg-[#355E3B] px-[13px] py-[6px] text-[0.74rem] font-bold text-white"
+                  className="lots-excel-upload"
                   onClick={() => excelInputRef.current?.click()}
                 >
-                  📋 Subir
+                  Subir
                 </button>
                 <input
                   ref={excelInputRef}
@@ -549,16 +551,17 @@ function LotsPage() {
             {/* Matrix board */}
             <div className="min-h-0 flex-1 overflow-y-auto p-4">
               {draftProject.sections.length === 0 ? (
-                <div className="flex h-full flex-col items-center justify-center gap-2.5 p-5 text-center text-[#83867C]">
-                  <div className="text-[2.5rem] opacity-20">🏗️</div>
-                  <div className="text-[0.82rem] leading-relaxed">
-                    Añade una sección para empezar<br />a construir la matriz de lotes
+                <div className="lots-empty-state">
+                  <div className="lots-empty-code">LT</div>
+                  <div className="lots-empty-title">Añade una sección para empezar</div>
+                  <div className="lots-empty-sub">
+                    Construye la matriz de lotes por manzana, frente o etapa.
                   </div>
                   <button
                     onClick={loadDemo}
-                    className="mt-2 rounded-[8px] border-[1.5px] border-[#DCDAD2] bg-[#F1EEE6] px-[18px] py-2 text-[0.74rem] font-bold text-[#43453F]"
+                    className="lots-demo-btn"
                   >
-                    ⚡ Cargar ejemplo rápido
+                    Cargar ejemplo rápido
                   </button>
                 </div>
               ) : (
@@ -902,37 +905,38 @@ function LotsPage() {
         </section>
       ) : (
         /* map-upload step */
-        <section className="rounded-[28px] border border-[#DCDAD2] bg-[#F4F1EA] p-8 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
-          <div className="mx-auto max-w-[500px] text-center">
-            <div className="mb-6 flex justify-end">
+        <section className="lot-upload-shell">
+          <div className="lot-upload-head">
+            <div>
+              <span className="lot-upload-kicker">Plano base</span>
+              <h2 className="lot-upload-title">Sube el plano del fraccionamiento</h2>
+              <p className="lot-upload-copy">
+                Usa una imagen del plano para trabajar la matriz de lotes sobre el tablero.
+              </p>
+            </div>
+            <div className="lot-upload-actions">
               <button
-                className="flex items-center gap-1.5 rounded-[8px] border border-[#DCDAD2] bg-[#FBFAF6] px-3 py-1.5 text-[0.74rem] font-bold text-[#83867C]"
+                className="lot-upload-secondary"
                 onClick={() => setDraftProject((previous) => ({ ...previous, mode: "selector" }))}
               >
-                ← Cambiar modo
+                Cambiar modo
               </button>
             </div>
-            <div className="mb-3 text-[2.8rem]">🗺️</div>
-            <h2 className="mb-2 font-['Playfair_Display'] text-[1.45rem] text-[#1E3D2B]">
-              Sube el plano del fraccionamiento
-            </h2>
-            <p className="mb-6 text-[0.82rem] leading-relaxed text-[#83867C]">
-              Carga la imagen de tu plano. Despues podras crear los lotes manualmente en el tablero.
-            </p>
-            <label className="mb-5 flex cursor-pointer flex-col items-center justify-center gap-3 rounded-[16px] border-[2.5px] border-dashed border-[#DCDAD2] bg-[#FBFAF6] px-6 py-9 transition-all hover:border-[#355E3B] hover:bg-[#D4EAE0]">
-              <div className="text-[2rem]">📂</div>
-              <div className="text-[0.9rem] font-bold text-[#1E3D2B]">Arrastra tu imagen aqui</div>
-              <div className="text-[0.75rem] text-[#83867C]">o haz clic para buscar el archivo</div>
-              <div className="flex gap-1.5">
-                {[".JPG", ".PNG", ".WEBP"].map((ext) => (
-                  <span
-                    key={ext}
-                    className="rounded-[6px] border border-[#DCDAD2] bg-[#F1EEE6] px-2.5 py-0.5 text-[0.65rem] font-bold text-[#43453F]"
-                  >
-                    {ext}
-                  </span>
+          </div>
+
+          <div className="lot-upload-body">
+            <label className="lot-upload-drop">
+              <div className="lot-upload-code">IMG</div>
+              <div>
+                <div className="lot-upload-drop-title">Seleccionar imagen del plano</div>
+                <div className="lot-upload-drop-sub">JPG, PNG o WEBP</div>
+              </div>
+              <div className="lot-upload-formats">
+                {["JPG", "PNG", "WEBP"].map((ext) => (
+                  <span key={ext}>{ext}</span>
                 ))}
               </div>
+              <div className="lot-upload-cta">Buscar archivo</div>
               <input
                 type="file"
                 accept="image/*"
@@ -946,12 +950,18 @@ function LotsPage() {
                 }}
               />
             </label>
-            <button
-              className="rounded-[9px] border border-[#DCDAD2] bg-transparent px-6 py-2.5 text-[0.77rem] font-semibold text-[#83867C]"
-              onClick={() => setDraftProject((previous) => ({ ...previous, mode: "editor" }))}
-            >
-              Continuar sin imagen
-            </button>
+            <div className="lot-upload-foot">
+              <div>
+                <span>Sin plano</span>
+                <p>También puedes crear secciones y lotes manualmente.</p>
+              </div>
+              <button
+                className="lot-upload-secondary"
+                onClick={() => setDraftProject((previous) => ({ ...previous, mode: "editor" }))}
+              >
+                Continuar
+              </button>
+            </div>
           </div>
         </section>
       )}

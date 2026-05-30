@@ -1,4 +1,4 @@
-import { HiBars3, HiBell, HiMagnifyingGlass } from "react-icons/hi2";
+import { HiArrowLeftOnRectangle, HiBars3, HiBell, HiMagnifyingGlass } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
 
@@ -30,8 +30,12 @@ function Topbar({ pathname }) {
     openContractCreate,
     notificationCount,
     markAllNotificationsRead,
+    logout,
   } = useAppContext();
   const draftLotCount = draftProject.sections.reduce((sum, section) => sum + section.lots.length, 0);
+  const handleLogout = () => {
+    if (window.confirm("¿Cerrar sesión?")) logout();
+  };
 
   return (
     <header className="topbar">
@@ -54,13 +58,13 @@ function Topbar({ pathname }) {
           <>
             <span id="lotCnt" className="lot-count-chip">{draftLotCount} lotes</span>
             <button className="tb-btn tb-s" onClick={() => showToast("Usa 'Cargar demo', 'Nuevo proyecto' o agrega secciones para construir la matriz.")}>
-              ❓ Ayuda
+              Ayuda
             </button>
             <button className="tb-btn tb-s" onClick={startNewProject}>
-              🗂 Nuevo Plano
+              Nuevo plano
             </button>
             <button className="tb-btn tb-p" onClick={() => saveFrac(draftProject)}>
-              🏘️ Crear Fraccionamiento
+              Crear fraccionamiento
             </button>
           </>
         ) : null}
@@ -106,6 +110,11 @@ function Topbar({ pathname }) {
           <div className="text-[0.62rem] uppercase tracking-[0.2em] text-[#83867C]">{currentUser?.role}</div>
           <div className="text-sm font-semibold text-[#1E3D2B]">{currentUser?.name}</div>
         </div>
+
+        <button className="topbar-logout" onClick={handleLogout} title="Cerrar sesión">
+          <HiArrowLeftOnRectangle />
+          <span>Cerrar sesión</span>
+        </button>
       </div>
     </header>
   );

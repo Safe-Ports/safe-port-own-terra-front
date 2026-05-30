@@ -1,19 +1,33 @@
 import { NavLink } from "react-router-dom";
+import {
+  HiArrowLeftOnRectangle,
+  HiBellAlert,
+  HiCalculator,
+  HiChartBarSquare,
+  HiCog6Tooth,
+  HiDocumentDuplicate,
+  HiHome,
+  HiMap,
+  HiOutlineSquares2X2,
+  HiOutlineUserGroup,
+  HiRectangleGroup,
+  HiWallet,
+} from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 
 const items = [
-  { label: "Ecosistema", to: "/ecosistema", emoji: "🌐", section: "General" },
-  { label: "Dashboard", to: "/dashboard", emoji: "📊", section: "General" },
-  { label: "Carga de Lotes", to: "/lotes", emoji: "🗺️", section: "Propiedades" },
-  { label: "Fraccionamientos", to: "/fraccionamientos", emoji: "🏘️", section: "Propiedades" },
-  { label: "Clientes & CRM", to: "/clientes", emoji: "👥", section: "Gestión" },
-  { label: "Contratos", to: "/contratos", emoji: "📄", section: "Gestión" },
-  { label: "Pagos", to: "/pagos", emoji: "💳", section: "Gestión" },
-  { label: "Documentos", to: "/documentos", emoji: "📁", section: "Gestión" },
-  { label: "Calculadora", to: "/calculadora", emoji: "🧮", section: "Gestión" },
-  { label: "Reportes", to: "/reportes", emoji: "📊", section: "Sistema" },
-  { label: "Alertas", to: "/alertas", emoji: "🔔", section: "Sistema" },
-  { label: "Configuración", to: "/configuracion", emoji: "⚙️", section: "Sistema" },
+  { label: "Ecosistema", to: "/ecosistema", icon: HiRectangleGroup, section: "General" },
+  { label: "Dashboard", to: "/dashboard", icon: HiHome, section: "General" },
+  { label: "Carga de Lotes", to: "/lotes", icon: HiOutlineSquares2X2, section: "Propiedades" },
+  { label: "Fraccionamientos", to: "/fraccionamientos", icon: HiMap, section: "Propiedades" },
+  { label: "Clientes & CRM", to: "/clientes", icon: HiOutlineUserGroup, section: "Gestion" },
+  { label: "Contratos", to: "/contratos", icon: HiWallet, section: "Gestion" },
+  { label: "Pagos", to: "/pagos", icon: HiBellAlert, section: "Gestion" },
+  { label: "Documentos", to: "/documentos", icon: HiDocumentDuplicate, section: "Gestion" },
+  { label: "Calculadora", to: "/calculadora", icon: HiCalculator, section: "Gestion" },
+  { label: "Reportes", to: "/reportes", icon: HiChartBarSquare, section: "Sistema" },
+  { label: "Alertas", to: "/alertas", icon: HiBellAlert, section: "Sistema" },
+  { label: "Configuracion", to: "/configuracion", icon: HiCog6Tooth, section: "Sistema" },
 ];
 
 function Logo() {
@@ -56,6 +70,7 @@ function Sidebar() {
         <Logo />
         <div className="sb-nav">
           {items.map((item) => {
+            const Icon = item.icon;
             const shouldRenderSection = item.section !== lastSection;
             lastSection = item.section;
 
@@ -75,7 +90,7 @@ function Sidebar() {
                   className={({ isActive }) => `sb-btn ${isActive ? "active" : ""}`}
                 >
                   <span className="sb-ico">
-                    {item.emoji}
+                    <Icon />
                   </span>
                   <span>{item.label}</span>
                   {badge ? <span className={`sb-bdg ${item.to === "/pagos" ? "sb-bdg-red" : ""}`}>{badge}</span> : null}
@@ -103,7 +118,7 @@ function Sidebar() {
             border: "none", background: "transparent", width: "100%", textAlign: "left",
             fontFamily: "inherit", cursor: "pointer", marginTop: 4,
           }}>
-            <span style={{ fontSize: ".95rem" }}>🚪</span>
+            <span className="sb-foot-ico"><HiArrowLeftOnRectangle /></span>
             <span>Cerrar sesión</span>
           </button>
         </div>

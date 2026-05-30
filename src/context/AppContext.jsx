@@ -133,7 +133,7 @@ export function AppProvider({ children }) {
         organization: data.organization,
         remember,
       });
-      navigate("/dashboard");
+      navigate("/ecosistema");
       return { ok: true };
     } catch {
       return { ok: false };
@@ -154,7 +154,7 @@ export function AppProvider({ children }) {
         organization: data.organization,
         remember: true,
       });
-      navigate("/dashboard");
+      navigate("/ecosistema");
       return { ok: true };
     } catch (err) {
       const msg = err?.response?.data?.detail || "Error al registrar";
@@ -216,56 +216,51 @@ export function AppProvider({ children }) {
   // ── Contracts ─────────────────────────────────────────────────────────────
   const saveContract = async (payload) => {
     let savedContract = null;
-    try {
-      if (payload.id) {
-        savedContract = await contractService.update(payload.id, {
-          notes:               payload.notes,
-          seller_id:           payload.seller_id || undefined,
-          down_payment_method: payload.down_payment_method || undefined,
-          interest_rate:       Number(payload.interest_rate ?? 0.12),
-        });
-      } else {
-        savedContract = await contractService.create({
-          client_id:           payload.client_id ?? payload.clientId,
-          lot_id:              payload.lot_id || payload.lotId || payload.lot || undefined,
-          type:                payload.type,
-          amount:              Number(payload.amount ?? 0),
-          down_payment:        Number(payload.down_payment ?? 0),
-          interest_rate:       Number(payload.interest_rate ?? 0.12),
-          total_months:        Number(payload.total_months ?? payload.totalM ?? 96),
-          contract_date:       payload.contract_date ?? payload.date,
-          first_payment_date:  payload.first_payment_date ?? payload.date,
-          seller_id:           payload.seller_id || undefined,
-          down_payment_method: payload.down_payment_method || undefined,
-          notes:               payload.notes || undefined,
-        });
-      }
-      await queryClient.invalidateQueries({ queryKey: ["contracts"] });
-      await queryClient.invalidateQueries({ queryKey: ["payments"] });
-      await queryClient.invalidateQueries({ queryKey: ["lots"] });
-
-      // subir documentos adjuntos al gestor, vinculados al contrato
-      const contractId = savedContract?.id || payload.id;
-      const docs = (payload._docs || []).filter(d => d.file);
-      if (docs.length > 0) {
-        for (const doc of docs) {
-          await documentService.upload(doc.file, {
-            name:       doc.file.name.replace(/\.[^.]+$/, ""),
-            category:   doc.category || "otro",
-            folderId:   doc.folderId || undefined,
-            entityType: contractId ? "contract" : undefined,
-            entityId:   contractId || undefined,
-          });
-        }
-        await queryClient.invalidateQueries({ queryKey: ["documents"] });
-        await queryClient.invalidateQueries({ queryKey: ["document-folders"] });
-      }
-
-      showToast(`Contrato registrado${docs.length > 0 ? ` · ${docs.length} doc${docs.length > 1 ? "s" : ""} subido${docs.length > 1 ? "s" : ""}` : ""}`);
-    } catch (err) {
-      const detail = err?.response?.data?.detail;
-      showToast(typeof detail === "string" ? detail : "Error al guardar el contrato");
+    // Lanza el error hacia el caller (ContractModal lo maneja con errores inline)
+    if (payload.id) {
+      savedContract = await contractService.update(payload.id, {
+        notes:               payload.notes,
+        seller_id:           payload.seller_id || undefined,
+        down_payment_method: payload.down_payment_method || undefined,
+        interest_rate:       Number(payload.interest_rate ?? 0),
+      });
+    } else {
+      savedContract = await contractService.create({
+        client_id:           payload.client_id ?? payload.clientId,
+        lot_id:              payload.lot_id || payload.lotId || payload.lot || undefined,
+        type:                payload.type,
+        amount:              Number(payload.amount ?? 0),
+        down_payment:        Number(payload.down_payment ?? 0),
+        interest_rate:       Number(payload.interest_rate ?? 0),
+        total_months:        Number(payload.total_months ?? payload.totalM ?? 96),
+        contract_date:       payload.contract_date ?? payload.date,
+        first_payment_date:  payload.first_payment_date ?? payload.date,
+        seller_id:           payload.seller_id || undefined,
+        down_payment_method: payload.down_payment_method || undefined,
+        notes:               payload.notes || undefined,
+      });
     }
+    await queryClient.invalidateQueries({ queryKey: ["contracts"] });
+    await queryClient.invalidateQueries({ queryKey: ["payments"] });
+    await queryClient.invalidateQueries({ queryKey: ["lots"] });
+
+    const contractId = savedContract?.id || payload.id;
+    const docs = (payload._docs || []).filter(d => d.file);
+    if (docs.length > 0) {
+      for (const doc of docs) {
+        await documentService.upload(doc.file, {
+          name:       doc.file.name.replace(/\.[^.]+$/, ""),
+          category:   doc.category || "otro",
+          folderId:   doc.folderId || undefined,
+          entityType: contractId ? "contract" : undefined,
+          entityId:   contractId || undefined,
+        });
+      }
+      await queryClient.invalidateQueries({ queryKey: ["documents"] });
+      await queryClient.invalidateQueries({ queryKey: ["document-folders"] });
+    }
+
+    showToast(`Contrato registrado${docs.length > 0 ? ` · ${docs.length} doc${docs.length > 1 ? "s" : ""} subido${docs.length > 1 ? "s" : ""}` : ""}`);
     setEditingContract(null);
     setContractDraft(null);
     closeModal("contractModal");

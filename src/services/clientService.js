@@ -9,4 +9,7 @@ export const clientService = {
   contracts: (id)           => api.get(`/clients/${id}/contracts`).then(r => r.data),
   payments:  (id, params = {}) => api.get(`/clients/${id}/payments`, { params }).then(r => r.data),
   statement: (id)           => api.get(`/clients/${id}/statement`).then(r => r.data),
+  getApps:   (id)           => api.get(`/clients/${id}/apps`).then(r => r.data),
+  assignApp: (id, appKey)   => api.post(`/clients/${id}/apps/${appKey}`).then(r => r.data),
+  removeApp: (id, appKey)   => api.delete(`/clients/${id}/apps/${appKey}`),
 };
