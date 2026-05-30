@@ -7,6 +7,8 @@ import {
 import { useAppContext } from "@/context/AppContext";
 import { clientService } from "@/services/clientService";
 import { currency, compactCurrency } from "@/services/formatters";
+import Avatar from "@/components/Avatar";
+import Button from "@/components/Button";
 
 /* ── helpers ─────────────────────────────────────────────────── */
 const fmtD = iso => !iso ? "—" : new Date(`${iso}T12:00:00`).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
@@ -54,18 +56,7 @@ function OwnTerraWordmark() {
 }
 
 /* ── Lista de clientes (izquierda) ───────────────────────────── */
-const AV_COLORS = ["#355E3B", "#7B5C38", "#1E3D2B", "#355E3B", "#6B4E2A"];
-function Avatar({ name = "?", size = 32 }) {
-  const col = AV_COLORS[(name.charCodeAt(0) || 0) % AV_COLORS.length];
-  const init = name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
-  return (
-    <div style={{
-      width: size, height: size, borderRadius: "50%", background: col,
-      color: "#fff", fontWeight: 800, fontSize: `${size * 0.36}px`,
-      display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-    }}>{init}</div>
-  );
-}
+/* Avatar: use shared component from src/components/Avatar.jsx */
 
 function ClientList({ clients, selectedId, onSelect, search, onSearch }) {
   return (
@@ -350,15 +341,9 @@ function ClientReport({ clientId }) {
     <div style={{ flex: 1, minWidth: 0 }}>
       {/* botón flotante de imprimir */}
       <div className="no-print" style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
-        <button onClick={handlePrint} style={{
-          display: "flex", alignItems: "center", gap: 6, padding: "9px 18px",
-          borderRadius: 12, border: "none", cursor: "pointer",
-          background: "var(--navy)", color: "#fff", fontWeight: 700,
-          fontSize: ".82rem", fontFamily: "inherit",
-          boxShadow: "0 4px 14px rgba(27,43,24,.25)",
-        }}>
+        <Button variant="primary" onClick={handlePrint} style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <HiOutlinePrinter style={{ fontSize: "1rem" }}/> Imprimir reporte
-        </button>
+        </Button>
       </div>
 
       {/* ═══ DOCUMENTO TIPO HOJA A4 ═══ */}

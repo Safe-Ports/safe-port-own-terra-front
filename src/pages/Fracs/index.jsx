@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
 import EmptyState from "@/components/ui/EmptyState";
 import InlineDocumentsPanel from "@/components/shared/InlineDocumentsPanel";
+import Button from "@/components/Button";
 import { lotService } from "@/services/lotService";
 import { appointmentService } from "@/services/appointmentService";
 import { currency } from "@/services/formatters";
@@ -363,8 +364,9 @@ function FracsPage() {
         </div>
         <div className="card-body space-y-3">
           {fracs.map((frac) => (
-            <button
+            <Button
               key={frac.id}
+              variant={frac.id === selectedFrac.id ? "primary" : "secondary"}
               className={`w-full rounded-2xl border px-4 py-4 text-left transition ${
                 frac.id === selectedFrac.id ? "border-[#355E3B] bg-[var(--tan-lt)]" : "border-line bg-[#FBFAF6]"
               }`}
@@ -374,7 +376,7 @@ function FracsPage() {
               <div className="mt-1 text-xs text-[#83867C]">
                 {frac.total_lots ?? 0} lotes · {frac.created_at ? new Date(frac.created_at).toLocaleDateString("es-MX") : ""}
               </div>
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -419,30 +421,24 @@ function FracsPage() {
                 </div>
               ))}
             </div>
-            <button className="btn-s" onClick={openEditor} style={{ color: "#E9E5DB", borderColor: "rgba(255,255,255,.2)", background: "rgba(255,255,255,.08)" }}>
+            <Button variant="secondary" onClick={openEditor} className="" style={{ color: "#E9E5DB", borderColor: "rgba(255,255,255,.2)", background: "rgba(255,255,255,.08)" }}>
               ✏ Editar
-            </button>
-            <button className="btn-s" onClick={exportAppData} style={{ color: "#E9E5DB", borderColor: "rgba(255,255,255,.2)", background: "rgba(255,255,255,.08)" }}>
+            </Button>
+            <Button variant="secondary" onClick={exportAppData} className="" style={{ color: "#E9E5DB", borderColor: "rgba(255,255,255,.2)", background: "rgba(255,255,255,.08)" }}>
               ⬇ Exportar
-            </button>
+            </Button>
             {showDeleteConfirm ? (
               <div style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(192,57,43,.18)", border: "1.5px solid rgba(192,57,43,.5)", borderRadius: 10, padding: "4px 10px" }}>
                 <span style={{ fontSize: ".68rem", color: "#ffd3cf", fontWeight: 600 }}>¿Eliminar "{selectedFrac.name}"?</span>
-                <button
-                  onClick={() => { deleteFrac(selectedFrac.id); setShowDeleteConfirm(false); }}
-                  style={{ background: "#C0392B", border: "none", color: "#fff", borderRadius: 7, padding: "3px 10px", fontSize: ".68rem", fontWeight: 700, cursor: "pointer" }}
-                >
+                <Button variant="danger" onClick={() => { deleteFrac(selectedFrac.id); setShowDeleteConfirm(false); }} className="" style={{ padding: "3px 10px", fontSize: ".68rem", fontWeight: 700 }}>
                   Sí, eliminar
-                </button>
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  style={{ background: "rgba(255,255,255,.12)", border: "none", color: "#E9E5DB", borderRadius: 7, padding: "3px 8px", fontSize: ".68rem", cursor: "pointer" }}
-                >
+                </Button>
+                <Button variant="secondary" onClick={() => setShowDeleteConfirm(false)} className="" style={{ padding: "3px 8px", fontSize: ".68rem" }}>
                   Cancelar
-                </button>
+                </Button>
               </div>
             ) : (
-              <button className="btn-dan" onClick={() => setShowDeleteConfirm(true)}>🗑 Eliminar</button>
+              <Button variant="danger" onClick={() => setShowDeleteConfirm(true)} className="">🗑 Eliminar</Button>
             )}
           </div>
         </div>
@@ -591,8 +587,9 @@ function FracsPage() {
                             const c = LOT_COLORS[lot.status] || LOT_COLORS.available;
                             const isSelected = lot.id === selectedLot?.id;
                             return (
-                              <button
+                              <Button
                                 key={lot.id}
+                                variant={isSelected ? "primary" : "secondary"}
                                 onClick={() => { setSelectedLotId(lot.id); setShowLotModal(true); }}
                                 style={{
                                   borderRadius: 9,
@@ -612,7 +609,7 @@ function FracsPage() {
                                 <div style={{ fontSize: ".6rem", marginTop: 2, opacity: .8 }}>
                                   {lot.area_m2 ? `${lot.area_m2}m²` : "—"}
                                 </div>
-                              </button>
+                              </Button>
                             );
                           })}
                         </div>
@@ -659,12 +656,14 @@ function FracsPage() {
                     {selectedFrac.name} · {selectedLot.code}
                   </div>
                 </div>
-                <button
+                <Button
+                  variant="secondary"
                   onClick={() => { setShowLotModal(false); setEditMode(false); setShowCotizador(false); }}
-                  style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(255,255,255,.12)", color: "#E9E5DB", border: "1px solid rgba(255,255,255,.2)", fontSize: "1.1rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+                  className=""
+                  style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(255,255,255,.12)", color: "#E9E5DB", border: "1px solid rgba(255,255,255,.2)", fontSize: "1.1rem", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
                 >
                   ×
-                </button>
+                </Button>
               </div>
 
               {/* Status hero card */}
@@ -760,29 +759,19 @@ function FracsPage() {
               {!editMode ? (
                 <div style={{ background: "rgba(107,66,38,.06)", borderBottom: "1px solid rgba(107,66,38,.12)", padding: "5px 13px", display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                   <span style={{ fontSize: ".68rem", color: "#5c4033", fontWeight: 600 }}>📐 Ficha técnica</span>
-                  <button
-                    onClick={() => setEditMode(true)}
-                    style={{ marginLeft: "auto", padding: "2px 9px", borderRadius: 5, background: "transparent", color: "#5c4033", border: "1px solid #d5c8b8", fontSize: ".62rem", fontWeight: 600, cursor: "pointer", fontFamily: "DM Sans, sans-serif" }}
-                  >
+                  <Button variant="secondary" onClick={() => setEditMode(true)} className="" style={{ marginLeft: "auto", padding: "2px 9px", borderRadius: 5, background: "transparent", color: "#5c4033", border: "1px solid #d5c8b8", fontSize: ".62rem", fontWeight: 600, cursor: "pointer", fontFamily: "DM Sans, sans-serif" }}>
                     ✏ Editar
-                  </button>
+                  </Button>
                 </div>
               ) : (
                 <div style={{ background: "rgba(45,90,71,.07)", borderBottom: "1px solid rgba(45,90,71,.18)", padding: "5px 13px", display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                   <span style={{ fontSize: ".68rem", color: "#2d5a47", fontWeight: 700 }}>✏ Modo edición</span>
-                  <button
-                    onClick={saveDraft}
-                    disabled={saving}
-                    style={{ marginLeft: "auto", padding: "3px 11px", borderRadius: 6, background: "#2d5a47", color: "#fff", border: "none", fontSize: ".66rem", fontWeight: 700, cursor: "pointer", fontFamily: "DM Sans, sans-serif", opacity: saving ? .6 : 1 }}
-                  >
+                  <Button variant="primary" onClick={saveDraft} disabled={saving} className="" style={{ marginLeft: "auto", padding: "3px 11px", borderRadius: 6, background: "#2d5a47", color: "#fff", border: "none", fontSize: ".66rem", fontWeight: 700, cursor: "pointer", fontFamily: "DM Sans, sans-serif", opacity: saving ? .6 : 1 }}>
                     {saving ? "Guardando..." : "✓ Guardar"}
-                  </button>
-                  <button
-                    onClick={() => { setDraft(makeDraft(selectedLot)); setEditMode(false); }}
-                    style={{ padding: "3px 10px", borderRadius: 6, background: "transparent", color: "#9b8478", border: "1px solid #d5c8b8", fontSize: ".66rem", fontWeight: 600, cursor: "pointer", fontFamily: "DM Sans, sans-serif" }}
-                  >
+                  </Button>
+                  <Button variant="secondary" onClick={() => { setDraft(makeDraft(selectedLot)); setEditMode(false); }} className="" style={{ padding: "3px 10px", borderRadius: 6, background: "transparent", color: "#9b8478", border: "1px solid #d5c8b8", fontSize: ".66rem", fontWeight: 600, cursor: "pointer", fontFamily: "DM Sans, sans-serif" }}>
                     Cancelar
-                  </button>
+                  </Button>
                 </div>
               )}
 

@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
 import EcoSprite from "./EcoSprite";
 import "@/styles/ecosystem.css";
+import Avatar from "@/components/Avatar";
 
 /* Layout compartido del hub Aurora: sidebar + topbar + área de scroll.
    `active` marca el item activo del menú. */
@@ -90,7 +91,7 @@ function EcoLayout({ active = "panel", title, subtitle, children }) {
           <div className="topbar-right">
             <button className="tb-btn">Alertas <span style={{ background: "var(--leaf)", color: "var(--deep)", borderRadius: 10, fontSize: 10, padding: "1px 7px", fontWeight: 600 }}>3</span></button>
             <button className="tb-btn primary">+ Nuevo documento</button>
-            <div className="avatar">{initials}</div>
+            <Avatar name={currentUser?.name || "Usuario"} size={36} />
           </div>
         </div>
 

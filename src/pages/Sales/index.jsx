@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
 import { currency, progress } from "@/services/formatters";
 import { contractService } from "@/services/contractService";
+import Button from "@/components/Button";
 
 function SalesPage() {
   const { contracts, setEditingContract, openModal, openContractCreate, openDocumentUpload, openClientReport, showToast } = useAppContext();

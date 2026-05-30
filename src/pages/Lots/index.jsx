@@ -5,6 +5,7 @@ import { useAppContext } from "@/context/AppContext";
 import { useProjectsQuery } from "@/hooks/queries/useAppQueries";
 import { lotService } from "@/services/lotService";
 import { compactCurrency, currency } from "@/services/formatters";
+import Button from "@/components/Button";
 
 const LOT_COLORS = {
   available: { bg: "#dcfce7", border: "#86efac", text: "#15803d" },

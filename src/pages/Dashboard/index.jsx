@@ -202,25 +202,9 @@ function MiniChart({ data, bars, sharedScale = true, H = 120 }) {
 
 /* ── Avatar (top vendedores) ─────────────────────────────────── */
 const AV_COLORS = ["#355E3B","#7B5C38","#1E3D2B","#6366F1","#0EA5E9"];
-function Av({ name = "?", size = 32, rank }) {
-  const col = AV_COLORS[(name.charCodeAt(0) || 0) % AV_COLORS.length];
-  const badgeCol = rank === 1 ? "#f59e0b" : rank === 2 ? "#94a3b8" : rank === 3 ? "#cd7f32" : "#e5e7eb";
-  return (
-    <div style={{ position: "relative", flexShrink: 0 }}>
-      <div style={{ width: size, height: size, borderRadius: "50%", background: col,
-        color: "#fff", fontWeight: 800, fontSize: `${size * 0.35}px`,
-        display: "flex", alignItems: "center", justifyContent: "center" }}>
-        {name.charAt(0).toUpperCase()}
-      </div>
-      <div style={{ position: "absolute", bottom: -3, right: -3, width: 14, height: 14,
-        borderRadius: "50%", background: badgeCol, border: "1.5px solid #fff",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: "7px", fontWeight: 800, color: rank <= 3 ? "#fff" : "#6b7280" }}>
-        {rank}
-      </div>
-    </div>
-  );
-}
+import Avatar from "@/components/Avatar";
+import Button from "@/components/Button";
+/* Reuse shared Avatar component; badge handled inline where needed */
 
 /* ══ PAGE ════════════════════════════════════════════════════════ */
 export default function DashboardPage() {
@@ -526,7 +510,15 @@ export default function DashboardPage() {
                 {teamPerf.slice(0, 5).map((m, i) => (
                   <tr key={m.user_id}>
                     <td style={{ width: 36 }}>
-                      <Av name={m.name} size={30} rank={i + 1} />
+                      <div style={{ position: "relative", display: "inline-block" }}>
+                        <Avatar name={m.name} size={30} />
+                        <div style={{ position: "absolute", bottom: -3, right: -3, width: 14, height: 14,
+                          borderRadius: "50%", background: (i + 1) === 1 ? "#f59e0b" : (i + 1) === 2 ? "#94a3b8" : (i + 1) === 3 ? "#cd7f32" : "#e5e7eb",
+                          border: "1.5px solid #fff", display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: "7px", fontWeight: 800, color: (i + 1) <= 3 ? "#fff" : "#6b7280" }}>
+                          {i + 1}
+                        </div>
+                      </div>
                     </td>
                     <td style={{ fontWeight: 600, fontSize: ".82rem" }}>{m.name}</td>
                     <td style={{ textAlign: "center", fontWeight: 700 }}>{m.sales_count}</td>

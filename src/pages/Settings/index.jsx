@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
 import { orgService } from "@/services/orgService";
+import Button from "@/components/Button";
 
 function SettingsPage() {
   const { currentUser, showToast } = useAppContext();

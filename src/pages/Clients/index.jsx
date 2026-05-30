@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
 import Modal from "@/components/ui/Modal";
 import InlineDocumentsPanel from "@/components/shared/InlineDocumentsPanel";
+import Button from "@/components/Button";
+import Avatar from "@/components/Avatar";
 import { clientService } from "@/services/clientService";
 import { currency } from "@/services/formatters";
 import { getClientEcosystem, CORE_APPS } from "@/services/ecosystemCore";
@@ -41,11 +43,11 @@ function ClientModal() {
       onClose={() => closeModal("clientModal")}
       footer={
         <>
-          <button className="btn-s" onClick={() => closeModal("clientModal")}>Cancelar</button>
-          {editingClient && <button className="btn-dan" onClick={() => deleteClient(editingClient.id)}>🗑 Eliminar</button>}
-          <button className="btn-p" onClick={() => saveClient({ ...(editingClient || {}), ...form })}>
+          <Button variant="secondary" onClick={() => closeModal("clientModal")}>Cancelar</Button>
+          {editingClient && <Button variant="danger" onClick={() => deleteClient(editingClient.id)}>🗑 Eliminar</Button>}
+          <Button variant="primary" onClick={() => saveClient({ ...(editingClient || {}), ...form })}>
             {dupe ? "🔗 Vincular a Lands" : "✓ Guardar"}
-          </button>
+          </Button>
         </>
       }
     >
@@ -163,7 +165,7 @@ function ClientsPage() {
                 <div style={{ fontWeight: 700, fontSize: ".87rem" }}>Clientes</div>
                 <div style={{ fontSize: ".58rem", color: "var(--mu)", fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", marginTop: 1 }}>Del ecosistema · con acceso a Lands</div>
               </div>
-              <button className="btn-p" style={{ padding: "5px 12px", fontSize: ".74rem" }} onClick={() => openModal("clientModal")}>+ Vincular</button>
+              <Button variant="primary" style={{ padding: "5px 12px", fontSize: ".74rem" }} onClick={() => openModal("clientModal")}>+ Vincular</Button>
             </div>
             <div className="cl-src">
               <span style={{ color: "var(--mu)" }}>🔍</span>
@@ -228,9 +230,9 @@ function ClientsPage() {
                   <a href={`tel:${selected.phone}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DCDAD2", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}>📞</a>
                   <a href={`mailto:${selected.email}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DCDAD2", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}>✉️</a>
                   <a href={`https://wa.me/${(selected.phone || "").replace(/\D/g,"")}`} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DCDAD2", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}>💬</a>
-                  <button className="btn-s" style={{ padding: "6px 14px", fontSize: ".76rem" }} onClick={() => { setEditingClient(selected); openModal("clientModal"); }}>
+                  <Button variant="secondary" style={{ padding: "6px 14px", fontSize: ".76rem" }} onClick={() => { setEditingClient(selected); openModal("clientModal"); }}>
                     Editar
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -353,26 +355,26 @@ function ClientsPage() {
 
                 {/* Actions */}
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-                  <button className="btn-soft" style={{ padding: "8px 15px", fontSize: ".78rem" }} onClick={() => sendClientMessage(selected)}>
+                  <Button variant="primary" style={{ padding: "8px 15px", fontSize: ".78rem" }} onClick={() => sendClientMessage(selected)}>
                     💬 Mensaje
-                  </button>
-                  <button className="btn-soft" style={{ padding: "8px 15px", fontSize: ".78rem" }} onClick={() => openContractCreate({ clientId: selected.id })}>
+                  </Button>
+                  <Button variant="primary" style={{ padding: "8px 15px", fontSize: ".78rem" }} onClick={() => openContractCreate({ clientId: selected.id })}>
                     📄 Nuevo Contrato
-                  </button>
+                  </Button>
                   {selected.type === "lead" && (
-                    <button className="btn-soft" style={{ padding: "8px 15px", fontSize: ".78rem" }} onClick={() => openContractCreate({ clientId: selected.id, type: "reserve" })}>
+                    <Button variant="primary" style={{ padding: "8px 15px", fontSize: ".78rem" }} onClick={() => openContractCreate({ clientId: selected.id, type: "reserve" })}>
                       🔒 Registrar Apartado
-                    </button>
+                    </Button>
                   )}
                   {selected.type !== "lead" && (
-                    <button className="btn-soft" style={{ padding: "8px 15px", fontSize: ".78rem" }} onClick={() => openClientReport(selected.id)}>
+                    <Button variant="primary" style={{ padding: "8px 15px", fontSize: ".78rem" }} onClick={() => openClientReport(selected.id)}>
                       🖨 Estado de Cuenta
-                    </button>
+                    </Button>
                   )}
                   {selected.status === "overdue" && (
-                    <button className="btn-dan" style={{ padding: "8px 15px", fontSize: ".78rem", borderRadius: 30 }} onClick={() => sendReminder(selected.name)}>
+                    <Button variant="danger" style={{ padding: "8px 15px", fontSize: ".78rem", borderRadius: 30 }} onClick={() => sendReminder(selected.name)}>
                       📲 Recordar
-                    </button>
+                    </Button>
                   )}
                 </div>
 

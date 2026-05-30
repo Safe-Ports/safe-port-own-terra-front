@@ -8,6 +8,9 @@ import {
 import { useAppContext } from "@/context/AppContext";
 import { expenseService, CAT_LABEL, CAT_STYLE } from "@/services/expenseService";
 import { currency, relativeDays } from "@/services/formatters";
+import Avatar from "@/components/Avatar";
+import Button from "@/components/Button";
+import Input from "@/components/Input";
 
 /* ── helpers ─────────────────────────────────────────────────── */
 const ESTADO_LABEL = { pending: "Pendiente", paid: "Pagado", overdue: "Vencido" };
@@ -114,18 +117,7 @@ function BarChart({ data }) {
   );
 }
 
-/* ── Avatar ──────────────────────────────────────────────────── */
-const AV_COLORS = ["#355E3B","#1E3D2B","#6FAF6B","#43453F","#2F6A38","#5C7C4E"];
-function Avatar({ name = "?" }) {
-  const idx = name.charCodeAt(0) % AV_COLORS.length;
-  return (
-    <div style={{ width: 28, height: 28, borderRadius: "50%", background: AV_COLORS[idx],
-      color: "#fff", fontWeight: 800, fontSize: ".72rem", display: "flex",
-      alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-      {name.charAt(0).toUpperCase()}
-    </div>
-  );
-}
+/* Avatar: use shared component from src/components/Avatar.jsx */
 
 /* ── SmartFilterBar ──────────────────────────────────────────── */
 function SmartFilterBar({ search, onSearch, estado, onEstado, periodo, onPeriodo, desde, onDesde, hasta, onHasta, estadoOptions }) {
@@ -141,11 +133,7 @@ function SmartFilterBar({ search, onSearch, estado, onEstado, periodo, onPeriodo
       <div style={{ position: "relative", flex: "1 1 200px", minWidth: 180 }}>
         <HiOutlineMagnifyingGlass style={{ position: "absolute", left: 12, top: "50%",
           transform: "translateY(-50%)", color: "var(--mu)", fontSize: ".95rem", pointerEvents: "none" }} />
-        <input value={search} onChange={e => onSearch(e.target.value)}
-          placeholder="Buscar por asociado, concepto o cuota…"
-          style={{ width: "100%", padding: "8px 12px 8px 35px", border: "1px solid rgba(67,69,63,.1)",
-            borderRadius: 11, fontSize: ".82rem", background: "#EDE9DF", fontFamily: "'Outfit',sans-serif",
-            color: "var(--tx)", outline: "none", boxSizing: "border-box" }} />
+        <Input value={search} onChange={onSearch} placeholder="Buscar por asociado, concepto o cuota…" style={{ paddingLeft: 35 }} />
       </div>
 
       {/* Estado */}
@@ -188,12 +176,9 @@ function SmartFilterBar({ search, onSearch, estado, onEstado, periodo, onPeriodo
 
       {/* Limpiar */}
       {(search || estado !== "all" || desde || hasta) && (
-        <button onClick={() => { onSearch(""); onEstado("all"); onPeriodo("este-mes"); }}
-          style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", borderRadius: 10,
-            border: "1px solid var(--bd)", background: "#fff", cursor: "pointer",
-            fontSize: ".72rem", fontWeight: 700, color: "var(--mu)", fontFamily: "inherit" }}>
+        <Button variant="secondary" onClick={() => { onSearch(""); onEstado("all"); onPeriodo("este-mes"); }}>
           <HiOutlineXMark /> Limpiar
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -382,10 +367,10 @@ function EgresoModal({ initial, onClose, onSave }) {
             <input className="fi" value={form.notes} onChange={set("notes")} placeholder="Referencia, proveedor…" /></div>
         </div>
         <div className="modal-foot">
-          <button className="btn-s" style={{ flex: 1 }} onClick={onClose}>Cancelar</button>
-          <button className="btn-p" style={{ flex: 2 }} onClick={() => onSave(form)}>
+          <Button variant="secondary" style={{ flex: 1 }} onClick={onClose}>Cancelar</Button>
+          <Button variant="primary" style={{ flex: 2 }} onClick={() => onSave(form)}>
             {initial ? "Guardar cambios" : "Guardar egreso"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -434,8 +419,8 @@ function CobroModal({ clients, contracts, onClose, onSave }) {
             <input className="fi" value={form.notes} onChange={set("notes")} placeholder="Transferencia, efectivo…" /></div>
         </div>
         <div className="modal-foot">
-          <button className="btn-s" style={{ flex: 1 }} onClick={onClose}>Cancelar</button>
-          <button className="btn-p" style={{ flex: 2 }} onClick={() => onSave(form)}>Registrar cobro</button>
+          <Button variant="secondary" style={{ flex: 1 }} onClick={onClose}>Cancelar</Button>
+          <Button variant="primary" style={{ flex: 2 }} onClick={() => onSave(form)}>Registrar cobro</Button>
         </div>
       </div>
     </div>
