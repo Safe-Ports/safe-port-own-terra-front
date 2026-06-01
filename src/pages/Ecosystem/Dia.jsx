@@ -14,7 +14,7 @@ const APP_META = {
   homes: { name: "Homes", color: "#A7CBA1", live: false },
 };
 
-const QUICK = [{ ico: "📅", label: "Visita" }, { ico: "✍️", label: "Firma" }, { ico: "💰", label: "Cobro" }, { ico: "📄", label: "Documento" }];
+const QUICK = [{ ico: "📅", label: "Visita" }, { ico: "💰", label: "Cobro" }, { ico: "📄", label: "Documento" }];
 
 function AppTag({ app }) {
   const a = APP_META[app] || APP_META.lands;
@@ -88,7 +88,9 @@ function EcosystemDia() {
 
   const totalOverdue = overdueItems.reduce((s, o) => s + Number(o.amount || 0), 0);
 
-  const unreadCount = notifs.filter((n) => !n.read_at).length;
+  const unreadCount = notifs.filter((n) => !n.is_read).length;
+  const tasksCount = midia?.tasks?.length ?? 0;
+  const pendingTotal = tasksCount + overdueItems.length + unreadCount;
 
   // Group notifications by recency
   const now = Date.now();
@@ -191,9 +193,9 @@ function EcosystemDia() {
         <div className="md-kpi">
           <span className="md-kpi-ico">🔔</span>
           <div className="md-kpi-body">
-            <div className="md-kpi-label">Notificaciones</div>
-            <div className="md-kpi-val">{unreadCount}</div>
-            <div className="md-kpi-sub">Sin leer</div>
+            <div className="md-kpi-label">Alertas Mi Día</div>
+            <div className="md-kpi-val">{pendingTotal}</div>
+            <div className="md-kpi-sub">{unreadCount} sin leer · {tasksCount} tareas</div>
           </div>
         </div>
       </div>
@@ -292,10 +294,13 @@ function EcosystemDia() {
         </div>
       </div>
 
-      {/* NOTIFICACIONES */}
+      {/* ALERTAS Y PENDIENTES */}
       <div className="md-card" style={{ marginBottom: 30 }}>
         <div className="md-card-head" style={{ marginBottom: 16 }}>
-          <div className="md-card-title">Notificaciones {unreadCount > 0 && <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, background: "var(--danger)", color: "#fff", borderRadius: 10, padding: "1px 6px", marginLeft: 6 }}>{unreadCount}</span>}</div>
+          <div>
+            <div className="md-card-title">Alertas y pendientes {pendingTotal > 0 && <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, background: "var(--danger)", color: "#fff", borderRadius: 10, padding: "1px 6px", marginLeft: 6 }}>{pendingTotal}</span>}</div>
+            <div className="md-card-sub">notificaciones, pagos y tareas que requieren atención</div>
+          </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div className="seg">
               {tabs.map((t) => <span key={t} className={ntab === t ? "on" : ""} onClick={() => setNtab(t)}>{t}</span>)}
@@ -308,13 +313,13 @@ function EcosystemDia() {
             <div key={g.key}>
               <div className="md-ngroup-label">{g.label}</div>
               {g.items.map((n) => (
-                <div key={n.id} className="md-row" style={{ opacity: n.read_at ? 0.6 : 1 }}>
+                <div key={n.id} className="md-row" style={{ opacity: n.is_read ? 0.6 : 1 }}>
                   <span className="md-row-ico" style={{ background: "var(--bg2)" }}>🔔</span>
                   <div className="md-row-info">
                     <div className="md-row-name" style={{ whiteSpace: "normal" }}>{n.message || n.title || "Notificación"}</div>
                     <div className="md-row-meta">{fmtRelative(n.created_at)}</div>
                   </div>
-                  {!n.read_at && (
+                  {!n.is_read && (
                     <button className="sh-link" style={{ fontSize: 11 }} onClick={() => notificationService.markRead(n.id).then(() => qc.invalidateQueries({ queryKey: ["notifications"] }))}>
                       ✓
                     </button>

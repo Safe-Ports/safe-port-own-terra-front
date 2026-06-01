@@ -47,15 +47,15 @@ function Logo() {
         </svg>
       </div>
       <div className="sb-logo-nm">
-        OwnTerra
-        <small>Ecosistem</small>
+        OwnTerra <span>Lands</span>
+        <small>terra.lands</small>
       </div>
     </div>
   );
 }
 
 function Sidebar() {
-  const { ui, closeSidebar, fracs, clients, payments, documents, notificationCount, logout, currentUser } = useAppContext();
+  const { ui, closeSidebar, fracs, clients, payments, documents, notificationCount, logout, currentUser, canAccessApp, canUseFeature } = useAppContext();
 
   const handleLogout = () => {
     if (window.confirm("¿Cerrar sesión?")) logout();
@@ -69,7 +69,16 @@ function Sidebar() {
       <aside className={`sb app-sidebar ${ui.sidebarOpen ? "open" : ""}`}>
         <Logo />
         <div className="sb-nav">
-          {items.map((item) => {
+          {items.filter((item) => {
+            if (item.to === "/ecosistema") return true;
+            if (item.to === "/configuracion") return canUseFeature("core.config");
+            if (item.to === "/clientes") return canUseFeature("lands.clients");
+            if (item.to === "/ventas" || item.to === "/contratos") return canUseFeature("lands.sales");
+            if (item.to === "/documentos") return canUseFeature("lands.documents");
+            if (item.to === "/pagos") return canUseFeature("lands.payments");
+            if (item.to === "/reportes") return canUseFeature("lands.reports");
+            return canAccessApp("lands");
+          }).map((item) => {
             const Icon = item.icon;
             const shouldRenderSection = item.section !== lastSection;
             lastSection = item.section;

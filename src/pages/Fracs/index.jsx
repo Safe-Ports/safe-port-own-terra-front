@@ -7,6 +7,7 @@ import InlineDocumentsPanel from "@/components/shared/InlineDocumentsPanel";
 import Button from "@/components/Button";
 import { lotService } from "@/services/lotService";
 import { appointmentService } from "@/services/appointmentService";
+import { getUserErrorMessage } from "@/services/errors";
 import { currency } from "@/services/formatters";
 import "./fracs.css";
 
@@ -322,8 +323,8 @@ function FracsPage() {
       await queryClient.invalidateQueries({ queryKey: ["lots", selectedFrac?.id] });
       setEditMode(false);
       showToast("Lote actualizado");
-    } catch {
-      showToast("Error al guardar");
+    } catch (err) {
+      showToast(getUserErrorMessage(err, "Error al guardar"));
     } finally {
       setSaving(false);
     }
@@ -341,8 +342,8 @@ function FracsPage() {
       await lotService.update(pendingStatus.lotId, { status: pendingStatus.to });
       await queryClient.invalidateQueries({ queryKey: ["lots", selectedFrac?.id] });
       showToast(`Estado actualizado: ${LOT_COLORS[pendingStatus.to]?.label || pendingStatus.to}`);
-    } catch {
-      showToast("Error al cambiar estado");
+    } catch (err) {
+      showToast(getUserErrorMessage(err, "Error al cambiar estado"));
     } finally {
       setPendingStatus(null);
       setConfirmName("");
@@ -364,8 +365,8 @@ function FracsPage() {
       setApptDraft({ contact_name: "", contact_phone: "", scheduled_at: "", notes: "" });
       setShowApptForm(false);
       showToast("Cita agendada");
-    } catch {
-      showToast("Error al agendar la cita");
+    } catch (err) {
+      showToast(getUserErrorMessage(err, "Error al agendar la cita"));
     } finally {
       setApptSaving(false);
     }
@@ -376,8 +377,8 @@ function FracsPage() {
       await appointmentService.cancel(id);
       await refetchAppts();
       showToast("Cita cancelada");
-    } catch {
-      showToast("Error al cancelar");
+    } catch (err) {
+      showToast(getUserErrorMessage(err, "Error al cancelar"));
     }
   };
 

@@ -6,6 +6,7 @@ import InlineDocumentsPanel from "@/components/shared/InlineDocumentsPanel";
 import { lotService } from "@/services/lotService";
 import { orgService } from "@/services/orgService";
 import { folderService } from "@/services/folderService";
+import { getFieldErrors, getUserErrorMessage } from "@/services/errors";
 import { HiOutlinePlus, HiOutlineTrash, HiOutlineDocument } from "react-icons/hi2";
 
 const PAYMENT_METHODS = [
@@ -146,34 +147,16 @@ function validate(form, isEditing) {
   return errs; // {} = sin errores
 }
 
-/* Parsea errores 422 del backend y los mapea a campos del form */
 function parseServerErrors(err) {
-  const detail = err?.response?.data?.detail;
-  if (!detail) return null;
-
-  // Errores de validación Pydantic: array de { loc, msg }
-  if (Array.isArray(detail)) {
-    const map = {};
-    const FIELD_MAP = {
-      amount:         "amount",
-      down_payment:   "down_payment",
-      total_months:   "totalM",
-      contract_date:  "date",
-      client_id:      "clientId",
-      lot_id:         "lot",
-      interest_rate:  "interest_rate",
-    };
-    detail.forEach(({ loc, msg }) => {
-      const backendField = loc?.[loc.length - 1];
-      const frontField = FIELD_MAP[backendField] || backendField;
-      if (frontField) map[frontField] = msg;
-    });
-    return Object.keys(map).length ? map : null;
-  }
-
-  // Error string simple
-  if (typeof detail === "string") return { _general: detail };
-  return null;
+  return getFieldErrors(err, {
+    amount: "amount",
+    down_payment: "down_payment",
+    total_months: "totalM",
+    contract_date: "date",
+    client_id: "clientId",
+    lot_id: "lot",
+    interest_rate: "interest_rate",
+  });
 }
 
 /* ══ MODAL ═══════════════════════════════════════════════════ */
@@ -191,7 +174,7 @@ function ContractModal() {
     number: "", lot: "", clientId: clients[0]?.id || "",
     type: "sale", date: new Date().toISOString().split("T")[0],
     amount: 0, down_payment: 0, totalM: 96,
-    interest_rate: 0,
+    interest_rate: 0.12,
     seller_id: "", down_payment_method: "cash", notes: "",
   };
   const [form, setForm] = useState(defaultForm);
@@ -282,7 +265,7 @@ function ContractModal() {
         setErrors(serverErrs);
         showToast("Revisa los campos marcados en rojo");
       } else {
-        showToast("Error al guardar el contrato");
+        showToast(getUserErrorMessage(err, "Error al guardar el contrato"));
       }
     } finally {
       setSaving(false);

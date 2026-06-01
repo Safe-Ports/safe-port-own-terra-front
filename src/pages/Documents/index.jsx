@@ -9,6 +9,7 @@ import {
 import { useAppContext } from "@/context/AppContext";
 import { folderService } from "@/services/folderService";
 import { documentService } from "@/services/documentService";
+import { getUserErrorMessage } from "@/services/errors";
 
 /* ── helpers ────────────────────────────────────────────────────────────── */
 const CAT_LABEL = {
@@ -191,7 +192,7 @@ export default function DocumentsPage() {
   const createFolder = useMutation({
     mutationFn: folderService.create,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["document-folders"] }),
-    onError: (e) => showToast(e?.response?.data?.error?.message || "Error al crear carpeta"),
+    onError: (e) => showToast(getUserErrorMessage(e, "Error al crear carpeta")),
   });
   const renameFolder = useMutation({
     mutationFn: ({ id, name }) => folderService.update(id, { name }),
@@ -204,7 +205,7 @@ export default function DocumentsPage() {
   const moveDoc = useMutation({
     mutationFn: ({ id, folderId }) => documentService.move(id, folderId),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["documents"] }); qc.invalidateQueries({ queryKey: ["document-folders"] }); },
-    onError: () => showToast("Error al mover el archivo"),
+    onError: (e) => showToast(getUserErrorMessage(e, "Error al mover el archivo")),
   });
 
   const [activeId,    setActiveId]    = useState("all");

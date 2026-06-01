@@ -2,6 +2,9 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { clientService } from "@/services/clientService";
 import { documentService } from "@/services/documentService";
+import { userService } from "@/services/userService";
+import { useAppContext } from "@/context/AppContext";
+import { getUserErrorMessage } from "@/services/errors";
 import EcoLayout from "./EcoLayout";
 
 const APPS = [
@@ -15,15 +18,18 @@ const IDENTITY_CATEGORIES = ["Identificación (INE/IFE)", "Comprobante de domici
 
 const initials = (name = "") => name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 const fmtMoney = (n) => n != null ? "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 0 }) : "—";
+const emailOk = (value = "") => !value.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
 const TYPE_LABEL = { buyer: "Comprador", lead: "Prospecto", tenant: "Arrendatario" };
 const STATUS_LABEL = { active: "Activo", overdue: "Vencido", closed: "Cerrado", pending: "Pendiente" };
+const STAGE_LABEL = { new: "Nuevo", contacted: "Contactado", visited: "Visitado", quoted: "Cotizado", reserved: "Apartado", won: "Ganado", lost: "Perdido" };
 
 const FileIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"><path d="M6 2h7l5 5v15H6z" /><path d="M13 2v5h5" /></svg>);
 const DownloadIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12" /><path d="M7 11l5 5 5-5" /><path d="M5 21h14" /></svg>);
 
 function EcosystemClientes() {
   const qc = useQueryClient();
+  const { exportAppData, showToast } = useAppContext();
   const [selectedId, setSelectedId] = useState(null);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState("contracts");
@@ -36,6 +42,12 @@ function EcosystemClientes() {
     queryFn: () => clientService.list({ limit: 100 }),
   });
   const clients = clientsData?.items ?? [];
+
+  const { data: usersData } = useQuery({
+    queryKey: ["users", "eco-client-vendors"],
+    queryFn: () => userService.list({ role: "vendor", limit: 100 }),
+  });
+  const vendors = usersData?.items ?? [];
 
   // Auto-select first client
   const effectiveSelectedId = selectedId ?? (clients[0]?.id ? String(clients[0].id) : null);
@@ -78,18 +90,56 @@ function EcosystemClientes() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["client-docs"] });
       setModal(null);
+      showToast("Documento de identidad subido");
     },
+    onError: (err) => showToast(getUserErrorMessage(err, "Error al subir documento")),
+  });
+
+  const createClientMutation = useMutation({
+    mutationFn: async (draft) => {
+      const created = await clientService.create({
+        name: draft.name,
+        email: draft.email || undefined,
+        phone: draft.phone || undefined,
+        type: draft.type,
+        pipeline_stage: draft.pipeline_stage,
+        seller_id: draft.seller_id || undefined,
+        notes: draft.notes || undefined,
+      });
+
+      const appKeys = Object.entries(draft.apps)
+        .filter(([, enabled]) => enabled)
+        .map(([key]) => key);
+      await Promise.all(appKeys.map((appKey) => clientService.assignApp(created.id, appKey)));
+      return created;
+    },
+    onSuccess: (created) => {
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      qc.invalidateQueries({ queryKey: ["client-apps"] });
+      setSelectedId(String(created.id));
+      setModal(null);
+      showToast("Cliente creado en el Core");
+    },
+    onError: (err) => showToast(getUserErrorMessage(err, "Error al crear cliente")),
   });
 
   // App assignment mutations (persist to backend)
   const assignAppMutation = useMutation({
     mutationFn: ({ clientId, appKey }) => clientService.assignApp(clientId, appKey),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["client-apps"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["client-apps"] });
+      showToast("Acceso de cliente actualizado");
+    },
+    onError: (err) => showToast(getUserErrorMessage(err, "Error al asignar app")),
   });
 
   const removeAppMutation = useMutation({
     mutationFn: ({ clientId, appKey }) => clientService.removeApp(clientId, appKey),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["client-apps"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["client-apps"] });
+      showToast("Acceso de cliente removido");
+    },
+    onError: (err) => showToast(getUserErrorMessage(err, "Error al remover app")),
   });
 
   const selected = detail || clients.find((c) => String(c.id) === effectiveSelectedId) || null;
@@ -132,7 +182,21 @@ function EcosystemClientes() {
   const activeContracts = contracts.filter((c) => c.status === "active").length;
 
   const openAdd = (type) => {
-    if (type === "contract") {
+    if (type === "client") {
+      setModal({
+        type,
+        draft: {
+          name: "",
+          email: "",
+          phone: "",
+          type: "lead",
+          pipeline_stage: "new",
+          seller_id: "",
+          notes: "",
+          apps: { lands: true, neighb: false, homes: false },
+        },
+      });
+    } else if (type === "contract") {
       setModal({ type, draft: {} });
     } else {
       setModal({ type, draft: { name: "", category: IDENTITY_CATEGORIES[0], file: null } });
@@ -142,8 +206,18 @@ function EcosystemClientes() {
 
   const saveDraft = () => {
     const { type, draft } = modal;
-    if (type === "document") {
-      if (!draft.file) { setModal(null); return; }
+    if (type === "client") {
+      if (!draft.name.trim()) return;
+      if (!emailOk(draft.email)) {
+        showToast("Ingresa un correo válido");
+        return;
+      }
+      createClientMutation.mutate(draft);
+    } else if (type === "document") {
+      if (!draft.file) {
+        showToast("Selecciona un archivo para subir");
+        return;
+      }
       uploadDocMutation.mutate({ file: draft.file, name: draft.name || draft.file.name, category: draft.category });
     } else {
       setModal(null);
@@ -163,7 +237,10 @@ function EcosystemClientes() {
 
       <div className="section-head">
         <h3>Directorio central de clientes</h3>
-        <a className="sh-link" href="#">Importar / exportar →</a>
+        <div className="usr-list-bar" style={{ marginBottom: 0 }}>
+          <button className="usr-btn-ghost" onClick={() => exportAppData("clients", "xlsx")}>Exportar clientes</button>
+          <button className="usr-add-btn" onClick={() => openAdd("client")}>Nuevo cliente</button>
+        </div>
       </div>
 
       {/* KPIs */}
@@ -358,40 +435,111 @@ function EcosystemClientes() {
         </div>
       </div>
 
-      {/* MODAL alta documento */}
-      {modal && selected && (
+      {/* MODAL alta cliente / documento */}
+      {modal && (modal.type === "client" || selected) && (
         <div className="usr-modal-overlay" onClick={(e) => e.target === e.currentTarget && setModal(null)}>
           <div className="usr-modal">
             <div className="usr-modal-head">
               <div>
-                <div className="usr-modal-title">Documento de identidad</div>
-                <div className="usr-modal-sub">Para {selected.name} · se guarda en el core</div>
+                <div className="usr-modal-title">{modal.type === "client" ? "Nuevo cliente" : "Documento de identidad"}</div>
+                <div className="usr-modal-sub">
+                  {modal.type === "client"
+                    ? "Identidad única del Core con acceso opcional a OwnTerra Lands."
+                    : `Para ${selected.name} · se guarda en el core`}
+                </div>
               </div>
               <button className="usr-modal-close" onClick={() => setModal(null)}>×</button>
             </div>
             <div className="usr-modal-body">
-              <div className="usr-field">
-                <label className="usr-field-lbl">Archivo</label>
-                <input className="usr-input" type="file" onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) setDraft({ file: f, name: modal.draft.name || f.name });
-                }} />
-              </div>
-              <div className="usr-field">
-                <label className="usr-field-lbl">Nombre del documento</label>
-                <input className="usr-input" placeholder="Ej. INE_frente.jpg" value={modal.draft.name} onChange={(e) => setDraft({ name: e.target.value })} />
-              </div>
-              <div className="usr-field">
-                <label className="usr-field-lbl">Tipo de identidad</label>
-                <select className="usr-select" value={modal.draft.category} onChange={(e) => setDraft({ category: e.target.value })}>
-                  {IDENTITY_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
+              {modal.type === "client" ? (
+                <>
+                  <div className="usr-field">
+                    <label className="usr-field-lbl">Nombre completo</label>
+                    <input className="usr-input" value={modal.draft.name} onChange={(e) => setDraft({ name: e.target.value })} placeholder="Ej. Mariana Lopez" />
+                  </div>
+                  <div className="usr-field-row">
+                    <div className="usr-field">
+                      <label className="usr-field-lbl">Correo</label>
+                      <input className="usr-input" type="email" value={modal.draft.email} onChange={(e) => setDraft({ email: e.target.value })} />
+                    </div>
+                    <div className="usr-field">
+                      <label className="usr-field-lbl">Telefono</label>
+                      <input className="usr-input" value={modal.draft.phone} onChange={(e) => setDraft({ phone: e.target.value })} />
+                    </div>
+                  </div>
+                  <div className="usr-field-row">
+                    <div className="usr-field">
+                      <label className="usr-field-lbl">Tipo</label>
+                      <select className="usr-select" value={modal.draft.type} onChange={(e) => setDraft({ type: e.target.value })}>
+                        {Object.entries(TYPE_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                      </select>
+                    </div>
+                    <div className="usr-field">
+                      <label className="usr-field-lbl">Etapa</label>
+                      <select className="usr-select" value={modal.draft.pipeline_stage} onChange={(e) => setDraft({ pipeline_stage: e.target.value })}>
+                        {Object.entries(STAGE_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="usr-field">
+                    <label className="usr-field-lbl">Vendedor responsable en Lands</label>
+                    <select className="usr-select" value={modal.draft.seller_id} onChange={(e) => setDraft({ seller_id: e.target.value })}>
+                      <option value="">Sin asignar</option>
+                      {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="usr-sec-label">Acceso a apps</div>
+                  {APPS.map((app) => {
+                    const isOn = !!modal.draft.apps[app.key];
+                    return (
+                      <div key={app.key} className={`usr-app-block ${isOn ? "is-on" : ""}`}>
+                        <div className="usr-app-top" style={{ marginBottom: 0 }}>
+                          <span className={`usr-app-ico app-icon ${app.cls}`}><svg><use href={`#${app.icon}`} /></svg></span>
+                          <div style={{ minWidth: 0 }}>
+                            <div className="usr-app-name">{app.name}{!app.live && <span className="usr-app-soon">Próximamente</span>}</div>
+                            <div className="usr-app-handle">{app.handle}</div>
+                          </div>
+                          <button
+                            className={`usr-switch ${isOn ? "on" : ""}`}
+                            role="switch"
+                            aria-checked={isOn}
+                            onClick={() => setDraft({ apps: { ...modal.draft.apps, [app.key]: !isOn } })}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div className="usr-field">
+                    <label className="usr-field-lbl">Notas</label>
+                    <textarea className="usr-input" rows="3" value={modal.draft.notes} onChange={(e) => setDraft({ notes: e.target.value })} />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="usr-field">
+                    <label className="usr-field-lbl">Archivo</label>
+                    <input className="usr-input" type="file" onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) setDraft({ file: f, name: modal.draft.name || f.name });
+                    }} />
+                  </div>
+                  <div className="usr-field">
+                    <label className="usr-field-lbl">Nombre del documento</label>
+                    <input className="usr-input" placeholder="Ej. INE_frente.jpg" value={modal.draft.name} onChange={(e) => setDraft({ name: e.target.value })} />
+                  </div>
+                  <div className="usr-field">
+                    <label className="usr-field-lbl">Tipo de identidad</label>
+                    <select className="usr-select" value={modal.draft.category} onChange={(e) => setDraft({ category: e.target.value })}>
+                      {IDENTITY_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                </>
+              )}
             </div>
             <div className="usr-modal-foot">
               <button className="usr-btn-ghost" onClick={() => setModal(null)}>Cancelar</button>
-              <button className="usr-btn-primary" onClick={saveDraft} disabled={uploadDocMutation.isPending}>
-                {uploadDocMutation.isPending ? "Subiendo…" : "✓ Guardar"}
+              <button className="usr-btn-primary" onClick={saveDraft} disabled={uploadDocMutation.isPending || createClientMutation.isPending}>
+                {uploadDocMutation.isPending || createClientMutation.isPending ? "Guardando…" : "✓ Guardar"}
               </button>
             </div>
           </div>

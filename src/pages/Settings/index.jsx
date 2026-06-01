@@ -2,12 +2,13 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
 import { orgService } from "@/services/orgService";
+import { getUserErrorMessage } from "@/services/errors";
 import Button from "@/components/Button";
 
 function SettingsPage() {
-  const { currentUser, showToast } = useAppContext();
+  const { currentUser, showToast, canUseFeature } = useAppContext();
   const queryClient = useQueryClient();
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = canUseFeature("core.config");
 
   const { data: org, isLoading: orgLoading } = useQuery({
     queryKey: ["organization"],
@@ -38,8 +39,7 @@ function SettingsPage() {
       setShowForm(false);
       showToast("Usuario creado");
     } catch (err) {
-      const detail = err?.response?.data?.detail;
-      showToast(typeof detail === "string" ? detail : "Error al crear usuario");
+      showToast(getUserErrorMessage(err, "Error al crear usuario"));
     } finally {
       setCreating(false);
     }
@@ -49,8 +49,8 @@ function SettingsPage() {
     try {
       await orgService.resetPassword(id);
       showToast(`Contraseña restablecida para ${name}`);
-    } catch {
-      showToast("Error al restablecer contraseña");
+    } catch (err) {
+      showToast(getUserErrorMessage(err, "Error al restablecer contraseña"));
     }
   };
 
@@ -60,8 +60,8 @@ function SettingsPage() {
       await orgService.deleteUser(id);
       await queryClient.invalidateQueries({ queryKey: ["users"] });
       showToast("Usuario eliminado");
-    } catch {
-      showToast("Error al eliminar usuario");
+    } catch (err) {
+      showToast(getUserErrorMessage(err, "Error al eliminar usuario"));
     }
   };
 

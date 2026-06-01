@@ -82,7 +82,7 @@ function LeftPanel() {
 
 /* ── LOGIN ── */
 function LoginView({ onForgot, onRegister }) {
-  const { login } = useAppContext();
+  const { login, showToast } = useAppContext();
   const [form, setForm]     = useState({ identifier: "", password: "", remember: false });
   const [error, setError]   = useState(false);
   const [loading, setLoading] = useState(false);
@@ -210,7 +210,7 @@ function LoginView({ onForgot, onRegister }) {
       </div>
 
       <div className="lf-footer">
-        OwnTerra v1.0 &nbsp;·&nbsp; © 2025 &nbsp;·&nbsp; <a href="#">Privacidad</a>
+        OwnTerra v1.0 &nbsp;·&nbsp; © 2026 &nbsp;·&nbsp; <button type="button" className="lf-link-btn" onClick={() => showToast("Aviso de privacidad próximamente")}>Privacidad</button>
       </div>
     </div>
   );
@@ -301,7 +301,7 @@ function ForgotView({ onBack }) {
 
 /* ── REGISTRO ── */
 function RegisterView({ onBack }) {
-  const { register } = useAppContext();
+  const { register, showToast } = useAppContext();
   const [form, setForm] = useState({
     organization_name: "",
     name: "",
@@ -420,7 +420,10 @@ function RegisterView({ onBack }) {
       </button>
 
       <div className="lf-footer" style={{ marginTop: 16 }}>
-        Al registrarte aceptas nuestros <a href="#">Términos de uso</a> y <a href="#">Privacidad</a>.
+        Al registrarte aceptas nuestros{" "}
+        <button type="button" className="lf-link-btn" onClick={() => showToast("Términos de uso próximamente")}>Términos de uso</button>
+        {" "}y{" "}
+        <button type="button" className="lf-link-btn" onClick={() => showToast("Aviso de privacidad próximamente")}>Privacidad</button>.
       </div>
     </div>
   );

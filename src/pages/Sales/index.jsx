@@ -53,7 +53,7 @@ function SalesPage() {
             )) : (
               <tr>
                 <td colSpan="8" style={{ textAlign: "center", padding: 24, color: "var(--mu)" }}>
-                  Sin contratos. <a href="#" onClick={(e) => { e.preventDefault(); openContractCreate(); }} style={{ color: "var(--tan-dk)" }}>Generar el primero →</a>
+                  Sin contratos. <button type="button" onClick={() => openContractCreate()} style={{ color: "var(--tan-dk)", border: 0, background: "transparent", padding: 0, font: "inherit", fontWeight: 700, cursor: "pointer" }}>Generar el primero →</button>
                 </td>
               </tr>
             )}

@@ -4,6 +4,7 @@ import * as XLSX from "xlsx";
 import { useAppContext } from "@/context/AppContext";
 import { useProjectsQuery } from "@/hooks/queries/useAppQueries";
 import { lotService } from "@/services/lotService";
+import { getUserErrorMessage } from "@/services/errors";
 import { compactCurrency, currency } from "@/services/formatters";
 import Button from "@/components/Button";
 
@@ -176,8 +177,8 @@ function LotsPage() {
         sections:       Object.values(sectionMap),
         _editingFracId: project.id,
       });
-    } catch {
-      showToast("Error al cargar los lotes para editar");
+    } catch (err) {
+      showToast(getUserErrorMessage(err, "Error al cargar los lotes para editar"));
     } finally {
       setLoadingEditId(null);
     }
@@ -883,7 +884,7 @@ function LotsPage() {
 
               <div
                 className="relative cursor-pointer overflow-hidden rounded-[16px] border-2 border-[#DCDAD2] bg-[#FBFAF6] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#1E3D2B] hover:shadow-[0_8px_24px_rgba(27,47,69,.15)]"
-                onClick={() => {}}
+                onClick={() => showToast("Carga CAD automática próximamente")}
               >
                 <div className="absolute right-3 top-3 rounded-[8px] bg-[#1E3D2B] px-2 py-0.5 text-[0.58rem] font-extrabold uppercase tracking-[0.5px] text-white">
                   Nuevo

@@ -8,7 +8,7 @@ import Avatar from "@/components/Avatar";
    `active` marca el item activo del menú. */
 function EcoLayout({ active = "panel", title, subtitle, children }) {
   const navigate = useNavigate();
-  const { currentUser, logout } = useAppContext();
+  const { currentUser, logout, notificationCount, canAccessApp, canUseFeature, showToast } = useAppContext();
 
   const initials = (currentUser?.name || "Usuario")
     .split(" ")
@@ -25,8 +25,9 @@ function EcoLayout({ active = "panel", title, subtitle, children }) {
   const navItem = (key, label, icon, onClick, disabled) => (
     <button
       className={`nav-item ${active === key ? "active" : ""}`}
-      onClick={disabled ? undefined : onClick}
+      onClick={disabled ? () => showToast("Tu usuario no tiene acceso a esta sección") : onClick}
       style={disabled ? { opacity: 0.5, cursor: "default" } : undefined}
+      title={disabled ? "Sin acceso para tu rol actual" : undefined}
     >
       <span className="ni-ico"><svg><use href={`#${icon}`} /></svg></span> {label}
     </button>
@@ -52,14 +53,19 @@ function EcoLayout({ active = "panel", title, subtitle, children }) {
             {navItem("miday", "Mi Día", "eco-n-sun", () => navigate("/ecosistema/mi-dia"))}
             {navItem("agenda", "Agenda", "eco-n-calendar", () => navigate("/ecosistema/agenda"))}
             {navItem("panel", "Panel General", "eco-n-grid", () => navigate("/ecosistema"))}
-            {navItem("vault", "OwnTerra Vault", "eco-n-vault", () => navigate("/ecosistema/documentos"))}
-            {navItem("users", "Clientes del core", "eco-n-users", () => navigate("/ecosistema/clientes"))}
-            {navItem("fin", "Estados Financieros", "eco-n-chart", () => navigate("/ecosistema/finanzas"))}
+            {navItem("vault", "OwnTerra Vault", "eco-n-vault", () => navigate("/ecosistema/documentos"), !canUseFeature("core.vault"))}
+            {navItem("users", "Clientes del core", "eco-n-users", () => navigate("/ecosistema/clientes"), !canUseFeature("core.clients"))}
+            {navItem("team", "Equipo", "eco-n-shield", () => navigate("/ecosistema/equipo"), !canUseFeature("core.team"))}
+            {navItem("fin", "Estados Financieros", "eco-n-chart", () => navigate("/ecosistema/finanzas"), !canUseFeature("core.finance"))}
           </div>
 
           <div className="nav-group">
             <div className="nav-label">Aplicaciones</div>
-            <button className="nav-item" onClick={() => navigate("/dashboard")}>
+            <button
+              className="nav-item"
+              onClick={() => canAccessApp("lands") ? navigate("/dashboard") : showToast("Tu usuario no tiene acceso a OwnTerra Lands")}
+              style={!canAccessApp("lands") ? { opacity: 0.5, cursor: "default" } : undefined}
+            >
               <span className="nav-mini ic-lands"><svg width="14" height="14"><use href="#eco-g-lands" /></svg></span> OwnTerra Lands
             </button>
             <button className="nav-item" style={{ opacity: 0.5, cursor: "default" }}>
@@ -72,7 +78,6 @@ function EcoLayout({ active = "panel", title, subtitle, children }) {
 
           <div className="nav-group">
             <div className="nav-label">Sistema</div>
-            {navItem("rbac", "Seguridad & RBAC", "eco-n-shield", () => {}, true)}
             {navItem("config", "Configuración", "eco-n-gear", () => {}, true)}
           </div>
 
@@ -93,8 +98,15 @@ function EcoLayout({ active = "panel", title, subtitle, children }) {
             <div className="topbar-sub">{subtitle || `Bienvenido · Hoy, ${today}`}</div>
           </div>
           <div className="topbar-right">
-            <button className="tb-btn">Alertas <span style={{ background: "var(--leaf)", color: "var(--deep)", borderRadius: 10, fontSize: 10, padding: "1px 7px", fontWeight: 600 }}>3</span></button>
-            <button className="tb-btn primary">+ Nuevo documento</button>
+            <button className="tb-btn" onClick={() => navigate("/ecosistema/mi-dia")}>
+              Mi Día
+              {notificationCount > 0 && (
+                <span style={{ background: "var(--leaf)", color: "var(--deep)", borderRadius: 10, fontSize: 10, padding: "1px 7px", fontWeight: 600 }}>
+                  {notificationCount > 99 ? "99+" : notificationCount}
+                </span>
+              )}
+            </button>
+            <button className="tb-btn" onClick={() => navigate("/ecosistema/agenda")}>Calendario</button>
             <Avatar name={currentUser?.name || "Usuario"} size={36} />
             <button className="tb-btn eco-logout" onClick={handleLogout}>Cerrar sesión</button>
           </div>

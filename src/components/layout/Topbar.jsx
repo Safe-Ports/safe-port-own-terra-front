@@ -17,6 +17,21 @@ const titleMap = {
   "/configuracion": "Configuración",
 };
 
+const subtitleMap = {
+  "/dashboard": "OwnTerra Lands · Resumen comercial",
+  "/lotes": "OwnTerra Lands · Inventario territorial",
+  "/fraccionamientos": "OwnTerra Lands · Fraccionamiento activo",
+  "/clientes": "OwnTerra Lands · CRM conectado al core",
+  "/ventas": "OwnTerra Lands · Contratos y cierres",
+  "/contratos": "OwnTerra Lands · Contratos y cierres",
+  "/documentos": "OwnTerra Vault · Documentos de operación",
+  "/pagos": "OwnTerra Lands · Cobranza y cartera",
+  "/calculadora": "OwnTerra Lands · Cotizador comercial",
+  "/alertas": "OwnTerra Core · Seguimiento operativo",
+  "/perfil": "Cuenta y preferencias",
+  "/configuracion": "Configuración del espacio Lands",
+};
+
 function Topbar({ pathname }) {
   const navigate = useNavigate();
   const {
@@ -43,7 +58,10 @@ function Topbar({ pathname }) {
         <button className="mobile-menu-btn" onClick={toggleSidebar} aria-label="Abrir menú">
           <HiBars3 />
         </button>
-        <div className="topbar-title">{titleMap[pathname] || "LoteManager"}</div>
+        <div className="topbar-heading">
+          <div className="topbar-title">{titleMap[pathname] || "OwnTerra Lands"}</div>
+          <div className="topbar-sub">{subtitleMap[pathname] || "Lotificación y venta de terrenos"}</div>
+        </div>
       </div>
       <div className="topbar-r">
         <button className="tb-src" onClick={() => openModal("globalSearch")}>
@@ -106,9 +124,9 @@ function Topbar({ pathname }) {
           )}
         </button>
 
-        <div className="hidden rounded-xl border border-line bg-[#F1EEE6] px-3 py-2 md:block">
-          <div className="text-[0.62rem] uppercase tracking-[0.2em] text-[#83867C]">{currentUser?.role}</div>
-          <div className="text-sm font-semibold text-[#1E3D2B]">{currentUser?.name}</div>
+        <div className="topbar-user">
+          <div className="topbar-role">{currentUser?.role || "Usuario"}</div>
+          <div className="topbar-name">{currentUser?.name || "Perfil"}</div>
         </div>
 
         <button className="topbar-logout" onClick={handleLogout} title="Cerrar sesión">

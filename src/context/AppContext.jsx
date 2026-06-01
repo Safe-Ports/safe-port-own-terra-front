@@ -11,6 +11,8 @@ import { paymentService } from "@/services/paymentService";
 import { documentService, toBackendEntityType } from "@/services/documentService";
 import { notificationService } from "@/services/notificationService";
 import { initialDraftProject } from "@/services/mockData";
+import { canAccessApp, canUseFeature } from "@/services/permissions";
+import { getUserErrorMessage } from "@/services/errors";
 
 const AppContext = createContext(null);
 
@@ -130,6 +132,8 @@ export function AppProvider({ children }) {
         initials: data.user.initials || data.user.name.slice(0, 2).toUpperCase(),
         email: data.user.email,
         role: data.user.role,
+        apps: data.user.apps || data.user.user_apps || [],
+        permissions: data.user.permissions || [],
         organization: data.organization,
         remember,
       });
@@ -151,14 +155,15 @@ export function AppProvider({ children }) {
         initials: data.user.initials || data.user.name.slice(0, 2).toUpperCase(),
         email: data.user.email,
         role: data.user.role,
+        apps: data.user.apps || data.user.user_apps || [],
+        permissions: data.user.permissions || [],
         organization: data.organization,
         remember: true,
       });
       navigate("/ecosistema");
       return { ok: true };
     } catch (err) {
-      const msg = err?.response?.data?.detail || "Error al registrar";
-      return { ok: false, msg };
+      return { ok: false, msg: getUserErrorMessage(err, "Error al registrar") };
     }
   };
 
@@ -195,8 +200,8 @@ export function AppProvider({ children }) {
         setSelectedClientId(String(created.id));
       }
       await queryClient.invalidateQueries({ queryKey: ["clients"] });
-    } catch {
-      showToast("Error al guardar el cliente");
+    } catch (err) {
+      showToast(getUserErrorMessage(err, "Error al guardar el cliente"));
     }
     setEditingClient(null);
     closeModal("clientModal");
@@ -206,8 +211,8 @@ export function AppProvider({ children }) {
     try {
       await clientService.delete(id);
       await queryClient.invalidateQueries({ queryKey: ["clients"] });
-    } catch {
-      showToast("Error al eliminar el cliente");
+    } catch (err) {
+      showToast(getUserErrorMessage(err, "Error al eliminar el cliente"));
     }
     setEditingClient(null);
     closeModal("clientModal");
@@ -271,8 +276,8 @@ export function AppProvider({ children }) {
       await contractService.delete(id);
       await queryClient.invalidateQueries({ queryKey: ["contracts"] });
       await queryClient.invalidateQueries({ queryKey: ["payments"] });
-    } catch {
-      showToast("Error al eliminar el contrato");
+    } catch (err) {
+      showToast(getUserErrorMessage(err, "Error al eliminar el contrato"));
     }
     setEditingContract(null);
     setContractDraft(null);
@@ -315,8 +320,8 @@ export function AppProvider({ children }) {
       anchor.click();
       URL.revokeObjectURL(blobUrl);
       showToast(`Exportando ${type}...`);
-    } catch {
-      showToast("Error al exportar");
+    } catch (err) {
+      showToast(getUserErrorMessage(err, "Error al exportar"));
     }
   };
 
@@ -330,8 +335,8 @@ export function AppProvider({ children }) {
       await queryClient.invalidateQueries({ queryKey: ["payments"] });
       await queryClient.invalidateQueries({ queryKey: ["contracts"] });
       showToast("Pago registrado correctamente");
-    } catch {
-      showToast("Error al registrar el pago");
+    } catch (err) {
+      showToast(getUserErrorMessage(err, "Error al registrar el pago"));
     }
   };
 
@@ -363,8 +368,7 @@ export function AppProvider({ children }) {
       await queryClient.invalidateQueries({ queryKey: ["document-folders"] });
       showToast("Documento subido");
     } catch (err) {
-      const detail = err?.response?.data?.error?.message || err?.response?.data?.detail;
-      showToast(typeof detail === "string" ? detail : "Error al subir el documento");
+      showToast(getUserErrorMessage(err, "Error al subir el documento"));
       console.error("Upload error:", err?.response?.data);
     }
     setDocumentDraft(null);
@@ -382,8 +386,8 @@ export function AppProvider({ children }) {
         closeModal("documentPreview");
       }
       showToast("Documento eliminado");
-    } catch {
-      showToast("Error al eliminar el documento");
+    } catch (err) {
+      showToast(getUserErrorMessage(err, "Error al eliminar el documento"));
     }
   };
 
@@ -428,7 +432,9 @@ export function AppProvider({ children }) {
     try {
       const inmueble = await inmuebleService.create({ name: name || "Fraccionamiento" });
       if (mapUrl) {
-        await inmuebleService.update(inmueble.id, { map_image_url: mapUrl });
+        const blob = await fetch(mapUrl).then((r) => r.blob());
+        const file = new File([blob], "map.png", { type: blob.type || "image/png" });
+        await inmuebleService.uploadMap(inmueble.id, file);
       }
 
       const draftLots = sections.flatMap((section) =>
@@ -470,8 +476,8 @@ export function AppProvider({ children }) {
       setSelectedFracId(String(inmueble.id));
       setDraftProject(initialDraftProject);
       navigate("/fraccionamientos");
-    } catch {
-      showToast("Error al crear el fraccionamiento");
+    } catch (err) {
+      showToast(getUserErrorMessage(err, "Error al crear el fraccionamiento"));
     }
   };
 
@@ -504,8 +510,8 @@ export function AppProvider({ children }) {
       setDraftProject(initialDraftProject);
       navigate("/fraccionamientos");
       showToast(patches.length === 0 ? "Sin cambios que guardar" : `${patches.length} lote${patches.length !== 1 ? "s" : ""} actualizado${patches.length !== 1 ? "s" : ""}`);
-    } catch {
-      showToast("Error al guardar los cambios");
+    } catch (err) {
+      showToast(getUserErrorMessage(err, "Error al guardar los cambios"));
     }
   };
 
@@ -514,8 +520,8 @@ export function AppProvider({ children }) {
       await inmuebleService.delete(id);
       await queryClient.invalidateQueries({ queryKey: ["inmuebles"] });
       showToast("Fraccionamiento eliminado");
-    } catch {
-      showToast("Error al eliminar el fraccionamiento");
+    } catch (err) {
+      showToast(getUserErrorMessage(err, "Error al eliminar el fraccionamiento"));
     }
   };
 
@@ -529,8 +535,8 @@ export function AppProvider({ children }) {
     try {
       await notificationService.markAllRead();
       refetchNotifications();
-    } catch {
-      showToast("Error al marcar notificaciones");
+    } catch (err) {
+      showToast(getUserErrorMessage(err, "Error al marcar notificaciones"));
     }
   };
 
@@ -610,6 +616,8 @@ export function AppProvider({ children }) {
     toggleSidebar,
     closeSidebar,
     showToast,
+    canAccessApp: (appKey) => canAccessApp(currentUser, appKey),
+    canUseFeature: (feature) => canUseFeature(currentUser, feature),
     login,
     register,
     forgotPassword,

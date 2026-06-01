@@ -7,6 +7,7 @@ import {
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 import { expenseService, CAT_LABEL, CAT_STYLE } from "@/services/expenseService";
+import { getUserErrorMessage } from "@/services/errors";
 import { currency, relativeDays } from "@/services/formatters";
 import Avatar from "@/components/Avatar";
 import Button from "@/components/Button";
@@ -515,12 +516,12 @@ export default function PaymentsPage() {
   const createExpense = useMutation({
     mutationFn: expenseService.create,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["expenses"] }); setModal(null); showToast("Egreso registrado"); },
-    onError: e => showToast(e?.response?.data?.detail || "Error al guardar egreso"),
+    onError: e => showToast(getUserErrorMessage(e, "Error al guardar egreso")),
   });
   const updateExpense = useMutation({
     mutationFn: ({ id, data }) => expenseService.update(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["expenses"] }); setModal(null); setEditing(null); showToast("Egreso actualizado"); },
-    onError: e => showToast(e?.response?.data?.detail || "Error"),
+    onError: e => showToast(getUserErrorMessage(e, "Error al actualizar egreso")),
   });
   const deleteExpense = useMutation({
     mutationFn: expenseService.delete,

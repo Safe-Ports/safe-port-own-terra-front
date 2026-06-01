@@ -6,4 +6,9 @@ export const inmuebleService = {
   create: (body) => api.post("/inmuebles", body).then((r) => r.data),
   update: (id, body) => api.patch(`/inmuebles/${id}`, body).then((r) => r.data),
   delete: (id) => api.delete(`/inmuebles/${id}`),
+  uploadMap: (id, file) => {
+    const form = new FormData();
+    form.append("file", file);
+    return api.post(`/inmuebles/${id}/upload-map`, form).then((r) => r.data);
+  },
 };
