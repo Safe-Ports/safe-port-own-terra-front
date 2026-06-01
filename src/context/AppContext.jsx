@@ -376,6 +376,7 @@ export function AppProvider({ children }) {
       await documentService.delete(id);
       await queryClient.invalidateQueries({ queryKey: ["documents"] });
       await queryClient.invalidateQueries({ queryKey: ["documents-entity"] });
+      await queryClient.invalidateQueries({ queryKey: ["document-folders"] });
       if (previewDocumentId === id) {
         setPreviewDocumentId(null);
         closeModal("documentPreview");

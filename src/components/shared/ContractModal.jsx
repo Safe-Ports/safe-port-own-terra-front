@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
 import Modal from "@/components/ui/Modal";
+import InlineDocumentsPanel from "@/components/shared/InlineDocumentsPanel";
 import { lotService } from "@/services/lotService";
 import { orgService } from "@/services/orgService";
 import { folderService } from "@/services/folderService";
@@ -240,7 +241,7 @@ function ContractModal() {
     if (editingContract) {
       setForm({ ...defaultForm, ...editingContract });
     } else {
-      setForm({ ...defaultForm, ...(contractDraft || {}), clientId: clients[0]?.id || "" });
+      setForm({ ...defaultForm, ...(contractDraft || {}), clientId: contractDraft?.clientId || clients[0]?.id || "" });
     }
   }, [ui.contractModal, editingContract, contractDraft]);
 
@@ -294,8 +295,8 @@ function ContractModal() {
     <Modal
       open={ui.contractModal}
       icon="📄"
-      title={editingContract ? "Editar Contrato" : "Generar Contrato"}
-      subtitle="Vincula lote y cliente"
+      title={editingContract ? "Editar Contrato" : contractDraft?.type === "reserve" ? "Registrar Apartado" : "Generar Contrato"}
+      subtitle={contractDraft?.type === "reserve" ? "Registra la reserva del lote con el cliente" : "Vincula lote y cliente"}
       onClose={() => { resetContractDraft(); closeModal("contractModal"); setErrors({}); }}
       footer={
         <>
@@ -477,6 +478,16 @@ function ContractModal() {
 
       {/* ── 3. Documentos ── */}
       <SectionLabel>Documentos</SectionLabel>
+
+      {editingContract && (
+        <div style={{ marginBottom: 12 }}>
+          <InlineDocumentsPanel
+            entityType="contract"
+            entityId={editingContract.id}
+            entityLabel={`Contrato ${editingContract.number || editingContract.id}`}
+          />
+        </div>
+      )}
 
       {docs.length === 0 && (
         <div style={{ textAlign: "center", padding: "14px 0 10px", fontSize: ".8rem", color: "var(--mu)" }}>

@@ -672,7 +672,7 @@ function LotsPage() {
                     </div>
                     <div>
                       <div className="mb-1 text-[0.62rem] font-bold uppercase tracking-[0.5px] text-[#83867C]">Fraccionamiento</div>
-                      <input className="w-full rounded-[8px] border-[1.5px] border-[#DCDAD2] bg-white/60 px-3 py-2 text-[0.84rem] text-[#83867C] outline-none" value={draftProject.name} readOnly />
+                      <input className="w-full rounded-[8px] border-[1.5px] border-[#DCDAD2] bg-white px-3 py-2 text-[0.84rem] text-[#1E3D2B] outline-none" value={draftProject.name} onChange={(e) => setDraftProject((prev) => ({ ...prev, name: e.target.value }))} placeholder="Nombre del fraccionamiento" />
                     </div>
                   </div>
                 </div>
@@ -925,6 +925,16 @@ function LotsPage() {
           </div>
 
           <div className="lot-upload-body">
+            <div style={{ marginBottom: 16 }}>
+              <div className="mb-1 text-[0.62rem] font-bold uppercase tracking-[0.5px] text-[#83867C]" style={{ marginBottom: 6, fontSize: ".7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#83867C" }}>Nombre del fraccionamiento</div>
+              <input
+                className="w-full rounded-[8px] border-[1.5px] border-[#DCDAD2] bg-white px-3 py-2 text-[0.84rem] text-[#1E3D2B] outline-none"
+                style={{ width: "100%", borderRadius: 8, border: "1.5px solid #DCDAD2", background: "white", padding: "8px 12px", fontSize: ".84rem", color: "#1E3D2B", outline: "none", fontFamily: "inherit" }}
+                placeholder="Ej. Residencial Las Palmas"
+                value={draftProject.name === "Nuevo Fraccionamiento" ? "" : draftProject.name}
+                onChange={(e) => setDraftProject((prev) => ({ ...prev, name: e.target.value || "Nuevo Fraccionamiento" }))}
+              />
+            </div>
             <label className="lot-upload-drop">
               <div className="lot-upload-code">IMG</div>
               <div>

@@ -425,7 +425,7 @@ function FracsPage() {
             <div className="frac-hero-actions">
               <Button variant="secondary" onClick={openEditor}>Editar matriz</Button>
               <Button variant="secondary" onClick={() => selectedFrac.map_image_url && setShowMapViewer(true)} disabled={!selectedFrac.map_image_url}>Ver plano</Button>
-              <Button variant="secondary" onClick={exportAppData}>Exportar</Button>
+              <Button variant="secondary" onClick={() => exportAppData("lots")}>Exportar</Button>
               <Button variant="danger" onClick={() => setShowDeleteConfirm(true)}>Eliminar</Button>
             </div>
           </article>
