@@ -13,6 +13,7 @@ const titleMap = {
   "/pagos": "Control de Pagos",
   "/calculadora": "Calculadora de Amortización",
   "/alertas": "Alertas",
+  "/asistente": "Asistente",
   "/perfil": "Perfil",
   "/configuracion": "Configuración",
 };
@@ -28,6 +29,7 @@ const subtitleMap = {
   "/pagos": "OwnTerra Lands · Cobranza y cartera",
   "/calculadora": "OwnTerra Lands · Cotizador comercial",
   "/alertas": "OwnTerra Core · Seguimiento operativo",
+  "/asistente": "OwnTerra Bot - Asistencia y soporte",
   "/perfil": "Cuenta y preferencias",
   "/configuracion": "Configuración del espacio Lands",
 };

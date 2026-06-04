@@ -4,6 +4,7 @@ import {
   HiBellAlert,
   HiCalculator,
   HiChartBarSquare,
+  HiChatBubbleLeftRight,
   HiCog6Tooth,
   HiDocumentDuplicate,
   HiHome,
@@ -27,6 +28,7 @@ const items = [
   { label: "Calculadora", to: "/calculadora", icon: HiCalculator, section: "Gestion" },
   { label: "Reportes", to: "/reportes", icon: HiChartBarSquare, section: "Sistema" },
   { label: "Alertas", to: "/alertas", icon: HiBellAlert, section: "Sistema" },
+  { label: "Asistente", to: "/asistente", icon: HiChatBubbleLeftRight, section: "Sistema" },
   { label: "Configuracion", to: "/configuracion", icon: HiCog6Tooth, section: "Sistema" },
 ];
 
