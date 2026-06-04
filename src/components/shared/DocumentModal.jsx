@@ -21,6 +21,7 @@ function DocumentModal() {
   const { ui, closeModal, saveDocument, clients, contracts, documentDraft, resetDocumentDraft } = useAppContext();
   const fileRef = useRef(null);
   const [fileName, setFileName] = useState("");
+  const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({
     name: "",
     category: "contrato",
@@ -33,6 +34,7 @@ function DocumentModal() {
     if (!ui.documentModal) return;
     fileRef.current = null;
     setFileName("");
+    setUploading(false);
     setForm({
       name: documentDraft?.name || "",
       category: documentDraft?.category || "contrato",
@@ -56,8 +58,14 @@ function DocumentModal() {
     (c) => !form.linkedId || String(c.client?.id) === form.linkedId || form.linkType !== "client"
   );
 
-  const handleSave = () => {
-    saveDocument({ ...form, folderId: documentDraft?.folderId || undefined }, fileRef.current || null);
+  const handleSave = async () => {
+    if (uploading) return;
+    setUploading(true);
+    try {
+      await saveDocument({ ...form, folderId: documentDraft?.folderId || undefined }, fileRef.current || null);
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -69,8 +77,10 @@ function DocumentModal() {
       onClose={() => { resetDocumentDraft(); closeModal("documentModal"); }}
       footer={
         <>
-          <button className="btn-s" onClick={() => { resetDocumentDraft(); closeModal("documentModal"); }}>Cancelar</button>
-          <button className="btn-p" onClick={handleSave}>Guardar</button>
+          <button className="btn-s" onClick={() => { resetDocumentDraft(); closeModal("documentModal"); }} disabled={uploading}>Cancelar</button>
+          <button className="btn-p" onClick={handleSave} disabled={uploading}>
+            {uploading ? "Subiendo..." : "Guardar"}
+          </button>
         </>
       }
     >

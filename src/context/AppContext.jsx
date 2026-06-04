@@ -8,7 +8,7 @@ import { inmuebleService } from "@/services/inmuebleService";
 import { lotService } from "@/services/lotService";
 import { contractService } from "@/services/contractService";
 import { paymentService } from "@/services/paymentService";
-import { documentService, toBackendEntityType } from "@/services/documentService";
+import { documentService, filenameForDocument, toBackendEntityType } from "@/services/documentService";
 import { notificationService } from "@/services/notificationService";
 import { initialDraftProject } from "@/services/mockData";
 import { canAccessApp, canUseFeature } from "@/services/permissions";
@@ -393,20 +393,21 @@ export function AppProvider({ children }) {
 
   const downloadDocument = async (id, directUrl, name) => {
     try {
-      const url = directUrl || documentService.downloadUrl(id);
-      const response = await fetch(url);
-      if (!response.ok) throw new Error("fetch failed");
-      const blob = await response.blob();
+      const doc = documents.find((item) => item.id === id);
+      const filename = name || filenameForDocument(doc) || "documento";
+      const { blob } = await documentService.fetchBlob(id, {
+        directUrl: directUrl || doc?.download_url,
+      });
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = blobUrl;
-      a.download = name || "documento";
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(blobUrl);
-    } catch {
-      window.open(directUrl || documentService.downloadUrl(id), "_blank");
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    } catch (err) {
+      showToast(getUserErrorMessage(err, "Error al descargar el documento"));
     }
   };
 

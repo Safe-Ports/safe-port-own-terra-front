@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { HiArchiveBox, HiBanknotes, HiChartBarSquare } from "react-icons/hi2";
 import { reportService } from "@/services/reportService";
 import { currency, compactCurrency } from "@/services/formatters";
 
@@ -172,11 +173,16 @@ function TabCobranza() {
     <div>
       {/* Filtros */}
       <div style={{ marginBottom: 20 }}>
-        <div className="seg">
+        <div className="reports-segmented" role="group" aria-label="Periodo de cobranza">
           {["month", "quarter", "year"].map((p) => (
-            <span key={p} className={period === p ? "on" : ""} onClick={() => setPeriod(p)}>
+            <button
+              key={p}
+              type="button"
+              className={period === p ? "is-active" : ""}
+              onClick={() => setPeriod(p)}
+            >
               {periodLabel[p]}
-            </span>
+            </button>
           ))}
         </div>
       </div>
@@ -305,8 +311,8 @@ function TabInventario() {
               </tr>
             </thead>
             <tbody>
-              {byFrac.map((f) => (
-                <tr key={f.name}>
+              {byFrac.map((f, index) => (
+                <tr key={`${f.name}-${index}`}>
                   <td style={{ fontWeight: 600 }}>{f.name}</td>
                   <td style={{ textAlign: "right", fontFamily: "'JetBrains Mono',monospace" }}>{f.total}</td>
                   <td style={{ textAlign: "right", fontFamily: "'JetBrains Mono',monospace", color: "#2D6A26" }}>{f.available}</td>
@@ -334,9 +340,9 @@ function TabInventario() {
 
 /* ══ PÁGINA PRINCIPAL ════════════════════════════════════════ */
 const TABS = [
-  { key: "ventas",     label: "Ventas" },
-  { key: "cobranza",   label: "Cobranza" },
-  { key: "inventario", label: "Inventario" },
+  { key: "ventas", label: "Ventas", icon: HiChartBarSquare, desc: "Cierres e ingresos" },
+  { key: "cobranza", label: "Cobranza", icon: HiBanknotes, desc: "Pagos y mora" },
+  { key: "inventario", label: "Inventario", icon: HiArchiveBox, desc: "Lotes y disponibilidad" },
 ];
 
 function ReportsPage() {
@@ -350,17 +356,30 @@ function ReportsPage() {
       <div className="card-body">
 
         {/* Tabs */}
-        <div className="seg" style={{ marginBottom: 24 }}>
+        <div className="reports-tabs" role="tablist" aria-label="Tipo de reporte">
           {TABS.map((t) => (
-            <span key={t.key} className={tab === t.key ? "on" : ""} onClick={() => setTab(t.key)}>
-              {t.label}
-            </span>
+            <button
+              key={t.key}
+              type="button"
+              role="tab"
+              aria-selected={tab === t.key}
+              className={tab === t.key ? "is-active" : ""}
+              onClick={() => setTab(t.key)}
+            >
+              <t.icon aria-hidden="true" />
+              <span>
+                <strong>{t.label}</strong>
+                <small>{t.desc}</small>
+              </span>
+            </button>
           ))}
         </div>
 
-        {tab === "ventas"     && <TabVentas />}
-        {tab === "cobranza"   && <TabCobranza />}
-        {tab === "inventario" && <TabInventario />}
+        <section className="reports-panel" role="tabpanel">
+          {tab === "ventas"     && <TabVentas />}
+          {tab === "cobranza"   && <TabCobranza />}
+          {tab === "inventario" && <TabInventario />}
+        </section>
 
       </div>
     </div>
