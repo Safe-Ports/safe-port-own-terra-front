@@ -1,6 +1,7 @@
 import {
   HiBellAlert,
   HiCalculator,
+  HiChartBarSquare,
   HiChatBubbleLeftRight,
   HiCog6Tooth,
   HiDocumentDuplicate,
@@ -8,6 +9,7 @@ import {
   HiMap,
   HiOutlineSquares2X2,
   HiOutlineUserGroup,
+  HiTicket,
   HiUserCircle,
   HiWallet
 } from "react-icons/hi2";
@@ -22,7 +24,9 @@ export const routeMeta = {
   "/documentos": { title: "Documentos", icon: HiDocumentDuplicate },
   "/alertas": { title: "Alertas", icon: HiBellAlert },
   "/asistente": { title: "Asistente", icon: HiChatBubbleLeftRight },
+  "/bot-analytics": { title: "Bot Analytics", icon: HiChartBarSquare },
   "/pagos": { title: "Pagos", icon: HiBellAlert },
+  "/tickets-soporte": { title: "Tickets de Soporte", icon: HiTicket },
   "/calculadora": { title: "Calculadora", icon: HiCalculator },
   "/perfil": { title: "Perfil", icon: HiUserCircle },
   "/configuracion": { title: "Configuración", icon: HiCog6Tooth },
@@ -37,6 +41,8 @@ export const desktopNav = [
   { path: "/documentos", label: "Documentos", icon: HiDocumentDuplicate },
   { path: "/pagos", label: "Pagos", icon: HiBellAlert },
   { path: "/asistente", label: "Asistente", icon: HiChatBubbleLeftRight },
+  { path: "/bot-analytics", label: "Bot Analytics", icon: HiChartBarSquare },
+  { path: "/tickets-soporte", label: "Tickets", icon: HiTicket },
   { path: "/calculadora", label: "Calculadora", icon: HiCalculator },
   { path: "/perfil", label: "Perfil", icon: HiUserCircle },
 ];
@@ -57,5 +63,7 @@ export const secondaryMobileRoutes = [
   { path: "/calculadora", label: "Calculadora", icon: HiCalculator },
   { path: "/alertas", label: "Alertas", icon: HiBellAlert },
   { path: "/asistente", label: "Asistente", icon: HiChatBubbleLeftRight },
+  { path: "/bot-analytics", label: "Bot Analytics", icon: HiChartBarSquare },
+  { path: "/tickets-soporte", label: "Tickets", icon: HiTicket },
   { path: "/configuracion", label: "Configuración", icon: HiCog6Tooth },
 ];

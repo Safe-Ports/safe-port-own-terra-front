@@ -1,17 +1,50 @@
 import axios from "axios";
 
-export const BOT_BASE_URL = import.meta.env.VITE_BOT_API_URL || "http://127.0.0.1:8001";
+export const BOT_API_URL = import.meta.env.VITE_BOT_API_URL || "http://127.0.0.1:8001";
 
 const botApi = axios.create({
-  baseURL: BOT_BASE_URL,
+  baseURL: BOT_API_URL,
   timeout: 20000,
 });
 
+export function sendMessageToBot(message) {
+  return botApi.post("/chat", { message }).then((r) => r.data);
+}
+
+export function createSupportTicket(ticketData) {
+  return botApi.post("/support/tickets", ticketData).then((r) => r.data);
+}
+
+export function getSupportTickets() {
+  return botApi.get("/support/tickets").then((r) => r.data);
+}
+
+export function updateSupportTicketStatus(ticketId, status) {
+  return botApi.patch(`/support/tickets/${ticketId}/status`, { status }).then((r) => r.data);
+}
+
+export function getBotConversations() {
+  return botApi.get("/analytics/conversations").then((r) => r.data);
+}
+
+export function getBotAnalyticsSummary() {
+  return botApi.get("/analytics/conversations/summary").then((r) => r.data);
+}
+
 export const botService = {
   health: () => botApi.get("/health").then((r) => r.data),
-  chat: (message) => botApi.post("/chat", { message }).then((r) => r.data),
-  createTicket: (body) => botApi.post("/support/tickets", body).then((r) => r.data),
-  listTickets: () => botApi.get("/support/tickets").then((r) => r.data),
+  chat: sendMessageToBot,
+  createTicket: createSupportTicket,
+  listTickets: getSupportTickets,
+  updateTicketStatus: updateSupportTicketStatus,
+  conversations: getBotConversations,
+  summary: getBotAnalyticsSummary,
+  sendMessageToBot,
+  createSupportTicket,
+  getSupportTickets,
+  updateSupportTicketStatus,
+  getBotConversations,
+  getBotAnalyticsSummary,
 };
 
 export default botService;

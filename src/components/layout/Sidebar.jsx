@@ -12,6 +12,7 @@ import {
   HiOutlineSquares2X2,
   HiOutlineUserGroup,
   HiRectangleGroup,
+  HiTicket,
   HiWallet,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
@@ -29,6 +30,8 @@ const items = [
   { label: "Reportes", to: "/reportes", icon: HiChartBarSquare, section: "Sistema" },
   { label: "Alertas", to: "/alertas", icon: HiBellAlert, section: "Sistema" },
   { label: "Asistente", to: "/asistente", icon: HiChatBubbleLeftRight, section: "Sistema" },
+  { label: "Bot Analytics", to: "/bot-analytics", icon: HiChartBarSquare, section: "Sistema" },
+  { label: "Tickets Soporte", to: "/tickets-soporte", icon: HiTicket, section: "Sistema" },
   { label: "Configuracion", to: "/configuracion", icon: HiCog6Tooth, section: "Sistema" },
 ];
 

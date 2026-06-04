@@ -1,0 +1,365 @@
+.ot-chatbot {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 80;
+  font-family: "Outfit", system-ui, sans-serif;
+}
+
+.ot-chat-fab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 54px;
+  height: 46px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 999px;
+  background: #1e3d2b;
+  color: #fbfaf6;
+  box-shadow: 0 14px 34px rgba(24, 18, 14, 0.22);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.ot-chat-fab:hover {
+  transform: translateY(-1px);
+  background: #355e3b;
+  box-shadow: 0 18px 42px rgba(24, 18, 14, 0.26);
+}
+
+.ot-chat-fab svg {
+  width: 20px;
+  height: 20px;
+}
+
+.ot-chat-window {
+  position: absolute;
+  right: 0;
+  bottom: 58px;
+  display: flex;
+  width: min(390px, calc(100vw - 28px));
+  height: min(620px, calc(100vh - 104px));
+  min-height: 440px;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(67, 69, 63, 0.14);
+  border-radius: 24px;
+  background: rgba(251, 250, 246, 0.98);
+  box-shadow: 0 30px 80px rgba(24, 18, 14, 0.28);
+}
+
+.ot-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  background: linear-gradient(145deg, #1e3d2b, #263a2b);
+  color: #fbfaf6;
+}
+
+.ot-chat-header span {
+  display: block;
+  font-size: 0.98rem;
+  font-weight: 800;
+}
+
+.ot-chat-header small {
+  display: block;
+  margin-top: 2px;
+  color: rgba(251, 250, 246, 0.66);
+  font-size: 0.72rem;
+}
+
+.ot-chat-header button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fbfaf6;
+  cursor: pointer;
+}
+
+.ot-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  background: #f6f0e6;
+}
+
+.ot-chat-row {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.ot-chat-row.is-user {
+  justify-content: flex-end;
+}
+
+.ot-chat-row.is-bot {
+  justify-content: flex-start;
+}
+
+.ot-chat-bubble {
+  max-width: 86%;
+  border-radius: 18px;
+  padding: 11px 13px;
+  box-shadow: 0 10px 24px rgba(24, 18, 14, 0.06);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.ot-chat-bubble p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.ot-chat-row.is-user .ot-chat-bubble {
+  border-bottom-right-radius: 6px;
+  background: #1e3d2b;
+  color: #fff;
+}
+
+.ot-chat-row.is-bot .ot-chat-bubble {
+  border: 1px solid rgba(67, 69, 63, 0.1);
+  border-bottom-left-radius: 6px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #2d2f2a;
+}
+
+.ot-chat-loading {
+  color: #6e7168;
+  font-weight: 700;
+}
+
+.ot-chat-error {
+  margin: 10px 0;
+  border: 1px solid rgba(192, 57, 43, 0.2);
+  border-radius: 16px;
+  background: #fdecea;
+  color: #8a2d24;
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.ot-chat-input {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid rgba(67, 69, 63, 0.1);
+  background: #fbfaf6;
+}
+
+.ot-chat-input input,
+.ot-ticket-form input,
+.ot-ticket-form textarea {
+  width: 100%;
+  border: 1px solid rgba(67, 69, 63, 0.12);
+  border-radius: 14px;
+  background: #fff;
+  color: #2d2f2a;
+  font: inherit;
+  font-size: 0.86rem;
+  outline: none;
+}
+
+.ot-chat-input input {
+  min-width: 0;
+  height: 42px;
+  padding: 0 13px;
+}
+
+.ot-chat-input input:focus,
+.ot-ticket-form input:focus,
+.ot-ticket-form textarea:focus {
+  border-color: rgba(53, 94, 59, 0.55);
+  box-shadow: 0 0 0 3px rgba(111, 175, 107, 0.12);
+}
+
+.ot-chat-input button {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  place-items: center;
+  border: 0;
+  border-radius: 14px;
+  background: #355e3b;
+  color: #fff;
+  cursor: pointer;
+}
+
+.ot-chat-input button:disabled,
+.ot-ticket-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.ot-bot-lots,
+.ot-bot-support {
+  margin-top: 10px;
+}
+
+.ot-bot-lot {
+  margin-top: 8px;
+  border: 1px solid rgba(67, 69, 63, 0.1);
+  border-radius: 14px;
+  background: #fbfaf6;
+  padding: 10px;
+}
+
+.ot-bot-lot-top,
+.ot-bot-lot-meta,
+.ot-bot-support-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ot-bot-lot-top strong,
+.ot-bot-support-head strong {
+  color: #1e3d2b;
+  font-size: 0.82rem;
+}
+
+.ot-bot-lot-top span,
+.ot-bot-support-head span {
+  border-radius: 999px;
+  background: #eef6f1;
+  color: #355e3b;
+  padding: 3px 7px;
+  font-size: 0.64rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.ot-bot-lot-meta {
+  margin-top: 8px;
+  color: #5a4e41;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.ot-bot-lot p {
+  margin: 8px 0 0;
+  color: #6e7168;
+  font-size: 0.78rem;
+}
+
+.ot-bot-support {
+  border: 1px solid rgba(67, 69, 63, 0.1);
+  border-radius: 14px;
+  background: #fbfaf6;
+  padding: 10px;
+}
+
+.ot-bot-support ol {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: #43453f;
+  font-size: 0.78rem;
+}
+
+.ot-bot-support li + li {
+  margin-top: 5px;
+}
+
+.ot-ticket-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  border: 0;
+  border-radius: 999px;
+  background: #1e3d2b;
+  color: #fff;
+  padding: 8px 11px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ot-bot-disclaimer {
+  margin-top: 9px;
+  color: #83867c;
+  font-size: 0.7rem;
+}
+
+.ot-ticket-form {
+  margin-top: 12px;
+  border: 1px solid rgba(67, 69, 63, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.94);
+  padding: 12px;
+}
+
+.ot-ticket-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 10px;
+  color: #1e3d2b;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.ot-ticket-form input,
+.ot-ticket-form textarea {
+  margin-top: 8px;
+  padding: 10px 11px;
+}
+
+.ot-ticket-form textarea {
+  min-height: 74px;
+  resize: vertical;
+}
+
+.ot-ticket-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ot-ticket-actions button {
+  border: 1px solid rgba(67, 69, 63, 0.12);
+  border-radius: 12px;
+  background: #fff;
+  color: #355e3b;
+  padding: 8px 11px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ot-ticket-actions button[type="submit"] {
+  border-color: #355e3b;
+  background: #355e3b;
+  color: #fff;
+}
+
+@media (max-width: 640px) {
+  .ot-chatbot {
+    right: 14px;
+    bottom: 92px;
+  }
+
+  .ot-chat-window {
+    right: -2px;
+    width: calc(100vw - 24px);
+    height: min(620px, calc(100vh - 150px));
+    min-height: 410px;
+  }
+
+  .ot-chat-fab span {
+    display: none;
+  }
+}
