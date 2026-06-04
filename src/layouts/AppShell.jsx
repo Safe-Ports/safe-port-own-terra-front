@@ -7,7 +7,6 @@ import ClientReportModal from "@/components/shared/ClientReportModal";
 import ContractModal from "@/components/shared/ContractModal";
 import DocumentModal from "@/components/shared/DocumentModal";
 import Toast from "@/components/shared/Toast";
-import ChatBot from "@/components/chatbot/ChatBot";
 
 function AppShell() {
   const location = useLocation();
@@ -32,7 +31,6 @@ function AppShell() {
       <ContractModal />
       <DocumentModal />
       <Toast />
-      <ChatBot />
     </div>
   );
 }
