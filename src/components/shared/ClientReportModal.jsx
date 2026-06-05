@@ -103,10 +103,17 @@ function ClientReportModal() {
         <>
           <button className="btn-s" onClick={closeClientReport}>Cerrar</button>
           <button className="btn-p" onClick={() => {
-            const win = window.open("", "_blank", "width=820,height=900");
-            win.document.write(buildPrintHTML(data));
-            win.document.close();
-            win.onload = () => { win.focus(); win.print(); };
+            const iframe = document.createElement("iframe");
+            iframe.style.cssText = "position:fixed;width:0;height:0;border:0;visibility:hidden";
+            document.body.appendChild(iframe);
+            iframe.contentDocument.open();
+            iframe.contentDocument.write(buildPrintHTML(data));
+            iframe.contentDocument.close();
+            iframe.onload = () => {
+              iframe.contentWindow.focus();
+              iframe.contentWindow.print();
+              setTimeout(() => document.body.removeChild(iframe), 2000);
+            };
           }}>Imprimir / PDF</button>
         </>
       }

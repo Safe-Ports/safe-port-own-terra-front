@@ -108,6 +108,102 @@ function DocRow({ entry, folders, onChange, onRemove }) {
 let _nextId = 1;
 const newEntry = () => ({ id: _nextId++, file: null, fileName: "", category: "contrato", folderId: "" });
 
+/* ── Selector con búsqueda (igual al de lote) ───────────────── */
+function SearchSelect({ id, value, onChange, onBlur, options, placeholder, disabled, hasError, emptyLabel }) {
+  const [search, setSearch] = useState("");
+  const [open, setOpen]     = useState(false);
+  const ref = useRef(null);
+
+  const selected = options.find(o => String(o.value) === String(value));
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const filtered = options.filter(o =>
+    !search || o.label.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const borderStyle = hasError ? { border: "1.8px solid var(--danger, #c0392b)", outline: "none" } : undefined;
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <input
+        id={id}
+        className="fi"
+        style={borderStyle}
+        value={selected ? selected.label : search}
+        placeholder={placeholder}
+        disabled={disabled}
+        autoComplete="off"
+        onChange={(e) => {
+          setSearch(e.target.value);
+          onChange("");
+          setOpen(true);
+        }}
+        onFocus={() => { if (!selected) setOpen(true); }}
+        onBlur={onBlur}
+      />
+      {value && (
+        <button
+          type="button"
+          onClick={() => { onChange(""); setSearch(""); setOpen(true); }}
+          style={{
+            position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
+            background: "none", border: "none", cursor: "pointer", color: "var(--mu)",
+            fontSize: ".75rem", padding: "2px 4px",
+          }}
+        >✕</button>
+      )}
+      {open && (
+        <div style={{
+          position: "absolute", top: "100%", left: 0, right: 0, zIndex: 1000,
+          background: "var(--sf, #fff)", border: "1.5px solid var(--bd)",
+          borderRadius: 10, maxHeight: 200, overflowY: "auto",
+          boxShadow: "0 8px 24px rgba(30,61,43,.14)", marginTop: 4,
+        }}>
+          {emptyLabel && (
+            <div
+              onMouseDown={(e) => { e.preventDefault(); onChange(""); setSearch(""); setOpen(false); }}
+              style={{
+                padding: "9px 12px", cursor: "pointer", fontSize: ".82rem",
+                color: "var(--mu)", borderBottom: "1px solid rgba(67,69,63,.08)",
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = "var(--tan-lt, #f5f0e8)"}
+              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+            >
+              {emptyLabel}
+            </div>
+          )}
+          {filtered.map(o => (
+            <div
+              key={o.value}
+              onMouseDown={(e) => { e.preventDefault(); onChange(o.value); setSearch(""); setOpen(false); }}
+              style={{
+                padding: "9px 12px", cursor: "pointer", fontSize: ".82rem",
+                borderBottom: "1px solid rgba(67,69,63,.08)",
+                color: "var(--tx)", background: String(o.value) === String(value) ? "var(--tan-lt)" : "transparent",
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = "var(--tan-lt, #f5f0e8)"}
+              onMouseLeave={e => e.currentTarget.style.background = String(o.value) === String(value) ? "var(--tan-lt)" : "transparent"}
+            >
+              {o.label}
+            </div>
+          ))}
+          {filtered.length === 0 && search && (
+            <div style={{ padding: "10px 12px", fontSize: ".78rem", color: "var(--mu)" }}>
+              Sin resultados
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Reglas de validación ───────────────────────────────────── */
 function validate(form, isEditing) {
   const errs = {};
@@ -528,10 +624,15 @@ function ContractModal() {
             Cliente
             <span style={{ color: "var(--danger)", marginLeft: 3 }}>*</span>
           </label>
-          <select id="cf-clientId" {...fi(errors.clientId)} value={form.clientId} onChange={set("clientId")} onBlur={() => blurField("clientId")}>
-            <option value="">— Seleccionar cliente —</option>
-            {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          <SearchSelect
+            id="cf-clientId"
+            value={form.clientId}
+            onChange={v => { setForm(p => ({ ...p, clientId: v })); if (errors.clientId) setErrors(p => { const n = { ...p }; delete n.clientId; return n; }); }}
+            onBlur={() => blurField("clientId")}
+            options={clients.map(c => ({ value: c.id, label: c.name }))}
+            placeholder="Buscar cliente…"
+            hasError={!!errors.clientId}
+          />
           <FieldError msg={errors.clientId} />
         </div>
       </div>
@@ -558,10 +659,13 @@ function ContractModal() {
 
       <div className="fg">
         <label className="fl">Vendedor asignado</label>
-        <select className="fi" value={form.seller_id} onChange={set("seller_id")}>
-          <option value="">— Sin asignar —</option>
-          {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-        </select>
+        <SearchSelect
+          value={form.seller_id}
+          onChange={v => setForm(p => ({ ...p, seller_id: v }))}
+          options={users.map(u => ({ value: u.id, label: u.name }))}
+          placeholder="Buscar vendedor…"
+          emptyLabel="— Sin asignar —"
+        />
       </div>
 
       <div className="fg">
