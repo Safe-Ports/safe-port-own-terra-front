@@ -169,9 +169,16 @@ function FracsPage() {
     showToast,
     setDraftProject,
     currentUser,
+    fracsResetKey,
   } = useAppContext();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const [homeMode, setHomeMode] = useState(true);
+
+  useEffect(() => {
+    setHomeMode(true);
+  }, [fracsResetKey]);
 
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -275,7 +282,7 @@ function FracsPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  if (!selectedFrac) {
+  if (!fracs.length) {
     return (
       <EmptyState
         icon="▦"
@@ -283,6 +290,49 @@ function FracsPage() {
         description="Carga un plano, arma la matriz de lotes y crea tu primer proyecto desde la seccion Carga de Lotes."
         action={<Link className="mobile-primary-button" to="/lotes">Ir a Carga de Lotes</Link>}
       />
+    );
+  }
+
+  if (homeMode) {
+    return (
+      <div className="frac-page">
+        <aside className="frac-projects frac-panel">
+          <div className="frac-panel-head">
+            <div>
+              <div className="frac-panel-title">Proyectos</div>
+              <div className="frac-panel-sub">Fraccionamientos activos</div>
+            </div>
+            <span className="frac-project-count">{fracs.length}</span>
+          </div>
+          <div className="frac-panel-body">
+            <div className="frac-project-list">
+              {fracs.map((frac) => (
+                <button
+                  key={frac.id}
+                  className="frac-project-item"
+                  onClick={() => { setSelectedFracId(frac.id); setHomeMode(false); }}
+                >
+                  <span className="frac-project-mark">{frac.name.slice(0, 2).toUpperCase()}</span>
+                  <span className="frac-project-copy">
+                    <span className="frac-project-name">{frac.name}</span>
+                    <span className="frac-project-meta">
+                      {frac.total_lots ?? 0} lotes
+                      {frac.created_at ? ` / ${new Date(frac.created_at).toLocaleDateString("es-MX")}` : ""}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </aside>
+        <section className="frac-workspace" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ textAlign: "center", color: "#83867C" }}>
+            <div style={{ fontSize: "2.5rem", marginBottom: 12 }}>▦</div>
+            <div style={{ fontSize: "1rem", fontWeight: 600, color: "#1E3D2B", marginBottom: 6 }}>Selecciona un proyecto</div>
+            <div style={{ fontSize: "0.82rem" }}>Elige un fraccionamiento del panel izquierdo para ver su inventario</div>
+          </div>
+        </section>
+      </div>
     );
   }
 

@@ -87,6 +87,8 @@ export function AppProvider({ children }) {
   const [toast, setToast] = useState(null);
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [selectedFracId, setSelectedFracId] = useState(null);
+  const [fracsResetKey, setFracsResetKey] = useState(0);
+  const resetFracsView = () => setFracsResetKey((k) => k + 1);
 
   // ── Auto-select first item when data loads ────────────────────────────────
   useEffect(() => {
@@ -601,6 +603,8 @@ export function AppProvider({ children }) {
     reportClientId,
     selectedClientId,
     selectedFracId,
+    fracsResetKey,
+    resetFracsView,
     setDraftProject,
     setEditingClient,
     setEditingContract,

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi2";
 import * as XLSX from "xlsx";
@@ -134,6 +134,11 @@ function LotsPage() {
   const { data: projects = [] } = useProjectsQuery();
   const { draftProject, setDraftProject, saveFrac, saveEditedFrac, setSelectedFracId, showToast } = useAppContext();
   const isEditing = !!draftProject._editingFracId;
+
+  useEffect(() => {
+    setDraftProject({ mode: "selector", name: "Nuevo Fraccionamiento", mapUrl: "", sections: [], cadProcessing: false });
+  }, []);
+
   const [sectionName, setSectionName] = useState("");
   const [sectionTotal, setSectionTotal] = useState(20);
   const [mapFileName, setMapFileName] = useState("");
@@ -806,12 +811,14 @@ function LotsPage() {
           >
             Cargar demo
           </button>
-          <button
-            className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white"
-            onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
-          >
-            Nuevo proyecto
-          </button>
+          {draftProject.mode === "selector" && (
+            <button
+              className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white"
+              onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
+            >
+              Nuevo proyecto
+            </button>
+          )}
         </div>
       </section>
 

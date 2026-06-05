@@ -55,7 +55,7 @@ function Logo() {
 }
 
 function Sidebar() {
-  const { ui, closeSidebar, fracs, clients, payments, documents, notificationCount, logout, currentUser, canAccessApp, canUseFeature } = useAppContext();
+  const { ui, closeSidebar, fracs, clients, payments, documents, notificationCount, logout, currentUser, canAccessApp, canUseFeature, resetFracsView, setDraftProject } = useAppContext();
 
   const handleLogout = () => {
     if (window.confirm("¿Cerrar sesión?")) logout();
@@ -95,7 +95,11 @@ function Sidebar() {
                 {shouldRenderSection ? <div className="sb-sec">{item.section}</div> : null}
                 <NavLink
                   to={item.to}
-                  onClick={closeSidebar}
+                  onClick={() => {
+                    closeSidebar();
+                    if (item.to === "/fraccionamientos") resetFracsView();
+                    if (item.to === "/lotes") setDraftProject({ mode: "selector", name: "Nuevo Fraccionamiento", mapUrl: "", sections: [], cadProcessing: false });
+                  }}
                   className={({ isActive }) => `sb-btn ${isActive ? "active" : ""}`}
                 >
                   <span className="sb-ico">
