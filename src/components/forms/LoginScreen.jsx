@@ -1,22 +1,6 @@
 import { useState } from "react";
 import { useAppContext } from "@/context/AppContext";
 
-const LOGO_SVG = (
-  <svg width="26" height="26" viewBox="0 0 64 64" fill="none">
-    {/* hoja izquierda */}
-    <path d="M14 22c0-5 4-9 9-9 .5 3-1 7-5 8.5-1.5.5-4 1.5-4 .5z" fill="white" opacity="0.95"/>
-    {/* hoja derecha */}
-    <path d="M40 18c2-3 5-3 6-1-.5 2-3 4-5 3.5-.5-.1-1.3-1-1-2.5z" fill="white" opacity="0.75"/>
-    {/* casita 1 */}
-    <path d="M24 36l8-6 8 6v10h-5v-6h-6v6h-5V36z" fill="white"/>
-    {/* casita 2 (más alta) */}
-    <path d="M40 32l5-4 5 4v14h-3v-7h-4v7h-3V32z" fill="white" opacity="0.85"/>
-    {/* colinas */}
-    <path d="M10 50 Q22 42 32 50 Q42 42 54 50 L54 56 L10 56 Z" fill="white" opacity="0.7"/>
-    <path d="M8 54 Q24 48 32 54 Q40 48 56 54 L56 58 L8 58 Z" fill="white" opacity="0.5"/>
-  </svg>
-);
-
 const MAP_SVG = (
   <svg className="ll-map-deco" width="340" height="320" viewBox="0 0 340 320" fill="none">
     <rect x="20" y="20" width="90" height="70" rx="4" stroke="white" strokeWidth="2" />
@@ -47,11 +31,7 @@ function LeftPanel() {
   return (
     <div className="ll-panel">
       <div className="ll-logo">
-        <div className="ll-logo-ico">{LOGO_SVG}</div>
-        <div className="ll-logo-nm">
-          OwnTerra
-          <small>Ecosistem</small>
-        </div>
+        <img src="/ownterra ecosistem.png" alt="OwnTerra Ecosistem" />
       </div>
       {MAP_SVG}
       <div className="ll-hero">
@@ -82,24 +62,39 @@ function LeftPanel() {
 
 /* ── LOGIN ── */
 function LoginView({ onForgot, onRegister }) {
-  const { login, showToast } = useAppContext();
+  const { login, resendVerification, showToast } = useAppContext();
   const [form, setForm]     = useState({ identifier: "", password: "", remember: false });
-  const [error, setError]   = useState(false);
+  const [error, setError]   = useState("");
+  const [unverifiedEmail, setUnverifiedEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
   const [showPass, setShowPass] = useState(false);
 
   const submit = async () => {
     if (!form.identifier || !form.password) return;
     setLoading(true);
-    setError(false);
+    setError("");
+    setUnverifiedEmail("");
     const result = await login(form);
     setLoading(false);
-    if (!result.ok) setError(true);
+    if (!result.ok) {
+      setError(result.msg || "Usuario o contraseña incorrectos. Intenta de nuevo.");
+      if (result.needsVerification) setUnverifiedEmail(result.email || form.identifier);
+    }
   };
 
   const fillDemo = (identifier, password) => {
     setForm({ identifier, password, remember: true });
-    setError(false);
+    setError("");
+    setUnverifiedEmail("");
+  };
+
+  const resend = async () => {
+    if (!unverifiedEmail) return;
+    setResending(true);
+    const result = await resendVerification(unverifiedEmail);
+    setResending(false);
+    showToast(result.ok ? "Correo de verificación reenviado" : (result.msg || "No se pudo reenviar el correo"));
   };
 
   return (
@@ -109,7 +104,12 @@ function LoginView({ onForgot, onRegister }) {
 
       {error && (
         <div className="lf-error">
-          Usuario o contraseña incorrectos. Intenta de nuevo.
+          <div>{error}</div>
+          {unverifiedEmail ? (
+            <button type="button" className="lf-error-action" onClick={resend} disabled={resending}>
+              {resending ? "Reenviando..." : "Reenviar correo de verificación"}
+            </button>
+          ) : null}
         </div>
       )}
 
@@ -309,20 +309,31 @@ function RegisterView({ onBack }) {
     password: "",
     confirm: "",
   });
+  const { resendVerification } = useAppContext();
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState("");
   const [showPass, setShowPass] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
 
   const set = (key) => (e) => setForm((p) => ({ ...p, [key]: e.target.value }));
 
+  const validate = () => {
+    const organizationName = form.organization_name.trim();
+    const name = form.name.trim();
+    const email = form.email.trim();
+
+    if (organizationName.length < 3) return "El nombre de la empresa debe tener al menos 3 caracteres.";
+    if (name.length < 2) return "Tu nombre debe tener al menos 2 caracteres.";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Escribe un correo electrónico válido.";
+    if (form.password.length < 8) return "La contraseña debe tener al menos 8 caracteres.";
+    if (form.password !== form.confirm) return "Las contraseñas no coinciden.";
+    return "";
+  };
+
   const submit = async () => {
-    if (!form.organization_name.trim() || !form.name.trim() || !form.email.trim() || !form.password) return;
-    if (form.password !== form.confirm) {
-      setError("Las contraseñas no coinciden.");
-      return;
-    }
-    if (form.password.length < 8) {
-      setError("La contraseña debe tener al menos 8 caracteres.");
+    const validationError = validate();
+    if (validationError) {
+      setError(validationError);
       return;
     }
     setLoading(true);
@@ -330,12 +341,47 @@ function RegisterView({ onBack }) {
     const result = await register({
       organization_name: form.organization_name.trim(),
       name: form.name.trim(),
-      email: form.email.trim(),
+      email: form.email.trim().toLowerCase(),
       password: form.password,
     });
     setLoading(false);
+    if (result.ok && result.pendingVerification) {
+      setRegisteredEmail(result.email || form.email.trim());
+      return;
+    }
     if (!result.ok) setError(result.msg || "Error al crear la cuenta. Verifica los datos.");
   };
+
+  if (registeredEmail) {
+    return (
+      <div className="lf-wrap" style={{ textAlign: "center" }}>
+        <div style={{ fontSize: 40, marginBottom: 8 }}>✉️</div>
+        <div className="lf-title">Confirma tu correo</div>
+        <div className="lf-sub">
+          Enviamos un enlace de confirmación a <strong>{registeredEmail}</strong>.
+          Haz clic en él para activar tu cuenta e iniciar sesión.
+        </div>
+        <button
+          type="button"
+          className="lf-btn"
+          style={{ marginTop: 18 }}
+          onClick={async () => {
+            const r = await resendVerification(registeredEmail);
+            showToast(r.ok ? "Correo reenviado" : (r.msg || "No se pudo reenviar"));
+          }}
+        >
+          Reenviar correo
+        </button>
+        <button
+          type="button"
+          onClick={onBack}
+          style={{ background: "none", border: "none", cursor: "pointer", color: "#83867C", fontSize: ".82rem", padding: 0, marginTop: 16 }}
+        >
+          ← Volver al inicio de sesión
+        </button>
+      </div>
+    );
+  }
 
   const fields = [
     { key: "organization_name", label: "Nombre de la empresa / proyecto", ico: "🏢", placeholder: "Inmobiliaria Ejemplo S.A.", type: "text", auto: "organization" },
