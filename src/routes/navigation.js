@@ -1,17 +1,22 @@
 import {
   HiBellAlert,
   HiCalculator,
+  HiCalendarDays,
   HiCog6Tooth,
   HiDocumentDuplicate,
   HiHome,
   HiMap,
   HiOutlineSquares2X2,
   HiOutlineUserGroup,
+  HiSun,
   HiUserCircle,
   HiWallet
 } from "react-icons/hi2";
 
 export const routeMeta = {
+  "/ecosistema": { title: "Ecosistema", icon: HiHome },
+  "/ecosistema/mi-dia": { title: "Mi Día", icon: HiSun },
+  "/ecosistema/agenda": { title: "Calendario", icon: HiCalendarDays },
   "/dashboard": { title: "Dashboard", icon: HiHome },
   "/lotes": { title: "Lotes", icon: HiOutlineSquares2X2 },
   "/fraccionamientos": { title: "Fraccionamientos", icon: HiMap },
@@ -27,6 +32,9 @@ export const routeMeta = {
 };
 
 export const desktopNav = [
+  { path: "/ecosistema", label: "Ecosistema", icon: HiHome },
+  { path: "/ecosistema/mi-dia", label: "Mi Día", icon: HiSun },
+  { path: "/ecosistema/agenda", label: "Calendario", icon: HiCalendarDays },
   { path: "/dashboard", label: "Dashboard", icon: HiHome },
   { path: "/lotes", label: "Lotes", icon: HiOutlineSquares2X2 },
   { path: "/fraccionamientos", label: "Fraccionamientos", icon: HiMap },
@@ -39,6 +47,8 @@ export const desktopNav = [
 ];
 
 export const mobileNav = [
+  { path: "/ecosistema/mi-dia", label: "Mi Día", icon: HiSun },
+  { path: "/ecosistema/agenda", label: "Agenda", icon: HiCalendarDays },
   { path: "/dashboard", label: "Inicio", icon: HiHome },
   { path: "/lotes", label: "Lotes", icon: HiOutlineSquares2X2 },
   { path: "/clientes", label: "Clientes", icon: HiOutlineUserGroup },

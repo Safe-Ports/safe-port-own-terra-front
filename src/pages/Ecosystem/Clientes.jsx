@@ -186,7 +186,8 @@ function EcosystemClientes() {
       setModal({
         type,
         draft: {
-          name: "",
+          first_name: "",
+          last_name: "",
           email: "",
           phone: "",
           type: "lead",
@@ -207,12 +208,13 @@ function EcosystemClientes() {
   const saveDraft = () => {
     const { type, draft } = modal;
     if (type === "client") {
-      if (!draft.name.trim()) return;
+      const fullName = `${draft.first_name || ""} ${draft.last_name || ""}`.trim();
+      if (!fullName) return;
       if (!emailOk(draft.email)) {
         showToast("Ingresa un correo válido");
         return;
       }
-      createClientMutation.mutate(draft);
+      createClientMutation.mutate({ ...draft, name: fullName });
     } else if (type === "document") {
       if (!draft.file) {
         showToast("Selecciona un archivo para subir");
@@ -453,9 +455,15 @@ function EcosystemClientes() {
             <div className="usr-modal-body">
               {modal.type === "client" ? (
                 <>
-                  <div className="usr-field">
-                    <label className="usr-field-lbl">Nombre completo</label>
-                    <input className="usr-input" value={modal.draft.name} onChange={(e) => setDraft({ name: e.target.value })} placeholder="Ej. Mariana Lopez" />
+                  <div className="usr-field-row">
+                    <div className="usr-field">
+                      <label className="usr-field-lbl">Nombre(s)</label>
+                      <input className="usr-input" value={modal.draft.first_name} onChange={(e) => setDraft({ first_name: e.target.value })} placeholder="Ej. Mariana" />
+                    </div>
+                    <div className="usr-field">
+                      <label className="usr-field-lbl">Apellido(s)</label>
+                      <input className="usr-input" value={modal.draft.last_name} onChange={(e) => setDraft({ last_name: e.target.value })} placeholder="Ej. López" />
+                    </div>
                   </div>
                   <div className="usr-field-row">
                     <div className="usr-field">

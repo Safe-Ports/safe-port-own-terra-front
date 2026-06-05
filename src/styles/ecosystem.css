@@ -32,13 +32,13 @@
   background:radial-gradient(circle,rgba(111,175,107,.16) 0%,transparent 70%);pointer-events:none}
 .eco-root .sidebar-inner{flex:1;overflow-y:auto;padding:26px 18px 22px;position:relative;z-index:1;scrollbar-width:none}
 .eco-root .sidebar-inner::-webkit-scrollbar{display:none}
-.eco-root .brand{display:flex;align-items:center;gap:12px;margin-bottom:30px;padding-bottom:22px;
+.eco-root .brand{display:flex;align-items:center;justify-content:center;margin-bottom:30px;padding-bottom:22px;
   border-bottom:1px solid rgba(233,229,219,.1)}
-.eco-root .brand-logo{width:42px;height:42px;border-radius:13px;flex-shrink:0;
-  background:linear-gradient(145deg,var(--leaf),var(--mid));
+.eco-root .brand-logo{width:min(100%,204px);height:109px;border-radius:10px;flex-shrink:0;
+  background:#0d3321;
   display:flex;align-items:center;justify-content:center;
-  box-shadow:0 6px 16px rgba(111,175,107,.35)}
-.eco-root .brand-logo svg{width:24px;height:24px}
+  box-shadow:0 6px 16px rgba(111,175,107,.25);overflow:hidden;padding:0}
+.eco-root .brand-logo img{width:100%;height:100%;object-fit:contain}
 .eco-root .brand-name{font-family:'Playfair Display',serif;font-size:19px;color:#fff;letter-spacing:-.3px;line-height:1.05}
 .eco-root .brand-name span{color:var(--light);font-style:italic}
 .eco-root .brand-tag{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(167,203,161,.6);

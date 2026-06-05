@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { appointmentService } from "@/services/appointmentService";
+import { useAppContext } from "@/context/AppContext";
+import { getUserErrorMessage } from "@/services/errors";
 import EcoLayout from "./EcoLayout";
 
 const APP_META = {
@@ -66,6 +68,7 @@ function AppTag({ app }) {
 function AgendaPage() {
   const today = new Date();
   const qc = useQueryClient();
+  const { showToast } = useAppContext();
 
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
   const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59).toISOString();
@@ -79,12 +82,20 @@ function AgendaPage() {
 
   const createMutation = useMutation({
     mutationFn: (body) => appointmentService.create(body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["appointments"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["appointments"] });
+      showToast("Cita agendada");
+    },
+    onError: (err) => showToast(getUserErrorMessage(err, "Error al agendar la cita")),
   });
 
   const cancelMutation = useMutation({
     mutationFn: (id) => appointmentService.cancel(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["appointments"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["appointments"] });
+      showToast("Cita cancelada");
+    },
+    onError: (err) => showToast(getUserErrorMessage(err, "Error al cancelar la cita")),
   });
 
   const [selectedDate, setSelectedDate] = useState(toDateKey(today));
