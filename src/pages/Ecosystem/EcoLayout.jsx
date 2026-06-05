@@ -41,11 +41,7 @@ function EcoLayout({ active = "panel", title, subtitle, children }) {
       <aside className="sidebar">
         <div className="sidebar-inner">
           <div className="brand">
-            <div className="brand-logo"><svg><use href="#eco-brand" /></svg></div>
-            <div>
-              <div className="brand-name">Own<span>Terra</span></div>
-              <div className="brand-tag">Ecosistem Platform</div>
-            </div>
+            <div className="brand-logo"><img src="/ownterra ecosistem.png" alt="OwnTerra Ecosistem" /></div>
           </div>
 
           <div className="nav-group">

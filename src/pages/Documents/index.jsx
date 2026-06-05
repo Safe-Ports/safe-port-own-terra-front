@@ -191,20 +191,22 @@ export default function DocumentsPage() {
 
   const createFolder = useMutation({
     mutationFn: folderService.create,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["document-folders"] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["document-folders"] }); showToast("Carpeta creada"); },
     onError: (e) => showToast(getUserErrorMessage(e, "Error al crear carpeta")),
   });
   const renameFolder = useMutation({
     mutationFn: ({ id, name }) => folderService.update(id, { name }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["document-folders"] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["document-folders"] }); showToast("Carpeta renombrada"); },
+    onError: (e) => showToast(getUserErrorMessage(e, "Error al renombrar la carpeta")),
   });
   const deleteFolder = useMutation({
     mutationFn: folderService.delete,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["document-folders"] }); qc.invalidateQueries({ queryKey: ["documents"] }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["document-folders"] }); qc.invalidateQueries({ queryKey: ["documents"] }); showToast("Carpeta eliminada"); },
+    onError: (e) => showToast(getUserErrorMessage(e, "Error al eliminar la carpeta")),
   });
   const moveDoc = useMutation({
     mutationFn: ({ id, folderId }) => documentService.move(id, folderId),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["documents"] }); qc.invalidateQueries({ queryKey: ["document-folders"] }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["documents"] }); qc.invalidateQueries({ queryKey: ["document-folders"] }); showToast("Archivo movido"); },
     onError: (e) => showToast(getUserErrorMessage(e, "Error al mover el archivo")),
   });
 

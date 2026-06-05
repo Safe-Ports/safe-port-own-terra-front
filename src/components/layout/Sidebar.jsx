@@ -3,6 +3,7 @@ import {
   HiArrowLeftOnRectangle,
   HiBellAlert,
   HiCalculator,
+  HiCalendarDays,
   HiChartBarSquare,
   HiCog6Tooth,
   HiDocumentDuplicate,
@@ -11,12 +12,15 @@ import {
   HiOutlineSquares2X2,
   HiOutlineUserGroup,
   HiRectangleGroup,
+  HiSun,
   HiWallet,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 
 const items = [
   { label: "Ecosistema", to: "/ecosistema", icon: HiRectangleGroup, section: "General" },
+  { label: "Mi Día", to: "/ecosistema/mi-dia", icon: HiSun, section: "General" },
+  { label: "Calendario", to: "/ecosistema/agenda", icon: HiCalendarDays, section: "General" },
   { label: "Dashboard", to: "/dashboard", icon: HiHome, section: "General" },
   { label: "Carga de Lotes", to: "/lotes", icon: HiOutlineSquares2X2, section: "Propiedades" },
   { label: "Fraccionamientos", to: "/fraccionamientos", icon: HiMap, section: "Propiedades" },
@@ -33,22 +37,8 @@ const items = [
 function Logo() {
   return (
     <div className="sb-logo">
-      <div className="sb-logo-ico">
-        {/* OwnTerra: hojas + casita + colinas */}
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          {/* hoja izquierda */}
-          <path d="M6 7c0-1.7 1.3-3 3-3 .3 1.5-.5 3-2 3.5-.5.2-1 .2-1-.5z" fill="white" opacity="0.95"/>
-          {/* hoja derecha */}
-          <path d="M18 7c0-1.7-1.3-3-3-3-.3 1.5.5 3 2 3.5.5.2 1 .2 1-.5z" fill="white" opacity="0.95"/>
-          {/* casita */}
-          <path d="M9 12l3-2.5L15 12v4h-2v-2.5h-2V16H9v-4z" fill="white"/>
-          {/* colina */}
-          <path d="M3 19c2-2 5-3 9-3s7 1 9 3" stroke="white" strokeWidth="1.6" strokeLinecap="round" fill="none"/>
-        </svg>
-      </div>
-      <div className="sb-logo-nm">
-        OwnTerra <span>Lands</span>
-        <small>terra.lands</small>
+      <div className="sb-logo-mark">
+        <img src="/ownterra_land.png" alt="" />
       </div>
     </div>
   );
@@ -70,7 +60,7 @@ function Sidebar() {
         <Logo />
         <div className="sb-nav">
           {items.filter((item) => {
-            if (item.to === "/ecosistema") return true;
+            if (item.to.startsWith("/ecosistema")) return true;
             if (item.to === "/configuracion") return canUseFeature("core.config");
             if (item.to === "/clientes") return canUseFeature("lands.clients");
             if (item.to === "/ventas" || item.to === "/contratos") return canUseFeature("lands.sales");

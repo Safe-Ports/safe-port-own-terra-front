@@ -1,4 +1,4 @@
-import { HiArrowLeftOnRectangle, HiBars3, HiBell, HiMagnifyingGlass } from "react-icons/hi2";
+import { HiArrowLeftOnRectangle, HiBars3, HiBell, HiCalendarDays, HiMagnifyingGlass, HiSun } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
 
@@ -70,6 +70,16 @@ function Topbar({ pathname }) {
           </span>
           <span className="flex-1 text-left">Buscar en todo el sistema...</span>
           <span className="tb-shortcut">⌘K</span>
+        </button>
+
+        <button className="topbar-core-link" onClick={() => navigate("/ecosistema/mi-dia")}>
+          <HiSun />
+          <span>Mi Día</span>
+        </button>
+
+        <button className="topbar-core-link" onClick={() => navigate("/ecosistema/agenda")}>
+          <HiCalendarDays />
+          <span>Calendario</span>
         </button>
 
         <button

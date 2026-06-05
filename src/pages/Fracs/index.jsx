@@ -493,10 +493,8 @@ function FracsPage() {
             <h1>{selectedFrac.name}</h1>
             <p>Inventario territorial consolidado con lectura rapida de disponibilidad, plano de referencia, detalle tecnico y cotizador comercial por lote.</p>
             <div className="frac-hero-actions">
-              <Button variant="secondary" onClick={openEditor}>Editar matriz</Button>
               <Button variant="secondary" onClick={() => selectedFrac.map_image_url && setShowMapViewer(true)} disabled={!selectedFrac.map_image_url}>Ver plano</Button>
               <Button variant="secondary" onClick={() => exportAppData("lots")}>Exportar</Button>
-              <Button variant="danger" onClick={() => setShowDeleteConfirm(true)}>Eliminar</Button>
             </div>
           </article>
 
@@ -865,26 +863,6 @@ function FracsPage() {
         </div>
       ) : null}
 
-      {showDeleteConfirm ? (
-        <div className="frac-modal-overlay" onClick={(event) => event.target === event.currentTarget && setShowDeleteConfirm(false)}>
-          <article className="frac-confirm-modal">
-            <div className="frac-modal-head danger">
-              <div>
-                <h2>Eliminar fraccionamiento</h2>
-                <p>{selectedFrac.name}</p>
-              </div>
-              <button className="frac-modal-close" onClick={() => setShowDeleteConfirm(false)}>×</button>
-            </div>
-            <div className="frac-confirm-body">
-              <p>Esta accion eliminara el proyecto seleccionado. Confirma solo si ya no debe aparecer en OwnTerra Lands.</p>
-              <div className="frac-confirm-actions">
-                <Button variant="secondary" onClick={() => setShowDeleteConfirm(false)}>Cancelar</Button>
-                <Button variant="danger" onClick={() => { deleteFrac(selectedFrac.id); setShowDeleteConfirm(false); }}>Eliminar</Button>
-              </div>
-            </div>
-          </article>
-        </div>
-      ) : null}
 
       {showMapViewer && selectedFrac.map_image_url ? <MapViewer src={selectedFrac.map_image_url} onClose={() => setShowMapViewer(false)} /> : null}
     </div>
