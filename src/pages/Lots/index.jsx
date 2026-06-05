@@ -74,9 +74,18 @@ function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot }) {
           return (
             <div
               key={lot.id}
-              title={`${lot.code} — ${lot.status}`}
-              className="relative select-none rounded-[8px] border-[1.5px] px-1 py-2 text-center transition-all"
+              title={`${lot.code} — click para editar`}
+              className="select-none cursor-pointer rounded-[8px] border-[1.5px] px-1 py-2 text-center transition-all hover:opacity-80 hover:shadow-md"
               style={{ background: c.bg, borderColor: c.border }}
+              onClick={() => onEditLot(section.id, lot.id)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onEditLot(section.id, lot.id);
+                }
+              }}
             >
               <div className="text-[0.78rem] font-extrabold leading-none" style={{ color: c.text }}>
                 {lot.code}
@@ -84,12 +93,6 @@ function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot }) {
               <div className="mt-0.5 text-[0.56rem] opacity-70" style={{ color: c.text }}>
                 {lot.area ? `${lot.area}m²` : lot.status === "available" ? "Libre" : lot.status === "sold" ? "Vendido" : "Apartado"}
               </div>
-              <button
-                onClick={() => onEditLot(section.id, lot.id)}
-                className="absolute right-0.5 top-0.5 flex h-3 w-3 items-center justify-center rounded-[2px] bg-black/10 text-[0.45rem] text-black/35 cursor-pointer"
-              >
-                ✏
-              </button>
             </div>
           );
         })}

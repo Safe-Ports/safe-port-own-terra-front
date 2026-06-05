@@ -30,7 +30,6 @@ const items = [
   { label: "Documentos", to: "/documentos", icon: HiDocumentDuplicate, section: "Gestion" },
   { label: "Calculadora", to: "/calculadora", icon: HiCalculator, section: "Gestion" },
   { label: "Reportes", to: "/reportes", icon: HiChartBarSquare, section: "Sistema" },
-  { label: "Alertas", to: "/alertas", icon: HiBellAlert, section: "Sistema" },
   { label: "Configuracion", to: "/configuracion", icon: HiCog6Tooth, section: "Sistema" },
 ];
 
@@ -78,7 +77,6 @@ function Sidebar() {
             if (item.to === "/clientes" && clients.length) badge = clients.length;
             if (item.to === "/pagos") badge = payments.filter((p) => p.status === "overdue").length;
             if (item.to === "/documentos" && documents.length) badge = documents.length;
-            if (item.to === "/alertas" && notificationCount > 0) badge = notificationCount;
 
             return (
               <div key={item.to}>

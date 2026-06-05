@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
 import Modal from "@/components/ui/Modal";
@@ -40,7 +40,6 @@ function FieldError({ msg }) {
   );
 }
 
-/* Estilo de input con error */
 const errorBorder = "1.8px solid var(--danger, #c0392b)";
 
 function SectionLabel({ children }) {
@@ -147,7 +146,7 @@ function validate(form, isEditing) {
       errs.totalM = "El plazo máximo es 360 meses (30 años)";
   }
 
-  return errs; // {} = sin errores
+  return errs;
 }
 
 function parseServerErrors(err) {
@@ -192,6 +191,12 @@ function ContractModal() {
   const [docs, setDocs]       = useState([]);
   const [errors, setErrors]   = useState({});
   const [saving, setSaving]   = useState(false);
+
+  /* ── Lot search state ── */
+  const [lotSearch, setLotSearch]     = useState("");
+  const [showLotDrop, setShowLotDrop] = useState(false);
+  const lotRef = useRef(null);
+
   const activeFracs = fracs.filter((frac) => !frac.is_archived);
   const defaultInmuebleId = activeFracs.some((frac) => frac.id === selectedFracId)
     ? selectedFracId
@@ -208,13 +213,13 @@ function ContractModal() {
 
   const set = k => e => {
     setForm(p => ({ ...p, [k]: e.target.value }));
-    // Limpia el error del campo al editar
     if (errors[k]) setErrors(p => { const n = { ...p }; delete n[k]; return n; });
   };
 
   const setInmueble = e => {
     const inmuebleId = e.target.value;
     setForm(p => ({ ...p, inmuebleId, lot: "" }));
+    setLotSearch("");
     if (errors.inmuebleId || errors.lot) {
       setErrors(p => {
         const n = { ...p };
@@ -230,7 +235,6 @@ function ContractModal() {
     if (errors[k]) setErrors(p => { const n = { ...p }; delete n[k]; return n; });
   };
 
-  /* Validación al salir de un campo (blur) */
   const blurField = (k) => {
     const errs = validate(form, !!editingContract);
     if (errs[k]) setErrors(p => ({ ...p, [k]: errs[k] }));
@@ -256,13 +260,38 @@ function ContractModal() {
     enabled: ui.contractModal,
   });
 
+  /* Cerrar dropdown al click fuera */
+  useEffect(() => {
+    if (!showLotDrop) return;
+    const handler = (e) => { if (!lotRef.current?.contains(e.target)) setShowLotDrop(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showLotDrop]);
+
   useEffect(() => {
     if (!ui.contractModal) return;
     setDocs([]);
     setErrors({});
     setSaving(false);
+    setLotSearch("");
+    setShowLotDrop(false);
     if (editingContract) {
-      setForm({ ...defaultForm, ...editingContract });
+      setForm({
+        ...defaultForm,
+        number:              editingContract.contract_number || "",
+        inmuebleId:          editingContract.lot?.inmueble_id || defaultForm.inmuebleId,
+        lot:                 String(editingContract.lot?.id || editingContract.lot_id || ""),
+        clientId:            String(editingContract.client?.id || editingContract.client_id || ""),
+        type:                editingContract.type || "sale",
+        date:                (editingContract.contract_date || editingContract.date || defaultForm.date).split("T")[0],
+        amount:              editingContract.amount ?? 0,
+        down_payment:        editingContract.down_payment ?? 0,
+        totalM:              editingContract.total_months || editingContract.totalM || 96,
+        interest_rate:       editingContract.interest_rate ?? 0.12,
+        seller_id:           String(editingContract.seller?.id || editingContract.seller_id || ""),
+        down_payment_method: editingContract.down_payment_method || "cash",
+        notes:               editingContract.notes || "",
+      });
     } else {
       setForm({
         ...defaultForm,
@@ -277,11 +306,19 @@ function ContractModal() {
   const updateDoc = (id, updated) => setDocs(p => p.map(d => d.id === id ? updated : d));
   const removeDoc = (id) => setDocs(p => p.filter(d => d.id !== id));
 
+  /* ── Lots filtrados para buscador ── */
+  const filteredLots = useMemo(
+    () => availableLots.filter(l =>
+      !lotSearch || l.code.toLowerCase().includes(lotSearch.toLowerCase())
+    ),
+    [availableLots, lotSearch]
+  );
+  const selectedLotObj = availableLots.find(l => l.id === form.lot);
+
   const handleSave = async () => {
     const errs = validate(form, !!editingContract);
     if (Object.keys(errs).length) {
       setErrors(errs);
-      // Scroll al primer campo con error
       const first = Object.keys(errs)[0];
       document.getElementById(`cf-${first}`)?.focus();
       return;
@@ -392,21 +429,90 @@ function ContractModal() {
             Lote
             {!editingContract && <span style={{ color: "var(--danger)", marginLeft: 3 }}>*</span>}
           </label>
-          <select
-            id="cf-lot"
-            {...fi(errors.lot)}
-            value={form.lot}
-            onChange={set("lot")}
-            onBlur={() => blurField("lot")}
-            disabled={!!editingContract || !form.inmuebleId}
-          >
-            <option value="">— Seleccionar lote —</option>
-            {availableLots.map(l => (
-              <option key={l.id} value={l.id}>
-                {l.code}{l.area_m2 ? ` · ${l.area_m2} m2` : ""}
-              </option>
-            ))}
-          </select>
+          {editingContract ? (
+            <input
+              className="fi"
+              value={editingContract.lot?.code || form.lot || "—"}
+              disabled
+            />
+          ) : (
+            <div ref={lotRef} style={{ position: "relative" }}>
+              <input
+                id="cf-lot"
+                className="fi"
+                style={errors.lot ? { border: errorBorder, outline: "none" } : undefined}
+                value={selectedLotObj
+                  ? `${selectedLotObj.code}${selectedLotObj.area_m2 ? ` · ${selectedLotObj.area_m2} m²` : ""}`
+                  : lotSearch}
+                onChange={(e) => {
+                  setLotSearch(e.target.value);
+                  setForm(p => ({ ...p, lot: "" }));
+                  setShowLotDrop(true);
+                  if (errors.lot) setErrors(p => { const n = { ...p }; delete n.lot; return n; });
+                }}
+                onFocus={() => { if (!selectedLotObj) setShowLotDrop(true); }}
+                onBlur={() => blurField("lot")}
+                placeholder={!form.inmuebleId ? "Selecciona un fraccionamiento primero" : "Buscar lote por código…"}
+                disabled={!form.inmuebleId}
+                autoComplete="off"
+              />
+              {form.lot && (
+                <button
+                  type="button"
+                  onClick={() => { setForm(p => ({ ...p, lot: "" })); setLotSearch(""); setShowLotDrop(true); }}
+                  style={{
+                    position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
+                    background: "none", border: "none", cursor: "pointer", color: "var(--mu)",
+                    fontSize: ".75rem", padding: "2px 4px",
+                  }}
+                >✕</button>
+              )}
+              {showLotDrop && filteredLots.length > 0 && (
+                <div style={{
+                  position: "absolute", top: "100%", left: 0, right: 0, zIndex: 1000,
+                  background: "var(--sf, #fff)", border: "1.5px solid var(--bd)",
+                  borderRadius: 10, maxHeight: 200, overflowY: "auto",
+                  boxShadow: "0 8px 24px rgba(30,61,43,.14)", marginTop: 4,
+                }}>
+                  {filteredLots.map(l => (
+                    <div
+                      key={l.id}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setForm(p => ({ ...p, lot: l.id }));
+                        setLotSearch("");
+                        setShowLotDrop(false);
+                        if (errors.lot) setErrors(p => { const n = { ...p }; delete n.lot; return n; });
+                      }}
+                      style={{
+                        padding: "9px 12px", cursor: "pointer", fontSize: ".82rem",
+                        borderBottom: "1px solid rgba(67,69,63,.08)",
+                        color: "var(--tx)", display: "flex", alignItems: "center", gap: 8,
+                        transition: "background .1s",
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = "var(--tan-lt, #f5f0e8)"}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                    >
+                      <strong style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".78rem" }}>{l.code}</strong>
+                      {l.area_m2 && <span style={{ color: "var(--mu)", fontSize: ".74rem" }}>{l.area_m2} m²</span>}
+                      {l.price_contado && <span style={{ color: "var(--mu)", fontSize: ".74rem", marginLeft: "auto" }}>${Number(l.price_contado).toLocaleString("en-US")}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {showLotDrop && filteredLots.length === 0 && lotSearch && (
+                <div style={{
+                  position: "absolute", top: "100%", left: 0, right: 0, zIndex: 1000,
+                  background: "var(--sf, #fff)", border: "1.5px solid var(--bd)",
+                  borderRadius: 10, padding: "10px 12px",
+                  boxShadow: "0 8px 24px rgba(30,61,43,.14)", marginTop: 4,
+                  fontSize: ".78rem", color: "var(--mu)",
+                }}>
+                  Sin lotes con ese código
+                </div>
+              )}
+            </div>
+          )}
           <FieldError msg={errors.lot} />
           {!editingContract && form.inmuebleId && availableLots.length === 0 && (
             <span style={{ fontSize: ".72rem", color: "var(--mu)", marginTop: 4, display: "block" }}>
@@ -585,7 +691,6 @@ function ContractModal() {
         <HiOutlinePlus /> Agregar documento
       </button>
 
-      {/* Leyenda de campos obligatorios */}
       <div style={{ marginTop: 16, fontSize: ".72rem", color: "var(--mu)" }}>
         <span style={{ color: "var(--danger)" }}>*</span> Campos obligatorios
       </div>

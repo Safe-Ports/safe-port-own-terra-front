@@ -326,10 +326,35 @@ function FracsPage() {
           </div>
         </aside>
         <section className="frac-workspace" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ textAlign: "center", color: "#83867C" }}>
-            <div style={{ fontSize: "2.5rem", marginBottom: 12 }}>▦</div>
-            <div style={{ fontSize: "1rem", fontWeight: 600, color: "#1E3D2B", marginBottom: 6 }}>Selecciona un proyecto</div>
-            <div style={{ fontSize: "0.82rem" }}>Elige un fraccionamiento del panel izquierdo para ver su inventario</div>
+          <div style={{ textAlign: "center", maxWidth: 360, padding: "0 24px" }}>
+            <div style={{
+              width: 80, height: 80, borderRadius: 24,
+              background: "linear-gradient(135deg,#D4EAE0,#EDE3D3)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "2rem", margin: "0 auto 20px",
+              boxShadow: "0 8px 24px rgba(30,61,43,.1)",
+              animation: "pulse-soft 3s ease-in-out infinite",
+            }}>
+              🗺️
+            </div>
+            <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.3rem", color: "#1E3D2B", marginBottom: 10, fontWeight: 600 }}>
+              Bienvenido a OwnTerra Lands
+            </div>
+            <div style={{ fontSize: "0.84rem", color: "#83867C", lineHeight: 1.6, marginBottom: 20 }}>
+              Selecciona un fraccionamiento del panel izquierdo para explorar su inventario de lotes, plano de referencia y cotizador.
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+              {[["🏡","Inventario de lotes"],["📐","Plano interactivo"],["💰","Cotizador"]].map(([icon, label]) => (
+                <span key={label} style={{
+                  display: "flex", alignItems: "center", gap: 5,
+                  background: "#F1EEE6", borderRadius: 20, padding: "5px 12px",
+                  fontSize: ".74rem", fontWeight: 600, color: "#43453F",
+                }}>
+                  {icon} {label}
+                </span>
+              ))}
+            </div>
+            <style>{`@keyframes pulse-soft { 0%,100%{transform:scale(1)} 50%{transform:scale(1.04)} }`}</style>
           </div>
         </section>
       </div>
