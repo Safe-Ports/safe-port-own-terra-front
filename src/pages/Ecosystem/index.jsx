@@ -92,7 +92,7 @@ function EcosystemHub() {
           </div>
         </div>
 
-        <div className="app-card is-disabled" style={{ "--glow": "rgba(53,94,59,.1)" }}>
+        <div className="app-card is-disabled" style={{ "--glow": "rgba(53,94,59,.1)", pointerEvents: "none", userSelect: "none" }} aria-disabled="true" tabIndex={-1}>
           <div className="app-top">
             <div className="app-icon ic-neighb"><svg><use href="#eco-g-neighb" /></svg></div>
             <span className="app-status st-soon">Próximamente</span>
@@ -107,7 +107,7 @@ function EcosystemHub() {
           </div>
         </div>
 
-        <div className="app-card is-disabled" style={{ "--glow": "rgba(167,203,161,.14)" }}>
+        <div className="app-card is-disabled" style={{ "--glow": "rgba(167,203,161,.14)", pointerEvents: "none", userSelect: "none" }} aria-disabled="true" tabIndex={-1}>
           <div className="app-top">
             <div className="app-icon ic-homes"><svg><use href="#eco-g-homes" /></svg></div>
             <span className="app-status st-soon">Próximamente</span>

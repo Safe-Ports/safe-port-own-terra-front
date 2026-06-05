@@ -62,6 +62,5 @@ export const secondaryMobileRoutes = [
   { path: "/documentos", label: "Documentos", icon: HiDocumentDuplicate },
   { path: "/fraccionamientos", label: "Fraccionamientos", icon: HiMap },
   { path: "/calculadora", label: "Calculadora", icon: HiCalculator },
-  { path: "/alertas", label: "Alertas", icon: HiBellAlert },
   { path: "/configuracion", label: "Configuración", icon: HiCog6Tooth },
 ];
