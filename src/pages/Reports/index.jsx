@@ -253,7 +253,7 @@ function PaymentBehaviorChart({ payments }) {
             <div style={{ paddingTop: 8, fontSize: 13, color: "var(--mu)", textAlign: "center" }}>
               Sin pagos vencidos en el periodo. 🎉
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>
