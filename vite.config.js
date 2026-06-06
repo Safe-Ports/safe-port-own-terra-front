@@ -2,8 +2,19 @@ import path from "node:path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
+
+// Token para subir source maps a Sentry. Solo está presente en los builds de
+// deploy (se exporta como variable de entorno SENTRY_AUTH_TOKEN). Sin él, el
+// build funciona igual pero no sube source maps.
+const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN;
 
 export default defineConfig({
+  // Genera source maps solo cuando vamos a subirlos (no se exponen en el sitio:
+  // el plugin de Sentry los borra del dist tras subirlos).
+  build: {
+    sourcemap: Boolean(sentryAuthToken),
+  },
   plugins: [
     react(),
     VitePWA({
@@ -66,7 +77,18 @@ export default defineConfig({
           }
         ]
       }
-    })
+    }),
+    // Sube los source maps a Sentry para tener stack traces legibles.
+    // Solo se activa si hay SENTRY_AUTH_TOKEN (en los builds de deploy).
+    ...(sentryAuthToken
+      ? [
+          sentryVitePlugin({
+            org: "safe-ports",
+            project: "javascript-react",
+            authToken: sentryAuthToken,
+          }),
+        ]
+      : []),
   ],
   resolve: {
     alias: {
