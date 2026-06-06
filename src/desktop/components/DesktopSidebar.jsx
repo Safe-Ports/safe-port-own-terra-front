@@ -7,10 +7,10 @@ function DesktopSidebar() {
   const { currentUser, logout } = useAppContext();
 
   return (
-    <aside className="hidden xl:flex xl:w-[288px] xl:flex-col xl:border-r xl:border-white/10 xl:bg-[#16120f] xl:px-5 xl:py-6">
+    <aside className="hidden xl:flex xl:w-[288px] xl:flex-col xl:border-r xl:border-white/10 xl:bg-[#1E3D2B] xl:px-5 xl:py-6">
       <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(28,57,42,0.98),rgba(18,16,13,0.98))] p-5 text-white shadow-[0_24px_60px_rgba(0,0,0,.3)]">
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#D9B07D,#8B6A46)] text-lg font-black text-[#16120f]">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#6FAF6B,#8B6A46)] text-lg font-black text-[#1E3D2B]">
             O
           </div>
           <div>
@@ -27,7 +27,7 @@ function DesktopSidebar() {
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
                   isActive
-                    ? "bg-white text-[#16120f] shadow-[0_10px_24px_rgba(0,0,0,.18)]"
+                    ? "bg-white text-[#1E3D2B] shadow-[0_10px_24px_rgba(0,0,0,.18)]"
                     : "text-white/68 hover:bg-white/8 hover:text-white"
                 }`
               }

@@ -1,18 +1,126 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { HiArrowUpTray, HiMap, HiSquaresPlus } from "react-icons/hi2";
+import { HiChevronLeft, HiChevronRight } from "react-icons/hi2";
+import * as XLSX from "xlsx";
 import { useAppContext } from "@/context/AppContext";
 import { useProjectsQuery } from "@/hooks/queries/useAppQueries";
+import { lotService } from "@/services/lotService";
+import { getUserErrorMessage } from "@/services/errors";
 import { compactCurrency, currency } from "@/services/formatters";
+import Button from "@/components/Button";
+
+const LOT_COLORS = {
+  available: { bg: "#dcfce7", border: "#86efac", text: "#15803d" },
+  sold:      { bg: "#fee2e2", border: "#fca5a5", text: "#991b1b" },
+  reserved:  { bg: "#fef3c7", border: "#fcd34d", text: "#92400e" },
+};
+const STATUS_CYCLE = { available: "sold", sold: "reserved", reserved: "available" };
+const MAP_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 function createLots(sectionName, total) {
   return Array.from({ length: total }, (_, index) => ({
     id: `${sectionName}_${Date.now()}_${index}`,
     code: `${sectionName.slice(0, 1).toUpperCase()}-${String(index + 1).padStart(2, "0")}`,
-    status: index % 7 === 0 ? "reserved" : index % 5 === 0 ? "sold" : "available",
-    area: 140 + index * 4,
-    price: 330000 + index * 12000
+    status: "available",
+    area: "",
+    price: ""
   }));
+}
+
+const LOTS_PER_PAGE = 60; // matriz 6×10
+
+// Orden natural por código: A-01, A-02, ..., A-10, A-11
+function sortLotsByCode(lots) {
+  return [...lots].sort((a, b) =>
+    String(a.code || "").localeCompare(String(b.code || ""), undefined, { numeric: true, sensitivity: "base" })
+  );
+}
+
+function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot }) {
+  const [page, setPage] = useState(0);
+  const sortedLots = useMemo(() => sortLotsByCode(section.lots), [section.lots]);
+  const totalPages = Math.max(1, Math.ceil(sortedLots.length / LOTS_PER_PAGE));
+  const safePage = Math.min(page, totalPages - 1);
+  const pageLots = sortedLots.slice(safePage * LOTS_PER_PAGE, safePage * LOTS_PER_PAGE + LOTS_PER_PAGE);
+
+  return (
+    <div>
+      {/* Section header */}
+      <div className="mb-2.5 flex items-center gap-2">
+        <div className="text-[0.7rem] font-extrabold uppercase tracking-[0.5px] text-[#43453F]">
+          {section.name}
+          <span className="ml-1 font-normal opacity-55 text-[0.62rem]">{section.lots.length} lotes</span>
+        </div>
+        <div className="h-px flex-1 bg-[#DCDAD2]" />
+        <button
+          onClick={() => onAddLots(section.id, 10)}
+          title="Añadir 10 lotes"
+          className="flex h-[22px] w-[22px] items-center justify-center rounded-[5px] border border-[#DCDAD2] bg-[#F1EEE6] text-[0.8rem] font-black text-[#355E3B]"
+        >
+          +
+        </button>
+        <button
+          onClick={() => onRemoveSection(section.id)}
+          title="Eliminar sección"
+          className="flex h-[22px] w-[22px] items-center justify-center rounded-[5px] border border-[#DCDAD2] bg-[#F1EEE6] text-[0.8rem] font-black text-[#C0392B]"
+        >
+          ✕
+        </button>
+      </div>
+      {/* Lot grid — 6 columnas */}
+      <div className="grid gap-1.5" style={{ gridTemplateColumns: "repeat(6, 1fr)" }}>
+        {pageLots.map((lot) => {
+          const c = LOT_COLORS[lot.status] || LOT_COLORS.available;
+          return (
+            <div
+              key={lot.id}
+              title={`${lot.code} — click para editar`}
+              className="select-none cursor-pointer rounded-[8px] border-[1.5px] px-1 py-2 text-center transition-all hover:opacity-80 hover:shadow-md"
+              style={{ background: c.bg, borderColor: c.border }}
+              onClick={() => onEditLot(section.id, lot.id)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onEditLot(section.id, lot.id);
+                }
+              }}
+            >
+              <div className="text-[0.78rem] font-extrabold leading-none" style={{ color: c.text }}>
+                {lot.code}
+              </div>
+              <div className="mt-0.5 text-[0.56rem] opacity-70" style={{ color: c.text }}>
+                {lot.area ? `${lot.area}m²` : lot.status === "available" ? "Libre" : lot.status === "sold" ? "Vendido" : "Apartado"}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {/* Paginación */}
+      {totalPages > 1 && (
+        <div className="mt-2.5 flex items-center justify-center gap-3">
+          <button
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={safePage === 0}
+            className="flex h-[26px] w-[26px] items-center justify-center rounded-[6px] border border-[#DCDAD2] bg-[#F1EEE6] text-[#355E3B] disabled:opacity-35"
+          >
+            <HiChevronLeft />
+          </button>
+          <span className="text-[0.66rem] font-semibold text-[#43453F]">
+            Página {safePage + 1} de {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+            disabled={safePage >= totalPages - 1}
+            className="flex h-[26px] w-[26px] items-center justify-center rounded-[6px] border border-[#DCDAD2] bg-[#F1EEE6] text-[#355E3B] disabled:opacity-35"
+          >
+            <HiChevronRight />
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function cropPlanImage(dataUrl) {
@@ -120,9 +228,168 @@ function cropPlanImage(dataUrl) {
 function LotsPage() {
   const navigate = useNavigate();
   const { data: projects = [] } = useProjectsQuery();
-  const { draftProject, setDraftProject, saveFrac, fracs, setSelectedFracId, showToast } = useAppContext();
+  const { draftProject, setDraftProject, saveFrac, saveEditedFrac, setSelectedFracId, showToast } = useAppContext();
+  const isEditing = !!draftProject._editingFracId;
+
+  useEffect(() => {
+    setDraftProject({ mode: "selector", name: "Nuevo Fraccionamiento", mapUrl: "", sections: [], cadProcessing: false });
+  }, []);
+
   const [sectionName, setSectionName] = useState("");
-  const [sectionTotal, setSectionTotal] = useState(12);
+  const [sectionTotal, setSectionTotal] = useState(20);
+  const [mapFileName, setMapFileName] = useState("");
+  const [lotEditDraft, setLotEditDraft] = useState(null); // null | { sectionId, ...lot }
+  const [loadingEditId, setLoadingEditId] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const changeImageRef = useRef(null);
+  const excelInputRef = useRef(null);
+  const portfolioScrollRef = useRef(null);
+
+  const scrollPortfolio = (direction) => {
+    const node = portfolioScrollRef.current;
+    if (!node) return;
+    node.scrollBy({
+      left: direction * Math.min(node.clientWidth * 0.86, 760),
+      behavior: "smooth",
+    });
+  };
+
+  const openProjectEditor = async (project) => {
+    setLoadingEditId(project.id);
+    try {
+      const { items: lots } = await lotService.list({ inmueble_id: project.id, limit: 200 });
+      const sectionMap = {};
+      lots.forEach((lot) => {
+        const sec = lot.section || "General";
+        if (!sectionMap[sec]) sectionMap[sec] = { id: `sec_${sec}`, name: sec, lots: [] };
+        sectionMap[sec].lots.push({
+          id:              lot.id,
+          _backendId:      lot.id,
+          _orig: {
+            area:            lot.area_m2 ?? "",
+            price:           lot.price_contado ?? "",
+            priceFinanciado: lot.price_financiado ?? "",
+            frente:          lot.frente_ml ?? "",
+            fondo:           lot.fondo_ml ?? "",
+            servicios:       JSON.stringify(lot.services || {}),
+          },
+          code:            lot.code,
+          status:          lot.status || "available",
+          area:            lot.area_m2 ?? "",
+          price:           lot.price_contado ?? "",
+          priceFinanciado: lot.price_financiado ?? "",
+          frente:          lot.frente_ml ?? "",
+          fondo:           lot.fondo_ml ?? "",
+          servicios:       lot.services || {},
+        });
+      });
+      setDraftProject({
+        mode:           "editor",
+        name:           project.name,
+        mapUrl:         "",
+        cadProcessing:  false,
+        sections:       Object.values(sectionMap),
+        _editingFracId: project.id,
+      });
+    } catch (err) {
+      showToast(getUserErrorMessage(err, "Error al cargar los lotes para editar"));
+    } finally {
+      setLoadingEditId(null);
+    }
+  };
+
+  const STATUS_MAP = {
+    disponible: "available", libre: "available", available: "available", vacante: "available",
+    vendido: "sold", sold: "sold", ocupado: "sold",
+    apartado: "reserved", apartada: "reserved", reservado: "reserved", reserved: "reserved",
+  };
+
+  const handleExcelFile = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    event.target.value = "";
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+        if (!rows.length) { showToast("El archivo no tiene datos"); return; }
+
+        const norm = (s) => String(s || "").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+
+        const findCol = (row, aliases) => {
+          const key = Object.keys(row).find((k) => aliases.some((a) => norm(k) === norm(a)));
+          return key ? String(row[key]).trim() : "";
+        };
+
+        const grouped = {};
+        rows.forEach((row, i) => {
+          const code = findCol(row, ["ID Lote", "id", "codigo", "lote", "clave"]) || `L-${String(i + 1).padStart(2, "0")}`;
+          const secName = findCol(row, ["Seccion", "sección", "manzana", "bloque", "section"]) || "Importados";
+          const statusRaw = norm(findCol(row, ["Estado", "estatus", "status"]));
+          const status = STATUS_MAP[statusRaw] || "available";
+          const area = Number(findCol(row, ["Superficie (m2)", "superficie", "area", "m2"])) || 0;
+          const price = Number(findCol(row, ["Precio Contado", "precio contado", "contado", "precio"])) || 0;
+          const priceFinanciado = Number(findCol(row, ["Precio Financiado", "financiado"])) || 0;
+          const frente = Number(findCol(row, ["Frente (ML)", "frente"])) || 0;
+          const fondo = Number(findCol(row, ["Fondo (ML)", "fondo"])) || 0;
+          const servicios = {
+            agua: !!findCol(row, ["Agua Potable", "agua"]),
+            luz: !!findCol(row, ["Energia Electrica", "luz", "electricidad"]),
+            drenaje: !!findCol(row, ["Drenaje"]),
+            gas: !!findCol(row, ["Gas Natural", "gas"]),
+            internet: !!findCol(row, ["Internet/Fibra", "internet"]),
+            pavimento: !!findCol(row, ["Pavimento"]),
+          };
+          if (!grouped[secName]) grouped[secName] = [];
+          grouped[secName].push({ id: `xl_${Date.now()}_${i}`, code, status, area, price, priceFinanciado, frente, fondo, servicios });
+        });
+
+        const newSections = Object.entries(grouped).map(([name, lots]) => ({
+          id: `section_xl_${Date.now()}_${name}`,
+          name,
+          lots,
+        }));
+
+        setDraftProject((prev) => ({
+          ...prev,
+          sections: [...prev.sections, ...newSections],
+        }));
+
+        const total = newSections.reduce((s, sec) => s + sec.lots.length, 0);
+        showToast(`${total} lotes importados desde Excel`);
+      } catch {
+        showToast("Error al leer el archivo. Usa el formato de plantilla.");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const openEditLot = (sectionId, lotId) => {
+    const sec = draftProject.sections.find((s) => s.id === sectionId);
+    const lot = sec?.lots.find((l) => l.id === lotId);
+    if (!lot) return;
+    setLotEditDraft({
+      sectionId,
+      ...lot,
+      frente: lot.frente ?? "",
+      fondo: lot.fondo ?? "",
+      priceFinanciado: lot.priceFinanciado ?? "",
+      vendedor: lot.vendedor ?? "",
+      servicios: lot.servicios ?? { agua: false, luz: false, drenaje: false, gas: false, internet: false, pavimento: false }
+    });
+  };
+
+  const saveLotEdit = () => {
+    if (!lotEditDraft) return;
+    const { sectionId, ...lotData } = lotEditDraft;
+    updateLot(sectionId, lotData.id, lotData);
+    setLotEditDraft(null);
+  };
 
   const loadDemo = () => {
     setDraftProject({
@@ -141,7 +408,6 @@ function LotsPage() {
     if (!sectionName.trim()) return;
     setDraftProject((previous) => ({
       ...previous,
-      mode: "editor",
       sections: [
         ...previous.sections,
         {
@@ -152,10 +418,73 @@ function LotsPage() {
       ]
     }));
     setSectionName("");
-    setSectionTotal(12);
+    setSectionTotal(20);
+  };
+
+  const cycleLotStatus = (sectionId, lotId) => {
+    setDraftProject((previous) => ({
+      ...previous,
+      sections: previous.sections.map((sec) =>
+        sec.id !== sectionId ? sec : {
+          ...sec,
+          lots: sec.lots.map((lot) =>
+            lot.id !== lotId ? lot : { ...lot, status: STATUS_CYCLE[lot.status] || "available" }
+          )
+        }
+      )
+    }));
+  };
+
+  const updateLot = (sectionId, lotId, patch) => {
+    setDraftProject((previous) => ({
+      ...previous,
+      sections: previous.sections.map((sec) =>
+        sec.id !== sectionId ? sec : {
+          ...sec,
+          lots: sec.lots.map((lot) => lot.id !== lotId ? lot : { ...lot, ...patch })
+        }
+      )
+    }));
+  };
+
+  const removeSection = (sectionId) => {
+    setDraftProject((previous) => ({
+      ...previous,
+      sections: previous.sections.filter((sec) => sec.id !== sectionId)
+    }));
+  };
+
+  const addLotsToSection = (sectionId, count) => {
+    setDraftProject((previous) => ({
+      ...previous,
+      sections: previous.sections.map((sec) => {
+        if (sec.id !== sectionId) return sec;
+        const start = sec.lots.length;
+        const prefix = sec.name.slice(0, 1).toUpperCase();
+        const newLots = Array.from({ length: count }, (_, i) => ({
+          id: `${sectionId}_ext_${Date.now()}_${i}`,
+          code: `${prefix}-${String(start + i + 1).padStart(2, "0")}`,
+          status: "available",
+          area: "",
+          price: ""
+        }));
+        return { ...sec, lots: [...sec.lots, ...newLots] };
+      })
+    }));
+  };
+
+  const isValidMapImage = (file) => {
+    const extension = file.name.split(".").pop()?.toLowerCase();
+    return MAP_IMAGE_TYPES.has(file.type) || ["jpg", "jpeg", "png", "webp"].includes(extension);
   };
 
   const updateMap = (file) => {
+    if (!isValidMapImage(file)) {
+      showToast("El plano debe ser una imagen JPG, PNG o WEBP. El Excel solo va en Llenar con Excel.");
+      return false;
+    }
+
+    setMapFileName(file.name);
     const reader = new FileReader();
     reader.onload = async (event) => {
       const sourceDataUrl = event.target?.result || "";
@@ -163,7 +492,6 @@ function LotsPage() {
 
       setDraftProject((previous) => ({
         ...previous,
-        mode: "editor",
         mapUrl: processed.dataUrl,
         name: previous.name || "Nuevo Fraccionamiento"
       }));
@@ -173,16 +501,354 @@ function LotsPage() {
       }
     };
     reader.readAsDataURL(file);
+    return true;
   };
 
   const totalDraftLots = draftProject.sections.reduce((sum, section) => sum + section.lots.length, 0);
 
+  // ── EDITOR: full-height split layout ──────────────────────────────
+  if (draftProject.mode === "editor") {
+    return (
+      <>
+      <div
+        className="lots-editor-shell"
+      >
+        {/* Top bar */}
+        <div className="lots-editor-topbar">
+          {isEditing ? (
+            <div className="flex items-center gap-2">
+              <button
+                className="lots-editor-btn"
+                onClick={() => { setDraftProject((p) => ({ ...p, _editingFracId: null })); navigate("/fraccionamientos"); }}
+              >
+                Cancelar
+              </button>
+              <span className="lots-editor-state">
+                <span className="lots-editor-dot warn" />
+                Editando: {draftProject.name}
+              </span>
+            </div>
+          ) : (
+            <>
+              <button
+                className="lots-editor-btn"
+                onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
+              >
+                Cambiar mapa
+              </button>
+              <div className="lots-editor-separator" />
+              {mapFileName && (
+                <div className="lots-editor-file"><span>MAP</span>{mapFileName}</div>
+              )}
+            </>
+          )}
+          <div className="flex-1" />
+          <div className="lots-editor-legend">
+            <span>
+              <span className="lots-legend-mark available" />
+              Disponible
+            </span>
+            <span>
+              <span className="lots-legend-mark sold" />
+              Vendido
+            </span>
+            <span>
+              <span className="lots-legend-mark reserved" />
+              Apartado
+            </span>
+          </div>
+          <button
+            className="lots-editor-btn lots-editor-primary"
+            onClick={async () => {
+              if (saving) return;
+              setSaving(true);
+              try {
+                if (isEditing) await saveEditedFrac(draftProject);
+                else await saveFrac(draftProject);
+              } finally {
+                setSaving(false);
+              }
+            }}
+            disabled={!draftProject.sections.length || saving}
+          >
+            {saving ? "Guardando..." : isEditing ? "Guardar cambios" : "Crear fraccionamiento"}
+          </button>
+        </div>
+
+        {/* Split */}
+        <div className="flex min-h-0 flex-1 overflow-hidden">
+          {/* Left: map */}
+          <div className="lots-map-pane">
+            {draftProject.mapUrl ? (
+              <img
+                src={draftProject.mapUrl}
+                alt="Plano"
+                className="max-h-full max-w-full object-contain"
+              />
+            ) : (
+              <div className="lots-map-empty">
+                <div className="lots-map-empty-code">PL</div>
+                <div className="lots-map-empty-title">Sin imagen de plano</div>
+                <div className="lots-map-empty-sub">
+                  Sube o cambia el archivo para visualizar el mapa del fraccionamiento.
+                </div>
+              </div>
+            )}
+            <div className="lots-image-buttons">
+              <button
+                className="lots-map-action"
+                onClick={() => changeImageRef.current?.click()}
+              >
+                {draftProject.mapUrl ? "Cambiar imagen" : "Subir imagen"}
+              </button>
+            </div>
+            <input
+              ref={changeImageRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) updateMap(file);
+                event.target.value = "";
+              }}
+            />
+          </div>
+
+          {/* Divider */}
+          <div className="lots-editor-divider" />
+
+          {/* Right: builder panel */}
+          <div className="lots-builder-panel">
+            {/* Panel header */}
+            <div className="lots-builder-head">
+              <div className="lots-builder-title-row">
+                <div className="lots-builder-title">Tablero de lotes</div>
+                <div className="lots-builder-count">
+                  {totalDraftLots} lotes · {draftProject.sections.length} sec
+                </div>
+              </div>
+              <div className="lots-section-form">
+                <div className="lots-section-name">
+                  <div className="lots-builder-label">
+                    Nombre de sección
+                  </div>
+                  <input
+                    value={sectionName}
+                    onChange={(event) => setSectionName(event.target.value)}
+                    onKeyDown={(event) => event.key === "Enter" && addSection()}
+                    placeholder="Ej: Manzana A, Frente Norte..."
+                    className="lots-builder-input"
+                  />
+                </div>
+                <div className="lots-section-total">
+                  <div className="lots-builder-label">
+                    N° de lotes
+                  </div>
+                  <input
+                    type="number"
+                    value={sectionTotal}
+                    onChange={(event) => setSectionTotal(Number(event.target.value))}
+                    className="lots-builder-input center"
+                  />
+                </div>
+                <button
+                  onClick={addSection}
+                  className="lots-add-section"
+                >
+                  Agregar
+                </button>
+              </div>
+              <div className="lots-excel-row">
+                <div>
+                  <span className="lots-excel-title">Llenar con Excel</span>
+                  <span className="lots-excel-sub">Importa lotes desde archivo</span>
+                </div>
+                <button
+                  className="lots-excel-upload"
+                  onClick={() => excelInputRef.current?.click()}
+                >
+                  Subir
+                </button>
+                <input
+                  ref={excelInputRef}
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  className="hidden"
+                  onChange={handleExcelFile}
+                />
+              </div>
+            </div>
+
+            {/* Matrix board */}
+            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+              {draftProject.sections.length === 0 ? (
+                <div className="lots-empty-state">
+                  <div className="lots-empty-code">LT</div>
+                  <div className="lots-empty-title">Añade una sección para empezar</div>
+                  <div className="lots-empty-sub">
+                    Construye la matriz de lotes por manzana, frente o etapa.
+                  </div>
+                  <button
+                    onClick={loadDemo}
+                    className="lots-demo-btn"
+                  >
+                    Cargar ejemplo rápido
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  {draftProject.sections.map((section) => (
+                    <SectionGrid
+                      key={section.id}
+                      section={section}
+                      onAddLots={addLotsToSection}
+                      onRemoveSection={removeSection}
+                      onEditLot={openEditLot}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      {/* Lot edit modal */}
+      {lotEditDraft && (() => {
+        const d = lotEditDraft;
+        const setField = (key, val) => setLotEditDraft((prev) => ({ ...prev, [key]: val }));
+        const setService = (key, val) => setLotEditDraft((prev) => ({ ...prev, servicios: { ...prev.servicios, [key]: val } }));
+        const SERVICES = [
+          { key: "agua",      label: "Agua potable"      },
+          { key: "luz",       label: "Energia electrica" },
+          { key: "drenaje",   label: "Drenaje"           },
+          { key: "gas",       label: "Gas natural"       },
+          { key: "internet",  label: "Internet / Fibra"  },
+          { key: "pavimento", label: "Pavimento"         },
+        ];
+        return (
+          <div className="lot-edit-overlay" onClick={() => setLotEditDraft(null)}>
+            <div className="lot-edit-modal" onClick={(e) => e.stopPropagation()}>
+
+              {/* Header */}
+              <div className="lot-edit-head">
+                <div className="lot-edit-badge">{d.code}</div>
+                <div>
+                  <div className="lot-edit-title">Editar lote</div>
+                  <div className="lot-edit-sub">{draftProject.name}</div>
+                </div>
+                <button className="lot-edit-close" onClick={() => setLotEditDraft(null)}>×</button>
+              </div>
+
+              {/* Body */}
+              <div className="lot-edit-body">
+
+                {/* Identificación */}
+                <div className="lot-edit-sec">Identificación</div>
+                <div className="lot-edit-row">
+                  <div className="lot-edit-field">
+                    <label className="lot-edit-lbl">Codigo / ID Lote</label>
+                    <input className="lot-edit-input" value={d.code} onChange={(e) => setField("code", e.target.value)} />
+                  </div>
+                  <div className="lot-edit-field">
+                    <label className="lot-edit-lbl">Fraccionamiento</label>
+                    <input className="lot-edit-input" value={draftProject.name} onChange={(e) => setDraftProject((prev) => ({ ...prev, name: e.target.value }))} placeholder="Nombre del fraccionamiento" />
+                  </div>
+                </div>
+
+                {/* Estado */}
+                <div className="lot-edit-sec">Estado</div>
+                <div className="lot-edit-status">
+                  {[
+                    { value: "available", label: "Disponible", dot: "#6FAF6B" },
+                    { value: "reserved",  label: "Apartado",   dot: "#B98C58" },
+                    { value: "sold",      label: "Vendido",    dot: "#C0392B" },
+                  ].map(({ value, label, dot }) => {
+                    const c = LOT_COLORS[value];
+                    const active = d.status === value;
+                    return (
+                      <button
+                        key={value}
+                        className="lot-edit-status-btn"
+                        onClick={() => setField("status", value)}
+                        style={active ? { background: c.bg, borderColor: c.border, color: c.text } : {}}
+                      >
+                        <span className="lot-edit-status-dot" style={{ background: dot }} />
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Medidas */}
+                <div className="lot-edit-sec">Medidas</div>
+                <div className="lot-edit-row cols-3">
+                  {[{ key: "frente", label: "Frente (ML)" }, { key: "fondo", label: "Fondo (ML)" }, { key: "area", label: "Superficie (m²)" }].map(({ key, label }) => (
+                    <div className="lot-edit-field" key={key}>
+                      <label className="lot-edit-lbl">{label}</label>
+                      <input type="number" className="lot-edit-input" value={d[key]} onChange={(e) => setField(key, Number(e.target.value))} />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Financiero */}
+                <div className="lot-edit-sec">Financiero</div>
+                <div className="lot-edit-row">
+                  <div className="lot-edit-field">
+                    <label className="lot-edit-lbl">Precio Contado ($)</label>
+                    <input type="number" className="lot-edit-input" value={d.price} onChange={(e) => setField("price", Number(e.target.value))} />
+                  </div>
+                  <div className="lot-edit-field">
+                    <label className="lot-edit-lbl">Precio Financiado ($)</label>
+                    <input type="number" className="lot-edit-input" value={d.priceFinanciado} onChange={(e) => setField("priceFinanciado", Number(e.target.value))} />
+                  </div>
+                </div>
+
+                {/* Gestion */}
+                <div className="lot-edit-sec">Gestion</div>
+                <div className="lot-edit-field">
+                  <label className="lot-edit-lbl">Vendedor Asignado</label>
+                  <input className="lot-edit-input" placeholder="Nombre del vendedor" value={d.vendedor} onChange={(e) => setField("vendedor", e.target.value)} />
+                </div>
+
+                {/* Servicios */}
+                <div className="lot-edit-sec">Servicios disponibles</div>
+                <div className="lot-edit-services">
+                  {SERVICES.map(({ key, label }) => {
+                    const on = !!d.servicios[key];
+                    return (
+                      <label key={key} className="lot-edit-service">
+                        <span>{label}</span>
+                        <input type="checkbox" checked={on} onChange={(e) => setService(key, e.target.checked)} />
+                        <span className={`lot-edit-toggle${on ? " on" : ""}`} />
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="lot-edit-foot">
+                <button className="lot-edit-primary" onClick={saveLotEdit}>Guardar</button>
+                <button className="lot-edit-ghost" onClick={() => setLotEditDraft(null)}>Cancelar</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+      </>
+    );
+  }
+
+  // ── SELECTOR / MAP-UPLOAD: página normal ──────────────────────────
   return (
     <div className="space-y-4">
-      <section className="rounded-[30px] border border-[#DDD4C7] bg-[linear-gradient(150deg,#1A3428,#101511)] p-5 text-[#F7F3ED] shadow-[0_28px_60px_rgba(13,15,12,.28)]">
+      <section className="rounded-[30px] border border-[#DCDAD2] bg-[linear-gradient(150deg,#1A3428,#101511)] p-5 text-[#E9E5DB] shadow-[0_28px_60px_rgba(13,15,12,.28)]">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <div className="text-[0.7rem] font-bold uppercase tracking-[0.24em] text-[#D9B07D]">Inventario táctil</div>
+            <div className="text-[0.7rem] font-bold uppercase tracking-[0.24em] text-[#6FAF6B]">Inventario táctil</div>
             <h1 className="mt-2 font-['Playfair_Display'] text-[1.9rem] leading-none">Lotes y proyectos</h1>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/8 px-3 py-2 text-right">
@@ -191,173 +857,229 @@ function LotsPage() {
           </div>
         </div>
         <div className="mt-4 flex gap-3 overflow-x-auto pb-1 no-scrollbar">
-          <button className="rounded-2xl bg-[#F7F3ED] px-4 py-3 text-sm font-semibold text-[#16120F]" onClick={loadDemo}>
+          <button
+            className="rounded-2xl bg-[#E9E5DB] px-4 py-3 text-sm font-semibold text-[#1E3D2B]"
+            onClick={loadDemo}
+          >
             Cargar demo
           </button>
-          <button
-            className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white"
-            onClick={() => setDraftProject((previous) => ({ ...previous, mode: previous.mode === "selector" ? "editor" : previous.mode }))}
-          >
-            Nuevo proyecto
-          </button>
+          {draftProject.mode === "selector" && (
+            <button
+              className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white"
+              onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
+            >
+              Nuevo proyecto
+            </button>
+          )}
         </div>
       </section>
 
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold uppercase tracking-[0.22em] text-[#7E7061]">Portafolio</h2>
-          <span className="text-sm font-semibold text-[#183024]">{projects.reduce((sum, item) => sum + item.lots.length, 0)} lotes</span>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-bold uppercase tracking-[0.22em] text-[#83867C]">Portafolio</h2>
+            <div className="mt-1 text-xs font-medium text-[#83867C]">
+              {projects.length} fraccionamientos · usa las flechas o arrastra la lista
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="mr-1 text-sm font-semibold text-[#1E3D2B]">
+              {projects.reduce((sum, item) => sum + (item.lots?.length || 0), 0)} lotes
+            </span>
+            <button
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#DCDAD2] bg-white/90 text-[#1E3D2B] shadow-[0_8px_18px_rgba(24,18,14,.08)] transition hover:border-[#355E3B] hover:bg-[#FBFAF6]"
+              type="button"
+              onClick={() => scrollPortfolio(-1)}
+              aria-label="Ver fraccionamientos anteriores"
+            >
+              <HiChevronLeft className="text-lg" />
+            </button>
+            <button
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#DCDAD2] bg-white/90 text-[#1E3D2B] shadow-[0_8px_18px_rgba(24,18,14,.08)] transition hover:border-[#355E3B] hover:bg-[#FBFAF6]"
+              type="button"
+              onClick={() => scrollPortfolio(1)}
+              aria-label="Ver mas fraccionamientos"
+            >
+              <HiChevronRight className="text-lg" />
+            </button>
+          </div>
         </div>
-        <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
+        <div
+          ref={portfolioScrollRef}
+          className="portfolio-scroll flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 pr-5"
+        >
           {projects.map((project) => (
             <article
               key={project.id}
-              className="min-w-[290px] rounded-[28px] border border-[#DED5C8] bg-white/88 p-4 shadow-[0_18px_40px_rgba(24,18,14,.08)]"
+              className="min-w-[min(86vw,340px)] snap-start rounded-[28px] border border-[#DCDAD2] bg-white/88 p-4 shadow-[0_18px_40px_rgba(24,18,14,.08)] sm:min-w-[330px]"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="font-['Playfair_Display'] text-xl text-[#16120F]">{project.name}</div>
-                  <div className="mt-1 text-xs uppercase tracking-[0.18em] text-[#8A7A69]">{project.lots.length} propiedades</div>
+                  <div className="font-['Playfair_Display'] text-xl text-[#1E3D2B]">{project.name}</div>
+                  <div className="mt-1 text-xs uppercase tracking-[0.18em] text-[#83867C]">
+                    {project.lots?.length ?? 0} propiedades
+                  </div>
                 </div>
-                <div className="rounded-full bg-[#EDE3D3] px-3 py-1 text-[0.68rem] font-bold text-[#183024]">
+                <div className="rounded-full bg-[#EDE3D3] px-3 py-1 text-[0.68rem] font-bold text-[#1E3D2B]">
                   {project.available} libres
                 </div>
               </div>
               <div className="mt-4 grid grid-cols-3 gap-2">
-                <div className="rounded-2xl bg-[#FBF7F1] p-3">
-                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#8A7A69]">Vendido</div>
-                  <div className="mt-2 text-lg font-bold text-[#16120F]">{project.sold}</div>
+                <div className="rounded-2xl bg-[#FBFAF6] p-3">
+                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Vendido</div>
+                  <div className="mt-2 text-lg font-bold text-[#1E3D2B]">{project.sold}</div>
                 </div>
-                <div className="rounded-2xl bg-[#FBF7F1] p-3">
-                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#8A7A69]">Reserva</div>
-                  <div className="mt-2 text-lg font-bold text-[#16120F]">{project.reserved}</div>
+                <div className="rounded-2xl bg-[#FBFAF6] p-3">
+                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Reserva</div>
+                  <div className="mt-2 text-lg font-bold text-[#1E3D2B]">{project.reserved}</div>
                 </div>
-                <div className="rounded-2xl bg-[#FBF7F1] p-3">
-                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#8A7A69]">Valor</div>
-                  <div className="mt-2 text-lg font-bold text-[#16120F]">{compactCurrency(project.inventoryValue)}</div>
+                <div className="rounded-2xl bg-[#FBFAF6] p-3">
+                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Valor</div>
+                  <div className="mt-2 text-lg font-bold text-[#1E3D2B]">{compactCurrency(project.inventoryValue)}</div>
                 </div>
               </div>
-              <button
-                className="mt-4 btn-s w-full"
-                onClick={() => {
-                  const frac = fracs.find((item) => item.id === project.id || item.name === project.name);
-                  if (frac) {
-                    setSelectedFracId(frac.id);
-                  }
-                  navigate("/fraccionamientos");
-                }}
-              >
-                Ver fraccionamiento
-              </button>
+              <div className="mt-4 flex gap-2">
+                <button
+                  className="btn-s flex-1"
+                  onClick={() => {
+                    setSelectedFracId(project.id);
+                    navigate("/fraccionamientos");
+                  }}
+                >
+                  Ver
+                </button>
+                <button
+                  className="flex-1 whitespace-nowrap rounded-[10px] border-[1.5px] border-[#355E3B] bg-[#355E3B] px-3 py-[7px] text-[0.76rem] font-bold text-white transition-colors hover:bg-[#21643F] disabled:opacity-60"
+                  onClick={() => openProjectEditor(project)}
+                  disabled={loadingEditId === project.id}
+                >
+                  {loadingEditId === project.id ? "Cargando..." : "✏ Editar lotes"}
+                </button>
+              </div>
             </article>
           ))}
         </div>
       </section>
 
-      <section className="rounded-[28px] border border-[#DED5C8] bg-white/88 p-4 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-bold uppercase tracking-[0.22em] text-[#7E7061]">Constructor mobile-first</h2>
-            <p className="mt-1 text-sm text-[#5F5346]">Migra el tablero de lotes a una experiencia táctil optimizada para vendedores en campo.</p>
-          </div>
-          <div className="rounded-2xl bg-[#183024] px-3 py-2 text-sm font-bold text-[#F7F3ED]">{totalDraftLots} lotes</div>
-        </div>
-
-        <div className="mt-4 grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-          <div className="space-y-4">
-            <div className="rounded-[24px] border border-[#E6DDD0] bg-[#FBF7F1] p-4">
-              <div className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[#8A7A69]">Plano del proyecto</div>
-              <div className="mt-3 overflow-hidden rounded-[22px] border border-dashed border-[#D7CCBE] bg-[#11131A]">
-                {draftProject.mapUrl ? (
-                  <img
-                    src={draftProject.mapUrl}
-                    alt="Plano cargado"
-                    className="h-[320px] w-full object-contain object-top sm:h-[380px] xl:h-[430px]"
-                  />
-                ) : (
-                  <div className="flex h-[320px] flex-col items-center justify-center gap-3 px-6 text-center text-[#D5C8B6] sm:h-[380px] xl:h-[430px]">
-                    <HiMap className="text-5xl text-[#B89B73]" />
-                    <div className="max-w-[260px] text-sm leading-6">
-                      Carga un plano para mantener la referencia visual del fraccionamiento dentro de la app instalada.
-                    </div>
-                  </div>
-                )}
+      {draftProject.mode === "selector" ? (
+        <section className="rounded-[28px] border border-[#DCDAD2] bg-white/88 p-8 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
+          <div className="mx-auto max-w-[660px] text-center">
+            <h2 className="font-['Playfair_Display'] text-[1.65rem] text-[#1E3D2B]">Carga de Lotes</h2>
+            <p className="mx-auto mt-2 max-w-[420px] text-[0.84rem] leading-relaxed text-[#83867C]">
+              Elige el método que mejor se adapte a tu flujo de trabajo
+            </p>
+            <div className="mt-8 grid gap-5 sm:grid-cols-2">
+              <div
+                className="relative cursor-pointer overflow-hidden rounded-[16px] border-2 border-[#DCDAD2] bg-[#FBFAF6] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#355E3B] hover:shadow-[0_8px_24px_rgba(45,90,71,.15)]"
+                onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
+              >
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#355E3B]" />
+                <div className="mx-auto mb-3 flex h-[62px] w-[62px] items-center justify-center rounded-[15px] bg-[#D4EAE0] text-[1.8rem]">
+                  🗺️
+                </div>
+                <div className="mb-2 font-['Playfair_Display'] text-[1.05rem] text-[#1E3D2B]">Carga Manual</div>
+                <div className="mb-5 text-[0.76rem] leading-relaxed text-[#83867C]">
+                  Sube la imagen del plano y construye la matriz de lotes manualmente. Define secciones, columnas y estado de cada unidad.
+                </div>
+                <button className="pointer-events-none w-full rounded-[9px] bg-[#355E3B] px-4 py-2.5 text-[0.8rem] font-bold text-white">
+                  Abrir editor →
+                </button>
               </div>
-              <label className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-[#D9CEBF] bg-white px-4 py-3 text-sm font-semibold text-[#183024]">
-                <HiArrowUpTray className="text-lg" />
-                Subir plano
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    if (file) updateMap(file);
-                  }}
-                />
-              </label>
-            </div>
-          </div>
 
-          <div className="space-y-4">
-            <div className="rounded-[24px] border border-[#E6DDD0] bg-[#FBF7F1] p-4">
-              <div className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-[#8A7A69]">Nuevo bloque</div>
-              <div className="mt-3 space-y-3">
-                <input
-                  className="mobile-input"
-                  value={draftProject.name}
-                  onChange={(event) => setDraftProject((previous) => ({ ...previous, name: event.target.value, mode: "editor" }))}
-                  placeholder="Nombre del proyecto"
-                />
-                <input
-                  className="mobile-input"
-                  value={sectionName}
-                  onChange={(event) => setSectionName(event.target.value)}
-                  placeholder="Nombre de sección"
-                />
-                <input
-                  className="mobile-input"
-                  type="number"
-                  value={sectionTotal}
-                  onChange={(event) => setSectionTotal(Number(event.target.value))}
-                  placeholder="Número de lotes"
-                />
-                <button className="mobile-primary-button w-full" onClick={addSection}>
-                  <HiSquaresPlus className="text-lg" />
-                  Añadir sección
+              <div
+                className="relative cursor-pointer overflow-hidden rounded-[16px] border-2 border-[#DCDAD2] bg-[#FBFAF6] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#1E3D2B] hover:shadow-[0_8px_24px_rgba(27,47,69,.15)]"
+                onClick={() => showToast("Carga CAD automática próximamente")}
+              >
+                <div className="absolute right-3 top-3 rounded-[8px] bg-[#1E3D2B] px-2 py-0.5 text-[0.58rem] font-extrabold uppercase tracking-[0.5px] text-white">
+                  Nuevo
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#1E3D2B]" />
+                <div className="mx-auto mb-3 flex h-[62px] w-[62px] items-center justify-center rounded-[15px] bg-[rgba(27,47,69,0.08)] text-[1.8rem]">
+                  📐
+                </div>
+                <div className="mb-2 font-['Playfair_Display'] text-[1.05rem] text-[#1E3D2B]">Carga Automática CAD</div>
+                <div className="mb-5 text-[0.76rem] leading-relaxed text-[#83867C]">
+                  Sube archivos CAD (.dwg, .dxf, .shp, .kml) y el sistema detecta y genera los lotes automáticamente con sus coordenadas reales.
+                </div>
+                <button className="pointer-events-none w-full rounded-[9px] bg-[#1E3D2B] px-4 py-2.5 text-[0.8rem] font-bold text-white">
+                  Subir archivo CAD →
                 </button>
               </div>
             </div>
-
-            <div className="space-y-3">
-              {draftProject.sections.map((section) => (
-                <article key={section.id} className="rounded-[24px] border border-[#E6DDD0] bg-[#FBF7F1] p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="text-base font-semibold text-[#16120F]">{section.name}</div>
-                    <div className="text-xs uppercase tracking-[0.14em] text-[#8A7A69]">{section.lots.length} lotes</div>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {section.lots.slice(0, 8).map((lot) => (
-                      <div key={lot.id} className={`lot-pill ${lot.status}`}>
-                        <div className="font-semibold">{lot.code}</div>
-                        <div className="text-[0.62rem] opacity-75">{lot.area} m² · {currency(lot.price)}</div>
-                      </div>
-                    ))}
-                  </div>
-                </article>
-              ))}
-            </div>
-
-            <button
-              className="mobile-primary-button w-full"
-              onClick={() => saveFrac(draftProject)}
-              disabled={!draftProject.sections.length}
-            >
-              Crear fraccionamiento
-            </button>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : (
+        /* map-upload step */
+        <section className="lot-upload-shell">
+          <div className="lot-upload-head">
+            <div>
+              <span className="lot-upload-kicker">Plano base</span>
+              <h2 className="lot-upload-title">Sube el plano del fraccionamiento</h2>
+              <p className="lot-upload-copy">
+                Usa una imagen del plano para trabajar la matriz de lotes sobre el tablero.
+              </p>
+            </div>
+            <div className="lot-upload-actions">
+              <button
+                className="lot-upload-secondary"
+                onClick={() => setDraftProject((previous) => ({ ...previous, mode: "selector" }))}
+              >
+                Cambiar modo
+              </button>
+            </div>
+          </div>
+
+          <div className="lot-upload-body">
+            <div style={{ marginBottom: 16 }}>
+              <div className="mb-1 text-[0.62rem] font-bold uppercase tracking-[0.5px] text-[#83867C]" style={{ marginBottom: 6, fontSize: ".7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#83867C" }}>Nombre del fraccionamiento</div>
+              <input
+                className="w-full rounded-[8px] border-[1.5px] border-[#DCDAD2] bg-white px-3 py-2 text-[0.84rem] text-[#1E3D2B] outline-none"
+                style={{ width: "100%", borderRadius: 8, border: "1.5px solid #DCDAD2", background: "white", padding: "8px 12px", fontSize: ".84rem", color: "#1E3D2B", outline: "none", fontFamily: "inherit" }}
+                placeholder="Ej. Residencial Las Palmas"
+                value={draftProject.name === "Nuevo Fraccionamiento" ? "" : draftProject.name}
+                onChange={(e) => setDraftProject((prev) => ({ ...prev, name: e.target.value || "Nuevo Fraccionamiento" }))}
+              />
+            </div>
+            <label className="lot-upload-drop">
+              <div className="lot-upload-code">IMG</div>
+              <div>
+                <div className="lot-upload-drop-title">Seleccionar imagen del plano</div>
+                <div className="lot-upload-drop-sub">JPG, PNG o WEBP</div>
+              </div>
+              <div className="lot-upload-formats">
+                {["JPG", "PNG", "WEBP"].map((ext) => (
+                  <span key={ext}>{ext}</span>
+                ))}
+              </div>
+              <div className="lot-upload-cta">Buscar archivo</div>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file && updateMap(file)) {
+                    setDraftProject((previous) => ({ ...previous, mode: "editor" }));
+                  }
+                  event.target.value = "";
+                }}
+              />
+            </label>
+            <div className="lot-upload-foot">
+              <div>
+                <span>Sin plano</span>
+                <p>También puedes crear secciones y lotes manualmente.</p>
+              </div>
+              <button
+                className="lot-upload-secondary"
+                onClick={() => setDraftProject((previous) => ({ ...previous, mode: "editor" }))}
+              >
+                Continuar
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

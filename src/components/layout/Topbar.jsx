@@ -1,9 +1,8 @@
-import { HiBars3, HiMagnifyingGlass } from "react-icons/hi2";
+import { HiArrowLeftOnRectangle, HiBars3, HiCalendarDays, HiMagnifyingGlass, HiSun } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
 
 const titleMap = {
-  "/mi-dia": "Mi Día",
   "/dashboard": "Dashboard",
   "/lotes": "Carga de Lotes",
   "/fraccionamientos": "Fraccionamientos",
@@ -14,7 +13,23 @@ const titleMap = {
   "/pagos": "Control de Pagos",
   "/calculadora": "Calculadora de Amortización",
   "/alertas": "Alertas",
-  "/perfil": "Perfil"
+  "/perfil": "Perfil",
+  "/configuracion": "Configuración",
+};
+
+const subtitleMap = {
+  "/dashboard": "OwnTerra Lands · Resumen comercial",
+  "/lotes": "OwnTerra Lands · Inventario territorial",
+  "/fraccionamientos": "OwnTerra Lands · Fraccionamiento activo",
+  "/clientes": "OwnTerra Lands · CRM conectado al core",
+  "/ventas": "OwnTerra Lands · Contratos y cierres",
+  "/contratos": "OwnTerra Lands · Contratos y cierres",
+  "/documentos": "OwnTerra Vault · Documentos de operación",
+  "/pagos": "OwnTerra Lands · Cobranza y cartera",
+  "/calculadora": "OwnTerra Lands · Cotizador comercial",
+  "/alertas": "OwnTerra Core · Seguimiento operativo",
+  "/perfil": "Cuenta y preferencias",
+  "/configuracion": "Configuración del espacio Lands",
 };
 
 function Topbar({ pathname }) {
@@ -27,9 +42,15 @@ function Topbar({ pathname }) {
     startNewProject,
     draftProject,
     saveFrac,
-    openContractCreate
+    openContractCreate,
+    notificationCount,
+    markAllNotificationsRead,
+    logout,
   } = useAppContext();
   const draftLotCount = draftProject.sections.reduce((sum, section) => sum + section.lots.length, 0);
+  const handleLogout = () => {
+    if (window.confirm("¿Cerrar sesión?")) logout();
+  };
 
   return (
     <header className="topbar">
@@ -37,7 +58,10 @@ function Topbar({ pathname }) {
         <button className="mobile-menu-btn" onClick={toggleSidebar} aria-label="Abrir menú">
           <HiBars3 />
         </button>
-        <div className="topbar-title">{titleMap[pathname] || "LoteManager"}</div>
+        <div className="topbar-heading">
+          <div className="topbar-title">{titleMap[pathname] || "OwnTerra Lands"}</div>
+          <div className="topbar-sub">{subtitleMap[pathname] || "Lotificación y venta de terrenos"}</div>
+        </div>
       </div>
       <div className="topbar-r">
         <button className="tb-src" onClick={() => openModal("globalSearch")}>
@@ -48,49 +72,26 @@ function Topbar({ pathname }) {
           <span className="tb-shortcut">⌘K</span>
         </button>
 
-        {pathname === "/lotes" ? (
-          <>
-            <span id="lotCnt" className="lot-count-chip">{draftLotCount} lotes</span>
-            <button className="tb-btn tb-s" onClick={() => showToast("Usa 'Cargar demo', 'Nuevo proyecto' o agrega secciones para construir la matriz.")}>
-              ❓ Ayuda
-            </button>
-            <button className="tb-btn tb-s" onClick={startNewProject}>
-              🗂 Nuevo Plano
-            </button>
-            <button className="tb-btn tb-p" onClick={() => saveFrac(draftProject)}>
-              🏘️ Crear Fraccionamiento
-            </button>
-          </>
-        ) : null}
+        <button className="topbar-core-link" onClick={() => navigate("/ecosistema/mi-dia")}>
+          <HiSun />
+          <span>Mi Día</span>
+        </button>
 
-        {pathname === "/clientes" ? (
-          <button className="tb-btn tb-s" onClick={() => openModal("clientModal")}>
-            + Nuevo Cliente
-          </button>
-        ) : null}
+        <button className="topbar-core-link" onClick={() => navigate("/ecosistema/agenda")}>
+          <HiCalendarDays />
+          <span>Calendario</span>
+        </button>
 
-        {pathname === "/ventas" || pathname === "/contratos" ? (
-          <button className="tb-btn tb-p" onClick={() => openContractCreate()}>
-            + Generar Contrato
-          </button>
-        ) : null}
 
-        {pathname === "/pagos" ? (
-          <button className="tb-btn tb-p" onClick={() => openModal("paymentModal")}>
-            + Registrar Pago
-          </button>
-        ) : null}
-
-        {pathname === "/documentos" ? (
-          <button className="tb-btn tb-p" onClick={() => openModal("documentModal")}>
-            ⬆ Subir Documento
-          </button>
-        ) : null}
-
-        <div className="hidden rounded-xl border border-line bg-[#f0ede5] px-3 py-2 md:block">
-          <div className="text-[0.62rem] uppercase tracking-[0.2em] text-[#8C8070]">{currentUser?.role}</div>
-          <div className="text-sm font-semibold text-[#1A1410]">{currentUser?.name}</div>
+        <div className="topbar-user">
+          <div className="topbar-role">{currentUser?.role || "Usuario"}</div>
+          <div className="topbar-name">{currentUser?.name || "Perfil"}</div>
         </div>
+
+        <button className="topbar-logout" onClick={handleLogout} title="Cerrar sesión">
+          <HiArrowLeftOnRectangle />
+          <span>Cerrar sesión</span>
+        </button>
       </div>
     </header>
   );

@@ -21,7 +21,7 @@ export default defineConfig({
         orientation: "portrait-primary",
         display: "standalone",
         display_override: ["window-controls-overlay", "standalone", "fullscreen"],
-        start_url: "/dashboard",
+        start_url: "/ecosistema",
         scope: "/",
         lang: "es-MX",
         categories: ["business", "productivity", "finance"],
@@ -41,9 +41,15 @@ export default defineConfig({
         ],
         shortcuts: [
           {
-            name: "Dashboard",
-            short_name: "Dashboard",
-            description: "Abrir resumen operativo",
+            name: "Ecosistema",
+            short_name: "Ecosistema",
+            description: "Abrir panel principal de OwnTerra",
+            url: "/ecosistema"
+          },
+          {
+            name: "OwnTerra Lands",
+            short_name: "Lands",
+            description: "Abrir resumen operativo de lotes",
             url: "/dashboard"
           },
           {
