@@ -9,12 +9,22 @@ const ICON_LABELS = {
   "▦": "LT",
 };
 
-function Modal({ open, title, subtitle, icon, onClose, width = "max-w-[560px]", children, footer }) {
+function Modal({
+  open,
+  title,
+  subtitle,
+  icon,
+  onClose,
+  width = "max-w-[560px]",
+  children,
+  footer,
+  overlayClassName = "",
+}) {
   if (!open) return null;
   const visualIcon = typeof icon === "string" ? ICON_LABELS[icon] || icon : icon;
 
   return (
-    <div className="modal-overlay open" onClick={onClose}>
+    <div className={`modal-overlay open ${overlayClassName}`.trim()} onClick={onClose}>
       <div className={`modal-box ${width}`} onClick={(event) => event.stopPropagation()}>
         <div className="modal-hd">
           <div className="modal-ico">{visualIcon}</div>

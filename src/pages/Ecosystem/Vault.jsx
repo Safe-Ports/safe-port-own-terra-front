@@ -1,8 +1,9 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { HiOutlineEllipsisVertical, HiOutlineFolderPlus, HiOutlinePencil, HiOutlineTrash } from "react-icons/hi2";
-import { documentService } from "@/services/documentService";
+import { documentService, filenameForDocument } from "@/services/documentService";
 import { folderService } from "@/services/folderService";
+import { useAppContext } from "@/context/AppContext";
 import EcoLayout from "./EcoLayout";
 
 const CATEGORIES = ["otro", "contrato", "identificacion", "comprobante", "escritura", "plano"];
@@ -26,6 +27,7 @@ const SearchIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentCo
 
 function EcosystemVault() {
   const qc = useQueryClient();
+  const { downloadDocument } = useAppContext();
   const [activeId, setActiveId] = useState(null);
   const [expanded, setExpanded] = useState(() => new Set());
   const [modal, setModal] = useState(null);
@@ -273,9 +275,9 @@ function EcosystemVault() {
                             {CAT_LABEL[d.category] || d.category} · {fmtDate(d.created_at)} · {fmtSize(d.file_size)}
                           </div>
                         </div>
-                        <a className="usr-dl" href={documentService.downloadUrl(d.id)} target="_blank" rel="noreferrer" title="Descargar">
+                        <button className="usr-dl" onClick={() => downloadDocument(d.id, d.download_url, filenameForDocument(d))} title="Descargar">
                           <DownloadIcon />
-                        </a>
+                        </button>
                         <button
                           className="usr-dl"
                           style={{ color: "var(--danger)", marginLeft: 4 }}

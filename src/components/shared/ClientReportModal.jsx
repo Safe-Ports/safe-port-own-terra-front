@@ -3,6 +3,70 @@ import { useAppContext } from "@/context/AppContext";
 import Modal from "@/components/ui/Modal";
 import { currency, dateLabel, progress } from "@/services/formatters";
 
+function buildPrintHTML(data) {
+  const rows = data.clientPayments
+    .map(
+      (p) => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:1px solid #E7E4DB;border-radius:14px;background:#fff;margin-bottom:8px">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:#1E3D2B">Cuota ${p.installment_n}</div>
+        <div style="font-size:11px;color:#83867C;margin-top:2px">${dateLabel(p.due_date)}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:13px;font-weight:700;color:#1E3D2B">${currency(p.amount)}</div>
+        <div style="font-size:11px;color:#83867C;margin-top:2px">${p.status}</div>
+      </div>
+    </div>`
+    )
+    .join("");
+
+  const contracts = data.clientContracts
+    .map((c) => {
+      const paid = c.payments_summary?.paid ?? 0;
+      const total = c.payments_summary?.total ?? 0;
+      return `
+    <div style="padding:12px 14px;border:1px solid #E7E4DB;border-radius:14px;background:#fff;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#1E3D2B">${c.contract_number}</div>
+          <div style="font-size:11px;color:#83867C;margin-top:2px">${c.lot?.code || "—"} · ${dateLabel(c.contract_date)}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:13px;font-weight:700;color:#1E3D2B">${currency(c.amount)}</div>
+          <div style="font-size:11px;color:#83867C;margin-top:2px">${progress(paid, total)}%</div>
+        </div>
+      </div>
+    </div>`;
+    })
+    .join("");
+
+  return `<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>Estado de cuenta · ${data.client.name}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', Arial, sans-serif; background: #fff; color: #1E3D2B; padding: 32px; }
+  h1 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .sub { font-size: 12px; color: #83867C; margin-bottom: 20px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+  .stat { background: #FBFAF6; border-radius: 14px; padding: 14px; }
+  .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #83867C; }
+  .stat-val { font-size: 16px; font-weight: 700; margin-top: 6px; }
+  .section { background: #FBFAF6; border: 1px solid #E7E4DB; border-radius: 18px; padding: 14px; margin-bottom: 16px; }
+  .section-title { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+  @media print { body { padding: 20px; } }
+</style></head><body>
+<h1>Estado de cuenta · ${data.client.name}</h1>
+<div class="sub">Resumen de contratos y pagos · ${new Date().toLocaleDateString("es-MX")}</div>
+<div class="stats">
+  <div class="stat"><div class="stat-label">Inversión</div><div class="stat-val">${currency(data.totalInvestment)}</div></div>
+  <div class="stat"><div class="stat-label">Pagado</div><div class="stat-val">${currency(data.totalPaid)}</div></div>
+  <div class="stat"><div class="stat-label">Saldo</div><div class="stat-val" style="color:#C0392B">${currency(data.balance)}</div></div>
+</div>
+<div class="section"><div class="section-title">Contratos</div>${contracts}</div>
+<div class="section"><div class="section-title">Historial de pagos</div>${rows}</div>
+</body></html>`;
+}
+
 function ClientReportModal() {
   const { ui, clients, contracts, payments, reportClientId, closeClientReport } = useAppContext();
 
@@ -38,7 +102,12 @@ function ClientReportModal() {
       footer={
         <>
           <button className="btn-s" onClick={closeClientReport}>Cerrar</button>
-          <button className="btn-p" onClick={() => window.print()}>Imprimir / PDF</button>
+          <button className="btn-p" onClick={() => {
+            const win = window.open("", "_blank", "width=820,height=900");
+            win.document.write(buildPrintHTML(data));
+            win.document.close();
+            win.onload = () => { win.focus(); win.print(); };
+          }}>Imprimir / PDF</button>
         </>
       }
     >
@@ -87,7 +156,7 @@ function ClientReportModal() {
         <div className="rounded-[24px] border border-[#E7E4DB] bg-[#FBFAF6] p-4">
           <div className="text-sm font-semibold text-[#1E3D2B]">Historial de pagos</div>
           <div className="mt-3 space-y-3">
-            {data.clientPayments.slice(0, 12).map((payment) => (
+            {data.clientPayments.map((payment) => (
               <div key={payment.id} className="flex items-center justify-between rounded-[20px] border border-[#E7E4DB] bg-white p-4">
                 <div>
                   <div className="text-sm font-semibold text-[#1E3D2B]">Cuota {payment.installment_n}</div>

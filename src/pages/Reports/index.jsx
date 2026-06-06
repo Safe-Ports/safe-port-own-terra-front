@@ -1,11 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  HiOutlineMagnifyingGlass, HiOutlinePrinter, HiOutlineUserCircle,
-  HiOutlineExclamationTriangle, HiOutlineCheckCircle,
-} from "react-icons/hi2";
-import { useAppContext } from "@/context/AppContext";
-import { clientService } from "@/services/clientService";
+import { HiArchiveBox, HiBanknotes, HiChartBarSquare } from "react-icons/hi2";
+import { reportService } from "@/services/reportService";
 import { currency, compactCurrency } from "@/services/formatters";
 import Avatar from "@/components/Avatar";
 import Button from "@/components/Button";
@@ -195,98 +191,67 @@ function PaymentBehaviorChart({ payments }) {
   const ticks = [0, 0.25, 0.5, 0.75, 1];
 
   return (
-    <div style={{ position: "relative" }}>
-      <svg width="100%" viewBox={`0 0 ${W} ${H + PAD_T + PAD_B}`} style={{ display: "block" }}>
-        {/* grid + ejes Y */}
-        {ticks.map(p => {
-          const y = PAD_T + H - p * H;
-          return (
-            <g key={p}>
-              <line x1={PAD_L} x2={W - 4} y1={y} y2={y}
-                stroke="#E4DDD3" strokeWidth={1}
-                strokeDasharray={p > 0 ? "2 3" : "none"} />
-              <text x={PAD_L - 6} y={y + 3.5} textAnchor="end" fontSize="9" fill="#83867C" fontWeight="600">
-                {p === 0 ? "0" : compactCurrency(Math.round(p * maxV)).replace("$", "")}
-              </text>
-            </g>
-          );
-        })}
-        {/* barras */}
-        {data.map((d, i) => {
-          const x = PAD_L + i * COL_W + (COL_W - BW) / 2;
-          const dueH     = Math.max((d.due     / maxV) * H, d.due     > 0 ? 3 : 0);
-          const paidH    = Math.max((d.paid    / maxV) * H, d.paid    > 0 ? 3 : 0);
-          const overdueH = Math.max((d.overdue / maxV) * H, d.overdue > 0 ? 3 : 0);
-          const isHov = hover === i;
-          return (
-            <g key={i} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}
-              style={{ cursor: "pointer" }}>
-              {/* fondo programado */}
-              <rect x={x} y={PAD_T + H - dueH} width={BW} height={dueH}
-                fill="#EDE8DF" rx={3} opacity={isHov ? 1 : 0.9} />
-              {/* paid encima */}
-              {paidH > 0 && (
-                <rect x={x} y={PAD_T + H - paidH} width={BW} height={paidH}
-                  fill="#355E3B" rx={3} opacity={isHov ? 1 : 0.92} />
-              )}
-              {/* overdue marker */}
-              {overdueH > 0 && (
-                <rect x={x} y={PAD_T + H - overdueH} width={BW} height={overdueH}
-                  fill="#C0392B" rx={3} opacity={0.85} />
-              )}
-              {/* valor encima de la barra (solo si paid > 0) */}
-              {paidH > 0 && (
-                <text x={x + BW / 2} y={PAD_T + H - paidH - 4}
-                  textAnchor="middle" fontSize="8" fill="#355E3B" fontWeight="800">
-                  ${Math.round(d.paid)}
-                </text>
-              )}
-              {/* label X */}
-              <text x={x + BW / 2} y={H + PAD_T + 12}
-                textAnchor="middle" fontSize="9" fill="#3A3228" fontWeight="700">
-                {d.label}
-              </text>
-              <text x={x + BW / 2} y={H + PAD_T + 22}
-                textAnchor="middle" fontSize="7.5" fill="#83867C">
-                {d.year}
-              </text>
-            </g>
-          );
-        })}
-        {/* línea de tendencia (paid) */}
-        <polyline
-          points={linePoints.map(p => p.join(",")).join(" ")}
-          fill="none" stroke="#355E3B" strokeWidth="1.8"
-          strokeLinecap="round" strokeLinejoin="round"
-          opacity={0.6}
-        />
-        {linePoints.map(([x, y], i) => (
-          data[i].paid > 0 && (
-            <circle key={i} cx={x} cy={y} r={2.5} fill="#355E3B" />
-          )
-        ))}
-      </svg>
+    <div>
+      {/* Filtros */}
+      <div style={{ marginBottom: 20 }}>
+        <div className="reports-segmented" role="group" aria-label="Periodo de cobranza">
+          {["month", "quarter", "year"].map((p) => (
+            <button
+              key={p}
+              type="button"
+              className={period === p ? "is-active" : ""}
+              onClick={() => setPeriod(p)}
+            >
+              {periodLabel[p]}
+            </button>
+          ))}
+        </div>
+      </div>
 
-      {hover !== null && data[hover] && (
-        <div style={{
-          position: "absolute", top: 6,
-          left: `${(hover / data.length) * 88 + 6}%`,
-          transform: hover > data.length * 0.7 ? "translateX(-105%)" : "none",
-          background: "var(--tx)", color: "#fff", borderRadius: 10,
-          padding: "8px 12px", fontSize: ".74rem", pointerEvents: "none",
-          zIndex: 10, minWidth: 160, boxShadow: "0 4px 16px rgba(0,0,0,.2)",
-        }}>
-          <div style={{ fontWeight: 700, marginBottom: 5, color: "var(--tan-lt)",
-            textTransform: "capitalize" }}>{data[hover].fullLabel}</div>
-          {[
-            ["Programado", data[hover].due,     "#A09080"],
-            ["Pagado",     data[hover].paid,    "#355E3B"],
-            ["Vencido",    data[hover].overdue, "#C0392B"],
-          ].map(([l, v, c]) => (
-            <div key={l} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-              <span style={{ width: 8, height: 8, borderRadius: 1, background: c }} />
-              <span style={{ color: "#ccc" }}>{l}:</span>
-              <strong>{currency(v)}</strong>
+      {/* KPIs */}
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
+        <KpiCard label="Esperado" value={isLoading ? "—" : compactCurrency(data?.expected ?? 0)} sub="Pagos del periodo" />
+        <KpiCard label="Cobrado" value={isLoading ? "—" : compactCurrency(data?.collected ?? 0)} sub="Pagos confirmados" />
+        <KpiCard label="Tasa de cobranza" value={isLoading ? "—" : pct(data?.collection_rate)} sub="Cobrado / esperado" />
+        <KpiCard
+          label="Total vencido"
+          value={isLoading ? "—" : compactCurrency(overdue?.amount ?? 0)}
+          sub={`${overdue?.count ?? 0} pagos en mora`}
+          danger={(overdue?.count ?? 0) > 0}
+        />
+      </div>
+
+      {/* Aging buckets */}
+      {!isLoading && overdue && (
+        <div className="card" style={{ padding: "20px 24px" }}>
+          <div style={{ fontSize: ".82rem", fontWeight: 700, color: "var(--deep)", marginBottom: 16 }}>
+            Antigüedad de la cartera vencida
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {ageBuckets.map((b) => {
+              const count = overdue.by_age[b.key] ?? 0;
+              const barPct = Math.round((count / maxBucket) * 100);
+              return (
+                <div key={b.key}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: ".78rem", marginBottom: 5 }}>
+                    <span style={{ color: "var(--mu)" }}>{b.label}</span>
+                    <span style={{ fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, color: "var(--deep)" }}>
+                      {count} pago{count !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  <div style={{ height: 8, borderRadius: 6, background: "var(--bg2)" }}>
+                    <div style={{
+                      height: 8, borderRadius: 6, background: b.color,
+                      width: `${barPct}%`, transition: "width .4s ease",
+                    }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {overdue.count === 0 && (
+            <div style={{ paddingTop: 8, fontSize: 13, color: "var(--mu)", textAlign: "center" }}>
+              Sin pagos vencidos en el periodo. 🎉
             </div>
           ))}
         </div>
@@ -484,224 +449,96 @@ function ClientReport({ clientId }) {
               ))}
             </div>
           </div>
-
-          {/* Contratos */}
-          <div style={{ background: "var(--sf)", border: "1px solid var(--bd)",
-            borderRadius: 12, overflow: "hidden" }}>
-            <div style={{ padding: "12px 16px 8px",
-              borderBottom: "1.5px solid var(--tan-lt)",
-              fontSize: ".7rem", fontWeight: 800, letterSpacing: ".12em",
-              textTransform: "uppercase", color: "var(--tan-dk)" }}>
-              Contratos ({contracts.length})
-            </div>
-            {contracts.length === 0 ? (
-              <div style={{ padding: 20, textAlign: "center", color: "var(--mu)", fontSize: ".82rem" }}>
-                Sin contratos registrados.
-              </div>
-            ) : (
-              <table className="tbl rp-table">
-                <thead>
-                  <tr>
-                    <th>Nombre</th>
-                    <th>Tipo</th>
-                    <th style={{ textAlign: "right" }}>Monto</th>
-                    <th>Fecha</th>
-                    <th>Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {contracts.map((c, i) => (
-                    <tr key={c.id} style={{ background: i % 2 === 0 ? "#FAF7EF" : "transparent" }}>
-                      <td style={{ fontWeight: 700, fontSize: ".8rem" }}>{c.contract_number}</td>
-                      <td style={{ fontSize: ".8rem", color: "var(--tx2)" }}>{TYPE_LABEL[c.type] || c.type}</td>
-                      <td style={{ fontWeight: 700, color: "var(--tx)", textAlign: "right", whiteSpace: "nowrap" }}>
-                        {currency(c.amount)}
-                      </td>
-                      <td style={{ fontSize: ".75rem", color: "var(--mu)", whiteSpace: "nowrap" }}>{fmtD(c.contract_date)}</td>
-                      <td>
-                        <span className="rp-badge rp-badge-active">
-                          {STATUS_LABEL[c.status] || c.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
         </div>
+      )}
 
-        {/* ─── FILA 3: Plan de Pagos (full width) ─── */}
-        <div style={{ background: "var(--sf)", border: "1px solid var(--bd)",
-          borderRadius: 12, overflow: "hidden", marginBottom: 14 }}>
-          <div style={{
-            padding: "12px 16px 8px", borderBottom: "1.5px solid var(--tan-lt)",
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-          }}>
-            <div style={{ fontSize: ".7rem", fontWeight: 800, letterSpacing: ".12em",
-              textTransform: "uppercase", color: "var(--tan-dk)" }}>
-              Plan de Pagos ({payments.length})
-            </div>
-            <div style={{ display: "flex", gap: 5 }}>
-              <span className="rp-pill rp-pill-paid">#{cntPaid} pagado</span>
-              <span className="rp-pill rp-pill-pending">#{cntPending} pendiente</span>
-              {cntOverdue > 0 && (
-                <span className="rp-pill rp-pill-overdue">#{cntOverdue} vencido</span>
-              )}
-            </div>
-          </div>
-          {payments.length === 0 ? (
-            <div style={{ padding: 20, textAlign: "center", color: "var(--mu)", fontSize: ".82rem" }}>
-              Sin pagos registrados.
-            </div>
-          ) : (
-            <div className="rp-payments-scroll" style={{ maxHeight: 420, overflowY: "auto" }}>
-              <table className="tbl rp-table">
-                <thead style={{ position: "sticky", top: 0, background: "var(--sf2)", zIndex: 1 }}>
-                  <tr>
-                    <th>Cuota</th>
-                    <th>Contrato</th>
-                    <th style={{ textAlign: "right" }}>Monto</th>
-                    <th>Vence</th>
-                    <th>Pagado</th>
-                    <th>Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {payments
-                    .sort((a, b) => (a.installment_n || 0) - (b.installment_n || 0))
-                    .map((p, i) => {
-                      const ct = contracts.find(c => c.id === p.contract_id);
-                      return (
-                        <tr key={p.id} style={{ background: i % 2 === 0 ? "#FAF7EF" : "transparent" }}>
-                          <td style={{ fontWeight: 700, fontSize: ".8rem", textAlign: "center" }}>#{p.installment_n}</td>
-                          <td style={{ fontSize: ".78rem", color: "var(--tx2)" }}>
-                            {ct?.contract_number || "—"}
-                          </td>
-                          <td style={{ fontWeight: 700, textAlign: "right", whiteSpace: "nowrap" }}>
-                            {currency(p.amount)}
-                          </td>
-                          <td style={{ fontSize: ".75rem", color: "var(--mu)", whiteSpace: "nowrap" }}>{fmtD(p.due_date)}</td>
-                          <td style={{ fontSize: ".75rem", color: p.paid_date ? "var(--forest)" : "var(--mu)", fontWeight: p.paid_date ? 700 : 400, whiteSpace: "nowrap" }}>
-                            {p.paid_date ? fmtD(p.paid_date) : "—"}
-                          </td>
-                          <td>
-                            <span className={`rp-badge ${p.status === "paid" ? "rp-badge-active" : p.status === "overdue" ? "rp-badge-overdue" : "rp-badge-pending"}`}>
-                              {ESTADO_LABEL[p.status] || p.status}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
-            </div>
-          )}
+      {/* Tabla por fraccionamiento */}
+      {isLoading ? (
+        <div style={{ padding: "32px 0", textAlign: "center", color: "var(--mu)", fontSize: 13 }}>Cargando…</div>
+      ) : byFrac.length === 0 ? <EmptyReport /> : (
+        <div className="card" style={{ padding: 0 }}>
+          <table className="tbl">
+            <thead>
+              <tr>
+                <th>Fraccionamiento</th>
+                <th style={{ textAlign: "right" }}>Total</th>
+                <th style={{ textAlign: "right" }}>Disponible</th>
+                <th style={{ textAlign: "right" }}>Apartado</th>
+                <th style={{ textAlign: "right" }}>Vendido</th>
+                <th style={{ textAlign: "right" }}>% Vendido</th>
+              </tr>
+            </thead>
+            <tbody>
+              {byFrac.map((f, index) => (
+                <tr key={`${f.name}-${index}`}>
+                  <td style={{ fontWeight: 600 }}>{f.name}</td>
+                  <td style={{ textAlign: "right", fontFamily: "'JetBrains Mono',monospace" }}>{f.total}</td>
+                  <td style={{ textAlign: "right", fontFamily: "'JetBrains Mono',monospace", color: "#2D6A26" }}>{f.available}</td>
+                  <td style={{ textAlign: "right", fontFamily: "'JetBrains Mono',monospace", color: "#856404" }}>{f.reserved}</td>
+                  <td style={{ textAlign: "right", fontFamily: "'JetBrains Mono',monospace", color: "#7B241C" }}>{f.sold}</td>
+                  <td style={{ textAlign: "right" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "flex-end" }}>
+                      <div style={{ width: 60, height: 6, borderRadius: 4, background: "var(--bg2)" }}>
+                        <div style={{ height: 6, borderRadius: 4, background: "#355E3B", width: `${Math.round(f.sell_rate * 100)}%` }} />
+                      </div>
+                      <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".8rem" }}>
+                        {Math.round(f.sell_rate * 100)}%
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-
-        {/* ─── FOOTER del documento ─── */}
-        <div style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          borderTop: "1px solid var(--line-soft)", paddingTop: 16, marginTop: 8,
-          fontSize: ".72rem", color: "var(--mu)",
-        }}>
-          <div>Documento generado el {fmtDLong(new Date().toISOString().split("T")[0])}</div>
-          <OwnTerraWordmark />
-          <div style={{ fontWeight: 600 }}>Página 1 de 1</div>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
 
-/* ══ PAGE ════════════════════════════════════════════════════════ */
-export default function ReportsPage() {
-  const { clients } = useAppContext();
-  const [search, setSearch]   = useState("");
-  const [selectedId, setSelectedId] = useState(null);
+/* ══ PÁGINA PRINCIPAL ════════════════════════════════════════ */
+const TABS = [
+  { key: "ventas", label: "Ventas", icon: HiChartBarSquare, desc: "Cierres e ingresos" },
+  { key: "cobranza", label: "Cobranza", icon: HiBanknotes, desc: "Pagos y mora" },
+  { key: "inventario", label: "Inventario", icon: HiArchiveBox, desc: "Lotes y disponibilidad" },
+];
 
-  const filteredClients = useMemo(() => {
-    const s = search.trim().toLowerCase();
-    if (!s) return clients;
-    return clients.filter(c =>
-      `${c.name} ${c.email || ""} ${c.phone || ""}`.toLowerCase().includes(s)
-    );
-  }, [clients, search]);
+function ReportsPage() {
+  const [tab, setTab] = useState("ventas");
 
   return (
-    <>
-      <style>{`
-        /* ── Estilos exclusivos del reporte ── */
-        .rp-table th {
-          background: #F4ECD8;
-          color: #355E3B !important;
-          font-size: .65rem !important;
-          padding: 8px 10px !important;
-          font-weight: 800 !important;
-          letter-spacing: .08em !important;
-          border-bottom: 1.5px solid var(--tan-lt) !important;
-        }
-        .rp-table td {
-          padding: 8px 10px !important;
-          font-size: .8rem;
-          border-bottom: 1px solid #F0EBE0 !important;
-        }
-        .rp-table tr:last-child td { border-bottom: none !important; }
+    <div className="card">
+      <div className="card-hd">
+        <div className="card-title">📊 Reportes</div>
+      </div>
+      <div className="card-body">
 
-        .rp-badge {
-          display: inline-block;
-          padding: 3px 9px;
-          border-radius: 99px;
-          font-size: .62rem;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: .05em;
-        }
-        .rp-badge-active  { background:#D5ECC0; color:#355E3B; border:1px solid #355E3B; }
-        .rp-badge-pending { background:#F4ECD8; color:#7B5C38; border:1px solid #A88B58; }
-        .rp-badge-overdue { background:#FCE0DC; color:#C0392B; border:1px solid #C0392B; }
-
-        .rp-pill {
-          font-size: .62rem;
-          font-weight: 800;
-          padding: 2px 8px;
-          border-radius: 99px;
-          letter-spacing: .03em;
-        }
-        .rp-pill-paid    { background:#D5ECC0; color:#355E3B; }
-        .rp-pill-pending { background:#EDE8DF; color:#3A3228; }
-        .rp-pill-overdue { background:#FCE0DC; color:#C0392B; }
-
-        /* Print rules */
-        @media print {
-          .sb, .topbar, .no-print { display: none !important; }
-          .main, .content, .view, .view-scroll { padding: 0 !important; overflow: visible !important; }
-          .app-shell { display: block !important; height: auto !important; }
-          #rp-print-area {
-            box-shadow: none !important;
-            border: none !important;
-            padding: 24px 28px !important;
-            border-radius: 0 !important;
-            max-width: 100% !important;
-            background: #fff !important;
-          }
-          #rp-print-area > * { break-inside: avoid; page-break-inside: avoid; }
-          .rp-payments-scroll { max-height: none !important; overflow: visible !important; }
-          body, html { background: #fff !important; }
-        }
-      `}</style>
-
-      <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-        <div className="no-print">
-          <ClientList
-            clients={filteredClients}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            search={search}
-            onSearch={setSearch}
-          />
+        {/* Tabs */}
+        <div className="reports-tabs" role="tablist" aria-label="Tipo de reporte">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              role="tab"
+              aria-selected={tab === t.key}
+              className={tab === t.key ? "is-active" : ""}
+              onClick={() => setTab(t.key)}
+            >
+              <t.icon aria-hidden="true" />
+              <span>
+                <strong>{t.label}</strong>
+                <small>{t.desc}</small>
+              </span>
+            </button>
+          ))}
         </div>
-        {selectedId ? <ClientReport clientId={selectedId} /> : <EmptyReport />}
+
+        <section className="reports-panel" role="tabpanel">
+          {tab === "ventas"     && <TabVentas />}
+          {tab === "cobranza"   && <TabCobranza />}
+          {tab === "inventario" && <TabInventario />}
+        </section>
+
       </div>
     </>
   );

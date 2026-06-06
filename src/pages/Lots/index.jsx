@@ -1,5 +1,6 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { HiChevronLeft, HiChevronRight } from "react-icons/hi2";
 import * as XLSX from "xlsx";
 import { useAppContext } from "@/context/AppContext";
 import { useProjectsQuery } from "@/hooks/queries/useAppQueries";
@@ -14,6 +15,7 @@ const LOT_COLORS = {
   reserved:  { bg: "#fef3c7", border: "#fcd34d", text: "#92400e" },
 };
 const STATUS_CYCLE = { available: "sold", sold: "reserved", reserved: "available" };
+const MAP_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 function createLots(sectionName, total) {
   return Array.from({ length: total }, (_, index) => ({
@@ -132,13 +134,29 @@ function LotsPage() {
   const { data: projects = [] } = useProjectsQuery();
   const { draftProject, setDraftProject, saveFrac, saveEditedFrac, setSelectedFracId, showToast } = useAppContext();
   const isEditing = !!draftProject._editingFracId;
+
+  useEffect(() => {
+    setDraftProject({ mode: "selector", name: "Nuevo Fraccionamiento", mapUrl: "", sections: [], cadProcessing: false });
+  }, []);
+
   const [sectionName, setSectionName] = useState("");
   const [sectionTotal, setSectionTotal] = useState(20);
   const [mapFileName, setMapFileName] = useState("");
   const [lotEditDraft, setLotEditDraft] = useState(null); // null | { sectionId, ...lot }
   const [loadingEditId, setLoadingEditId] = useState(null);
+  const [saving, setSaving] = useState(false);
   const changeImageRef = useRef(null);
   const excelInputRef = useRef(null);
+  const portfolioScrollRef = useRef(null);
+
+  const scrollPortfolio = (direction) => {
+    const node = portfolioScrollRef.current;
+    if (!node) return;
+    node.scrollBy({
+      left: direction * Math.min(node.clientWidth * 0.86, 760),
+      behavior: "smooth",
+    });
+  };
 
   const openProjectEditor = async (project) => {
     setLoadingEditId(project.id);
@@ -359,7 +377,17 @@ function LotsPage() {
     }));
   };
 
+  const isValidMapImage = (file) => {
+    const extension = file.name.split(".").pop()?.toLowerCase();
+    return MAP_IMAGE_TYPES.has(file.type) || ["jpg", "jpeg", "png", "webp"].includes(extension);
+  };
+
   const updateMap = (file) => {
+    if (!isValidMapImage(file)) {
+      showToast("El plano debe ser una imagen JPG, PNG o WEBP. El Excel solo va en Llenar con Excel.");
+      return false;
+    }
+
     setMapFileName(file.name);
     const reader = new FileReader();
     reader.onload = async (event) => {
@@ -377,6 +405,7 @@ function LotsPage() {
       }
     };
     reader.readAsDataURL(file);
+    return true;
   };
 
   const totalDraftLots = draftProject.sections.reduce((sum, section) => sum + section.lots.length, 0);
@@ -434,10 +463,19 @@ function LotsPage() {
           </div>
           <button
             className="lots-editor-btn lots-editor-primary"
-            onClick={() => isEditing ? saveEditedFrac(draftProject) : saveFrac(draftProject)}
-            disabled={!draftProject.sections.length}
+            onClick={async () => {
+              if (saving) return;
+              setSaving(true);
+              try {
+                if (isEditing) await saveEditedFrac(draftProject);
+                else await saveFrac(draftProject);
+              } finally {
+                setSaving(false);
+              }
+            }}
+            disabled={!draftProject.sections.length || saving}
           >
-            {isEditing ? "Guardar cambios" : "Crear fraccionamiento"}
+            {saving ? "Guardando..." : isEditing ? "Guardar cambios" : "Crear fraccionamiento"}
           </button>
         </div>
 
@@ -458,20 +496,16 @@ function LotsPage() {
                 <div className="lots-map-empty-sub">
                   Sube o cambia el archivo para visualizar el mapa del fraccionamiento.
                 </div>
-                <button
-                  className="lots-map-action"
-                  onClick={() => changeImageRef.current?.click()}
-                >
-                  Subir imagen
-                </button>
               </div>
             )}
-            <button
-              className="lots-map-change"
-              onClick={() => changeImageRef.current?.click()}
-            >
-              Cambiar imagen
-            </button>
+            <div className="lots-image-buttons">
+              <button
+                className="lots-map-action"
+                onClick={() => changeImageRef.current?.click()}
+              >
+                {draftProject.mapUrl ? "Cambiar imagen" : "Subir imagen"}
+              </button>
+            </div>
             <input
               ref={changeImageRef}
               type="file"
@@ -480,6 +514,7 @@ function LotsPage() {
               onChange={(event) => {
                 const file = event.target.files?.[0];
                 if (file) updateMap(file);
+                event.target.value = "";
               }}
             />
           </div>
@@ -598,9 +633,8 @@ function LotsPage() {
                           return (
                             <div
                               key={lot.id}
-                              onClick={() => cycleLotStatus(section.id, lot.id)}
                               title={`${lot.code} — ${lot.status}`}
-                              className="relative cursor-pointer select-none rounded-[8px] border-[1.5px] px-1 py-2 text-center transition-all"
+                              className="relative select-none rounded-[8px] border-[1.5px] px-1 py-2 text-center transition-all"
                               style={{ background: c.bg, borderColor: c.border }}
                             >
                               <div className="text-[0.78rem] font-extrabold leading-none" style={{ color: c.text }}>
@@ -610,8 +644,8 @@ function LotsPage() {
                                 {lot.area ? `${lot.area}m²` : lot.status === "available" ? "Libre" : lot.status === "sold" ? "Vendido" : "Apartado"}
                               </div>
                               <button
-                                onClick={(e) => { e.stopPropagation(); openEditLot(section.id, lot.id); }}
-                                className="absolute right-0.5 top-0.5 flex h-3 w-3 items-center justify-center rounded-[2px] bg-black/10 text-[0.45rem] text-black/35"
+                                onClick={() => openEditLot(section.id, lot.id)}
+                                className="absolute right-0.5 top-0.5 flex h-3 w-3 items-center justify-center rounded-[2px] bg-black/10 text-[0.45rem] text-black/35 cursor-pointer"
                               >
                                 ✏
                               </button>
@@ -629,134 +663,124 @@ function LotsPage() {
         </div>
       </div>
 
-      {/* Lot edit modal — fixed, centered over viewport */}
+      {/* Lot edit modal */}
       {lotEditDraft && (() => {
         const d = lotEditDraft;
         const setField = (key, val) => setLotEditDraft((prev) => ({ ...prev, [key]: val }));
         const setService = (key, val) => setLotEditDraft((prev) => ({ ...prev, servicios: { ...prev.servicios, [key]: val } }));
         const SERVICES = [
-          { key: "agua", label: "Agua potable", icon: "💧" },
-          { key: "luz", label: "Energía eléctrica", icon: "⚡" },
-          { key: "drenaje", label: "Drenaje", icon: "🔧" },
-          { key: "gas", label: "Gas natural", icon: "🔥" },
-          { key: "internet", label: "Internet/Fibra", icon: "📡" },
-          { key: "pavimento", label: "Pavimento", icon: "🏗️" },
+          { key: "agua",      label: "Agua potable"      },
+          { key: "luz",       label: "Energia electrica" },
+          { key: "drenaje",   label: "Drenaje"           },
+          { key: "gas",       label: "Gas natural"       },
+          { key: "internet",  label: "Internet / Fibra"  },
+          { key: "pavimento", label: "Pavimento"         },
         ];
         return (
-          <div
-            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-[2px]"
-            onClick={() => setLotEditDraft(null)}
-          >
-            <div
-              className="flex max-h-[90vh] w-[520px] max-w-[95vw] flex-col overflow-hidden rounded-[18px] shadow-[0_24px_64px_rgba(0,0,0,.4)]"
-              onClick={(e) => e.stopPropagation()}
-            >
+          <div className="lot-edit-overlay" onClick={() => setLotEditDraft(null)}>
+            <div className="lot-edit-modal" onClick={(e) => e.stopPropagation()}>
+
               {/* Header */}
-              <div className="flex flex-shrink-0 items-center justify-between bg-[#1E3D2B] px-5 py-3.5">
-                <div className="font-bold text-[0.95rem] text-white">Editar — {d.code}</div>
-                <button
-                  onClick={() => setLotEditDraft(null)}
-                  className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-white/10 text-[0.85rem] text-white"
-                >✕</button>
+              <div className="lot-edit-head">
+                <div className="lot-edit-badge">{d.code}</div>
+                <div>
+                  <div className="lot-edit-title">Editar lote</div>
+                  <div className="lot-edit-sub">{draftProject.name}</div>
+                </div>
+                <button className="lot-edit-close" onClick={() => setLotEditDraft(null)}>×</button>
               </div>
 
               {/* Body */}
-              <div className="overflow-y-auto bg-[#F4F1EA] p-5 space-y-5">
+              <div className="lot-edit-body">
 
-                {/* IDENTIFICACIÓN */}
-                <div>
-                  <div className="mb-2 text-[0.62rem] font-bold uppercase tracking-[0.8px] text-[#83867C]">Identificación</div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <div className="mb-1 text-[0.62rem] font-bold uppercase tracking-[0.5px] text-[#83867C]">Código / ID Lote</div>
-                      <input className="w-full rounded-[8px] border-[1.5px] border-[#DCDAD2] bg-white px-3 py-2 text-[0.84rem] text-[#1E3D2B] outline-none" value={d.code} onChange={(e) => setField("code", e.target.value)} />
-                    </div>
-                    <div>
-                      <div className="mb-1 text-[0.62rem] font-bold uppercase tracking-[0.5px] text-[#83867C]">Fraccionamiento</div>
-                      <input className="w-full rounded-[8px] border-[1.5px] border-[#DCDAD2] bg-white px-3 py-2 text-[0.84rem] text-[#1E3D2B] outline-none" value={draftProject.name} onChange={(e) => setDraftProject((prev) => ({ ...prev, name: e.target.value }))} placeholder="Nombre del fraccionamiento" />
-                    </div>
+                {/* Identificación */}
+                <div className="lot-edit-sec">Identificación</div>
+                <div className="lot-edit-row">
+                  <div className="lot-edit-field">
+                    <label className="lot-edit-lbl">Codigo / ID Lote</label>
+                    <input className="lot-edit-input" value={d.code} onChange={(e) => setField("code", e.target.value)} />
+                  </div>
+                  <div className="lot-edit-field">
+                    <label className="lot-edit-lbl">Fraccionamiento</label>
+                    <input className="lot-edit-input" value={draftProject.name} onChange={(e) => setDraftProject((prev) => ({ ...prev, name: e.target.value }))} placeholder="Nombre del fraccionamiento" />
                   </div>
                 </div>
 
-                {/* ESTADO */}
-                <div>
-                  <div className="mb-2 text-[0.62rem] font-bold uppercase tracking-[0.8px] text-[#83867C]">Estado</div>
-                  <div className="flex gap-2">
-                    {[
-                      { value: "available", label: "Disponible", dot: "#355E3B" },
-                      { value: "reserved", label: "Apartado", dot: "#B07820" },
-                      { value: "sold", label: "Vendido", dot: "#C0392B" },
-                    ].map(({ value, label, dot }) => {
-                      const c = LOT_COLORS[value];
-                      const active = d.status === value;
-                      return (
-                        <button key={value} onClick={() => setField("status", value)} className="flex flex-1 items-center justify-center gap-1.5 rounded-[9px] border-[1.5px] py-2 text-[0.78rem] font-bold transition-all" style={{ background: active ? c.bg : "white", borderColor: active ? c.border : "#DCDAD2", color: active ? c.text : "#83867C" }}>
-                          <span className="h-2.5 w-2.5 rounded-full" style={{ background: dot }} />
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                {/* Estado */}
+                <div className="lot-edit-sec">Estado</div>
+                <div className="lot-edit-status">
+                  {[
+                    { value: "available", label: "Disponible", dot: "#6FAF6B" },
+                    { value: "reserved",  label: "Apartado",   dot: "#B98C58" },
+                    { value: "sold",      label: "Vendido",    dot: "#C0392B" },
+                  ].map(({ value, label, dot }) => {
+                    const c = LOT_COLORS[value];
+                    const active = d.status === value;
+                    return (
+                      <button
+                        key={value}
+                        className="lot-edit-status-btn"
+                        onClick={() => setField("status", value)}
+                        style={active ? { background: c.bg, borderColor: c.border, color: c.text } : {}}
+                      >
+                        <span className="lot-edit-status-dot" style={{ background: dot }} />
+                        {label}
+                      </button>
+                    );
+                  })}
                 </div>
 
-                {/* MEDIDAS */}
-                <div>
-                  <div className="mb-2 text-[0.62rem] font-bold uppercase tracking-[0.8px] text-[#83867C]">Medidas</div>
-                  <div className="grid grid-cols-3 gap-3">
-                    {[{ key: "frente", label: "Frente (ML)" }, { key: "fondo", label: "Fondo (ML)" }, { key: "area", label: "Superficie (m²)" }].map(({ key, label }) => (
-                      <div key={key}>
-                        <div className="mb-1 text-[0.62rem] font-bold uppercase tracking-[0.5px] text-[#83867C]">{label}</div>
-                        <input type="number" className="w-full rounded-[8px] border-[1.5px] border-[#DCDAD2] bg-white px-3 py-2 text-[0.84rem] text-[#1E3D2B] outline-none" value={d[key]} onChange={(e) => setField(key, Number(e.target.value))} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* FINANCIERO */}
-                <div>
-                  <div className="mb-2 text-[0.62rem] font-bold uppercase tracking-[0.8px] text-[#83867C]">Financiero</div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <div className="mb-1 text-[0.62rem] font-bold uppercase tracking-[0.5px] text-[#83867C]">Precio Contado ($)</div>
-                      <input type="number" className="w-full rounded-[8px] border-[1.5px] border-[#DCDAD2] bg-white px-3 py-2 text-[0.84rem] text-[#1E3D2B] outline-none" value={d.price} onChange={(e) => setField("price", Number(e.target.value))} />
+                {/* Medidas */}
+                <div className="lot-edit-sec">Medidas</div>
+                <div className="lot-edit-row cols-3">
+                  {[{ key: "frente", label: "Frente (ML)" }, { key: "fondo", label: "Fondo (ML)" }, { key: "area", label: "Superficie (m²)" }].map(({ key, label }) => (
+                    <div className="lot-edit-field" key={key}>
+                      <label className="lot-edit-lbl">{label}</label>
+                      <input type="number" className="lot-edit-input" value={d[key]} onChange={(e) => setField(key, Number(e.target.value))} />
                     </div>
-                    <div>
-                      <div className="mb-1 text-[0.62rem] font-bold uppercase tracking-[0.5px] text-[#83867C]">Precio Financiado ($)</div>
-                      <input type="number" className="w-full rounded-[8px] border-[1.5px] border-[#DCDAD2] bg-white px-3 py-2 text-[0.84rem] text-[#1E3D2B] outline-none" value={d.priceFinanciado} onChange={(e) => setField("priceFinanciado", Number(e.target.value))} />
-                    </div>
+                  ))}
+                </div>
+
+                {/* Financiero */}
+                <div className="lot-edit-sec">Financiero</div>
+                <div className="lot-edit-row">
+                  <div className="lot-edit-field">
+                    <label className="lot-edit-lbl">Precio Contado ($)</label>
+                    <input type="number" className="lot-edit-input" value={d.price} onChange={(e) => setField("price", Number(e.target.value))} />
+                  </div>
+                  <div className="lot-edit-field">
+                    <label className="lot-edit-lbl">Precio Financiado ($)</label>
+                    <input type="number" className="lot-edit-input" value={d.priceFinanciado} onChange={(e) => setField("priceFinanciado", Number(e.target.value))} />
                   </div>
                 </div>
 
-                {/* GESTIÓN */}
-                <div>
-                  <div className="mb-2 text-[0.62rem] font-bold uppercase tracking-[0.8px] text-[#83867C]">Gestión</div>
-                  <div className="mb-1 text-[0.62rem] font-bold uppercase tracking-[0.5px] text-[#83867C]">Vendedor Asignado</div>
-                  <input className="w-full rounded-[8px] border-[1.5px] border-[#DCDAD2] bg-white px-3 py-2 text-[0.84rem] text-[#1E3D2B] outline-none" placeholder="Nombre del vendedor" value={d.vendedor} onChange={(e) => setField("vendedor", e.target.value)} />
+                {/* Gestion */}
+                <div className="lot-edit-sec">Gestion</div>
+                <div className="lot-edit-field">
+                  <label className="lot-edit-lbl">Vendedor Asignado</label>
+                  <input className="lot-edit-input" placeholder="Nombre del vendedor" value={d.vendedor} onChange={(e) => setField("vendedor", e.target.value)} />
                 </div>
 
-                {/* SERVICIOS */}
-                <div>
-                  <div className="mb-2 text-[0.62rem] font-bold uppercase tracking-[0.8px] text-[#83867C]">Servicios Disponibles</div>
-                  <div className="space-y-1.5">
-                    {SERVICES.map(({ key, label, icon }) => (
-                      <label key={key} className="flex cursor-pointer items-center gap-3 rounded-[8px] border border-[#DCDAD2] bg-white px-3 py-2.5">
-                        <span className="text-[1rem]">{icon}</span>
-                        <span className="flex-1 text-[0.82rem] text-[#1E3D2B]">{label}</span>
-                        <input type="checkbox" className="h-4 w-4 accent-[#355E3B]" checked={!!d.servicios[key]} onChange={(e) => setService(key, e.target.checked)} />
+                {/* Servicios */}
+                <div className="lot-edit-sec">Servicios disponibles</div>
+                <div className="lot-edit-services">
+                  {SERVICES.map(({ key, label }) => {
+                    const on = !!d.servicios[key];
+                    return (
+                      <label key={key} className="lot-edit-service">
+                        <span>{label}</span>
+                        <input type="checkbox" checked={on} onChange={(e) => setService(key, e.target.checked)} />
+                        <span className={`lot-edit-toggle${on ? " on" : ""}`} />
                       </label>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Footer */}
-              <div className="flex flex-shrink-0 gap-3 border-t border-[#DCDAD2] bg-[#F4F1EA] px-5 py-3">
-                <button onClick={saveLotEdit} className="flex-1 rounded-[10px] bg-[#355E3B] py-2.5 text-[0.84rem] font-bold text-white">
-                  ✓ Guardar
-                </button>
-                <button onClick={() => setLotEditDraft(null)} className="rounded-[10px] border-[1.5px] border-[#DCDAD2] bg-white px-6 py-2.5 text-[0.84rem] font-semibold text-[#43453F]">
-                  Cancelar
-                </button>
+              <div className="lot-edit-foot">
+                <button className="lot-edit-primary" onClick={saveLotEdit}>Guardar</button>
+                <button className="lot-edit-ghost" onClick={() => setLotEditDraft(null)}>Cancelar</button>
               </div>
             </div>
           </div>
@@ -787,27 +811,55 @@ function LotsPage() {
           >
             Cargar demo
           </button>
-          <button
-            className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white"
-            onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
-          >
-            Nuevo proyecto
-          </button>
+          {draftProject.mode === "selector" && (
+            <button
+              className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white"
+              onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
+            >
+              Nuevo proyecto
+            </button>
+          )}
         </div>
       </section>
 
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold uppercase tracking-[0.22em] text-[#83867C]">Portafolio</h2>
-          <span className="text-sm font-semibold text-[#1E3D2B]">
-            {projects.reduce((sum, item) => sum + (item.lots?.length || 0), 0)} lotes
-          </span>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-bold uppercase tracking-[0.22em] text-[#83867C]">Portafolio</h2>
+            <div className="mt-1 text-xs font-medium text-[#83867C]">
+              {projects.length} fraccionamientos · usa las flechas o arrastra la lista
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="mr-1 text-sm font-semibold text-[#1E3D2B]">
+              {projects.reduce((sum, item) => sum + (item.lots?.length || 0), 0)} lotes
+            </span>
+            <button
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#DCDAD2] bg-white/90 text-[#1E3D2B] shadow-[0_8px_18px_rgba(24,18,14,.08)] transition hover:border-[#355E3B] hover:bg-[#FBFAF6]"
+              type="button"
+              onClick={() => scrollPortfolio(-1)}
+              aria-label="Ver fraccionamientos anteriores"
+            >
+              <HiChevronLeft className="text-lg" />
+            </button>
+            <button
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#DCDAD2] bg-white/90 text-[#1E3D2B] shadow-[0_8px_18px_rgba(24,18,14,.08)] transition hover:border-[#355E3B] hover:bg-[#FBFAF6]"
+              type="button"
+              onClick={() => scrollPortfolio(1)}
+              aria-label="Ver mas fraccionamientos"
+            >
+              <HiChevronRight className="text-lg" />
+            </button>
+          </div>
         </div>
-        <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
+        <div
+          ref={portfolioScrollRef}
+          className="portfolio-scroll flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 pr-5"
+        >
           {projects.map((project) => (
             <article
               key={project.id}
-              className="min-w-[290px] rounded-[28px] border border-[#DCDAD2] bg-white/88 p-4 shadow-[0_18px_40px_rgba(24,18,14,.08)]"
+              className="min-w-[min(86vw,340px)] snap-start rounded-[28px] border border-[#DCDAD2] bg-white/88 p-4 shadow-[0_18px_40px_rgba(24,18,14,.08)] sm:min-w-[330px]"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -845,7 +897,7 @@ function LotsPage() {
                   Ver
                 </button>
                 <button
-                  className="flex-1 rounded-[10px] border-[1.5px] border-[#355E3B] bg-[#355E3B] px-3 py-[7px] text-[0.76rem] font-bold text-white transition-colors hover:bg-[#21643F] disabled:opacity-60"
+                  className="flex-1 whitespace-nowrap rounded-[10px] border-[1.5px] border-[#355E3B] bg-[#355E3B] px-3 py-[7px] text-[0.76rem] font-bold text-white transition-colors hover:bg-[#21643F] disabled:opacity-60"
                   onClick={() => openProjectEditor(project)}
                   disabled={loadingEditId === project.id}
                 >
@@ -954,10 +1006,10 @@ function LotsPage() {
                 className="hidden"
                 onChange={(event) => {
                   const file = event.target.files?.[0];
-                  if (file) {
-                    updateMap(file);
+                  if (file && updateMap(file)) {
                     setDraftProject((previous) => ({ ...previous, mode: "editor" }));
                   }
+                  event.target.value = "";
                 }}
               />
             </label>

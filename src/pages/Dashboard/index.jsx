@@ -582,9 +582,6 @@ export default function DashboardPage() {
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           {[
-            { icon: HiOutlineShoppingCart, bg: "#e8f7ee", color: "#355E3B", label: "Registrar venta",   path: "/ventas"    },
-            { icon: HiOutlineHome,         bg: "#ede9fe", color: "#6366F1", label: "Agregar lote",      path: "/lotes"     },
-            { icon: HiOutlinePlus,         bg: "#e0f2fe", color: "#0EA5E9", label: "Nuevo cliente",     path: "/clientes"  },
             { icon: HiOutlineDocumentText, bg: "#fdecea", color: "#c0392b", label: "Generar contrato",  path: "/contratos" },
             { icon: HiOutlineSquares2X2,   bg: "#fef3e2", color: "#7B5C38", label: "Ver reportes",      path: "/reportes"  },
           ].map(({ icon: Icon, bg, color, label, path }) => (

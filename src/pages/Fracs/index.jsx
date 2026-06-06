@@ -67,6 +67,24 @@ function makeDraft(lot) {
   };
 }
 
+async function fetchAllFracLots(inmuebleId) {
+  const limit = 200;
+  const firstPage = await lotService.list({ inmueble_id: inmuebleId, page: 1, limit });
+  const totalPages = firstPage.pages || 1;
+
+  if (totalPages <= 1) return firstPage.items || [];
+
+  const remainingPages = await Promise.all(
+    Array.from({ length: totalPages - 1 }, (_, index) =>
+      lotService
+        .list({ inmueble_id: inmuebleId, page: index + 2, limit })
+        .then((response) => response.items || [])
+    )
+  );
+
+  return [...(firstPage.items || []), ...remainingPages.flat()];
+}
+
 function StatusBadge({ status }) {
   const meta = LOT_COLORS[status] || LOT_COLORS.available;
   return (
@@ -151,9 +169,16 @@ function FracsPage() {
     showToast,
     setDraftProject,
     currentUser,
+    fracsResetKey,
   } = useAppContext();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const [homeMode, setHomeMode] = useState(true);
+
+  useEffect(() => {
+    setHomeMode(true);
+  }, [fracsResetKey]);
 
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -183,7 +208,7 @@ function FracsPage() {
 
   const { data: lotsData, isLoading: lotsLoading } = useQuery({
     queryKey: ["lots", selectedFrac?.id],
-    queryFn: () => lotService.list({ inmueble_id: selectedFrac.id, limit: 200 }).then((r) => r.items),
+    queryFn: () => fetchAllFracLots(selectedFrac.id),
     enabled: !!selectedFrac?.id,
   });
   const lots = lotsData || [];
@@ -257,7 +282,7 @@ function FracsPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  if (!selectedFrac) {
+  if (!fracs.length) {
     return (
       <EmptyState
         icon="▦"
@@ -265,6 +290,49 @@ function FracsPage() {
         description="Carga un plano, arma la matriz de lotes y crea tu primer proyecto desde la seccion Carga de Lotes."
         action={<Link className="mobile-primary-button" to="/lotes">Ir a Carga de Lotes</Link>}
       />
+    );
+  }
+
+  if (homeMode) {
+    return (
+      <div className="frac-page">
+        <aside className="frac-projects frac-panel">
+          <div className="frac-panel-head">
+            <div>
+              <div className="frac-panel-title">Proyectos</div>
+              <div className="frac-panel-sub">Fraccionamientos activos</div>
+            </div>
+            <span className="frac-project-count">{fracs.length}</span>
+          </div>
+          <div className="frac-panel-body">
+            <div className="frac-project-list">
+              {fracs.map((frac) => (
+                <button
+                  key={frac.id}
+                  className="frac-project-item"
+                  onClick={() => { setSelectedFracId(frac.id); setHomeMode(false); }}
+                >
+                  <span className="frac-project-mark">{frac.name.slice(0, 2).toUpperCase()}</span>
+                  <span className="frac-project-copy">
+                    <span className="frac-project-name">{frac.name}</span>
+                    <span className="frac-project-meta">
+                      {frac.total_lots ?? 0} lotes
+                      {frac.created_at ? ` / ${new Date(frac.created_at).toLocaleDateString("es-MX")}` : ""}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </aside>
+        <section className="frac-workspace" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ textAlign: "center", color: "#83867C" }}>
+            <div style={{ fontSize: "2.5rem", marginBottom: 12 }}>▦</div>
+            <div style={{ fontSize: "1rem", fontWeight: 600, color: "#1E3D2B", marginBottom: 6 }}>Selecciona un proyecto</div>
+            <div style={{ fontSize: "0.82rem" }}>Elige un fraccionamiento del panel izquierdo para ver su inventario</div>
+          </div>
+        </section>
+      </div>
     );
   }
 
@@ -390,10 +458,11 @@ function FracsPage() {
             <div className="frac-panel-title">Proyectos</div>
             <div className="frac-panel-sub">Fraccionamientos activos</div>
           </div>
+          <span className="frac-project-count">{filteredProjects.length}</span>
         </div>
         <div className="frac-panel-body">
           <label className="frac-search">
-            <span>⌕</span>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="7" cy="7" r="5"/><line x1="10.8" y1="10.8" x2="14.5" y2="14.5"/></svg>
             <input value={projectSearch} onChange={(event) => setProjectSearch(event.target.value)} placeholder="Buscar proyecto" />
           </label>
           <div className="frac-project-list">
@@ -458,7 +527,7 @@ function FracsPage() {
             {sections.map((section) => <option key={section} value={section}>{section}</option>)}
           </select>
           <label className="frac-search grow">
-            <span>⌕</span>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="7" cy="7" r="5"/><line x1="10.8" y1="10.8" x2="14.5" y2="14.5"/></svg>
             <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar lote o manzana" />
           </label>
           {(statusFilter !== "all" || sectionFilter || search) && (
@@ -473,7 +542,9 @@ function FracsPage() {
                 <div className="frac-panel-title">Plano de referencia</div>
                 <div className="frac-panel-sub">Vista del fraccionamiento</div>
               </div>
-              <button className="frac-icon-btn" onClick={() => selectedFrac.map_image_url && setShowMapViewer(true)} disabled={!selectedFrac.map_image_url}>⛶</button>
+              <button className="frac-icon-btn" onClick={() => selectedFrac.map_image_url && setShowMapViewer(true)} disabled={!selectedFrac.map_image_url}>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 5 1 1 5 1"/><polyline points="11 1 15 1 15 5"/><polyline points="15 11 15 15 11 15"/><polyline points="5 15 1 15 1 11"/></svg>
+              </button>
             </div>
             <div className="frac-plan-body" onClick={() => selectedFrac.map_image_url && setShowMapViewer(true)}>
               {selectedFrac.map_image_url ? (
@@ -549,7 +620,7 @@ function FracsPage() {
             <strong>Cotizador rapido</strong>
             <small>{selectedLot ? `Lote ${selectedLot.code}` : "Selecciona un lote"}</small>
           </span>
-          <b>⌄</b>
+          <svg className="frac-quote-chevron" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 6 8 10 12 6"/></svg>
         </button>
         <div className="frac-quote-body">
           <div className="frac-quote-result">
@@ -577,7 +648,7 @@ function FracsPage() {
                 <p>{selectedFrac.name} / {selectedLot.section || "General"} / {selectedLot.area_m2 || 0} m2</p>
               </div>
               <StatusBadge status={selectedLot.status} />
-              <button className="frac-modal-close" onClick={() => setShowLotModal(false)}>x</button>
+              <button className="frac-modal-close" onClick={() => setShowLotModal(false)}>×</button>
             </div>
             <div className="frac-modal-body">
               <div className="frac-tabs">
@@ -666,10 +737,22 @@ function FracsPage() {
                   </div>
                   {showApptForm ? (
                     <div className="frac-appointment-form">
-                      <input value={apptDraft.contact_name} onChange={(event) => setApptDraft((p) => ({ ...p, contact_name: event.target.value }))} placeholder="Nombre del contacto" />
-                      <input value={apptDraft.contact_phone} onChange={(event) => setApptDraft((p) => ({ ...p, contact_phone: event.target.value }))} placeholder="Telefono" />
-                      <input type="datetime-local" value={apptDraft.scheduled_at} onChange={(event) => setApptDraft((p) => ({ ...p, scheduled_at: event.target.value }))} />
-                      <textarea value={apptDraft.notes} onChange={(event) => setApptDraft((p) => ({ ...p, notes: event.target.value }))} placeholder="Notas" />
+                      <div className="frac-appt-field">
+                        <label className="frac-appt-lbl">Contacto</label>
+                        <input value={apptDraft.contact_name} onChange={(event) => setApptDraft((p) => ({ ...p, contact_name: event.target.value }))} placeholder="Nombre del contacto" />
+                      </div>
+                      <div className="frac-appt-field">
+                        <label className="frac-appt-lbl">Telefono</label>
+                        <input value={apptDraft.contact_phone} onChange={(event) => setApptDraft((p) => ({ ...p, contact_phone: event.target.value }))} placeholder="Opcional" />
+                      </div>
+                      <div className="frac-appt-field">
+                        <label className="frac-appt-lbl">Fecha y hora</label>
+                        <input type="datetime-local" value={apptDraft.scheduled_at} onChange={(event) => setApptDraft((p) => ({ ...p, scheduled_at: event.target.value }))} />
+                      </div>
+                      <div className="frac-appt-field">
+                        <label className="frac-appt-lbl">Notas</label>
+                        <textarea rows="2" value={apptDraft.notes} onChange={(event) => setApptDraft((p) => ({ ...p, notes: event.target.value }))} placeholder="Contexto de la visita" />
+                      </div>
                       <Button variant="primary" onClick={saveAppointment} disabled={apptSaving || !apptDraft.contact_name.trim() || !apptDraft.scheduled_at}>
                         {apptSaving ? "Guardando..." : "Guardar cita"}
                       </Button>
@@ -706,7 +789,7 @@ function FracsPage() {
                 <h2>Cotizador</h2>
                 <p>{selectedFrac.name} / {selectedLot.code}</p>
               </div>
-              <button className="frac-modal-close" onClick={() => setShowCotizador(false)}>x</button>
+              <button className="frac-modal-close" onClick={() => setShowCotizador(false)}>×</button>
             </div>
             <div className="frac-calculator-body">
               <aside className="frac-calculator-controls">
@@ -761,7 +844,7 @@ function FracsPage() {
                 <h2>Confirmar cambio</h2>
                 <p>{selectedFrac.name} / {selectedLot.code}</p>
               </div>
-              <button className="frac-modal-close" onClick={() => setPendingStatus(null)}>x</button>
+              <button className="frac-modal-close" onClick={() => setPendingStatus(null)}>×</button>
             </div>
             <div className="frac-confirm-body">
               <div className="frac-status-transition">
@@ -790,7 +873,7 @@ function FracsPage() {
                 <h2>Eliminar fraccionamiento</h2>
                 <p>{selectedFrac.name}</p>
               </div>
-              <button className="frac-modal-close" onClick={() => setShowDeleteConfirm(false)}>x</button>
+              <button className="frac-modal-close" onClick={() => setShowDeleteConfirm(false)}>×</button>
             </div>
             <div className="frac-confirm-body">
               <p>Esta accion eliminara el proyecto seleccionado. Confirma solo si ya no debe aparecer en OwnTerra Lands.</p>

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { clientService } from "@/services/clientService";
-import { documentService } from "@/services/documentService";
+import { documentService, filenameForDocument } from "@/services/documentService";
 import { userService } from "@/services/userService";
 import { useAppContext } from "@/context/AppContext";
 import { getUserErrorMessage } from "@/services/errors";
@@ -29,7 +29,7 @@ const DownloadIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="current
 
 function EcosystemClientes() {
   const qc = useQueryClient();
-  const { exportAppData, showToast } = useAppContext();
+  const { downloadDocument, exportAppData, showToast } = useAppContext();
   const [selectedId, setSelectedId] = useState(null);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState("contracts");
@@ -418,9 +418,9 @@ function EcosystemClientes() {
                             <span className="usr-chip" style={{ background: "rgba(111,175,107,.14)", color: "#2F6A38", border: "1px solid rgba(111,175,107,.3)" }}>
                               🌐 Core
                             </span>
-                            <a className="usr-dl" href={documentService.downloadUrl(d.id)} target="_blank" rel="noreferrer" title="Descargar">
+                            <button className="usr-dl" onClick={() => downloadDocument(d.id, d.download_url, filenameForDocument(d))} title="Descargar">
                               <DownloadIcon />
-                            </a>
+                            </button>
                           </div>
                         ))}
                       </div>

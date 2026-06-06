@@ -8,7 +8,7 @@ import {
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 import { folderService } from "@/services/folderService";
-import { documentService } from "@/services/documentService";
+import { documentService, filenameForDocument } from "@/services/documentService";
 import { getUserErrorMessage } from "@/services/errors";
 
 /* ── helpers ────────────────────────────────────────────────────────────── */
@@ -537,7 +537,7 @@ export default function DocumentsPage() {
                     <button className="doc-row-btn" title="Ver" onClick={() => openDocumentPreview(doc.id)}>
                       <HiOutlineEye />
                     </button>
-                    <button className="doc-row-btn" title="Descargar" onClick={() => downloadDocument(doc.id, doc.download_url, doc.name)}>
+                    <button className="doc-row-btn" title="Descargar" onClick={() => downloadDocument(doc.id, doc.download_url, filenameForDocument(doc))}>
                       <HiOutlineArrowDownTray />
                     </button>
                     <button className="doc-row-btn danger" title="Eliminar" onClick={() => setDelDoc(doc.id)}>

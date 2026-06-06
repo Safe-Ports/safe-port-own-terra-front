@@ -113,6 +113,9 @@ const newEntry = () => ({ id: _nextId++, file: null, fileName: "", category: "co
 function validate(form, isEditing) {
   const errs = {};
 
+  if (!isEditing && !form.inmuebleId)
+    errs.inmuebleId = "Selecciona un fraccionamiento";
+
   if (!isEditing && !form.lot)
     errs.lot = "Selecciona un lote disponible";
 
@@ -159,19 +162,43 @@ function parseServerErrors(err) {
   });
 }
 
+async function fetchAvailableLotsForFrac(inmuebleId) {
+  if (!inmuebleId) return [];
+
+  const limit = 200;
+  const firstPage = await lotService.list({ inmueble_id: inmuebleId, status: "available", page: 1, limit });
+  const totalPages = firstPage.pages || 1;
+
+  if (totalPages <= 1) return firstPage.items || [];
+
+  const remainingPages = await Promise.all(
+    Array.from({ length: totalPages - 1 }, (_, index) =>
+      lotService
+        .list({ inmueble_id: inmuebleId, status: "available", page: index + 2, limit })
+        .then((response) => response.items || [])
+    )
+  );
+
+  return [...(firstPage.items || []), ...remainingPages.flat()];
+}
+
 /* ══ MODAL ═══════════════════════════════════════════════════ */
 function ContractModal() {
   const {
-    ui, closeModal, clients, editingContract, contractDraft,
+    ui, closeModal, clients, fracs, selectedFracId, editingContract, contractDraft,
     saveContract, deleteContract, resetContractDraft, showToast,
   } = useAppContext();
 
   const [docs, setDocs]       = useState([]);
   const [errors, setErrors]   = useState({});
   const [saving, setSaving]   = useState(false);
+  const activeFracs = fracs.filter((frac) => !frac.is_archived);
+  const defaultInmuebleId = activeFracs.some((frac) => frac.id === selectedFracId)
+    ? selectedFracId
+    : activeFracs[0]?.id || "";
 
   const defaultForm = {
-    number: "", lot: "", clientId: clients[0]?.id || "",
+    number: "", inmuebleId: defaultInmuebleId, lot: "", clientId: clients[0]?.id || "",
     type: "sale", date: new Date().toISOString().split("T")[0],
     amount: 0, down_payment: 0, totalM: 96,
     interest_rate: 0.12,
@@ -183,6 +210,19 @@ function ContractModal() {
     setForm(p => ({ ...p, [k]: e.target.value }));
     // Limpia el error del campo al editar
     if (errors[k]) setErrors(p => { const n = { ...p }; delete n[k]; return n; });
+  };
+
+  const setInmueble = e => {
+    const inmuebleId = e.target.value;
+    setForm(p => ({ ...p, inmuebleId, lot: "" }));
+    if (errors.inmuebleId || errors.lot) {
+      setErrors(p => {
+        const n = { ...p };
+        delete n.inmuebleId;
+        delete n.lot;
+        return n;
+      });
+    }
   };
 
   const setNum = k => e => {
@@ -198,9 +238,9 @@ function ContractModal() {
 
   /* queries */
   const { data: availableLots = [] } = useQuery({
-    queryKey: ["lots", "available"],
-    queryFn: () => lotService.list({ status: "available", limit: 200 }).then(r => r.items),
-    enabled: ui.contractModal && !editingContract,
+    queryKey: ["lots", "available", form.inmuebleId],
+    queryFn: () => fetchAvailableLotsForFrac(form.inmuebleId),
+    enabled: ui.contractModal && !editingContract && !!form.inmuebleId,
   });
   const { data: usersData } = useQuery({
     queryKey: ["users-list"],
@@ -224,9 +264,14 @@ function ContractModal() {
     if (editingContract) {
       setForm({ ...defaultForm, ...editingContract });
     } else {
-      setForm({ ...defaultForm, ...(contractDraft || {}), clientId: contractDraft?.clientId || clients[0]?.id || "" });
+      setForm({
+        ...defaultForm,
+        ...(contractDraft || {}),
+        inmuebleId: contractDraft?.inmuebleId || defaultForm.inmuebleId,
+        clientId: contractDraft?.clientId || clients[0]?.id || "",
+      });
     }
-  }, [ui.contractModal, editingContract, contractDraft]);
+  }, [ui.contractModal, editingContract, contractDraft, defaultInmuebleId]);
 
   const addDoc    = () => setDocs(p => [...p, newEntry()]);
   const updateDoc = (id, updated) => setDocs(p => p.map(d => d.id === id ? updated : d));
@@ -321,25 +366,57 @@ function ContractModal() {
       <div className="fr-row">
         <div className="fg" style={{ flex: 1 }}>
           <label className="fl">
-            Propiedad / Lote
+            Fraccionamiento
             {!editingContract && <span style={{ color: "var(--danger)", marginLeft: 3 }}>*</span>}
           </label>
-          <select id="cf-lot" {...fi(errors.lot)} value={form.lot} onChange={set("lot")} onBlur={() => blurField("lot")}>
+          <select
+            id="cf-inmuebleId"
+            {...fi(errors.inmuebleId)}
+            value={form.inmuebleId}
+            onChange={setInmueble}
+            onBlur={() => blurField("inmuebleId")}
+            disabled={!!editingContract}
+          >
+            <option value="">— Seleccionar fraccionamiento —</option>
+            {activeFracs.map((frac) => (
+              <option key={frac.id} value={frac.id}>
+                {frac.name} · {frac.available_lots ?? 0} disponibles
+              </option>
+            ))}
+          </select>
+          <FieldError msg={errors.inmuebleId} />
+        </div>
+
+        <div className="fg" style={{ flex: 1 }}>
+          <label className="fl">
+            Lote
+            {!editingContract && <span style={{ color: "var(--danger)", marginLeft: 3 }}>*</span>}
+          </label>
+          <select
+            id="cf-lot"
+            {...fi(errors.lot)}
+            value={form.lot}
+            onChange={set("lot")}
+            onBlur={() => blurField("lot")}
+            disabled={!!editingContract || !form.inmuebleId}
+          >
             <option value="">— Seleccionar lote —</option>
             {availableLots.map(l => (
               <option key={l.id} value={l.id}>
-                {l.code}{l.inmueble_name ? ` · ${l.inmueble_name}` : ""}
+                {l.code}{l.area_m2 ? ` · ${l.area_m2} m2` : ""}
               </option>
             ))}
           </select>
           <FieldError msg={errors.lot} />
-          {!editingContract && availableLots.length === 0 && (
+          {!editingContract && form.inmuebleId && availableLots.length === 0 && (
             <span style={{ fontSize: ".72rem", color: "var(--mu)", marginTop: 4, display: "block" }}>
-              Sin lotes disponibles. Cambia el estatus de un lote primero.
+              Sin lotes disponibles en este fraccionamiento.
             </span>
           )}
         </div>
+      </div>
 
+      <div className="fr-row">
         <div className="fg" style={{ flex: 1 }}>
           <label className="fl">
             Cliente

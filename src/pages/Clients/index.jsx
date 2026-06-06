@@ -355,9 +355,6 @@ function ClientsPage() {
 
                 {/* Actions */}
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-                  <Button variant="primary" style={{ padding: "8px 15px", fontSize: ".78rem" }} onClick={() => sendClientMessage(selected)}>
-                    💬 Mensaje
-                  </Button>
                   <Button variant="primary" style={{ padding: "8px 15px", fontSize: ".78rem" }} onClick={() => openContractCreate({ clientId: selected.id })}>
                     📄 Nuevo Contrato
                   </Button>

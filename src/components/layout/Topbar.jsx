@@ -72,45 +72,6 @@ function Topbar({ pathname }) {
           <span className="tb-shortcut">⌘K</span>
         </button>
 
-        {pathname === "/lotes" ? (
-          <>
-            <span id="lotCnt" className="lot-count-chip">{draftLotCount} lotes</span>
-            <button className="tb-btn tb-s" onClick={() => showToast("Usa 'Cargar demo', 'Nuevo proyecto' o agrega secciones para construir la matriz.")}>
-              Ayuda
-            </button>
-            <button className="tb-btn tb-s" onClick={startNewProject}>
-              Nuevo plano
-            </button>
-            <button className="tb-btn tb-p" onClick={() => saveFrac(draftProject)}>
-              Crear fraccionamiento
-            </button>
-          </>
-        ) : null}
-
-        {pathname === "/clientes" ? (
-          <button className="tb-btn tb-s" onClick={() => openModal("clientModal")}>
-            + Nuevo Cliente
-          </button>
-        ) : null}
-
-        {pathname === "/ventas" || pathname === "/contratos" ? (
-          <button className="tb-btn tb-p" onClick={() => openContractCreate()}>
-            + Generar Contrato
-          </button>
-        ) : null}
-
-        {pathname === "/pagos" ? (
-          <button className="tb-btn tb-p" onClick={() => openModal("paymentModal")}>
-            + Registrar Pago
-          </button>
-        ) : null}
-
-        {pathname === "/documentos" ? (
-          <button className="tb-btn tb-p" onClick={() => openModal("documentModal")}>
-            ⬆ Subir Documento
-          </button>
-        ) : null}
-
         <button
           title="Notificaciones"
           onClick={() => { markAllNotificationsRead(); navigate("/alertas"); }}
