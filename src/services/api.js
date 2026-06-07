@@ -1,4 +1,5 @@
 import axios from "axios";
+import * as Sentry from "@sentry/react";
 
 export const BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 
@@ -38,6 +39,30 @@ let refreshPromise = null;
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    // ── Reporte a Sentry de TODOS los fallos de API, distinguidos por severidad ─
+    // - Sin respuesta (red/timeout) y 5xx → level "error" (fallas graves).
+    // - 4xx (validación, 403, 404, login fallido) → level "warning" (esperados).
+    // Se OMITE el 401 "rutinario" que dispara el refresh silencioso de token
+    // (status 401 + sin reintento previo + hay refresh_token): es flujo normal.
+    const status = error.response?.status;
+    const isRoutineRefresh =
+      status === 401 && !error.config?._retry && Boolean(getSession()?.refresh_token);
+
+    if (!isRoutineRefresh) {
+      const level = !error.response || status >= 500 ? "error" : "warning";
+      const kind = !error.response ? "network" : status >= 500 ? "server_5xx" : "client_4xx";
+      Sentry.captureException(error, {
+        level,
+        tags: { source: "api", kind },
+        extra: {
+          method: error.config?.method?.toUpperCase(),
+          url: error.config?.url,
+          status: status ?? null,
+          responseData: error.response?.data ?? null,
+        },
+      });
+    }
+
     const original = error.config;
 
     if (error.response?.status !== 401 || original._retry) {
