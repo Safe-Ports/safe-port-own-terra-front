@@ -8,5 +8,8 @@ export const contractService = {
   cancel: (id, body) => api.post(`/contracts/${id}/cancel`, body),
   complete: (id) => api.post(`/contracts/${id}/complete`).then((r) => r.data),
   delete: (id) => api.delete(`/contracts/${id}`),
-  downloadPdf: (id) => `${import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1"}/contracts/${id}/pdf`,
+  downloadPdf: async (id) => {
+    const response = await api.get(`/contracts/${id}/pdf`, { responseType: "blob" });
+    return response.data;
+  },
 };

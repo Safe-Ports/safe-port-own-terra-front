@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi2";
 import * as XLSX from "xlsx";
@@ -21,10 +21,106 @@ function createLots(sectionName, total) {
   return Array.from({ length: total }, (_, index) => ({
     id: `${sectionName}_${Date.now()}_${index}`,
     code: `${sectionName.slice(0, 1).toUpperCase()}-${String(index + 1).padStart(2, "0")}`,
-    status: index % 7 === 0 ? "reserved" : index % 5 === 0 ? "sold" : "available",
-    area: 140 + index * 4,
-    price: 330000 + index * 12000
+    status: "available",
+    area: "",
+    price: ""
   }));
+}
+
+const LOTS_PER_PAGE = 60; // matriz 6×10
+
+// Orden natural por código: A-01, A-02, ..., A-10, A-11
+function sortLotsByCode(lots) {
+  return [...lots].sort((a, b) =>
+    String(a.code || "").localeCompare(String(b.code || ""), undefined, { numeric: true, sensitivity: "base" })
+  );
+}
+
+function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot }) {
+  const [page, setPage] = useState(0);
+  const sortedLots = useMemo(() => sortLotsByCode(section.lots), [section.lots]);
+  const totalPages = Math.max(1, Math.ceil(sortedLots.length / LOTS_PER_PAGE));
+  const safePage = Math.min(page, totalPages - 1);
+  const pageLots = sortedLots.slice(safePage * LOTS_PER_PAGE, safePage * LOTS_PER_PAGE + LOTS_PER_PAGE);
+
+  return (
+    <div>
+      {/* Section header */}
+      <div className="mb-2.5 flex items-center gap-2">
+        <div className="text-[0.7rem] font-extrabold uppercase tracking-[0.5px] text-[#43453F]">
+          {section.name}
+          <span className="ml-1 font-normal opacity-55 text-[0.62rem]">{section.lots.length} lotes</span>
+        </div>
+        <div className="h-px flex-1 bg-[#DCDAD2]" />
+        <button
+          onClick={() => onAddLots(section.id, 10)}
+          title="Añadir 10 lotes"
+          className="flex h-[22px] w-[22px] items-center justify-center rounded-[5px] border border-[#DCDAD2] bg-[#F1EEE6] text-[0.8rem] font-black text-[#355E3B]"
+        >
+          +
+        </button>
+        <button
+          onClick={() => onRemoveSection(section.id)}
+          title="Eliminar sección"
+          className="flex h-[22px] w-[22px] items-center justify-center rounded-[5px] border border-[#DCDAD2] bg-[#F1EEE6] text-[0.8rem] font-black text-[#C0392B]"
+        >
+          ✕
+        </button>
+      </div>
+      {/* Lot grid — 6 columnas */}
+      <div className="grid gap-1.5" style={{ gridTemplateColumns: "repeat(6, 1fr)" }}>
+        {pageLots.map((lot) => {
+          const c = LOT_COLORS[lot.status] || LOT_COLORS.available;
+          return (
+            <div
+              key={lot.id}
+              title={`${lot.code} — click para editar`}
+              className="select-none cursor-pointer rounded-[8px] border-[1.5px] px-1 py-2 text-center transition-all hover:opacity-80 hover:shadow-md"
+              style={{ background: c.bg, borderColor: c.border }}
+              onClick={() => onEditLot(section.id, lot.id)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onEditLot(section.id, lot.id);
+                }
+              }}
+            >
+              <div className="text-[0.78rem] font-extrabold leading-none" style={{ color: c.text }}>
+                {lot.code}
+              </div>
+              <div className="mt-0.5 text-[0.56rem] opacity-70" style={{ color: c.text }}>
+                {lot.area ? `${lot.area}m²` : lot.status === "available" ? "Libre" : lot.status === "sold" ? "Vendido" : "Apartado"}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {/* Paginación */}
+      {totalPages > 1 && (
+        <div className="mt-2.5 flex items-center justify-center gap-3">
+          <button
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={safePage === 0}
+            className="flex h-[26px] w-[26px] items-center justify-center rounded-[6px] border border-[#DCDAD2] bg-[#F1EEE6] text-[#355E3B] disabled:opacity-35"
+          >
+            <HiChevronLeft />
+          </button>
+          <span className="text-[0.66rem] font-semibold text-[#43453F]">
+            Página {safePage + 1} de {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+            disabled={safePage >= totalPages - 1}
+            className="flex h-[26px] w-[26px] items-center justify-center rounded-[6px] border border-[#DCDAD2] bg-[#F1EEE6] text-[#355E3B] disabled:opacity-35"
+          >
+            <HiChevronRight />
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function cropPlanImage(dataUrl) {
@@ -134,6 +230,11 @@ function LotsPage() {
   const { data: projects = [] } = useProjectsQuery();
   const { draftProject, setDraftProject, saveFrac, saveEditedFrac, setSelectedFracId, showToast } = useAppContext();
   const isEditing = !!draftProject._editingFracId;
+
+  useEffect(() => {
+    setDraftProject({ mode: "selector", name: "Nuevo Fraccionamiento", mapUrl: "", sections: [], cadProcessing: false });
+  }, []);
+
   const [sectionName, setSectionName] = useState("");
   const [sectionTotal, setSectionTotal] = useState(20);
   const [mapFileName, setMapFileName] = useState("");
@@ -364,8 +465,8 @@ function LotsPage() {
           id: `${sectionId}_ext_${Date.now()}_${i}`,
           code: `${prefix}-${String(start + i + 1).padStart(2, "0")}`,
           status: "available",
-          area: 140,
-          price: 330000
+          area: "",
+          price: ""
         }));
         return { ...sec, lots: [...sec.lots, ...newLots] };
       })
@@ -598,57 +699,13 @@ function LotsPage() {
               ) : (
                 <div className="space-y-5">
                   {draftProject.sections.map((section) => (
-                    <div key={section.id}>
-                      {/* Section header */}
-                      <div className="mb-2.5 flex items-center gap-2">
-                        <div className="text-[0.7rem] font-extrabold uppercase tracking-[0.5px] text-[#43453F]">
-                          {section.name}
-                          <span className="ml-1 font-normal opacity-55 text-[0.62rem]">{section.lots.length} lotes</span>
-                        </div>
-                        <div className="h-px flex-1 bg-[#DCDAD2]" />
-                        <button
-                          onClick={() => addLotsToSection(section.id, 10)}
-                          title="Añadir 10 lotes"
-                          className="flex h-[22px] w-[22px] items-center justify-center rounded-[5px] border border-[#DCDAD2] bg-[#F1EEE6] text-[0.8rem] font-black text-[#355E3B]"
-                        >
-                          +
-                        </button>
-                        <button
-                          onClick={() => removeSection(section.id)}
-                          title="Eliminar sección"
-                          className="flex h-[22px] w-[22px] items-center justify-center rounded-[5px] border border-[#DCDAD2] bg-[#F1EEE6] text-[0.8rem] font-black text-[#C0392B]"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                      {/* Lot grid */}
-                      <div className="grid gap-1.5" style={{ gridTemplateColumns: "repeat(5, 1fr)" }}>
-                        {section.lots.map((lot) => {
-                          const c = LOT_COLORS[lot.status] || LOT_COLORS.available;
-                          return (
-                            <div
-                              key={lot.id}
-                              title={`${lot.code} — ${lot.status}`}
-                              className="relative select-none rounded-[8px] border-[1.5px] px-1 py-2 text-center transition-all"
-                              style={{ background: c.bg, borderColor: c.border }}
-                            >
-                              <div className="text-[0.78rem] font-extrabold leading-none" style={{ color: c.text }}>
-                                {lot.code}
-                              </div>
-                              <div className="mt-0.5 text-[0.56rem] opacity-70" style={{ color: c.text }}>
-                                {lot.area ? `${lot.area}m²` : lot.status === "available" ? "Libre" : lot.status === "sold" ? "Vendido" : "Apartado"}
-                              </div>
-                              <button
-                                onClick={() => openEditLot(section.id, lot.id)}
-                                className="absolute right-0.5 top-0.5 flex h-3 w-3 items-center justify-center rounded-[2px] bg-black/10 text-[0.45rem] text-black/35 cursor-pointer"
-                              >
-                                ✏
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
+                    <SectionGrid
+                      key={section.id}
+                      section={section}
+                      onAddLots={addLotsToSection}
+                      onRemoveSection={removeSection}
+                      onEditLot={openEditLot}
+                    />
                   ))}
                 </div>
               )}
@@ -806,12 +863,14 @@ function LotsPage() {
           >
             Cargar demo
           </button>
-          <button
-            className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white"
-            onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
-          >
-            Nuevo proyecto
-          </button>
+          {draftProject.mode === "selector" && (
+            <button
+              className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white"
+              onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
+            >
+              Nuevo proyecto
+            </button>
+          )}
         </div>
       </section>
 

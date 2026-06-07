@@ -41,11 +41,7 @@ function EcoLayout({ active = "panel", title, subtitle, children }) {
       <aside className="sidebar">
         <div className="sidebar-inner">
           <div className="brand">
-            <div className="brand-logo"><svg><use href="#eco-brand" /></svg></div>
-            <div>
-              <div className="brand-name">Own<span>Terra</span></div>
-              <div className="brand-tag">Ecosistem Platform</div>
-            </div>
+            <div className="brand-logo"><img src="/ownterra ecosistem.png" alt="OwnTerra Ecosistem" /></div>
           </div>
 
           <div className="nav-group">
@@ -68,10 +64,10 @@ function EcoLayout({ active = "panel", title, subtitle, children }) {
             >
               <span className="nav-mini ic-lands"><svg width="14" height="14"><use href="#eco-g-lands" /></svg></span> OwnTerra Lands
             </button>
-            <button className="nav-item" style={{ opacity: 0.5, cursor: "default" }}>
+            <button className="nav-item" style={{ opacity: 0.5, cursor: "not-allowed", pointerEvents: "none" }} tabIndex={-1} aria-disabled="true">
               <span className="nav-mini ic-neighb"><svg width="14" height="14"><use href="#eco-g-neighb" /></svg></span> Neighborhoods
             </button>
-            <button className="nav-item" style={{ opacity: 0.5, cursor: "default" }}>
+            <button className="nav-item" style={{ opacity: 0.5, cursor: "not-allowed", pointerEvents: "none" }} tabIndex={-1} aria-disabled="true">
               <span className="nav-mini ic-homes"><svg width="14" height="14"><use href="#eco-g-homes" /></svg></span> OwnTerra Homes
             </button>
           </div>
@@ -83,9 +79,13 @@ function EcoLayout({ active = "panel", title, subtitle, children }) {
 
           <div style={{ marginTop: "auto" }} />
           <div className="tenant-selector">
-            <div className="ts-label">Empresa activa</div>
-            <div className="ts-name">Fraccionamientos del Norte</div>
-            <div className="ts-schema">schema: frac_norte · 4 fraccs</div>
+            <div className="ts-label">Organización activa</div>
+            <div className="ts-name" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {currentUser?.organization?.name || currentUser?.organization || "Mi organización"}
+            </div>
+            <div className="ts-schema">
+              {currentUser?.name ? `Hola, ${currentUser.name.split(" ")[0]} 👋` : "OwnTerra Platform"}
+            </div>
           </div>
         </div>
       </aside>

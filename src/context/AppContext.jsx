@@ -87,6 +87,8 @@ export function AppProvider({ children }) {
   const [toast, setToast] = useState(null);
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [selectedFracId, setSelectedFracId] = useState(null);
+  const [fracsResetKey, setFracsResetKey] = useState(0);
+  const resetFracsView = () => setFracsResetKey((k) => k + 1);
 
   // ── Auto-select first item when data loads ────────────────────────────────
   useEffect(() => {
@@ -121,47 +123,61 @@ export function AppProvider({ children }) {
   };
 
   // ── Auth ──────────────────────────────────────────────────────────────────
+  const applyAuthSession = (data, remember = true) => {
+    setCurrentUser({
+      token: data.access_token,
+      refresh_token: data.refresh_token,
+      id: String(data.user.id),
+      name: data.user.name,
+      initials: data.user.initials || data.user.name.slice(0, 2).toUpperCase(),
+      email: data.user.email,
+      role: data.user.role,
+      apps: data.user.apps || data.user.user_apps || [],
+      permissions: data.user.permissions || [],
+      organization: data.organization,
+      remember,
+    });
+  };
+
   const login = async ({ identifier, password, remember }) => {
     try {
       const { data } = await api.post("/auth/login", { email: identifier, password });
-      setCurrentUser({
-        token: data.access_token,
-        refresh_token: data.refresh_token,
-        id: String(data.user.id),
-        name: data.user.name,
-        initials: data.user.initials || data.user.name.slice(0, 2).toUpperCase(),
-        email: data.user.email,
-        role: data.user.role,
-        apps: data.user.apps || data.user.user_apps || [],
-        permissions: data.user.permissions || [],
-        organization: data.organization,
-        remember,
-      });
+      applyAuthSession(data, remember);
       navigate("/ecosistema");
       return { ok: true };
-    } catch {
-      return { ok: false };
+    } catch (err) {
+      const code = err?.response?.data?.error?.code;
+      if (code === "EMAIL_NOT_VERIFIED") {
+        return { ok: false, needsVerification: true, email: identifier, msg: getUserErrorMessage(err, "Confirma tu correo") };
+      }
+      return { ok: false, msg: getUserErrorMessage(err, "Credenciales inválidas") };
+    }
+  };
+
+  const verifyEmail = async (token) => {
+    try {
+      const { data } = await api.post("/auth/verify-email", { token });
+      applyAuthSession(data, true);
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, msg: getUserErrorMessage(err, "Enlace de verificación inválido o expirado") };
+    }
+  };
+
+  const resendVerification = async (email) => {
+    try {
+      await api.post("/auth/resend-verification", { email });
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, msg: getUserErrorMessage(err, "No se pudo reenviar el correo") };
     }
   };
 
   const register = async ({ organization_name, name, email, password }) => {
     try {
       const { data } = await api.post("/auth/register", { organization_name, name, email, password });
-      setCurrentUser({
-        token: data.access_token,
-        refresh_token: data.refresh_token,
-        id: String(data.user.id),
-        name: data.user.name,
-        initials: data.user.initials || data.user.name.slice(0, 2).toUpperCase(),
-        email: data.user.email,
-        role: data.user.role,
-        apps: data.user.apps || data.user.user_apps || [],
-        permissions: data.user.permissions || [],
-        organization: data.organization,
-        remember: true,
-      });
-      navigate("/ecosistema");
-      return { ok: true };
+      // Flujo bloqueante: el backend no devuelve tokens, el usuario debe confirmar su correo.
+      return { ok: true, pendingVerification: true, email: data.email || email };
     } catch (err) {
       return { ok: false, msg: getUserErrorMessage(err, "Error al registrar") };
     }
@@ -477,6 +493,7 @@ export function AppProvider({ children }) {
       setSelectedFracId(String(inmueble.id));
       setDraftProject(initialDraftProject);
       navigate("/fraccionamientos");
+      showToast(`Fraccionamiento "${name || "Fraccionamiento"}" creado${draftLots.length > 0 ? ` con ${draftLots.length} lote${draftLots.length !== 1 ? "s" : ""}` : ""}`);
     } catch (err) {
       showToast(getUserErrorMessage(err, "Error al crear el fraccionamiento"));
     }
@@ -601,6 +618,8 @@ export function AppProvider({ children }) {
     reportClientId,
     selectedClientId,
     selectedFracId,
+    fracsResetKey,
+    resetFracsView,
     setDraftProject,
     setEditingClient,
     setEditingContract,
@@ -621,6 +640,8 @@ export function AppProvider({ children }) {
     canUseFeature: (feature) => canUseFeature(currentUser, feature),
     login,
     register,
+    verifyEmail,
+    resendVerification,
     forgotPassword,
     logout,
     saveClient,

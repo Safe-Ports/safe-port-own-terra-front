@@ -7,6 +7,23 @@ import Button from "@/components/Button";
 function SalesPage() {
   const { contracts, setEditingContract, openModal, openContractCreate, openDocumentUpload, openClientReport, showToast } = useAppContext();
 
+  const handleDownloadPdf = async (contract) => {
+    try {
+      showToast(`Generando PDF de ${contract.contract_number}…`);
+      const blob = await contractService.downloadPdf(contract.id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${contract.contract_number || contract.id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      showToast("Error al descargar el contrato PDF");
+    }
+  };
+
   return (
     <div className="card">
       <div className="card-hd">
@@ -47,7 +64,7 @@ function SalesPage() {
                   <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => { setEditingContract(contract); openModal("contractModal"); }}>Editar</button>{" "}
                   <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => openDocumentUpload({ linkType: "contract", linkedId: contract.id })}>📁</button>{" "}
                   <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => openClientReport(contract.client?.id)}>🖨</button>{" "}
-                  <button className="btn-p" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => { window.open(contractService.downloadPdf(contract.id), "_blank"); showToast(`Descargando ${contract.contract_number}...`); }}>⬇ PDF</button>
+                  <button className="btn-p" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => handleDownloadPdf(contract)}>⬇ PDF</button>
                 </td>
               </tr>
             )) : (

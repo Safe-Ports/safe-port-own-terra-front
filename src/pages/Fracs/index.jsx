@@ -169,9 +169,16 @@ function FracsPage() {
     showToast,
     setDraftProject,
     currentUser,
+    fracsResetKey,
   } = useAppContext();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const [homeMode, setHomeMode] = useState(true);
+
+  useEffect(() => {
+    setHomeMode(true);
+  }, [fracsResetKey]);
 
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -275,7 +282,7 @@ function FracsPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  if (!selectedFrac) {
+  if (!fracs.length) {
     return (
       <EmptyState
         icon="▦"
@@ -283,6 +290,74 @@ function FracsPage() {
         description="Carga un plano, arma la matriz de lotes y crea tu primer proyecto desde la seccion Carga de Lotes."
         action={<Link className="mobile-primary-button" to="/lotes">Ir a Carga de Lotes</Link>}
       />
+    );
+  }
+
+  if (homeMode) {
+    return (
+      <div className="frac-page">
+        <aside className="frac-projects frac-panel">
+          <div className="frac-panel-head">
+            <div>
+              <div className="frac-panel-title">Proyectos</div>
+              <div className="frac-panel-sub">Fraccionamientos activos</div>
+            </div>
+            <span className="frac-project-count">{fracs.length}</span>
+          </div>
+          <div className="frac-panel-body">
+            <div className="frac-project-list">
+              {fracs.map((frac) => (
+                <button
+                  key={frac.id}
+                  className="frac-project-item"
+                  onClick={() => { setSelectedFracId(frac.id); setHomeMode(false); }}
+                >
+                  <span className="frac-project-mark">{frac.name.slice(0, 2).toUpperCase()}</span>
+                  <span className="frac-project-copy">
+                    <span className="frac-project-name">{frac.name}</span>
+                    <span className="frac-project-meta">
+                      {frac.total_lots ?? 0} lotes
+                      {frac.created_at ? ` / ${new Date(frac.created_at).toLocaleDateString("es-MX")}` : ""}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </aside>
+        <section className="frac-workspace" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ textAlign: "center", maxWidth: 360, padding: "0 24px" }}>
+            <div style={{
+              width: 80, height: 80, borderRadius: 24,
+              background: "linear-gradient(135deg,#D4EAE0,#EDE3D3)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "2rem", margin: "0 auto 20px",
+              boxShadow: "0 8px 24px rgba(30,61,43,.1)",
+              animation: "pulse-soft 3s ease-in-out infinite",
+            }}>
+              🗺️
+            </div>
+            <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.3rem", color: "#1E3D2B", marginBottom: 10, fontWeight: 600 }}>
+              Bienvenido a OwnTerra Lands
+            </div>
+            <div style={{ fontSize: "0.84rem", color: "#83867C", lineHeight: 1.6, marginBottom: 20 }}>
+              Selecciona un fraccionamiento del panel izquierdo para explorar su inventario de lotes, plano de referencia y cotizador.
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+              {[["🏡","Inventario de lotes"],["📐","Plano interactivo"],["💰","Cotizador"]].map(([icon, label]) => (
+                <span key={label} style={{
+                  display: "flex", alignItems: "center", gap: 5,
+                  background: "#F1EEE6", borderRadius: 20, padding: "5px 12px",
+                  fontSize: ".74rem", fontWeight: 600, color: "#43453F",
+                }}>
+                  {icon} {label}
+                </span>
+              ))}
+            </div>
+            <style>{`@keyframes pulse-soft { 0%,100%{transform:scale(1)} 50%{transform:scale(1.04)} }`}</style>
+          </div>
+        </section>
+      </div>
     );
   }
 
@@ -443,10 +518,8 @@ function FracsPage() {
             <h1>{selectedFrac.name}</h1>
             <p>Inventario territorial consolidado con lectura rapida de disponibilidad, plano de referencia, detalle tecnico y cotizador comercial por lote.</p>
             <div className="frac-hero-actions">
-              <Button variant="secondary" onClick={openEditor}>Editar matriz</Button>
               <Button variant="secondary" onClick={() => selectedFrac.map_image_url && setShowMapViewer(true)} disabled={!selectedFrac.map_image_url}>Ver plano</Button>
               <Button variant="secondary" onClick={() => exportAppData("lots")}>Exportar</Button>
-              <Button variant="danger" onClick={() => setShowDeleteConfirm(true)}>Eliminar</Button>
             </div>
           </article>
 
@@ -815,26 +888,6 @@ function FracsPage() {
         </div>
       ) : null}
 
-      {showDeleteConfirm ? (
-        <div className="frac-modal-overlay" onClick={(event) => event.target === event.currentTarget && setShowDeleteConfirm(false)}>
-          <article className="frac-confirm-modal">
-            <div className="frac-modal-head danger">
-              <div>
-                <h2>Eliminar fraccionamiento</h2>
-                <p>{selectedFrac.name}</p>
-              </div>
-              <button className="frac-modal-close" onClick={() => setShowDeleteConfirm(false)}>×</button>
-            </div>
-            <div className="frac-confirm-body">
-              <p>Esta accion eliminara el proyecto seleccionado. Confirma solo si ya no debe aparecer en OwnTerra Lands.</p>
-              <div className="frac-confirm-actions">
-                <Button variant="secondary" onClick={() => setShowDeleteConfirm(false)}>Cancelar</Button>
-                <Button variant="danger" onClick={() => { deleteFrac(selectedFrac.id); setShowDeleteConfirm(false); }}>Eliminar</Button>
-              </div>
-            </div>
-          </article>
-        </div>
-      ) : null}
 
       {showMapViewer && selectedFrac.map_image_url ? <MapViewer src={selectedFrac.map_image_url} onClose={() => setShowMapViewer(false)} /> : null}
     </div>

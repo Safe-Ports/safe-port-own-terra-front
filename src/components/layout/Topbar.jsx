@@ -1,4 +1,4 @@
-import { HiArrowLeftOnRectangle, HiBars3, HiBell, HiMagnifyingGlass } from "react-icons/hi2";
+import { HiArrowLeftOnRectangle, HiBars3, HiCalendarDays, HiMagnifyingGlass, HiSun } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
 
@@ -78,18 +78,16 @@ function Topbar({ pathname }) {
           <span className="tb-shortcut">⌘K</span>
         </button>
 
-        <button
-          title="Notificaciones"
-          onClick={() => { markAllNotificationsRead(); navigate("/alertas"); }}
-          style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 8, border: "1px solid var(--bd)", background: "var(--sf2)", color: "var(--tx2)", cursor: "pointer" }}
-        >
-          <HiBell />
-          {notificationCount > 0 && (
-            <span style={{ position: "absolute", top: -4, right: -4, background: "var(--danger)", color: "#fff", fontSize: "0.55rem", fontWeight: 800, borderRadius: 999, minWidth: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px" }}>
-              {notificationCount > 99 ? "99+" : notificationCount}
-            </span>
-          )}
+        <button className="topbar-core-link" onClick={() => navigate("/ecosistema/mi-dia")}>
+          <HiSun />
+          <span>Mi Día</span>
         </button>
+
+        <button className="topbar-core-link" onClick={() => navigate("/ecosistema/agenda")}>
+          <HiCalendarDays />
+          <span>Calendario</span>
+        </button>
+
 
         <div className="topbar-user">
           <div className="topbar-role">{currentUser?.role || "Usuario"}</div>

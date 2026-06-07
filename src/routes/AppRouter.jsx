@@ -17,7 +17,6 @@ const FracsPage = lazy(() => import("@/pages/Fracs"));
 const ClientsPage = lazy(() => import("@/pages/Clients"));
 const SalesPage = lazy(() => import("@/pages/Sales"));
 const DocumentsPage = lazy(() => import("@/pages/Documents"));
-const AlertsPage = lazy(() => import("@/pages/Alerts"));
 const AssistantPage = lazy(() => import("@/pages/Assistant"));
 const BotAnalyticsPage = lazy(() => import("@/pages/BotAnalytics"));
 const PaymentsPage = lazy(() => import("@/pages/Payments"));
@@ -68,7 +67,7 @@ function AppRouter() {
           <Route path="/ventas" element={<RequireFeature feature="lands.sales"><SalesPage /></RequireFeature>} />
           <Route path="/contratos" element={<RequireFeature feature="lands.sales"><SalesPage /></RequireFeature>} />
           <Route path="/documentos" element={<RequireFeature feature="lands.documents"><DocumentsPage /></RequireFeature>} />
-          <Route path="/alertas" element={<RequireFeature app="lands"><AlertsPage /></RequireFeature>} />
+          <Route path="/alertas" element={<Navigate to="/pagos" replace />} />
           <Route path="/asistente" element={<RequireFeature app="lands"><AssistantPage /></RequireFeature>} />
           <Route path="/bot-analytics" element={<RequireFeature app="lands"><BotAnalyticsPage /></RequireFeature>} />
           <Route path="/pagos" element={<RequireFeature feature="lands.payments"><PaymentsPage /></RequireFeature>} />
