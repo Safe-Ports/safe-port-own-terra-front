@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
+import GuideModal from "@/components/shared/GuideModal";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
+import { useLandsGuide } from "@/context/LandsGuideContext";
 import { useDashboardQuery } from "@/hooks/queries/useAppQueries";
 import { compactCurrency, currency } from "@/services/formatters";
 import { expenseService } from "@/services/expenseService";
@@ -212,6 +214,8 @@ export default function DashboardPage() {
   const { clients, contracts, payments, fracs } = useAppContext();
   const { data }    = useDashboardQuery();
   const [chartYear] = useState(CY);
+  const [showGuide, setShowGuide] = useState(false);
+  useLandsGuide(() => setShowGuide(true));
 
   /* team performance */
   const { data: teamRaw } = useQuery({
@@ -332,7 +336,7 @@ export default function DashboardPage() {
           value={availLots}
           sub={`${totalLots} en inventario`}
           change={null} />
-        <KpiCard icon={HiOutlineCheckCircle}   iconBg="#2F6A38" label="Lotes vendidos (mes)"
+        <KpiCard icon={HiOutlineCheckCircle}   iconBg="#2F6A38" label="Lotes vendidos"
           value={soldLots}
           sub="Total histórico"
           change={null} />
@@ -341,7 +345,7 @@ export default function DashboardPage() {
           sub="lotes en total"
           change={null} />
         <KpiCard icon={HiOutlineDocumentText}  iconBg="#c0392b" label="Contratos activos"
-          value={activeContracts || contracts.length}
+          value={activeContracts}
           sub={`${clients.length} clientes`}
           change={null} />
       </div>
@@ -388,7 +392,7 @@ export default function DashboardPage() {
             <div>
               <div className="db-card-title">Contratos firmados</div>
               <div style={{ fontSize:".7rem", color:"var(--mu)", marginTop:4 }}>
-                Meta mensual de ventas · <strong style={{ color:"var(--tx)" }}>{salesThisMonth} este mes</strong>
+                Contratos registrados · <strong style={{ color:"var(--tx)" }}>{salesThisMonth} este mes</strong>
               </div>
             </div>
             <div style={{ fontSize:".7rem", fontWeight:600, color:"var(--mu)",
@@ -596,6 +600,20 @@ export default function DashboardPage() {
           ))}
         </div>
       </div>
+      <GuideModal
+        open={showGuide}
+        onClose={() => setShowGuide(false)}
+        title="Panel principal"
+        subtitle="Vista consolidada de indicadores clave de tu negocio inmobiliario."
+        steps={[
+          { title: "KPIs del mes", text: "Los 6 indicadores al inicio muestran ingresos, ventas, lotes disponibles, vendidos, inventario total y contratos activos. El porcentaje compara con el mes anterior." },
+          { title: "Gráficas de tendencia", text: "Las gráficas muestran ingresos vs egresos y contratos cerrados mes a mes durante el año. Úsalas para detectar tendencias de cobranza y ventas." },
+          { title: "Top vendedores", text: "Ranking mensual del equipo por número de contratos cerrados. Se actualiza en tiempo real con los contratos del mes en curso." },
+          { title: "Ventas recientes", text: "Los últimos 5 contratos registrados con su cliente, fraccionamiento, monto y estado. Haz clic en 'Ver todos' para ir al repositorio completo." },
+          { title: "Resumen financiero YTD", text: "Acumulado del año: ingresos totales, egresos y utilidad neta con margen porcentual. Los datos se actualizan conforme se registran pagos y gastos." },
+          { title: "Acciones rápidas", text: "Botones directos para registrar los flujos más frecuentes: nuevo contrato, cobro de cliente, egreso operativo e incorporar nuevo cliente." },
+        ]}
+      />
     </>
   );
 }

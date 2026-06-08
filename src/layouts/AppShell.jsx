@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
+import { LandsGuideContext } from "@/context/LandsGuideContext";
 import GlobalSearchModal from "@/components/ui/GlobalSearchModal";
 import DocumentPreviewModal from "@/components/shared/DocumentPreviewModal";
 import ClientReportModal from "@/components/shared/ClientReportModal";
@@ -10,28 +12,31 @@ import Toast from "@/components/shared/Toast";
 
 function AppShell() {
   const location = useLocation();
+  const [guideAction, setGuideAction] = useState(null);
 
   return (
-    <div className="app-shell">
-      <Sidebar />
-      <div className="main">
-        <Topbar pathname={location.pathname} />
-        <div className="content">
-          <div className="view active">
-            <div className="view-scroll">
-              <Outlet />
+    <LandsGuideContext.Provider value={setGuideAction}>
+      <div className="app-shell">
+        <Sidebar />
+        <div className="main">
+          <Topbar pathname={location.pathname} onGuide={guideAction} />
+          <div className="content">
+            <div className="view active">
+              <div className="view-scroll">
+                <Outlet />
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <GlobalSearchModal />
-      <DocumentPreviewModal />
-      <ClientReportModal />
-      <ContractModal />
-      <DocumentModal />
-      <Toast />
-    </div>
+        <GlobalSearchModal />
+        <DocumentPreviewModal />
+        <ClientReportModal />
+        <ContractModal />
+        <DocumentModal />
+        <Toast />
+      </div>
+    </LandsGuideContext.Provider>
   );
 }
 

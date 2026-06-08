@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import GuideModal from "@/components/shared/GuideModal";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
+import { useLandsGuide } from "@/context/LandsGuideContext";
 import Modal from "@/components/ui/Modal";
 import InlineDocumentsPanel from "@/components/shared/InlineDocumentsPanel";
 import Button from "@/components/Button";
@@ -45,7 +47,14 @@ function ClientModal() {
         <>
           <Button variant="secondary" onClick={() => closeModal("clientModal")}>Cancelar</Button>
           {editingClient && <Button variant="danger" onClick={() => deleteClient(editingClient.id)}>🗑 Eliminar</Button>}
-          <Button variant="primary" onClick={() => saveClient({ ...(editingClient || {}), ...form })}>
+          <Button
+            variant="primary"
+            onClick={() => saveClient({
+              ...(editingClient || {}),
+              ...form,
+              linkClientId: dupe?.id,
+            })}
+          >
             {dupe ? "🔗 Vincular a Lands" : "✓ Guardar"}
           </Button>
         </>
@@ -108,23 +117,42 @@ function ClientsPage() {
     clients, contracts, payments,
     selectedClientId, setSelectedClientId,
     openModal, setEditingClient,
-    openClientReport, sendReminder, sendClientMessage, openContractCreate,
+    openClientReport, sendClientMessage, openContractCreate,
   } = useAppContext();
+  const [showGuide, setShowGuide] = useState(false);
+  useLandsGuide(() => setShowGuide(true));
   const navigate = useNavigate();
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const clientAppQueries = useQueries({
+    queries: clients.map((client) => ({
+      queryKey: ["client-apps", String(client.id)],
+      queryFn: () => clientService.getApps(client.id),
+      staleTime: 60_000,
+    })),
+  });
+  const clientAppsById = new Map(
+    clients.map((client, index) => [
+      String(client.id),
+      clientAppQueries[index]?.data?.apps ?? [],
+    ])
+  );
+  const clientAssignmentsLoading = clientAppQueries.some((queryResult) => queryResult.isPending);
+  const clientAssignmentsError = clientAppQueries.some((queryResult) => queryResult.isError);
+  const landsClients = clients.filter((client) => clientAppsById.get(String(client.id))?.includes("lands"));
 
   const filtered = useMemo(
-    () => clients.filter((c) => {
+    () => landsClients.filter((c) => {
       const matchesFilter = filter === "all" || c.type === filter;
       const matchesSearch = `${c.name} ${c.email || ""}`.toLowerCase().includes(search.toLowerCase());
       return matchesFilter && matchesSearch;
     }),
-    [clients, filter, search]
+    [landsClients, filter, search]
   );
 
-  const selected = clients.find((c) => c.id === selectedClientId) || filtered[0] || null;
-  const eco = selected ? getClientEcosystem(selected) : null;
+  const selected = landsClients.find((c) => c.id === selectedClientId) || filtered[0] || null;
+  const withApps = (client) => client ? { ...client, apps: clientAppsById.get(String(client.id)) ?? [] } : null;
+  const eco = selected ? getClientEcosystem(withApps(selected)) : null;
 
   const { data: selectedDetail } = useQuery({
     queryKey: ["client", selected?.id],
@@ -165,7 +193,9 @@ function ClientsPage() {
                 <div style={{ fontWeight: 700, fontSize: ".87rem" }}>Clientes</div>
                 <div style={{ fontSize: ".58rem", color: "var(--mu)", fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", marginTop: 1 }}>Del ecosistema · con acceso a Lands</div>
               </div>
-              <Button variant="primary" style={{ padding: "5px 12px", fontSize: ".74rem" }} onClick={() => openModal("clientModal")}>+ Vincular</Button>
+              <div style={{ display: "flex", gap: 8 }}>
+                <Button variant="primary" style={{ padding: "5px 12px", fontSize: ".74rem" }} onClick={() => openModal("clientModal")}>+ Vincular</Button>
+              </div>
             </div>
             <div className="cl-src">
               <span style={{ color: "var(--mu)" }}>🔍</span>
@@ -179,7 +209,7 @@ function ClientsPage() {
           </div>
           <div className="cl-list-body">
             {filtered.map((client) => {
-              const cEco = getClientEcosystem(client);
+              const cEco = getClientEcosystem(withApps(client));
               return (
                 <div key={client.id} className={`cl-item ${selected?.id === client.id ? "act" : ""}`} onClick={() => setSelectedClientId(client.id)}>
                   <div className="cl-av">
@@ -203,9 +233,19 @@ function ClientsPage() {
                 </div>
               );
             })}
-            {clients.length === 0 && (
+            {clientAssignmentsLoading && (
               <div style={{ padding: "24px 16px", textAlign: "center", color: "var(--mu)", fontSize: ".8rem" }}>
-                Sin clientes aún. Crea el primero.
+                Consultando accesos de clientes...
+              </div>
+            )}
+            {!clientAssignmentsLoading && clientAssignmentsError && (
+              <div style={{ padding: "24px 16px", textAlign: "center", color: "#C0392B", fontSize: ".8rem" }}>
+                No se pudieron consultar los accesos de clientes.
+              </div>
+            )}
+            {!clientAssignmentsLoading && !clientAssignmentsError && landsClients.length === 0 && (
+              <div style={{ padding: "24px 16px", textAlign: "center", color: "var(--mu)", fontSize: ".8rem" }}>
+                Sin clientes vinculados a Lands.
               </div>
             )}
           </div>
@@ -368,11 +408,6 @@ function ClientsPage() {
                       🖨 Estado de Cuenta
                     </Button>
                   )}
-                  {selected.status === "overdue" && (
-                    <Button variant="danger" style={{ padding: "8px 15px", fontSize: ".78rem", borderRadius: 30 }} onClick={() => sendReminder(selected.name)}>
-                      📲 Recordar
-                    </Button>
-                  )}
                 </div>
 
                 <InlineDocumentsPanel entityType="client" entityId={selected.id} entityLabel={selected.name} />
@@ -389,6 +424,20 @@ function ClientsPage() {
       </div>
 
       <ClientModal />
+      <GuideModal
+        open={showGuide}
+        onClose={() => setShowGuide(false)}
+        title="Directorio de clientes"
+        subtitle="Seguimiento de compradores, prospectos y sus contratos activos."
+        steps={[
+          { title: "Seleccionar un cliente", text: "Haz clic en cualquier cliente de la lista izquierda para ver su detalle completo: contratos, pagos, saldo y documentos vinculados." },
+          { title: "Buscar y filtrar", text: "Usa la barra de búsqueda para encontrar clientes por nombre o correo. El filtro de pestañas separa compradores activos de prospectos." },
+          { title: "Vincular nuevo cliente", text: "El botón '+ Vincular' abre el formulario para registrar un nuevo cliente y asignarle acceso a OwnTerra Lands." },
+          { title: "Editar cliente", text: "En el detalle del cliente, el botón 'Editar' permite modificar nombre, correo, teléfono y datos del contrato." },
+          { title: "Estado de cuenta", text: "Desde el detalle puedes ver el historial de pagos, descargarlo en PDF o enviarlo por correo directamente al cliente." },
+          { title: "Contacto rápido", text: "Los íconos de teléfono, correo y WhatsApp en el encabezado del cliente abren directamente la app de contacto correspondiente." },
+        ]}
+      />
     </>
   );
 }

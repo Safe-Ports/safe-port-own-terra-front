@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import EcoLayout from "./EcoLayout";
+import GuideModal from "@/components/shared/GuideModal";
 import { userService } from "@/services/userService";
 import { useAppContext } from "@/context/AppContext";
 import { getUserErrorMessage } from "@/services/errors";
@@ -14,7 +15,7 @@ const blankDraft = {
   email: "",
   phone: "",
   role: "vendor",
-  password: "Temporal123",
+  password: "",
   apps: {},
   is_active: true,
 };
@@ -28,7 +29,8 @@ function EcosystemEquipo() {
   const [query, setQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [selectedId, setSelectedId] = useState(null);
-  const [modal, setModal] = useState(null);
+  const [modal, setModal]         = useState(null);
+  const [showGuide, setShowGuide] = useState(false);
   const [accessDraft, setAccessDraft] = useState(null);
   const [confirmAccessSave, setConfirmAccessSave] = useState(false);
   const [formError, setFormError] = useState("");
@@ -242,14 +244,16 @@ function EcosystemEquipo() {
   }
 
   return (
-    <EcoLayout active="team" title="Equipo del core" subtitle="Usuarios internos · acceso a OwnTerra Lands">
+    <EcoLayout active="team" title="Equipo del core" subtitle="Usuarios internos · acceso a OwnTerra Lands" onGuide={() => setShowGuide(true)}>
       <div className="ag-hero">
         <div>
           <div className="ag-kicker">Ecosistema Core</div>
           <h2>Equipo y vendedores</h2>
           <p>Administra usuarios internos desde el Core. Los vendedores con acceso a Lands se usan como responsables de clientes, lotes, contratos y cobranza.</p>
         </div>
-        <button className="ag-primary" onClick={openCreate}>Nuevo integrante</button>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button className="ag-primary" onClick={openCreate}>Nuevo integrante</button>
+        </div>
       </div>
 
       <div className="kpi-row" style={{ marginBottom: 22 }}>
@@ -487,6 +491,20 @@ function EcosystemEquipo() {
           </div>
         </div>
       )}
+      <GuideModal
+        open={showGuide}
+        onClose={() => setShowGuide(false)}
+        title="Equipo y vendedores"
+        subtitle="Gestión de usuarios internos con acceso al ecosistema OwnTerra."
+        steps={[
+          { title: "Roles disponibles", text: "Admin: acceso completo incluyendo configuración y gestión de usuarios. Vendor: acceso a operaciones comerciales sin configuración administrativa." },
+          { title: "Crear nuevo integrante", text: "Pulsa 'Nuevo integrante', ingresa nombre, correo, rol y una contraseña temporal de al menos 8 caracteres." },
+          { title: "Asignar apps", text: "Desde la ficha de cada usuario puedes activar o desactivar su acceso a OwnTerra Lands." },
+          { title: "Restablecer contraseña", text: "Si un usuario olvidó su contraseña, usa el botón de restablecer en su ficha para generar una nueva contraseña temporal." },
+          { title: "Filtrar por rol", text: "Las pestañas superiores permiten ver todos los usuarios, solo admins, o solo vendedores de Lands." },
+          { title: "Vendedores en Lands", text: "Los usuarios con rol Vendor aparecen en los selectores de vendedor al crear contratos, lotes y clientes en OwnTerra Lands." },
+        ]}
+      />
     </EcoLayout>
   );
 }

@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { HiOutlineQuestionMarkCircle } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 import EcoSprite from "./EcoSprite";
 import "@/styles/ecosystem.css";
@@ -6,7 +7,7 @@ import Avatar from "@/components/Avatar";
 
 /* Layout compartido del hub Aurora: sidebar + topbar + área de scroll.
    `active` marca el item activo del menú. */
-function EcoLayout({ active = "panel", title, subtitle, children }) {
+function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
   const navigate = useNavigate();
   const { currentUser, logout, notificationCount, canAccessApp, canUseFeature, showToast } = useAppContext();
 
@@ -98,6 +99,19 @@ function EcoLayout({ active = "panel", title, subtitle, children }) {
             <div className="topbar-sub">{subtitle || `Bienvenido · Hoy, ${today}`}</div>
           </div>
           <div className="topbar-right">
+            {onGuide && (
+              <button
+                type="button"
+                className="tb-btn topbar-help"
+                onClick={onGuide}
+                aria-label="Abrir guías de esta sección"
+                aria-haspopup="dialog"
+                title="Abrir guías"
+              >
+                <HiOutlineQuestionMarkCircle aria-hidden="true" />
+                <span>Guías</span>
+              </button>
+            )}
             <button className="tb-btn" onClick={() => navigate("/ecosistema/mi-dia")}>
               Mi Día
               {notificationCount > 0 && (

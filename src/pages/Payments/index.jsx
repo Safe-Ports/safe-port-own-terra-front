@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import GuideModal from "@/components/shared/GuideModal";
 import {
   HiOutlinePlus, HiOutlinePencil, HiOutlineTrash, HiOutlineCalendar,
   HiOutlineXMark, HiOutlineMagnifyingGlass, HiOutlineChevronDown,
   HiOutlineFunnel, HiOutlineEllipsisVertical,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
+import { useLandsGuide } from "@/context/LandsGuideContext";
 import { expenseService, CAT_LABEL, CAT_STYLE } from "@/services/expenseService";
 import { getUserErrorMessage } from "@/services/errors";
 import { currency, relativeDays } from "@/services/formatters";
@@ -476,9 +478,11 @@ export default function PaymentsPage() {
   const { payments, clients, contracts, quickPay, sendReminder, showToast } = useAppContext();
   const qc = useQueryClient();
 
-  const [tab,     setTab]     = useState("ingresos");
-  const [modal,   setModal]   = useState(null);
-  const [editing, setEditing] = useState(null);
+  const [tab,       setTab]       = useState("ingresos");
+  const [modal,     setModal]     = useState(null);
+  const [editing,   setEditing]   = useState(null);
+  const [showGuide, setShowGuide] = useState(false);
+  useLandsGuide(() => setShowGuide(true));
   const [page,    setPage]    = useState(1);
   const [limit,   setLimit]   = useState(10);
 
@@ -768,6 +772,20 @@ export default function PaymentsPage() {
       {modal === "tipo"   && <TipoModal onSelect={t => setModal(t)} onClose={() => setModal(null)} />}
       {modal === "egreso" && <EgresoModal initial={editing} onClose={() => { setModal(null); setEditing(null); }} onSave={handleSaveEgreso} />}
       {modal === "cobro"  && <CobroModal clients={clients} contracts={contracts} onClose={() => setModal(null)} onSave={() => setModal(null)} />}
+      <GuideModal
+        open={showGuide}
+        onClose={() => setShowGuide(false)}
+        title="Centro de pagos"
+        subtitle="Gestión de cobranza a clientes y egresos operativos."
+        steps={[
+          { title: "Ingresos", text: "Lista de todos los cobros a clientes: cuotas de contratos, enganches y pagos especiales. Filtra por estado (pendiente, pagado, vencido) y por período." },
+          { title: "Egresos", text: "Registro de gastos operativos de la empresa (nómina, servicios, mantenimiento, etc.). Puedes marcarlos como pagados cuando se aplican." },
+          { title: "Alertas de pago", text: "Tab rojo con cobros vencidos o que vencen en 7 días. Desde aquí puedes cobrar directamente o enviar recordatorios." },
+          { title: "Registrar cobro o egreso", text: "Pulsa '+ Registrar' para abrir el formulario. Selecciona si es un cobro de cliente o un egreso operativo e ingresa los datos." },
+          { title: "Tendencia mensual", text: "La gráfica muestra los últimos 6 meses de ingresos vs egresos. Úsala para detectar meses de alta cobranza o gastos anómalos." },
+          { title: "Filtros", text: "Combina búsqueda por texto, estado del pago y rango de fechas para encontrar cualquier movimiento en el historial." },
+        ]}
+      />
     </>
   );
 }

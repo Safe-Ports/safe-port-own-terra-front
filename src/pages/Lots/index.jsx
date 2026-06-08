@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi2";
 import * as XLSX from "xlsx";
 import { useAppContext } from "@/context/AppContext";
+import { useLandsGuide } from "@/context/LandsGuideContext";
 import { useProjectsQuery } from "@/hooks/queries/useAppQueries";
 import { lotService } from "@/services/lotService";
 import { getUserErrorMessage } from "@/services/errors";
-import { compactCurrency, currency } from "@/services/formatters";
+import { currency } from "@/services/formatters";
 import Button from "@/components/Button";
+import GuideModal from "@/components/shared/GuideModal";
 
 const LOT_COLORS = {
   available: { bg: "#dcfce7", border: "#86efac", text: "#15803d" },
@@ -16,6 +18,17 @@ const LOT_COLORS = {
 };
 const STATUS_CYCLE = { available: "sold", sold: "reserved", reserved: "available" };
 const MAP_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const LOT_REQUIRED_ALIASES = ["ID Lote", "id", "codigo", "código", "lote", "clave"];
+const LOT_TEMPLATE_GUIDE = [
+  ["GUÍA PARA CARGAR LOTES"],
+  ["Regla", "Detalle"],
+  ["Campo requerido", "ID Lote. Debe existir como columna y tener valor en todas las filas."],
+  ["Campos opcionales", "Sección/Manzana/Fraccionamiento, Estado, Superficie, medidas, precios, servicios y vendedor."],
+  ["Estados aceptados", "disponible, apartado o vendido."],
+  ["Servicios aceptados", "sí/no, 1/0, true/false o x."],
+  ["Archivos aceptados", "XLSX, XLS o CSV de hasta 10 MB."],
+  ["Importante", "Si falta un campo requerido, no se cargará ninguna fila."],
+];
 
 function createLots(sectionName, total) {
   return Array.from({ length: total }, (_, index) => ({
@@ -241,6 +254,15 @@ function LotsPage() {
   const [lotEditDraft, setLotEditDraft] = useState(null); // null | { sectionId, ...lot }
   const [loadingEditId, setLoadingEditId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [showImportGuide, setShowImportGuide] = useState(false);
+  const [showPageGuide, setShowPageGuide] = useState(false);
+  useLandsGuide(() => setShowPageGuide(true));
+  const [importSummary, setImportSummary] = useState(null);
+  const [downloadingTemplate, setDownloadingTemplate] = useState(false);
+  const importSummarySteps = importSummary ? [{
+    title: `Última revisión · ${importSummary.fileName}`,
+    text: `${importSummary.imported} lotes preparados${importSummary.sections ? ` en ${importSummary.sections} secciones` : ""}${importSummary.skipped ? ` · ${importSummary.skipped} filas omitidas` : ""}${importSummary.warnings?.length ? ". Advertencias: " + importSummary.warnings.slice(0, 3).join("; ") : ". Sin observaciones."}`
+  }] : [];
   const changeImageRef = useRef(null);
   const excelInputRef = useRef(null);
   const portfolioScrollRef = useRef(null);
@@ -304,10 +326,42 @@ function LotsPage() {
     apartado: "reserved", apartada: "reserved", reservado: "reserved", reserved: "reserved",
   };
 
+  const downloadImportTemplate = async () => {
+    if (downloadingTemplate) return;
+    setDownloadingTemplate(true);
+    try {
+      const blob = await lotService.importTemplate("xlsx");
+      const workbook = XLSX.read(await blob.arrayBuffer(), { type: "array" });
+      if (!workbook.SheetNames.includes("Guía")) {
+        const guideSheet = XLSX.utils.aoa_to_sheet(LOT_TEMPLATE_GUIDE);
+        guideSheet["!cols"] = [{ wch: 24 }, { wch: 82 }];
+        XLSX.utils.book_append_sheet(workbook, guideSheet, "Guía");
+      }
+      XLSX.writeFile(workbook, "plantilla_lotes.xlsx");
+      showToast("Plantilla de lotes descargada");
+    } catch (err) {
+      showToast(getUserErrorMessage(err, "No se pudo descargar la plantilla"));
+    } finally {
+      setDownloadingTemplate(false);
+    }
+  };
+
   const handleExcelFile = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
     event.target.value = "";
+
+    if (file.size > 10 * 1024 * 1024) {
+      setImportSummary({
+        fileName: file.name,
+        imported: 0,
+        skipped: 0,
+        warnings: ["No se cargó ninguna fila: el archivo supera el límite de 10 MB."],
+      });
+      setShowImportGuide(true);
+      showToast("El archivo no puede superar 10 MB");
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -315,35 +369,99 @@ function LotsPage() {
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: "array" });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-
-        if (!rows.length) { showToast("El archivo no tiene datos"); return; }
+        const matrix = sheet ? XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", blankrows: false }) : [];
+        const rows = sheet ? XLSX.utils.sheet_to_json(sheet, { defval: "" }) : [];
 
         const norm = (s) => String(s || "").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+        const parseNumber = (value) => {
+          const cleaned = String(value || "").replace(/[$,\s]/g, "");
+          if (!cleaned) return "";
+          const parsed = Number(cleaned);
+          return Number.isFinite(parsed) && parsed >= 0 ? parsed : "";
+        };
+        const parseBoolean = (value) => ["1", "si", "yes", "true", "x"].includes(norm(value));
 
         const findCol = (row, aliases) => {
           const key = Object.keys(row).find((k) => aliases.some((a) => norm(k) === norm(a)));
           return key ? String(row[key]).trim() : "";
         };
 
+        if (!rows.length) {
+          setImportSummary({
+            fileName: file.name,
+            imported: 0,
+            skipped: 0,
+            warnings: ["El archivo no contiene filas de datos."],
+          });
+          setShowImportGuide(true);
+          showToast("El archivo no contiene filas de datos");
+          return;
+        }
+
+        const headers = (matrix[0] || []).map((header) => String(header).trim());
+        const hasCodeColumn = headers.some((header) => LOT_REQUIRED_ALIASES.some((alias) => norm(header) === norm(alias)));
+        if (!hasCodeColumn) {
+          setImportSummary({
+            fileName: file.name,
+            imported: 0,
+            skipped: rows.length,
+            warnings: ["No se cargó ninguna fila: falta la columna obligatoria ID Lote."],
+          });
+          setShowImportGuide(true);
+          showToast("Falta la columna obligatoria ID Lote");
+          return;
+        }
+
+        const rowsWithoutCode = rows.flatMap((row, index) =>
+          findCol(row, LOT_REQUIRED_ALIASES) ? [] : [index + 2]
+        );
+        if (rowsWithoutCode.length) {
+          const visibleRows = rowsWithoutCode.slice(0, 8).join(", ");
+          const remaining = rowsWithoutCode.length > 8 ? ` y ${rowsWithoutCode.length - 8} más` : "";
+          setImportSummary({
+            fileName: file.name,
+            imported: 0,
+            skipped: rows.length,
+            warnings: [
+              "No se cargó ninguna fila porque existen valores requeridos vacíos.",
+              `ID Lote vacío en filas: ${visibleRows}${remaining}.`,
+            ],
+          });
+          setShowImportGuide(true);
+          showToast("No se cargó el archivo: hay filas sin ID Lote");
+          return;
+        }
+
         const grouped = {};
+        const warnings = [];
+        const seenCodes = new Set();
+        let skipped = 0;
         rows.forEach((row, i) => {
-          const code = findCol(row, ["ID Lote", "id", "codigo", "lote", "clave"]) || `L-${String(i + 1).padStart(2, "0")}`;
-          const secName = findCol(row, ["Seccion", "sección", "manzana", "bloque", "section"]) || "Importados";
+          const rowNumber = i + 2;
+          const code = findCol(row, LOT_REQUIRED_ALIASES);
+          if (seenCodes.has(norm(code))) {
+            skipped += 1;
+            warnings.push(`Fila ${rowNumber}: ID Lote duplicado (${code}).`);
+            return;
+          }
+          seenCodes.add(norm(code));
+
+          const secName = findCol(row, ["Seccion", "sección", "manzana", "bloque", "section", "fraccionamiento"]) || "Importados";
           const statusRaw = norm(findCol(row, ["Estado", "estatus", "status"]));
           const status = STATUS_MAP[statusRaw] || "available";
-          const area = Number(findCol(row, ["Superficie (m2)", "superficie", "area", "m2"])) || 0;
-          const price = Number(findCol(row, ["Precio Contado", "precio contado", "contado", "precio"])) || 0;
-          const priceFinanciado = Number(findCol(row, ["Precio Financiado", "financiado"])) || 0;
-          const frente = Number(findCol(row, ["Frente (ML)", "frente"])) || 0;
-          const fondo = Number(findCol(row, ["Fondo (ML)", "fondo"])) || 0;
+          if (statusRaw && !STATUS_MAP[statusRaw]) warnings.push(`Fila ${rowNumber}: estado "${statusRaw}" no reconocido; se usó Disponible.`);
+          const area = parseNumber(findCol(row, ["Superficie (m2)", "superficie", "area", "área", "m2"]));
+          const price = parseNumber(findCol(row, ["Precio Contado", "precio contado", "contado", "precio"]));
+          const priceFinanciado = parseNumber(findCol(row, ["Precio Financiado", "financiado"]));
+          const frente = parseNumber(findCol(row, ["Frente (ML)", "frente"]));
+          const fondo = parseNumber(findCol(row, ["Fondo (ML)", "fondo"]));
           const servicios = {
-            agua: !!findCol(row, ["Agua Potable", "agua"]),
-            luz: !!findCol(row, ["Energia Electrica", "luz", "electricidad"]),
-            drenaje: !!findCol(row, ["Drenaje"]),
-            gas: !!findCol(row, ["Gas Natural", "gas"]),
-            internet: !!findCol(row, ["Internet/Fibra", "internet"]),
-            pavimento: !!findCol(row, ["Pavimento"]),
+            agua: parseBoolean(findCol(row, ["Agua Potable", "agua"])),
+            luz: parseBoolean(findCol(row, ["Energia Electrica", "Energía Eléctrica", "luz", "electricidad"])),
+            drenaje: parseBoolean(findCol(row, ["Drenaje"])),
+            gas: parseBoolean(findCol(row, ["Gas Natural", "gas"])),
+            internet: parseBoolean(findCol(row, ["Internet/Fibra", "internet"])),
+            pavimento: parseBoolean(findCol(row, ["Pavimento"])),
           };
           if (!grouped[secName]) grouped[secName] = [];
           grouped[secName].push({ id: `xl_${Date.now()}_${i}`, code, status, area, price, priceFinanciado, frente, fondo, servicios });
@@ -361,9 +479,23 @@ function LotsPage() {
         }));
 
         const total = newSections.reduce((s, sec) => s + sec.lots.length, 0);
-        showToast(`${total} lotes importados desde Excel`);
-      } catch {
-        showToast("Error al leer el archivo. Usa el formato de plantilla.");
+        setImportSummary({
+          fileName: file.name,
+          imported: total,
+          skipped,
+          warnings,
+          sections: newSections.length,
+        });
+        showToast(`${total} lotes preparados desde Excel${skipped ? ` · ${skipped} omitidos` : ""}`);
+      } catch (err) {
+        setImportSummary({
+          fileName: file.name,
+          imported: 0,
+          skipped: 0,
+          warnings: ["No fue posible leer el archivo. Descarga la plantilla y verifica el formato."],
+        });
+        setShowImportGuide(true);
+        showToast(getUserErrorMessage(err, "Error al leer el archivo. Usa el formato de plantilla."));
       }
     };
     reader.readAsArrayBuffer(file);
@@ -389,19 +521,6 @@ function LotsPage() {
     const { sectionId, ...lotData } = lotEditDraft;
     updateLot(sectionId, lotData.id, lotData);
     setLotEditDraft(null);
-  };
-
-  const loadDemo = () => {
-    setDraftProject({
-      mode: "editor",
-      name: "Residencial Terracota",
-      mapUrl: "",
-      cadProcessing: false,
-      sections: [
-        { id: "sec_a", name: "Manzana A", lots: createLots("A", 10) },
-        { id: "sec_b", name: "Manzana B", lots: createLots("B", 8) }
-      ]
-    });
   };
 
   const addSection = () => {
@@ -662,8 +781,18 @@ function LotsPage() {
               <div className="lots-excel-row">
                 <div>
                   <span className="lots-excel-title">Llenar con Excel</span>
-                  <span className="lots-excel-sub">Importa lotes desde archivo</span>
+                  <span className="lots-excel-sub">
+                    {importSummary
+                      ? `${importSummary.imported} preparados${importSummary.skipped ? ` · ${importSummary.skipped} omitidos` : ""}`
+                      : "Importa lotes desde archivo"}
+                  </span>
                 </div>
+                <button className="lots-excel-upload" onClick={() => setShowImportGuide(true)}>
+                  Guía
+                </button>
+                <button className="lots-excel-upload" onClick={downloadImportTemplate} disabled={downloadingTemplate}>
+                  {downloadingTemplate ? "Descargando..." : "Plantilla"}
+                </button>
                 <button
                   className="lots-excel-upload"
                   onClick={() => excelInputRef.current?.click()}
@@ -689,12 +818,6 @@ function LotsPage() {
                   <div className="lots-empty-sub">
                     Construye la matriz de lotes por manzana, frente o etapa.
                   </div>
-                  <button
-                    onClick={loadDemo}
-                    className="lots-demo-btn"
-                  >
-                    Cargar ejemplo rápido
-                  </button>
                 </div>
               ) : (
                 <div className="space-y-5">
@@ -838,6 +961,7 @@ function LotsPage() {
           </div>
         );
       })()}
+
       </>
     );
   }
@@ -857,12 +981,6 @@ function LotsPage() {
           </div>
         </div>
         <div className="mt-4 flex gap-3 overflow-x-auto pb-1 no-scrollbar">
-          <button
-            className="rounded-2xl bg-[#E9E5DB] px-4 py-3 text-sm font-semibold text-[#1E3D2B]"
-            onClick={loadDemo}
-          >
-            Cargar demo
-          </button>
           {draftProject.mode === "selector" && (
             <button
               className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white"
@@ -884,7 +1002,7 @@ function LotsPage() {
           </div>
           <div className="flex items-center gap-2">
             <span className="mr-1 text-sm font-semibold text-[#1E3D2B]">
-              {projects.reduce((sum, item) => sum + (item.lots?.length || 0), 0)} lotes
+              {projects.reduce((sum, item) => sum + item.totalLots, 0)} lotes
             </span>
             <button
               className="flex h-10 w-10 items-center justify-center rounded-full border border-[#DCDAD2] bg-white/90 text-[#1E3D2B] shadow-[0_8px_18px_rgba(24,18,14,.08)] transition hover:border-[#355E3B] hover:bg-[#FBFAF6]"
@@ -917,7 +1035,7 @@ function LotsPage() {
                 <div>
                   <div className="font-['Playfair_Display'] text-xl text-[#1E3D2B]">{project.name}</div>
                   <div className="mt-1 text-xs uppercase tracking-[0.18em] text-[#83867C]">
-                    {project.lots?.length ?? 0} propiedades
+                    {project.totalLots} propiedades
                   </div>
                 </div>
                 <div className="rounded-full bg-[#EDE3D3] px-3 py-1 text-[0.68rem] font-bold text-[#1E3D2B]">
@@ -934,8 +1052,8 @@ function LotsPage() {
                   <div className="mt-2 text-lg font-bold text-[#1E3D2B]">{project.reserved}</div>
                 </div>
                 <div className="rounded-2xl bg-[#FBFAF6] p-3">
-                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Valor</div>
-                  <div className="mt-2 text-lg font-bold text-[#1E3D2B]">{compactCurrency(project.inventoryValue)}</div>
+                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Disponible</div>
+                  <div className="mt-2 text-lg font-bold text-[#1E3D2B]">{project.available}</div>
                 </div>
               </div>
               <div className="mt-4 flex gap-2">
@@ -986,25 +1104,6 @@ function LotsPage() {
                 </button>
               </div>
 
-              <div
-                className="relative cursor-pointer overflow-hidden rounded-[16px] border-2 border-[#DCDAD2] bg-[#FBFAF6] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#1E3D2B] hover:shadow-[0_8px_24px_rgba(27,47,69,.15)]"
-                onClick={() => showToast("Carga CAD automática próximamente")}
-              >
-                <div className="absolute right-3 top-3 rounded-[8px] bg-[#1E3D2B] px-2 py-0.5 text-[0.58rem] font-extrabold uppercase tracking-[0.5px] text-white">
-                  Nuevo
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#1E3D2B]" />
-                <div className="mx-auto mb-3 flex h-[62px] w-[62px] items-center justify-center rounded-[15px] bg-[rgba(27,47,69,0.08)] text-[1.8rem]">
-                  📐
-                </div>
-                <div className="mb-2 font-['Playfair_Display'] text-[1.05rem] text-[#1E3D2B]">Carga Automática CAD</div>
-                <div className="mb-5 text-[0.76rem] leading-relaxed text-[#83867C]">
-                  Sube archivos CAD (.dwg, .dxf, .shp, .kml) y el sistema detecta y genera los lotes automáticamente con sus coordenadas reales.
-                </div>
-                <button className="pointer-events-none w-full rounded-[9px] bg-[#1E3D2B] px-4 py-2.5 text-[0.8rem] font-bold text-white">
-                  Subir archivo CAD →
-                </button>
-              </div>
             </div>
           </div>
         </section>
@@ -1080,6 +1179,34 @@ function LotsPage() {
           </div>
         </section>
       )}
+      <GuideModal
+        open={showImportGuide}
+        onClose={() => setShowImportGuide(false)}
+        title="Guía para cargar lotes"
+        subtitle="Prepara el archivo y revisa los datos antes de crear el fraccionamiento."
+        steps={[
+          { title: "Columna obligatoria: ID Lote", text: "Cada fila debe tener un ID Lote único. Filas sin este valor o con IDs duplicados se omiten automáticamente." },
+          { title: "Agrupación por sección", text: "Usa la columna Sección, Manzana o Fraccionamiento para agrupar lotes. Si se omite, todos quedan en 'Importados'." },
+          { title: "Estado del lote", text: "La columna Estado acepta: disponible, apartado, reservado o vendido. Si el valor no se reconoce se usa Disponible." },
+          { title: "Medidas y precios", text: "Columnas aceptadas: Superficie (m2), Frente (ML), Fondo (ML), Precio Contado, Precio Financiado. Los valores pueden incluir $, comas o espacios." },
+          { title: "Servicios", text: "Agua Potable, Energía Eléctrica, Drenaje, Gas Natural, Internet/Fibra y Pavimento aceptan: sí/no, 1/0, true/false o x." },
+          { title: "Formato del archivo", text: "XLSX, XLS o CSV. Máximo 10 MB. Descarga la plantilla oficial para asegurar que los encabezados sean correctos." },
+          ...importSummarySteps,
+        ]}
+      />
+      <GuideModal
+        open={showPageGuide}
+        onClose={() => setShowPageGuide(false)}
+        title="Lotes y proyectos"
+        subtitle="Gestión completa de tu inventario de fraccionamientos."
+        steps={[
+          { title: "Ver tu portafolio", text: "La lista lateral muestra todos tus fraccionamientos activos. Selecciona uno para ver su plano interactivo con los lotes y sus estados." },
+          { title: "Crear un nuevo proyecto", text: "Pulsa 'Nuevo proyecto', sube el plano del fraccionamiento y luego arma la matriz de lotes por sección en el editor." },
+          { title: "Importar desde Excel", text: "En el editor usa el botón 'Subir' para cargar un archivo XLSX o CSV. Pulsa 'Guía' para ver las columnas aceptadas y descargar la plantilla oficial." },
+          { title: "Editar lotes", text: "Haz clic en cualquier lote de la matriz para editar su código, estado, medidas, precio y servicios disponibles." },
+          { title: "Cambiar estado de lotes", text: "Los estados disponibles son: Disponible (verde), Apartado (amarillo) y Vendido (rojo). Se puede cambiar desde la ficha del lote." },
+        ]}
+      />
     </div>
   );
 }

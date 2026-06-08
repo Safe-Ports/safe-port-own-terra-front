@@ -1,11 +1,16 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
+import { useLandsGuide } from "@/context/LandsGuideContext";
 import { currency, progress } from "@/services/formatters";
 import { contractService } from "@/services/contractService";
 import Button from "@/components/Button";
+import GuideModal from "@/components/shared/GuideModal";
 
 function SalesPage() {
   const { contracts, setEditingContract, openModal, openContractCreate, openDocumentUpload, openClientReport, showToast } = useAppContext();
+  const [showGuide, setShowGuide] = useState(false);
+  useLandsGuide(() => setShowGuide(true));
 
   const handleDownloadPdf = async (contract) => {
     try {
@@ -77,6 +82,19 @@ function SalesPage() {
           </tbody>
         </table>
       </div>
+      <GuideModal
+        open={showGuide}
+        onClose={() => setShowGuide(false)}
+        title="Repositorio de contratos"
+        subtitle="Gestión y seguimiento de todos los contratos de venta."
+        steps={[
+          { title: "Ver tus contratos", text: "La tabla muestra todos los contratos con su número, cliente, fraccionamiento, monto y estado de pago. Usa la barra de búsqueda para filtrar por nombre o número de contrato." },
+          { title: "Descargar PDF", text: "Haz clic en el ícono de descarga en cualquier fila para generar y descargar el contrato en formato PDF firmado." },
+          { title: "Editar contrato", text: "Pulsa el ícono de edición para modificar los datos del contrato: fecha, monto, vendedor asignado, enganche y plan de pagos." },
+          { title: "Subir documentos", text: "Cada contrato puede tener documentos adjuntos (INE, acta de nacimiento, comprobante de domicilio). Pulsa el clip para adjuntar archivos." },
+          { title: "Estado de cuenta", text: "El ícono de reporte abre el estado de cuenta completo del cliente con su historial de pagos y saldo pendiente." },
+        ]}
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { HiArrowLeftOnRectangle, HiBars3, HiCalendarDays, HiMagnifyingGlass, HiSun } from "react-icons/hi2";
+import { HiArrowLeftOnRectangle, HiBars3, HiCalendarDays, HiMagnifyingGlass, HiOutlineQuestionMarkCircle, HiSun } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
 
@@ -32,7 +32,7 @@ const subtitleMap = {
   "/configuracion": "Configuración del espacio Lands",
 };
 
-function Topbar({ pathname }) {
+function Topbar({ pathname, onGuide }) {
   const navigate = useNavigate();
   const {
     openModal,
@@ -71,6 +71,20 @@ function Topbar({ pathname }) {
           <span className="flex-1 text-left">Buscar en todo el sistema...</span>
           <span className="tb-shortcut">⌘K</span>
         </button>
+
+        {onGuide && (
+          <button
+            type="button"
+            className="topbar-core-link topbar-help"
+            onClick={onGuide}
+            aria-label="Abrir guías de esta sección"
+            aria-haspopup="dialog"
+            title="Abrir guías"
+          >
+            <HiOutlineQuestionMarkCircle aria-hidden="true" />
+            <span>Guías</span>
+          </button>
+        )}
 
         <button className="topbar-core-link" onClick={() => navigate("/ecosistema/mi-dia")}>
           <HiSun />

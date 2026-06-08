@@ -10,7 +10,7 @@ import { contractService } from "@/services/contractService";
 import { paymentService } from "@/services/paymentService";
 import { documentService, filenameForDocument, toBackendEntityType } from "@/services/documentService";
 import { notificationService } from "@/services/notificationService";
-import { initialDraftProject } from "@/services/mockData";
+import { createEmptyDraftProject } from "@/services/draftProject";
 import { canAccessApp, canUseFeature } from "@/services/permissions";
 import { getUserErrorMessage } from "@/services/errors";
 
@@ -65,7 +65,7 @@ export function AppProvider({ children }) {
   });
 
   // ── UI state ──────────────────────────────────────────────────────────────
-  const [draftProject, setDraftProject] = usePersistentState("lm_draft_project", initialDraftProject);
+  const [draftProject, setDraftProject] = usePersistentState("lm_draft_project", createEmptyDraftProject());
   const [ui, setUi] = useState({
     sidebarOpen: false,
     clientModal: false,
@@ -209,29 +209,57 @@ export function AppProvider({ children }) {
       notes: payload.notes || undefined,
     };
     try {
-      if (payload.id) {
+      if (payload.linkClientId) {
+        await clientService.assignApp(payload.linkClientId, "lands");
+        setSelectedClientId(String(payload.linkClientId));
+        showToast("Cliente vinculado a Lands correctamente");
+      } else if (payload.id) {
         await clientService.update(payload.id, body);
+        showToast("Cliente actualizado correctamente");
       } else {
         const created = await clientService.create(body);
         setSelectedClientId(String(created.id));
+        try {
+          await clientService.assignApp(created.id, "lands");
+        } catch (err) {
+          await queryClient.invalidateQueries({ queryKey: ["clients"] });
+          await queryClient.invalidateQueries({ queryKey: ["client-apps"] });
+          setEditingClient(null);
+          closeModal("clientModal");
+          showToast(getUserErrorMessage(err, "Cliente creado en el Core, pero no se pudo vincular a Lands"));
+          return false;
+        }
+        showToast("Cliente creado correctamente");
       }
       await queryClient.invalidateQueries({ queryKey: ["clients"] });
+      if (payload.linkClientId || !payload.id) {
+        await queryClient.invalidateQueries({ queryKey: ["client-apps"] });
+      }
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al guardar el cliente"));
+      const fallback = payload.linkClientId
+        ? "No se pudo vincular el cliente a Lands"
+        : payload.id
+          ? "No se pudo actualizar el cliente"
+          : "No se pudo crear el cliente";
+      showToast(getUserErrorMessage(err, fallback));
+      return false;
     }
     setEditingClient(null);
     closeModal("clientModal");
+    return true;
   };
 
   const deleteClient = async (id) => {
     try {
       await clientService.delete(id);
       await queryClient.invalidateQueries({ queryKey: ["clients"] });
+      setEditingClient(null);
+      closeModal("clientModal");
+      return true;
     } catch (err) {
       showToast(getUserErrorMessage(err, "Error al eliminar el cliente"));
+      return false;
     }
-    setEditingClient(null);
-    closeModal("clientModal");
   };
 
   // ── Contracts ─────────────────────────────────────────────────────────────
@@ -292,18 +320,21 @@ export function AppProvider({ children }) {
       await contractService.delete(id);
       await queryClient.invalidateQueries({ queryKey: ["contracts"] });
       await queryClient.invalidateQueries({ queryKey: ["payments"] });
+      setEditingContract(null);
+      setContractDraft(null);
+      closeModal("contractModal");
+      return true;
     } catch (err) {
       showToast(getUserErrorMessage(err, "Error al eliminar el contrato"));
+      return false;
     }
-    setEditingContract(null);
-    setContractDraft(null);
-    closeModal("contractModal");
   };
 
   // ── Payments ──────────────────────────────────────────────────────────────
   const savePayment = async (data) => {
+    let saved = false;
     if (data?.id) {
-      await quickPay(data.id, Number(data.amount || 0));
+      saved = await quickPay(data.id, Number(data.amount || 0));
     } else {
       const match = payments.find(
         (p) =>
@@ -311,15 +342,18 @@ export function AppProvider({ children }) {
           p.installment_n === Number(data.cuota) &&
           p.status !== "paid"
       );
-      if (!match) { showToast("No se encontró la cuota indicada o ya está pagada"); return; }
-      await quickPay(match.id, Number(data.amount || match.amount || 0));
+      if (!match) {
+        showToast("No se encontró la cuota indicada o ya está pagada");
+        return false;
+      }
+      saved = await quickPay(match.id, Number(data.amount || match.amount || 0));
     }
+    if (!saved) return false;
     setEditingPayment(null);
     setPaymentDraft(null);
     closeModal("paymentModal");
+    return true;
   };
-
-  const deletePayment = () => showToast("Los pagos se generan desde contratos y no pueden eliminarse");
 
   const exportAppData = async (type = "contracts", format = "xlsx") => {
     try {
@@ -335,9 +369,11 @@ export function AppProvider({ children }) {
       anchor.download = filename;
       anchor.click();
       URL.revokeObjectURL(blobUrl);
-      showToast(`Exportando ${type}...`);
+      showToast(`Exportación de ${type} descargada`);
+      return true;
     } catch (err) {
       showToast(getUserErrorMessage(err, "Error al exportar"));
+      return false;
     }
   };
 
@@ -351,17 +387,27 @@ export function AppProvider({ children }) {
       await queryClient.invalidateQueries({ queryKey: ["payments"] });
       await queryClient.invalidateQueries({ queryKey: ["contracts"] });
       showToast("Pago registrado correctamente");
+      return true;
     } catch (err) {
       showToast(getUserErrorMessage(err, "Error al registrar el pago"));
+      return false;
     }
   };
 
   const sendReminder = async (paymentOrName) => {
     const name = typeof paymentOrName === "string" ? paymentOrName : (paymentOrName?.client?.name || "cliente");
-    if (paymentOrName?.id) {
-      try { await paymentService.sendReminder(paymentOrName.id, { channel: "sms" }); } catch {}
+    if (!paymentOrName?.id) {
+      showToast("Selecciona un pago para enviar el recordatorio");
+      return false;
     }
-    showToast(`Recordatorio enviado a ${name}`);
+    try {
+      await paymentService.sendReminder(paymentOrName.id, { channel: "sms" });
+      showToast(`Recordatorio enviado a ${name}`);
+      return true;
+    } catch (err) {
+      showToast(getUserErrorMessage(err, "No se pudo enviar el recordatorio"));
+      return false;
+    }
   };
 
   // ── Documents ─────────────────────────────────────────────────────────────
@@ -383,12 +429,14 @@ export function AppProvider({ children }) {
       await queryClient.invalidateQueries({ queryKey: ["documents-entity"] });
       await queryClient.invalidateQueries({ queryKey: ["document-folders"] });
       showToast("Documento subido");
+      setDocumentDraft(null);
+      closeModal("documentModal");
+      return true;
     } catch (err) {
       showToast(getUserErrorMessage(err, "Error al subir el documento"));
       console.error("Upload error:", err?.response?.data);
+      return false;
     }
-    setDocumentDraft(null);
-    closeModal("documentModal");
   };
 
   const deleteDocument = async (id) => {
@@ -491,7 +539,7 @@ export function AppProvider({ children }) {
 
       await queryClient.invalidateQueries({ queryKey: ["inmuebles"] });
       setSelectedFracId(String(inmueble.id));
-      setDraftProject(initialDraftProject);
+      setDraftProject(createEmptyDraftProject());
       navigate("/fraccionamientos");
       showToast(`Fraccionamiento "${name || "Fraccionamiento"}" creado${draftLots.length > 0 ? ` con ${draftLots.length} lote${draftLots.length !== 1 ? "s" : ""}` : ""}`);
     } catch (err) {
@@ -525,7 +573,7 @@ export function AppProvider({ children }) {
       await queryClient.invalidateQueries({ queryKey: ["inmuebles"] });
       await queryClient.invalidateQueries({ queryKey: ["lots"] });
       setSelectedFracId(String(_editingFracId));
-      setDraftProject(initialDraftProject);
+      setDraftProject(createEmptyDraftProject());
       navigate("/fraccionamientos");
       showToast(patches.length === 0 ? "Sin cambios que guardar" : `${patches.length} lote${patches.length !== 1 ? "s" : ""} actualizado${patches.length !== 1 ? "s" : ""}`);
     } catch (err) {
@@ -544,7 +592,7 @@ export function AppProvider({ children }) {
   };
 
   const startNewProject = () => {
-    setDraftProject(initialDraftProject);
+    setDraftProject(createEmptyDraftProject());
     navigate("/lotes");
   };
 
@@ -652,7 +700,6 @@ export function AppProvider({ children }) {
     resetContractDraft,
     quickPay,
     savePayment,
-    deletePayment,
     exportAppData,
     sendReminder,
     saveDocument,

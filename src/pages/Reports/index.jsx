@@ -1,10 +1,13 @@
 import { useMemo, useState } from "react";
+import GuideModal from "@/components/shared/GuideModal";
 import { useQuery } from "@tanstack/react-query";
 import {
   HiOutlineMagnifyingGlass, HiOutlinePrinter, HiOutlineUserCircle,
-  HiOutlineExclamationTriangle, HiOutlineCheckCircle,
+  HiOutlineExclamationTriangle, HiOutlineCheckCircle, HiOutlineArrowDownTray,
+  HiOutlineEnvelope,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
+import { useLandsGuide } from "@/context/LandsGuideContext";
 import { clientService } from "@/services/clientService";
 import { currency, compactCurrency } from "@/services/formatters";
 
@@ -306,6 +309,9 @@ function PaymentBehaviorChart({ payments }) {
 
 /* ── ClientReport (rediseñado: documento profesional) ────────── */
 function ClientReport({ clientId }) {
+  const { showToast } = useAppContext();
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
   const { data: client } = useQuery({
     queryKey: ["client-detail", clientId],
     queryFn: () => clientService.get(clientId),
@@ -338,6 +344,36 @@ function ClientReport({ clientId }) {
   const progress   = totalContracted > 0 ? Math.round((totalPaid / totalContracted) * 100) : 0;
 
   const handlePrint = () => window.print();
+  const downloadPdf = async () => {
+    setDownloadingPdf(true);
+    try {
+      const blob = await clientService.statementPdf(clientId);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `estado_cuenta_${String(client?.name || "cliente").replace(/\s+/g, "_").toLowerCase()}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      showToast("Estado de cuenta descargado");
+    } catch {
+      showToast("No se pudo descargar el estado de cuenta");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+  const sendPdf = async () => {
+    setSendingEmail(true);
+    try {
+      await clientService.sendStatement(clientId);
+      showToast("Estado de cuenta enviado por correo");
+    } catch {
+      showToast("No se pudo enviar el estado de cuenta");
+    } finally {
+      setSendingEmail(false);
+    }
+  };
 
   if (!client) return (
     <div style={{ flex: 1, padding: 40, textAlign: "center", color: "var(--mu)" }}>Cargando…</div>
@@ -349,7 +385,13 @@ function ClientReport({ clientId }) {
   return (
     <div style={{ flex: 1, minWidth: 0 }}>
       {/* botón flotante de imprimir */}
-      <div className="no-print" style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
+      <div className="no-print" style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+        <button className="btn-s" onClick={sendPdf} disabled={sendingEmail || !client.email}>
+          <HiOutlineEnvelope style={{ fontSize: "1rem" }}/> {sendingEmail ? "Enviando..." : "Enviar por correo"}
+        </button>
+        <button className="btn-s" onClick={downloadPdf} disabled={downloadingPdf}>
+          <HiOutlineArrowDownTray style={{ fontSize: "1rem" }}/> {downloadingPdf ? "Descargando..." : "Descargar PDF"}
+        </button>
         <button onClick={handlePrint} style={{
           display: "flex", alignItems: "center", gap: 6, padding: "9px 18px",
           borderRadius: 12, border: "none", cursor: "pointer",
@@ -632,8 +674,10 @@ function ClientReport({ clientId }) {
 /* ══ PAGE ════════════════════════════════════════════════════════ */
 export default function ReportsPage() {
   const { clients } = useAppContext();
-  const [search, setSearch]   = useState("");
+  const [search, setSearch]     = useState("");
   const [selectedId, setSelectedId] = useState(null);
+  const [showGuide, setShowGuide]   = useState(false);
+  useLandsGuide(() => setShowGuide(true));
 
   const filteredClients = useMemo(() => {
     const s = search.trim().toLowerCase();
@@ -718,6 +762,20 @@ export default function ReportsPage() {
         </div>
         {selectedId ? <ClientReport clientId={selectedId} /> : <EmptyReport />}
       </div>
+      <GuideModal
+        open={showGuide}
+        onClose={() => setShowGuide(false)}
+        title="Estado de cuenta"
+        subtitle="Reportes financieros profesionales por cliente con historial de pagos."
+        steps={[
+          { title: "Seleccionar cliente", text: "Busca y selecciona un cliente de la lista izquierda para generar su estado de cuenta. Puedes buscar por nombre, correo o teléfono." },
+          { title: "Comportamiento de pago", text: "La gráfica de los últimos 12 meses muestra en verde los meses con pago puntual y en rojo los vencidos. Ideal para evaluar al cliente." },
+          { title: "Resumen financiero", text: "Muestra el total contratado, lo ya pagado, el saldo pendiente y el progreso porcentual de cada contrato del cliente." },
+          { title: "Plan de pagos detallado", text: "Tabla completa con cada cuota: número, fecha de vencimiento, monto, estado y fecha de pago aplicado." },
+          { title: "Descargar PDF", text: "El botón de descarga genera el estado de cuenta en formato A4 listo para imprimir o enviar por correo." },
+          { title: "Enviar por correo", text: "El botón de correo envía automáticamente el estado de cuenta al email registrado del cliente." },
+        ]}
+      />
     </>
   );
 }

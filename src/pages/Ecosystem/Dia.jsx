@@ -36,6 +36,11 @@ function toTime(iso) {
   return new Date(iso).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
+function toDateLabel(iso) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "short" });
+}
+
 function EcosystemDia() {
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -83,8 +88,10 @@ function EcosystemDia() {
   });
 
   const totalAppts = todayAppts.length;
-  const done = todayAppts.filter((a) => a.status === "confirmed").length;
+  const done = todayAppts.filter((a) => a.status === "completed").length;
   const pct = totalAppts > 0 ? Math.round((done / totalAppts) * 100) : 0;
+  const agendaAppts = todayAppts.length ? todayAppts : rawAppts.slice(0, 4);
+  const showingUpcoming = todayAppts.length === 0 && agendaAppts.length > 0;
 
   const totalOverdue = overdueItems.reduce((s, o) => s + Number(o.amount || 0), 0);
 
@@ -205,17 +212,22 @@ function EcosystemDia() {
         <div className="md-card">
           <div className="md-card-head">
             <div>
-              <div className="md-card-title">Agenda del día</div>
-              <div className="md-card-sub">visitas, llamadas y firmas</div>
+              <div className="md-card-title">{showingUpcoming ? "Próximas citas" : "Agenda del día"}</div>
+              <div className="md-card-sub">
+                {showingUpcoming ? "sin citas hoy · mostrando las siguientes" : "visitas, llamadas y firmas"}
+              </div>
             </div>
             <button className="sh-link" onClick={() => navigate("/ecosistema/agenda")}>Ver agenda completa →</button>
           </div>
-          {todayAppts.length ? todayAppts.map((a) => {
+          {agendaAppts.length ? agendaAppts.map((a) => {
             const appKey = a.app_key || "lands";
             const appOk = !!APP_META[appKey];
             return (
               <div key={a.id} className={`md-visit ${a.status === "confirmed" ? "is-active" : ""}`}>
-                <div className="md-time"><b>{toTime(a.scheduled_at)}</b><span>HRS</span></div>
+                <div className="md-time">
+                  <b>{toTime(a.scheduled_at)}</b>
+                  <span>{showingUpcoming ? toDateLabel(a.scheduled_at) : "HRS"}</span>
+                </div>
                 <div className="md-st">
                   <span className={`md-sdot ${a.status}`}>{a.status === "confirmed" ? "✓" : ""}</span>
                 </div>

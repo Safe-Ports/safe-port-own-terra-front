@@ -1,7 +1,9 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useAppContext } from "@/context/AppContext";
 import Modal from "@/components/ui/Modal";
 import { currency, dateLabel, progress } from "@/services/formatters";
+import { clientService } from "@/services/clientService";
+import { getUserErrorMessage } from "@/services/errors";
 
 function buildPrintHTML(data) {
   const rows = data.clientPayments
@@ -68,7 +70,9 @@ function buildPrintHTML(data) {
 }
 
 function ClientReportModal() {
-  const { ui, clients, contracts, payments, reportClientId, closeClientReport } = useAppContext();
+  const { ui, clients, contracts, payments, reportClientId, closeClientReport, showToast } = useAppContext();
+  const [downloading, setDownloading] = useState(false);
+  const [sending, setSending] = useState(false);
 
   const data = useMemo(() => {
     const client = clients.find((item) => item.id === reportClientId);
@@ -91,6 +95,38 @@ function ClientReportModal() {
 
   if (!data) return null;
 
+  const downloadBackendPdf = async () => {
+    setDownloading(true);
+    try {
+      const blob = await clientService.statementPdf(data.client.id);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `estado_cuenta_${data.client.name.replace(/\s+/g, "_").toLowerCase()}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      showToast("Estado de cuenta descargado");
+    } catch (err) {
+      showToast(getUserErrorMessage(err, "No se pudo descargar el estado de cuenta"));
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const sendBackendPdf = async () => {
+    setSending(true);
+    try {
+      await clientService.sendStatement(data.client.id);
+      showToast("Estado de cuenta enviado por correo");
+    } catch (err) {
+      showToast(getUserErrorMessage(err, "No se pudo enviar el estado de cuenta"));
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
     <Modal
       open={ui.clientReport}
@@ -102,6 +138,12 @@ function ClientReportModal() {
       footer={
         <>
           <button className="btn-s" onClick={closeClientReport}>Cerrar</button>
+          <button className="btn-s" onClick={sendBackendPdf} disabled={sending || !data.client.email}>
+            {sending ? "Enviando..." : "Enviar por correo"}
+          </button>
+          <button className="btn-s" onClick={downloadBackendPdf} disabled={downloading}>
+            {downloading ? "Descargando..." : "Descargar PDF"}
+          </button>
           <button className="btn-p" onClick={() => {
             const iframe = document.createElement("iframe");
             iframe.style.cssText = "position:fixed;width:0;height:0;border:0;visibility:hidden";
