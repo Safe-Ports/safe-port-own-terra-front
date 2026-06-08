@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
 import Modal from "@/components/ui/Modal";
 import InlineDocumentsPanel from "@/components/shared/InlineDocumentsPanel";
+import FieldError from "@/components/shared/FieldError";
+import { useFieldErrors } from "@/hooks/useFieldErrors";
 import Button from "@/components/Button";
 import Avatar from "@/components/Avatar";
 import { clientService } from "@/services/clientService";
@@ -16,10 +18,38 @@ const CONTRACT_STATUS_LABEL = { active: "Activo", completed: "Completado", cance
 const LOT_STATUS_LABEL = { available: "Disponible", sold: "Vendido", reserved: "Apartado" };
 const LOT_STATUS_COLOR = { available: "#355E3B", sold: "#C0392B", reserved: "#9D6B18" };
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const CLIENT_RULES = {
+  name: (v) => (!v || v.trim().length < 2 ? "Escribe el nombre (mínimo 2 caracteres)." : ""),
+  email: (v) => (v && !EMAIL_RE.test(v.trim()) ? "El correo no tiene un formato válido." : ""),
+};
+const CLIENT_FIELD_MAP = { name: "name", email: "email", phone: "phone" };
+
 function ClientModal() {
-  const { ui, closeModal, saveClient, editingClient, deleteClient, clients } = useAppContext();
+  const { ui, closeModal, saveClient, editingClient, deleteClient, clients, showError } = useAppContext();
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: "", phone: "", email: "", type: "buyer", notes: "" });
+  const [saving, setSaving] = useState(false);
+  const fe = useFieldErrors();
+
+  const setField = (key) => (e) => {
+    const value = e.target.value;
+    setForm((p) => ({ ...p, [key]: value }));
+    fe.clear(key);
+  };
+
+  const submit = async () => {
+    if (!fe.validate(form, CLIENT_RULES)) return;
+    setSaving(true);
+    try {
+      await saveClient({ ...(editingClient || {}), ...form });
+    } catch (err) {
+      // 422 con detalle por campo → marcar campos; si no, error de catálogo (toast OT-…).
+      if (!fe.fromServer(err, CLIENT_FIELD_MAP)) showError(err, "Error al guardar el cliente");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // Detección de identidad ya existente en el core (vincular en vez de duplicar)
   const dupe = !editingClient && form.email
@@ -32,6 +62,8 @@ function ClientModal() {
         ? { name: editingClient.name || "", phone: editingClient.phone || "", email: editingClient.email || "", type: editingClient.type || "buyer", notes: editingClient.notes || "" }
         : { name: "", phone: "", email: "", type: "buyer", notes: "" }
     );
+    fe.clearAll();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingClient, ui.clientModal]);
 
   return (
@@ -45,8 +77,8 @@ function ClientModal() {
         <>
           <Button variant="secondary" onClick={() => closeModal("clientModal")}>Cancelar</Button>
           {editingClient && <Button variant="danger" onClick={() => deleteClient(editingClient.id)}>🗑 Eliminar</Button>}
-          <Button variant="primary" onClick={() => saveClient({ ...(editingClient || {}), ...form })}>
-            {dupe ? "🔗 Vincular a Lands" : "✓ Guardar"}
+          <Button variant="primary" onClick={submit} disabled={saving}>
+            {saving ? "Guardando…" : dupe ? "🔗 Vincular a Lands" : "✓ Guardar"}
           </Button>
         </>
       }
@@ -76,16 +108,19 @@ function ClientModal() {
       <div className="fr-row">
         <div className="fg" style={{ flex: 1 }}>
           <label className="fl">Nombre completo</label>
-          <input className="fi" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
+          <input {...fe.fieldProps("name")} value={form.name} onChange={setField("name")} />
+          <FieldError msg={fe.errors.name} />
         </div>
         <div className="fg" style={{ flex: 1 }}>
           <label className="fl">Teléfono</label>
-          <input className="fi" value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))} />
+          <input {...fe.fieldProps("phone")} value={form.phone} onChange={setField("phone")} />
+          <FieldError msg={fe.errors.phone} />
         </div>
       </div>
       <div className="fg">
         <label className="fl">Correo electrónico</label>
-        <input className="fi" type="email" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
+        <input {...fe.fieldProps("email")} type="email" value={form.email} onChange={setField("email")} />
+        <FieldError msg={fe.errors.email} />
       </div>
       <div className="fg">
         <label className="fl">Tipo de cliente</label>

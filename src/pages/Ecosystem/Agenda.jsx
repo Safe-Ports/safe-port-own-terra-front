@@ -3,7 +3,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { appointmentService } from "@/services/appointmentService";
 import { useAppContext } from "@/context/AppContext";
 import { getUserErrorMessage } from "@/services/errors";
+import FieldError from "@/components/shared/FieldError";
+import { useFieldErrors } from "@/hooks/useFieldErrors";
 import EcoLayout from "./EcoLayout";
+
+const AGENDA_RULES = {
+  date: (v) => (!v ? "Elige una fecha." : ""),
+  time: (v) => (!v ? "Elige una hora." : ""),
+};
 
 const APP_META = {
   core: { name: "Core", color: "#1E3D2B" },
@@ -101,6 +108,7 @@ function AgendaPage() {
   const [selectedDate, setSelectedDate] = useState(toDateKey(today));
   const [filter, setFilter] = useState("Todas");
   const [showModal, setShowModal] = useState(false);
+  const fe = useFieldErrors();
   const [form, setForm] = useState({
     title: "",
     date: toDateKey(today),
@@ -133,6 +141,7 @@ function AgendaPage() {
 
   const saveAppointment = async (event) => {
     event.preventDefault();
+    if (!fe.validate(form, AGENDA_RULES)) return;
     const [h, m] = form.time.split(":");
     const dt = new Date(`${form.date}T${h}:${m}:00`);
     await createMutation.mutateAsync({
@@ -296,11 +305,13 @@ function AgendaPage() {
               </label>
               <label>
                 Fecha
-                <input type="date" value={form.date} onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))} />
+                <input type="date" className={fe.errors.date ? "is-invalid" : undefined} value={form.date} onChange={(e) => { setForm((p) => ({ ...p, date: e.target.value })); fe.clear("date"); }} />
+                <FieldError msg={fe.errors.date} />
               </label>
               <label>
                 Hora
-                <input type="time" value={form.time} onChange={(e) => setForm((p) => ({ ...p, time: e.target.value }))} />
+                <input type="time" className={fe.errors.time ? "is-invalid" : undefined} value={form.time} onChange={(e) => { setForm((p) => ({ ...p, time: e.target.value })); fe.clear("time"); }} />
+                <FieldError msg={fe.errors.time} />
               </label>
               <label>
                 App origen

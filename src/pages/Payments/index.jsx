@@ -8,6 +8,13 @@ import {
 import { useAppContext } from "@/context/AppContext";
 import { expenseService, CAT_LABEL, CAT_STYLE } from "@/services/expenseService";
 import { getUserErrorMessage } from "@/services/errors";
+import FieldError from "@/components/shared/FieldError";
+import { useFieldErrors } from "@/hooks/useFieldErrors";
+
+const reqText = (label) => (v) => (!v || !String(v).trim() ? `${label} es obligatorio.` : "");
+const reqNum = (label) => (v) => (v === "" || v == null || isNaN(Number(v)) || Number(v) <= 0 ? `Ingresa un ${label} válido (> 0).` : "");
+const EGRESO_RULES = { concepto: reqText("El concepto"), monto: reqNum("monto") };
+const COBRO_RULES = { clientId: reqText("El cliente"), contractId: reqText("El contrato"), cuota: reqNum("número de cuota"), amount: reqNum("monto") };
 import { currency, relativeDays } from "@/services/formatters";
 import Avatar from "@/components/Avatar";
 import Button from "@/components/Button";
@@ -330,7 +337,9 @@ function EgresoModal({ initial, onClose, onSave }) {
     recurrencia: initial?.recurrencia || "",
     notes:       initial?.notes       || "",
   });
-  const set = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
+  const fe = useFieldErrors();
+  const set = k => e => { const v = e.target.value; setForm(p => ({ ...p, [k]: v })); fe.clear(k); };
+  const save = () => { if (fe.validate(form, EGRESO_RULES)) onSave(form); };
   return (
     <div className="modal-overlay">
       <div className="modal-box" style={{ maxWidth: 440 }}>
@@ -344,14 +353,16 @@ function EgresoModal({ initial, onClose, onSave }) {
         </div>
         <div className="modal-body">
           <div className="fg"><label className="fl">Concepto</label>
-            <input className="fi" value={form.concepto} onChange={set("concepto")} placeholder="Nómina junio, CFE…" /></div>
+            <input {...fe.fieldProps("concepto")} value={form.concepto} onChange={set("concepto")} placeholder="Nómina junio, CFE…" />
+            <FieldError msg={fe.errors.concepto} /></div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div className="fg"><label className="fl">Categoría</label>
               <select className="fi" value={form.categoria} onChange={set("categoria")}>
                 {Object.entries(CAT_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select></div>
             <div className="fg"><label className="fl">Monto</label>
-              <input className="fi" type="number" value={form.monto} onChange={set("monto")} placeholder="0" /></div>
+              <input {...fe.fieldProps("monto")} type="number" value={form.monto} onChange={set("monto")} placeholder="0" />
+              <FieldError msg={fe.errors.monto} /></div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div className="fg"><label className="fl">Fecha límite</label>
@@ -369,7 +380,7 @@ function EgresoModal({ initial, onClose, onSave }) {
         </div>
         <div className="modal-foot">
           <Button variant="secondary" style={{ flex: 1 }} onClick={onClose}>Cancelar</Button>
-          <Button variant="primary" style={{ flex: 2 }} onClick={() => onSave(form)}>
+          <Button variant="primary" style={{ flex: 2 }} onClick={save}>
             {initial ? "Guardar cambios" : "Guardar egreso"}
           </Button>
         </div>
@@ -384,7 +395,9 @@ function CobroModal({ clients, contracts, onClose, onSave }) {
     clientId: "", contractId: "", cuota: "", amount: "",
     paid_date: new Date().toISOString().split("T")[0], notes: "",
   });
-  const set = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
+  const fe = useFieldErrors();
+  const set = k => e => { const v = e.target.value; setForm(p => ({ ...p, [k]: v })); fe.clear(k); };
+  const save = () => { if (fe.validate(form, COBRO_RULES)) onSave(form); };
   const filtContracts = contracts.filter(c => !form.clientId || String(c.client?.id) === form.clientId);
   return (
     <div className="modal-overlay">
@@ -399,20 +412,24 @@ function CobroModal({ clients, contracts, onClose, onSave }) {
         </div>
         <div className="modal-body">
           <div className="fg"><label className="fl">Cliente</label>
-            <select className="fi" value={form.clientId} onChange={set("clientId")}>
+            <select {...fe.fieldProps("clientId")} value={form.clientId} onChange={set("clientId")}>
               <option value="">— Seleccionar —</option>
               {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select></div>
+            </select>
+            <FieldError msg={fe.errors.clientId} /></div>
           <div className="fg"><label className="fl">Contrato / Lote</label>
-            <select className="fi" value={form.contractId} onChange={set("contractId")}>
+            <select {...fe.fieldProps("contractId")} value={form.contractId} onChange={set("contractId")}>
               <option value="">— Seleccionar —</option>
               {filtContracts.map(c => <option key={c.id} value={c.id}>{c.contract_number}</option>)}
-            </select></div>
+            </select>
+            <FieldError msg={fe.errors.contractId} /></div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div className="fg"><label className="fl">N° cuota</label>
-              <input className="fi" type="number" value={form.cuota} onChange={set("cuota")} placeholder="1" /></div>
+              <input {...fe.fieldProps("cuota")} type="number" value={form.cuota} onChange={set("cuota")} placeholder="1" />
+              <FieldError msg={fe.errors.cuota} /></div>
             <div className="fg"><label className="fl">Monto</label>
-              <input className="fi" type="number" value={form.amount} onChange={set("amount")} placeholder="0" /></div>
+              <input {...fe.fieldProps("amount")} type="number" value={form.amount} onChange={set("amount")} placeholder="0" />
+              <FieldError msg={fe.errors.amount} /></div>
           </div>
           <div className="fg"><label className="fl">Fecha de cobro</label>
             <input className="fi" type="date" value={form.paid_date} onChange={set("paid_date")} /></div>
@@ -421,7 +438,7 @@ function CobroModal({ clients, contracts, onClose, onSave }) {
         </div>
         <div className="modal-foot">
           <Button variant="secondary" style={{ flex: 1 }} onClick={onClose}>Cancelar</Button>
-          <Button variant="primary" style={{ flex: 2 }} onClick={() => onSave(form)}>Registrar cobro</Button>
+          <Button variant="primary" style={{ flex: 2 }} onClick={save}>Registrar cobro</Button>
         </div>
       </div>
     </div>

@@ -19,6 +19,10 @@ export function initSentry() {
     tracesSampleRate: 0,
     // Adjunta IP/usuario a los eventos para saber a quién le pasó el error.
     sendDefaultPii: true,
+    // Quitamos la integración "Dedupe" (activa por defecto): descartaba eventos con el
+    // mismo mensaje/stack aunque tuvieran distinto `request_id` (p. ej. varios
+    // "Network Error" seguidos). Queremos capturar e identificar CADA ocurrencia por su Ref.
+    integrations: (defaults) => defaults.filter((integration) => integration.name !== "Dedupe"),
   });
 }
 
