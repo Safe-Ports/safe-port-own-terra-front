@@ -1,4 +1,5 @@
 import { useMemo, useState, useRef, useEffect } from "react";
+import GuideModal from "@/components/shared/GuideModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   HiDocumentArrowUp, HiOutlineFolder, HiFolderOpen, HiOutlineFolderPlus,
@@ -7,6 +8,7 @@ import {
   HiOutlineArrowRight, HiOutlineMagnifyingGlass,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
+import { useLandsGuide } from "@/context/LandsGuideContext";
 import { folderService } from "@/services/folderService";
 import { documentService, filenameForDocument } from "@/services/documentService";
 import { getUserErrorMessage } from "@/services/errors";
@@ -181,6 +183,8 @@ function MoveModal({ folders, doc, onMove, onClose }) {
 /* ── main page ──────────────────────────────────────────────────────────── */
 export default function DocumentsPage() {
   const { documents, openDocumentUpload, openDocumentPreview, downloadDocument, deleteDocument, showToast } = useAppContext();
+  const [showGuide, setShowGuide] = useState(false);
+  useLandsGuide(() => setShowGuide(true));
   const qc = useQueryClient();
 
   const { data: folders = [] } = useQuery({
@@ -584,6 +588,20 @@ export default function DocumentsPage() {
           </div>
         </div>
       )}
+      <GuideModal
+        open={showGuide}
+        onClose={() => setShowGuide(false)}
+        title="Bóveda de documentos"
+        subtitle="Almacén centralizado de archivos organizado por carpetas jerárquicas."
+        steps={[
+          { title: "Navegar carpetas", text: "El árbol de la izquierda muestra todas tus carpetas. Haz clic en una para ver sus documentos. Las subcarpetas se crean con el ícono '+'." },
+          { title: "Subir documentos", text: "Selecciona la carpeta destino y pulsa 'Subir'. El documento queda vinculado a esa carpeta y puede asignarse una categoría (contrato, identificación, escritura, etc.)." },
+          { title: "Buscar archivos", text: "La barra de búsqueda filtra documentos por nombre dentro de la carpeta activa. Para buscar en todas las carpetas selecciona 'Todos los archivos'." },
+          { title: "Mover documentos", text: "Haz clic en el menú de opciones (⋮) de cualquier documento para moverlo a otra carpeta o eliminarlo." },
+          { title: "Descargar documentos", text: "El ícono de descarga en cada archivo descarga el documento original en su formato (PDF, imagen, etc.)." },
+          { title: "Sin carpeta", text: "La sección 'Sin carpeta' agrupa todos los archivos que no han sido organizados en ninguna carpeta. Úsala para mover archivos pendientes de clasificar." },
+        ]}
+      />
     </>
   );
 }

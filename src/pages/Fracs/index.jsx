@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import GuideModal from "@/components/shared/GuideModal";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
+import { useLandsGuide } from "@/context/LandsGuideContext";
 import EmptyState from "@/components/ui/EmptyState";
 import InlineDocumentsPanel from "@/components/shared/InlineDocumentsPanel";
 import Button from "@/components/Button";
@@ -25,6 +27,12 @@ const SERVICES = [
   { k: "internet", lbl: "Internet/Fibra" },
   { k: "pavimento", lbl: "Pavimento" },
 ];
+
+const LOT_CODE_COLLATOR = new Intl.Collator("es-MX", { numeric: true, sensitivity: "base" });
+
+function compareLotsByCode(a, b) {
+  return LOT_CODE_COLLATOR.compare(String(a.code || ""), String(b.code || ""));
+}
 
 function calcMonthly(priceF, enganche, tasaAnual, plazo) {
   const pv = Number(priceF) - Number(enganche);
@@ -174,7 +182,9 @@ function FracsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const [homeMode, setHomeMode] = useState(true);
+  const [homeMode, setHomeMode]   = useState(true);
+  const [showGuide, setShowGuide] = useState(false);
+  useLandsGuide(() => setShowGuide(true));
 
   useEffect(() => {
     setHomeMode(true);
@@ -222,13 +232,19 @@ function FracsPage() {
   const selectedLot = lots.find((lot) => lot.id === selectedLotId) || null;
   const sections = useMemo(() => [...new Set(lots.map((lot) => lot.section || "General"))], [lots]);
 
-  const filteredLots = useMemo(() => lots.filter((lot) => {
-    const matchesStatus = statusFilter === "all" || lot.status === statusFilter;
-    const matchesSection = !sectionFilter || (lot.section || "General") === sectionFilter;
-    const haystack = `${lot.code} ${lot.section || ""}`.toLowerCase();
-    const matchesSearch = !search.trim() || haystack.includes(search.toLowerCase());
-    return matchesStatus && matchesSection && matchesSearch;
-  }), [lots, statusFilter, sectionFilter, search]);
+  const filteredLots = useMemo(
+    () =>
+      lots
+        .filter((lot) => {
+          const matchesStatus = statusFilter === "all" || lot.status === statusFilter;
+          const matchesSection = !sectionFilter || (lot.section || "General") === sectionFilter;
+          const haystack = `${lot.code} ${lot.section || ""}`.toLowerCase();
+          const matchesSearch = !search.trim() || haystack.includes(search.toLowerCase());
+          return matchesStatus && matchesSection && matchesSearch;
+        })
+        .sort(compareLotsByCode),
+    [lots, statusFilter, sectionFilter, search]
+  );
 
   const filteredProjects = useMemo(() => {
     const q = projectSearch.trim().toLowerCase();
@@ -302,7 +318,9 @@ function FracsPage() {
               <div className="frac-panel-title">Proyectos</div>
               <div className="frac-panel-sub">Fraccionamientos activos</div>
             </div>
-            <span className="frac-project-count">{fracs.length}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span className="frac-project-count">{fracs.length}</span>
+            </div>
           </div>
           <div className="frac-panel-body">
             <div className="frac-project-list">
@@ -357,7 +375,21 @@ function FracsPage() {
             <style>{`@keyframes pulse-soft { 0%,100%{transform:scale(1)} 50%{transform:scale(1.04)} }`}</style>
           </div>
         </section>
-      </div>
+      <GuideModal
+        open={showGuide}
+        onClose={() => setShowGuide(false)}
+        title="Fraccionamientos"
+        subtitle="Gestión táctil de tu inventario de lotes con plano interactivo."
+        steps={[
+          { title: "Seleccionar proyecto", text: "La lista izquierda muestra todos tus fraccionamientos. Haz clic en uno para ver su plano interactivo y la matriz de lotes." },
+          { title: "Plano interactivo", text: "Usa el scroll o pinch para hacer zoom. Haz clic en el plano para ver los lotes superpuestos con su estado (disponible, apartado, vendido)." },
+          { title: "Filtrar lotes", text: "Los botones de estado en la barra superior filtran los lotes visibles en el plano. Combínalos con la búsqueda por sección o código." },
+          { title: "Ficha de lote", text: "Selecciona un lote para ver su ficha completa: medidas, servicios disponibles, precio de contado y financiado, y vendedor asignado." },
+          { title: "Cotizador integrado", text: "Desde la ficha del lote puedes abrir el cotizador para simular el plan de pagos con amortización francesa o alemana." },
+          { title: "Agendar visita", text: "El botón 'Agendar' en la ficha del lote crea una cita en la agenda central vinculada al lote y al contacto del prospecto." },
+        ]}
+      />
+    </div>
     );
   }
 
@@ -756,7 +788,6 @@ function FracsPage() {
                   <div className="frac-actions-list">
                     {selectedLot.status !== "sold" ? <button onClick={() => navigate("/contratos")}>Registrar venta</button> : null}
                     <button onClick={() => setShowApptForm((value) => !value)}>Agendar cita</button>
-                    <button onClick={() => showToast("PDF en desarrollo")}>Imprimir ficha</button>
                   </div>
                   {showApptForm ? (
                     <div className="frac-appointment-form">
@@ -890,6 +921,20 @@ function FracsPage() {
 
 
       {showMapViewer && selectedFrac.map_image_url ? <MapViewer src={selectedFrac.map_image_url} onClose={() => setShowMapViewer(false)} /> : null}
+      <GuideModal
+        open={showGuide}
+        onClose={() => setShowGuide(false)}
+        title="Fraccionamientos"
+        subtitle="Gestión táctil de tu inventario de lotes con plano interactivo."
+        steps={[
+          { title: "Seleccionar proyecto", text: "La lista izquierda muestra todos tus fraccionamientos. Haz clic en uno para ver su plano interactivo y la matriz de lotes." },
+          { title: "Plano interactivo", text: "Usa el scroll o pinch para hacer zoom. Haz clic en el plano para ver los lotes superpuestos con su estado (disponible, apartado, vendido)." },
+          { title: "Filtrar lotes", text: "Los botones de estado en la barra superior filtran los lotes visibles en el plano. Combínalos con la búsqueda por sección o código." },
+          { title: "Ficha de lote", text: "Selecciona un lote para ver su ficha completa: medidas, servicios disponibles, precio de contado y financiado, y vendedor asignado." },
+          { title: "Cotizador integrado", text: "Desde la ficha del lote puedes abrir el cotizador para simular el plan de pagos con amortización francesa o alemana." },
+          { title: "Agendar visita", text: "El botón 'Agendar' en la ficha del lote crea una cita en la agenda central vinculada al lote y al contacto del prospecto." },
+        ]}
+      />
     </div>
   );
 }

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { currency } from "@/services/formatters";
+import GuideModal from "@/components/shared/GuideModal";
+import { useLandsGuide } from "@/context/LandsGuideContext";
 
 /* ── Amortización Francesa (cuota fija) ── */
 function buildFrench(total, downPayment, rate, months) {
@@ -68,6 +70,8 @@ function CalculatorPage() {
   });
   const [amortType, setAmortType]     = useState("french");
   const [showFormula, setShowFormula] = useState(false);
+  const [showGuide, setShowGuide]     = useState(false);
+  useLandsGuide(() => setShowGuide(true));
 
   const { payment, rows } = buildSchedule(form.total, form.downPayment, form.rate, form.months, amortType);
   const info = AMORT_INFO[amortType];
@@ -214,6 +218,19 @@ function CalculatorPage() {
           </table>
         </div>
       </div>
+      <GuideModal
+        open={showGuide}
+        onClose={() => setShowGuide(false)}
+        title="Calculadora financiera"
+        subtitle="Simula planes de financiamiento con amortización francesa o alemana."
+        steps={[
+          { title: "Ingresa los parámetros", text: "Escribe el precio total del lote, el enganche, la tasa anual de interés y el número de mensualidades (plazo)." },
+          { title: "Amortización Francesa", text: "Cuota mensual fija durante todo el plazo. El capital amortizado aumenta mes a mes y los intereses disminuyen. Ideal para flujo estable." },
+          { title: "Amortización Alemana", text: "Capital fijo por mes, por lo que los cuotas son más altas al inicio y bajan con el tiempo. El total de intereses pagados es menor que en la francesa." },
+          { title: "Tabla de amortización", text: "La tabla muestra mes a mes el saldo inicial, capital, intereses, cuota mensual y saldo final. Úsala para mostrar el plan de pagos al cliente." },
+          { title: "Ver fórmulas", text: "Pulsa '¿Cómo se calcula?' para ver la fórmula matemática que se usa en cada método de amortización." },
+        ]}
+      />
     </div>
   );
 }

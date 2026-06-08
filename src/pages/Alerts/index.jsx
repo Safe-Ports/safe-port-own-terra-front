@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
+import GuideModal from "@/components/shared/GuideModal";
 import { HiBellAlert, HiCheckCircle, HiClock } from "react-icons/hi2";
 import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
-import { useAlertsQuery } from "@/hooks/queries/useAppQueries";
+import { useLandsGuide } from "@/context/LandsGuideContext";
 import Modal from "@/components/ui/Modal";
 import { currency, dateLabel, relativeDays } from "@/services/formatters";
 import { notificationService } from "@/services/notificationService";
 
 function PaymentModal() {
-  const { ui, closeModal, clients, contracts, editingPayment, paymentDraft, savePayment, deletePayment, resetPaymentDraft } = useAppContext();
+  const { ui, closeModal, clients, contracts, editingPayment, paymentDraft, savePayment, resetPaymentDraft } = useAppContext();
   const [form, setForm] = useState({
     clientId: clients[0]?.id || "",
     contractId: contracts[0]?.id || "",
@@ -67,9 +68,6 @@ function PaymentModal() {
           >
             Cancelar
           </button>
-          {editingPayment ? (
-            <button className="btn-dan" onClick={() => deletePayment(editingPayment.id)}>Eliminar</button>
-          ) : null}
           <button className="btn-p" onClick={() => savePayment({ ...(editingPayment || {}), ...form })}>Guardar</button>
         </>
       }
@@ -103,8 +101,9 @@ function PaymentModal() {
 }
 
 function AlertsPage() {
-  const { data: alerts = [] } = useAlertsQuery();
   const { payments, openModal, setEditingPayment, markAllNotificationsRead } = useAppContext();
+  const [showGuide, setShowGuide] = useState(false);
+  useLandsGuide(() => setShowGuide(true));
 
   const { data: notifData } = useQuery({
     queryKey: ["notifications"],
@@ -126,8 +125,10 @@ function AlertsPage() {
               <div className="text-[0.7rem] font-bold uppercase tracking-[0.24em] text-[#E9B69F]">Centro de alertas</div>
               <div className="mt-2 font-['Playfair_Display'] text-[1.9rem] leading-none">Prioridades de hoy</div>
             </div>
-            <div className="rounded-2xl bg-white/10 p-3">
-              <HiBellAlert className="text-xl" />
+            <div className="flex items-center gap-2">
+              <div className="rounded-2xl bg-white/10 p-3">
+                <HiBellAlert className="text-xl" />
+              </div>
             </div>
           </div>
           <div className="mt-4 grid grid-cols-3 gap-3">
@@ -137,7 +138,7 @@ function AlertsPage() {
             </div>
             <div className="rounded-[22px] bg-white/8 p-3">
               <div className="text-[0.62rem] uppercase tracking-[0.14em] text-white/55">Pendientes</div>
-              <div className="mt-2 text-lg font-bold">{alerts.length}</div>
+              <div className="mt-2 text-lg font-bold">{notifications.length}</div>
             </div>
             <div className="rounded-[22px] bg-white/8 p-3">
               <div className="text-[0.62rem] uppercase tracking-[0.14em] text-white/55">Cobranza</div>
@@ -198,23 +199,33 @@ function AlertsPage() {
             )}
           </div>
           <div className="mt-4 space-y-3">
-            {notifications.length > 0
-              ? notifications.slice(0, 6).map((n) => (
-                  <div key={n.id} className={`rounded-[22px] border p-4 ${n.is_read ? "border-[#E7E4DB] bg-[#FBFAF6]" : "border-[#C8DDD0] bg-[#EEF6F1]"}`}>
-                    <div className="text-sm font-semibold text-[#1E3D2B]">{n.title}</div>
-                    <div className="mt-1 text-sm text-[#43453F]">{n.message || n.subtitle || ""}</div>
-                  </div>
-                ))
-              : alerts.slice(0, 6).map((alert) => (
-                  <div key={alert.id} className="rounded-[22px] border border-[#E7E4DB] bg-[#FBFAF6] p-4">
-                    <div className="text-sm font-semibold text-[#1E3D2B]">{alert.title}</div>
-                    <div className="mt-1 text-sm text-[#43453F]">{alert.subtitle}</div>
-                  </div>
-                ))}
+            {notifications.length > 0 ? notifications.slice(0, 6).map((n) => (
+              <div key={n.id} className={`rounded-[22px] border p-4 ${n.is_read ? "border-[#E7E4DB] bg-[#FBFAF6]" : "border-[#C8DDD0] bg-[#EEF6F1]"}`}>
+                <div className="text-sm font-semibold text-[#1E3D2B]">{n.title}</div>
+                <div className="mt-1 text-sm text-[#43453F]">{n.message || n.subtitle || ""}</div>
+              </div>
+            )) : (
+              <div className="rounded-[22px] border border-[#E7E4DB] bg-[#FBFAF6] p-4 text-sm text-[#83867C]">
+                Sin notificaciones pendientes.
+              </div>
+            )}
           </div>
         </section>
       </div>
       <PaymentModal />
+      <GuideModal
+        open={showGuide}
+        onClose={() => setShowGuide(false)}
+        title="Centro de alertas"
+        subtitle="Priorización de cobranza vencida y seguimientos pendientes."
+        steps={[
+          { title: "Alertas críticas (rojas)", text: "Pagos con status 'vencido'. Requieren acción inmediata. Haz clic en 'Cobrar' para registrar el pago directamente desde la alerta." },
+          { title: "Alertas pendientes", text: "Las notificaciones pendientes provienen del servicio de notificaciones del backend." },
+          { title: "Seguimientos mixtos", text: "Notificaciones generadas por otras áreas del ecosistema (visitas agendadas, contratos por firmar, documentos pendientes)." },
+          { title: "Marcar como leído", text: "El botón 'Marcar todo como leído' limpia el contador de notificaciones sin eliminarlas del historial." },
+          { title: "Contador de cobranza", text: "Los 3 indicadores en el encabezado muestran el número de alertas críticas, pendientes y el monto total de cobranza vencida acumulada." },
+        ]}
+      />
     </>
   );
 }
