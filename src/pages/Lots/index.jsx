@@ -983,7 +983,7 @@ function LotsPage() {
         <div className="mt-4 flex gap-3 overflow-x-auto pb-1 no-scrollbar">
           {draftProject.mode === "selector" && (
             <button
-              className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white"
+              className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white transition-colors hover:border-white/30 hover:bg-white/20"
               onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
             >
               Nuevo proyecto
@@ -1087,8 +1087,9 @@ function LotsPage() {
               Elige el método que mejor se adapte a tu flujo de trabajo
             </p>
             <div className="mt-8 grid gap-5 sm:grid-cols-2">
+              {/* ── Carga Manual ── */}
               <div
-                className="relative cursor-pointer overflow-hidden rounded-[16px] border-2 border-[#DCDAD2] bg-[#FBFAF6] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#355E3B] hover:shadow-[0_8px_24px_rgba(45,90,71,.15)]"
+                className="relative flex cursor-pointer flex-col overflow-hidden rounded-[16px] border-2 border-[#DCDAD2] bg-[#FBFAF6] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#355E3B] hover:shadow-[0_8px_24px_rgba(45,90,71,.15)]"
                 onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
               >
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#355E3B]" />
@@ -1099,8 +1100,52 @@ function LotsPage() {
                 <div className="mb-5 text-[0.76rem] leading-relaxed text-[#83867C]">
                   Sube la imagen del plano y construye la matriz de lotes manualmente. Define secciones, columnas y estado de cada unidad.
                 </div>
-                <button className="pointer-events-none w-full rounded-[9px] bg-[#355E3B] px-4 py-2.5 text-[0.8rem] font-bold text-white">
+                <button className="pointer-events-none mb-3 w-full rounded-[9px] bg-[#355E3B] px-4 py-2.5 text-[0.8rem] font-bold text-white">
                   Abrir editor →
+                </button>
+                <button
+                  className="w-full rounded-[9px] border border-[#DCDAD2] bg-white px-4 py-2 text-[0.72rem] font-semibold text-[#83867C] transition-colors hover:border-[#B98C58] hover:text-[#B98C58]"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const mockSections = [
+                      { id: "mock_a", name: "Manzana A", lots: Array.from({ length: 12 }, (_, i) => ({ id: `ma_${i}`, code: `A-${String(i+1).padStart(2,"0")}`, status: i < 8 ? "sold" : i < 10 ? "reserved" : "available", area: 200 + i * 5, price: 450000 + i * 10000, priceFinanciado: 520000 + i * 10000, frente: 10, fondo: 20, servicios: { agua: true, luz: true, drenaje: true, gas: false, internet: false, pavimento: true } })) },
+                      { id: "mock_b", name: "Manzana B", lots: Array.from({ length: 10 }, (_, i) => ({ id: `mb_${i}`, code: `B-${String(i+1).padStart(2,"0")}`, status: i < 4 ? "sold" : i < 6 ? "reserved" : "available", area: 180 + i * 8, price: 380000 + i * 12000, priceFinanciado: 440000 + i * 12000, frente: 9, fondo: 20, servicios: { agua: true, luz: true, drenaje: true, gas: true, internet: true, pavimento: false } })) },
+                      { id: "mock_c", name: "Zona Premium", lots: Array.from({ length: 6 }, (_, i) => ({ id: `mc_${i}`, code: `P-${String(i+1).padStart(2,"0")}`, status: i < 2 ? "sold" : "available", area: 350 + i * 20, price: 750000 + i * 30000, priceFinanciado: 880000 + i * 30000, frente: 14, fondo: 25, servicios: { agua: true, luz: true, drenaje: true, gas: true, internet: true, pavimento: true } })) },
+                    ];
+                    setDraftProject((previous) => ({
+                      ...previous,
+                      mode: "editor",
+                      name: "Residencial Demo",
+                      mapUrl: "",
+                      sections: mockSections,
+                    }));
+                  }}
+                >
+                  🏘️ Cargar demo
+                </button>
+              </div>
+
+              {/* ── Carga CAD ── */}
+              <div
+                className="relative flex cursor-pointer flex-col overflow-hidden rounded-[16px] border-2 border-[#DCDAD2] bg-[#FBFAF6] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#4A6FA5] hover:shadow-[0_8px_24px_rgba(74,111,165,.15)]"
+                onClick={() => {
+                  setDraftProject((previous) => ({
+                    ...previous,
+                    mode: "map-upload",
+                    cadProcessing: true,
+                  }));
+                }}
+              >
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#4A6FA5]" />
+                <div className="mx-auto mb-3 flex h-[62px] w-[62px] items-center justify-center rounded-[15px] bg-[#E8EEF7] text-[1.8rem]">
+                  📐
+                </div>
+                <div className="mb-2 font-['Playfair_Display'] text-[1.05rem] text-[#1E3D2B]">Importar CAD</div>
+                <div className="mb-5 flex-1 text-[0.76rem] leading-relaxed text-[#83867C]">
+                  Sube un archivo DWG o DXF del plano técnico y el sistema extrae automáticamente la estructura de lotes.
+                </div>
+                <button className="pointer-events-none w-full rounded-[9px] bg-[#4A6FA5] px-4 py-2.5 text-[0.8rem] font-bold text-white">
+                  Subir archivo CAD →
                 </button>
               </div>
 

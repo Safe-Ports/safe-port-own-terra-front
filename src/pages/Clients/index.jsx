@@ -21,19 +21,26 @@ const LOT_STATUS_COLOR = { available: "#355E3B", sold: "#C0392B", reserved: "#9D
 function ClientModal() {
   const { ui, closeModal, saveClient, editingClient, deleteClient, clients } = useAppContext();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", phone: "", email: "", type: "buyer", notes: "" });
+  const [form, setForm] = useState({ nombre: "", apellidos: "", phone: "", email: "", type: "buyer", notes: "" });
 
   // Detección de identidad ya existente en el core (vincular en vez de duplicar)
+  const fullName = `${form.nombre} ${form.apellidos}`.trim();
   const dupe = !editingClient && form.email
     ? clients.find((c) => c.email && c.email.toLowerCase() === form.email.trim().toLowerCase())
     : null;
 
+  const splitName = (name = "") => {
+    const parts = name.trim().split(" ");
+    return { nombre: parts[0] || "", apellidos: parts.slice(1).join(" ") };
+  };
+
   useEffect(() => {
-    setForm(
-      editingClient
-        ? { name: editingClient.name || "", phone: editingClient.phone || "", email: editingClient.email || "", type: editingClient.type || "buyer", notes: editingClient.notes || "" }
-        : { name: "", phone: "", email: "", type: "buyer", notes: "" }
-    );
+    if (editingClient) {
+      const { nombre, apellidos } = splitName(editingClient.name);
+      setForm({ nombre, apellidos, phone: editingClient.phone || "", email: editingClient.email || "", type: editingClient.type || "buyer", notes: editingClient.notes || "" });
+    } else {
+      setForm({ nombre: "", apellidos: "", phone: "", email: "", type: "buyer", notes: "" });
+    }
   }, [editingClient, ui.clientModal]);
 
   return (
@@ -52,6 +59,7 @@ function ClientModal() {
             onClick={() => saveClient({
               ...(editingClient || {}),
               ...form,
+              name: fullName,
               linkClientId: dupe?.id,
             })}
           >
@@ -84,13 +92,17 @@ function ClientModal() {
       )}
       <div className="fr-row">
         <div className="fg" style={{ flex: 1 }}>
-          <label className="fl">Nombre completo</label>
-          <input className="fi" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
+          <label className="fl">Nombre</label>
+          <input className="fi" value={form.nombre} onChange={(e) => setForm((p) => ({ ...p, nombre: e.target.value }))} />
         </div>
         <div className="fg" style={{ flex: 1 }}>
-          <label className="fl">Teléfono</label>
-          <input className="fi" value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))} />
+          <label className="fl">Apellidos</label>
+          <input className="fi" value={form.apellidos} onChange={(e) => setForm((p) => ({ ...p, apellidos: e.target.value }))} />
         </div>
+      </div>
+      <div className="fg">
+        <label className="fl">Teléfono</label>
+        <input className="fi" value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))} />
       </div>
       <div className="fg">
         <label className="fl">Correo electrónico</label>

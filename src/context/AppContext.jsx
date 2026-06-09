@@ -10,6 +10,7 @@ import { contractService } from "@/services/contractService";
 import { paymentService } from "@/services/paymentService";
 import { documentService, filenameForDocument, toBackendEntityType } from "@/services/documentService";
 import { notificationService } from "@/services/notificationService";
+import { folderService } from "@/services/folderService";
 import { createEmptyDraftProject } from "@/services/draftProject";
 import { canAccessApp, canUseFeature } from "@/services/permissions";
 import { getUserErrorMessage } from "@/services/errors";
@@ -229,6 +230,11 @@ export function AppProvider({ children }) {
           showToast(getUserErrorMessage(err, "Cliente creado en el Core, pero no se pudo vincular a Lands"));
           return false;
         }
+        try {
+          const shortId = String(created.id).slice(0, 8).toUpperCase();
+          await folderService.create({ name: `${created.name} - ${shortId}`, parent_id: null });
+          await queryClient.invalidateQueries({ queryKey: ["document-folders"] });
+        } catch (_) {}
         showToast("Cliente creado correctamente");
       }
       await queryClient.invalidateQueries({ queryKey: ["clients"] });
