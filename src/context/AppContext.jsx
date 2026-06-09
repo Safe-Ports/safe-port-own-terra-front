@@ -287,6 +287,8 @@ export function AppProvider({ children }) {
         seller_id:           payload.seller_id || undefined,
         down_payment_method: payload.down_payment_method || undefined,
         notes:               payload.notes || undefined,
+        calculator_id:       payload.calculator_id || undefined,
+        calculator_vars:     payload.calculator_vars || undefined,
       });
     }
     await queryClient.invalidateQueries({ queryKey: ["contracts"] });
