@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
 import Modal from "@/components/ui/Modal";
@@ -6,6 +7,8 @@ import InlineDocumentsPanel from "@/components/shared/InlineDocumentsPanel";
 import { lotService } from "@/services/lotService";
 import { orgService } from "@/services/orgService";
 import { folderService } from "@/services/folderService";
+import { calculatorService } from "@/services/calculatorService";
+import { evaluate, FormulaError } from "@/services/formulaEngine";
 import { getFieldErrors, getUserErrorMessage } from "@/services/errors";
 import { HiOutlinePlus, HiOutlineTrash, HiOutlineDocument } from "react-icons/hi2";
 
@@ -24,6 +27,21 @@ const DOC_CATEGORIES = [
   { value: "plano",          label: "Plano"         },
   { value: "otro",           label: "Otro"          },
 ];
+
+/* ── Pre-relleno de variables de la calculadora desde los campos del contrato ──
+   Las variables son abiertas; esto es solo una conveniencia: si el nombre se parece
+   a un campo conocido, sugerimos su valor (editable). El resto queda vacío. */
+function guessVarValue(varName, form) {
+  const k = varName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f_]/g, "");
+  const amount = Number(form.amount) || 0;
+  const down   = Number(form.down_payment) || 0;
+  if (/(precio|monto|total|valor)/.test(k)) return amount;
+  if (/(enganche|down|inicial|anticipo)/.test(k)) return down;
+  if (/(tasa|interes|rate)/.test(k)) return (Number(form.interest_rate) || 0) * 100;
+  if (/(plazo|mes|month|term)/.test(k)) return Number(form.totalM) || 0;
+  if (/(principal|financ|saldo|capital)/.test(k)) return Math.max(0, amount - down);
+  return "";
+}
 
 /* ── Helper visual de error de campo ───────────────────────── */
 function FieldError({ msg }) {
@@ -283,6 +301,14 @@ function ContractModal() {
     ui, closeModal, clients, fracs, selectedFracId, editingContract, contractDraft,
     saveContract, deleteContract, resetContractDraft, showToast,
   } = useAppContext();
+  const navigate = useNavigate();
+
+  const goToCalculator = () => {
+    resetContractDraft();
+    closeModal("contractModal");
+    setErrors({});
+    navigate("/calculadora");
+  };
 
   const [docs, setDocs]       = useState([]);
   const [errors, setErrors]   = useState({});
@@ -306,6 +332,44 @@ function ContractModal() {
     seller_id: "", down_payment_method: "cash", notes: "",
   };
   const [form, setForm] = useState(defaultForm);
+
+  /* ── Calculadora de financiamiento activa (snapshot inmutable en la venta) ── */
+  const useCalculator = ui.contractModal && !editingContract && form.type === "sale";
+  const { data: activeCalc, isSuccess: calcLoaded } = useQuery({
+    queryKey: ["calculators", "active", "lands"],
+    queryFn: () => calculatorService.getActive("lands"),
+    enabled: useCalculator,
+    staleTime: 60_000,
+  });
+  // No hay calculadora activa configurada: no se puede registrar la venta.
+  const noCalculator = useCalculator && calcLoaded && !activeCalc;
+  const [calcVars, setCalcVars] = useState({});
+  // Marca qué variables editó el usuario a mano (esas no se re-sincronizan del formulario).
+  const calcEditedRef = useRef({});
+  // Al cambiar de calculadora o reabrir el modal, olvida las ediciones manuales previas.
+  useEffect(() => { calcEditedRef.current = {}; }, [activeCalc?.id, ui.contractModal]);
+  // Pre-rellena/re-sincroniza las variables desde los montos del contrato (editable).
+  // Las variables NO editadas a mano siempre reflejan el valor actual del formulario.
+  useEffect(() => {
+    if (!activeCalc?.variables?.length) return;
+    setCalcVars((prev) => {
+      const next = {};
+      for (const v of activeCalc.variables) {
+        next[v] = calcEditedRef.current[v] ? prev[v] : guessVarValue(v, form);
+      }
+      return next;
+    });
+  }, [activeCalc, form.amount, form.down_payment, form.interest_rate, form.totalM]);
+
+  const calcResult = useMemo(() => {
+    if (!activeCalc?.formula || !activeCalc.variables?.length) return { value: null, error: "" };
+    if (activeCalc.variables.some((v) => calcVars[v] === "" || calcVars[v] == null)) return { value: null, error: "" };
+    try {
+      return { value: evaluate(activeCalc.formula, calcVars), error: "" };
+    } catch (err) {
+      return { value: null, error: err instanceof FormulaError ? err.message : "Fórmula inválida" };
+    }
+  }, [activeCalc, calcVars]);
 
   const set = k => e => {
     setForm(p => ({ ...p, [k]: e.target.value }));
@@ -420,6 +484,23 @@ function ContractModal() {
       return;
     }
 
+    // Para una venta se requiere una calculadora activa configurada.
+    if (noCalculator) {
+      showToast("Primero crea y activa una calculadora en Calculadora de financiamiento");
+      return;
+    }
+
+    // Si hay calculadora activa para una venta, adjunta id + variables para que el
+    // backend congele el snapshot de la fórmula usada.
+    const calcPayload = (useCalculator && activeCalc)
+      ? {
+          calculator_id: activeCalc.id,
+          calculator_vars: Object.fromEntries(
+            (activeCalc.variables || []).map((v) => [v, Number(calcVars[v]) || 0])
+          ),
+        }
+      : {};
+
     setSaving(true);
     try {
       await saveContract({
@@ -433,6 +514,7 @@ function ContractModal() {
         interest_rate:       Number(form.interest_rate ?? 0),
         seller_id:           form.seller_id || undefined,
         down_payment_method: form.down_payment_method || undefined,
+        ...calcPayload,
         _docs: docs.filter(d => d.file),
       });
     } catch (err) {
@@ -736,6 +818,71 @@ function ContractModal() {
           <b style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".92rem" }}>
             ${Math.round((Number(form.amount) - Number(form.down_payment || 0)) / Number(form.totalM)).toLocaleString("en-US")} / mes
           </b>
+        </div>
+      )}
+
+      {/* ── Sin calculadora activa: obligatoria para registrar la venta ── */}
+      {noCalculator && (
+        <div style={{
+          border: "1px solid rgba(192,57,43,.45)", borderRadius: 16,
+          padding: 14, marginBottom: 4, background: "rgba(192,57,43,.05)",
+          boxShadow: "0 8px 18px rgba(192,57,43,.06)",
+        }}>
+          <div style={{ fontWeight: 700, fontSize: ".82rem", color: "var(--danger)", marginBottom: 4 }}>
+            ⚠ No hay una calculadora de financiamiento activa
+          </div>
+          <div style={{ fontSize: ".76rem", color: "var(--tx)", marginBottom: 10, lineHeight: 1.5 }}>
+            Para registrar una venta primero debes crear y activar una calculadora con la
+            fórmula de la mensualidad. La venta guardará una copia de esa fórmula.
+          </div>
+          <button type="button" className="btn-p" style={{ padding: "6px 12px", fontSize: ".75rem" }} onClick={goToCalculator}>
+            Crear calculadora →
+          </button>
+        </div>
+      )}
+
+      {/* ── Calculadora de financiamiento activa ── */}
+      {useCalculator && activeCalc && (
+        <div style={{
+          border: "1px solid rgba(53,94,59,.45)", borderRadius: 16,
+          padding: 14, marginBottom: 4,
+          background: "linear-gradient(135deg, var(--tan-lt), var(--sf))",
+          boxShadow: "0 12px 28px rgba(30,61,43,.08)",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+            <span style={{ fontWeight: 700, fontSize: ".82rem", color: "var(--forest)" }}>
+              🧮 {activeCalc.name}
+            </span>
+            <span style={{
+              fontSize: ".6rem", fontWeight: 800, letterSpacing: ".06em", color: "var(--forest)",
+              background: "var(--sf)", padding: "2px 9px", borderRadius: 999, border: "1px solid rgba(53,94,59,.30)",
+            }}>CALCULADORA ACTIVA</span>
+          </div>
+          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".7rem", color: "var(--mu)", marginBottom: 10 }}>
+            {activeCalc.formula}
+          </div>
+          {activeCalc.variables?.length > 0 && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(120px,1fr))", gap: 8 }}>
+              {activeCalc.variables.map((v) => (
+                <div className="fg" key={v} style={{ margin: 0 }}>
+                  <label className="fl" style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".68rem" }}>{v}</label>
+                  <input className="fi" type="number" value={calcVars[v] ?? ""}
+                    onChange={(e) => { calcEditedRef.current[v] = true; setCalcVars((p) => ({ ...p, [v]: e.target.value })); }} placeholder="0" />
+                </div>
+              ))}
+            </div>
+          )}
+          {calcResult.error && (
+            <div style={{ marginTop: 8, fontSize: ".72rem", color: "var(--danger,#c0392b)" }}>{calcResult.error}</div>
+          )}
+          {calcResult.value != null && !calcResult.error && (
+            <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: ".78rem", color: "var(--mu)" }}>Mensualidad (se congela en la venta)</span>
+              <b style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".95rem", color: "var(--forest,#355E3B)" }}>
+                ${calcResult.value.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              </b>
+            </div>
+          )}
         </div>
       )}
 
