@@ -363,15 +363,24 @@ function LotsPage() {
       return;
     }
 
+    const isCsv = /\.csv$/i.test(file.name) || file.type === "text/csv";
+
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: "array" });
+        let workbook;
+        if (isCsv) {
+          // CSV: decode as UTF-8 to preserve accents (é, í, ó, ú, ñ…)
+          const text = new TextDecoder("utf-8").decode(e.target.result);
+          workbook = XLSX.read(text, { type: "string" });
+        } else {
+          workbook = XLSX.read(new Uint8Array(e.target.result), { type: "array" });
+        }
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const matrix = sheet ? XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", blankrows: false }) : [];
         const rows = sheet ? XLSX.utils.sheet_to_json(sheet, { defval: "" }) : [];
 
+        // explicit Unicode range for combining diacritical marks
         const norm = (s) => String(s || "").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
         const parseNumber = (value) => {
           const cleaned = String(value || "").replace(/[$,\s]/g, "");
@@ -446,25 +455,26 @@ function LotsPage() {
           }
           seenCodes.add(norm(code));
 
-          const secName = findCol(row, ["Seccion", "sección", "manzana", "bloque", "section", "fraccionamiento"]) || "Importados";
+          const secName = findCol(row, ["Fraccionamiento", "Seccion", "seccion", "sección", "manzana", "bloque", "section"]) || "Importados";
           const statusRaw = norm(findCol(row, ["Estado", "estatus", "status"]));
           const status = STATUS_MAP[statusRaw] || "available";
           if (statusRaw && !STATUS_MAP[statusRaw]) warnings.push(`Fila ${rowNumber}: estado "${statusRaw}" no reconocido; se usó Disponible.`);
-          const area = parseNumber(findCol(row, ["Superficie (m2)", "superficie", "area", "área", "m2"]));
+          const area = parseNumber(findCol(row, ["Superficie (m2)", "superficie", "area", "area", "m2"]));
           const price = parseNumber(findCol(row, ["Precio Contado", "precio contado", "contado", "precio"]));
           const priceFinanciado = parseNumber(findCol(row, ["Precio Financiado", "financiado"]));
-          const frente = parseNumber(findCol(row, ["Frente (ML)", "frente"]));
-          const fondo = parseNumber(findCol(row, ["Fondo (ML)", "fondo"]));
+          const frente = parseNumber(findCol(row, ["Frente (ML)", "frente (ml)", "frente"]));
+          const fondo = parseNumber(findCol(row, ["Fondo (ML)", "fondo (ml)", "fondo"]));
+          const vendedor = findCol(row, ["Vendedor Asignado", "vendedor asignado", "vendedor", "asesor", "seller"]);
           const servicios = {
-            agua: parseBoolean(findCol(row, ["Agua Potable", "agua"])),
-            luz: parseBoolean(findCol(row, ["Energia Electrica", "Energía Eléctrica", "luz", "electricidad"])),
-            drenaje: parseBoolean(findCol(row, ["Drenaje"])),
-            gas: parseBoolean(findCol(row, ["Gas Natural", "gas"])),
-            internet: parseBoolean(findCol(row, ["Internet/Fibra", "internet"])),
-            pavimento: parseBoolean(findCol(row, ["Pavimento"])),
+            agua: parseBoolean(findCol(row, ["Agua Potable", "agua potable", "agua"])),
+            luz: parseBoolean(findCol(row, ["Energia Electrica", "Energía Eléctrica", "energia electrica", "luz", "electricidad"])),
+            drenaje: parseBoolean(findCol(row, ["Drenaje", "drenaje"])),
+            gas: parseBoolean(findCol(row, ["Gas Natural", "gas natural", "gas"])),
+            internet: parseBoolean(findCol(row, ["Internet/Fibra", "internet/fibra", "internet"])),
+            pavimento: parseBoolean(findCol(row, ["Pavimento", "pavimento"])),
           };
           if (!grouped[secName]) grouped[secName] = [];
-          grouped[secName].push({ id: `xl_${Date.now()}_${i}`, code, status, area, price, priceFinanciado, frente, fondo, servicios });
+          grouped[secName].push({ id: `xl_${Date.now()}_${i}`, code, status, area, price, priceFinanciado, frente, fondo, servicios, vendedor });
         });
 
         const newSections = Object.entries(grouped).map(([name, lots]) => ({
