@@ -14,8 +14,6 @@ const titleMap = {
   "/calculadora": "Calculadora de Amortización",
   "/alertas": "Alertas",
   "/asistente": "Asistente",
-  "/bot-analytics": "Bot Analytics",
-  "/tickets-soporte": "Tickets de Soporte",
   "/perfil": "Perfil",
   "/configuracion": "Configuración",
 };
@@ -32,8 +30,6 @@ const subtitleMap = {
   "/calculadora": "OwnTerra Lands · Cotizador comercial",
   "/alertas": "OwnTerra Core · Seguimiento operativo",
   "/asistente": "OwnTerra Bot - Asistencia y soporte",
-  "/bot-analytics": "OwnTerra Bot - Consultas y clasificacion",
-  "/tickets-soporte": "OwnTerra Bot - Tickets de soporte",
   "/perfil": "Cuenta y preferencias",
   "/configuracion": "Configuración del espacio Lands",
 };

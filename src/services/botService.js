@@ -15,36 +15,12 @@ export function createSupportTicket(ticketData) {
   return botApi.post("/support/tickets", ticketData).then((r) => r.data);
 }
 
-export function getSupportTickets() {
-  return botApi.get("/support/tickets").then((r) => r.data);
-}
-
-export function updateSupportTicketStatus(ticketId, status) {
-  return botApi.patch(`/support/tickets/${ticketId}/status`, { status }).then((r) => r.data);
-}
-
-export function getBotConversations() {
-  return botApi.get("/analytics/conversations").then((r) => r.data);
-}
-
-export function getBotAnalyticsSummary() {
-  return botApi.get("/analytics/conversations/summary").then((r) => r.data);
-}
-
 export const botService = {
   health: () => botApi.get("/health").then((r) => r.data),
   chat: sendMessageToBot,
   createTicket: createSupportTicket,
-  listTickets: getSupportTickets,
-  updateTicketStatus: updateSupportTicketStatus,
-  conversations: getBotConversations,
-  summary: getBotAnalyticsSummary,
   sendMessageToBot,
   createSupportTicket,
-  getSupportTickets,
-  updateSupportTicketStatus,
-  getBotConversations,
-  getBotAnalyticsSummary,
 };
 
 export default botService;

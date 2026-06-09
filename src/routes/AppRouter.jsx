@@ -19,14 +19,12 @@ const SalesPage = lazy(() => import("@/pages/Sales"));
 const DocumentsPage = lazy(() => import("@/pages/Documents"));
 const AlertsPage = lazy(() => import("@/pages/Alerts"));
 const AssistantPage = lazy(() => import("@/pages/Assistant"));
-const BotAnalyticsPage = lazy(() => import("@/pages/BotAnalytics"));
 const PaymentsPage = lazy(() => import("@/pages/Payments"));
 const CalculatorPage = lazy(() => import("@/pages/Calculator"));
 const ProfilePage = lazy(() => import("@/pages/Profile"));
 const SettingsPage = lazy(() => import("@/pages/Settings"));
 const PaymentsPreview = lazy(() => import("@/pages/PaymentsPreview"));
 const ReportsPage = lazy(() => import("@/pages/Reports"));
-const SupportTicketsPage = lazy(() => import("@/pages/SupportTickets"));
 const AccessDenied = lazy(() => import("@/pages/AccessDenied"));
 
 function PageLoader() {
@@ -70,11 +68,9 @@ function AppRouter() {
           <Route path="/documentos" element={<RequireFeature feature="lands.documents"><DocumentsPage /></RequireFeature>} />
           <Route path="/alertas" element={<RequireFeature app="lands"><AlertsPage /></RequireFeature>} />
           <Route path="/asistente" element={<RequireFeature app="lands"><AssistantPage /></RequireFeature>} />
-          <Route path="/bot-analytics" element={<RequireFeature app="lands"><BotAnalyticsPage /></RequireFeature>} />
           <Route path="/pagos" element={<RequireFeature feature="lands.payments"><PaymentsPage /></RequireFeature>} />
           <Route path="/pagos-preview" element={<RequireFeature feature="lands.payments"><PaymentsPreview /></RequireFeature>} />
           <Route path="/reportes" element={<RequireFeature feature="lands.reports"><ReportsPage /></RequireFeature>} />
-          <Route path="/tickets-soporte" element={<RequireFeature app="lands"><SupportTicketsPage /></RequireFeature>} />
           <Route path="/calculadora" element={<RequireFeature app="lands"><CalculatorPage /></RequireFeature>} />
           <Route path="/perfil" element={<ProfilePage />} />
           <Route path="/configuracion" element={<RequireFeature feature="core.config"><SettingsPage /></RequireFeature>} />
