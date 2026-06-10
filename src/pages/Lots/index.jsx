@@ -20,15 +20,111 @@ const STATUS_CYCLE = { available: "sold", sold: "reserved", reserved: "available
 const MAP_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const LOT_REQUIRED_ALIASES = ["ID Lote", "id", "codigo", "código", "lote", "clave"];
 const LOT_TEMPLATE_GUIDE = [
-  ["GUÍA PARA CARGAR LOTES"],
+  ["GUÍA PARA CARGAR LOTES DESDE EXCEL O CSV"],
   ["Regla", "Detalle"],
-  ["Campo requerido", "ID Lote. Debe existir como columna y tener valor en todas las filas."],
-  ["Campos opcionales", "Sección/Manzana/Fraccionamiento, Estado, Superficie, medidas, precios, servicios y vendedor."],
-  ["Estados aceptados", "disponible, apartado o vendido."],
-  ["Servicios aceptados", "sí/no, 1/0, true/false o x."],
+  ["Estructura", "La primera fila contiene encabezados y cada fila siguiente representa un lote."],
+  ["Campo requerido", "ID Lote. Debe tener valor único en todas las filas. También se aceptan: id, codigo, código, lote o clave."],
+  ["Agrupación opcional", "Fraccionamiento, Sección, Manzana, Bloque o Section. Si se omite, los lotes se agrupan en Importados."],
+  ["Campos numéricos opcionales", "Superficie (m2), Frente (ML), Fondo (ML), Precio Contado y Precio Financiado."],
+  ["Estados", "disponible, apartado o reservado. Vendido requiere un contrato y no se asigna directamente durante esta carga."],
+  ["Servicios opcionales", "Agua Potable, Energía Eléctrica, Drenaje, Gas Natural, Internet/Fibra y Pavimento. Usar sí/no, 1/0, true/false o x."],
+  ["Vendedor Asignado", "Campo opcional de referencia. La asignación final del vendedor debe revisarse después de crear el fraccionamiento."],
   ["Archivos aceptados", "XLSX, XLS o CSV de hasta 10 MB."],
-  ["Importante", "Si falta un campo requerido, no se cargará ninguna fila."],
+  ["Importante", "No combines celdas ni dejes filas sin ID Lote. Revisa los lotes preparados antes de crear el fraccionamiento."],
 ];
+const LOT_IMPORT_GUIDE_STEPS = [
+  {
+    title: "Cómo subir el archivo",
+    text: "En Carga de Lotes entra al editor, pulsa Plantilla para descargar un ejemplo, completa el archivo y luego pulsa Subir. El sistema prepara los lotes para que los revises antes de crear el fraccionamiento.",
+  },
+  {
+    title: "Formato de Excel y CSV",
+    text: "Se aceptan XLSX, XLS y CSV de hasta 10 MB. Usa la primera fila para los encabezados y una fila por lote. En CSV guarda el archivo con codificación UTF-8 para conservar acentos y la letra ñ.",
+  },
+  {
+    title: "Campo obligatorio: ID Lote",
+    text: "Cada fila debe tener un identificador único, por ejemplo A-01 o L001. El encabezado recomendado es ID Lote; también se aceptan id, codigo, código, lote o clave. Si falta o está duplicado, la fila no se carga.",
+  },
+  {
+    title: "Agrupar por sección o manzana",
+    text: "Usa uno de estos encabezados: Fraccionamiento, Sección, Manzana, Bloque o Section. Escribe el nombre que agrupará cada lote, por ejemplo Manzana A. Si omites la columna, se agrupan en Importados.",
+  },
+  {
+    title: "Medidas y precios opcionales",
+    text: "Encabezados aceptados: Superficie (m2), Frente (ML), Fondo (ML), Precio Contado y Precio Financiado. Usa números positivos; precios pueden incluir el signo $ y separadores de miles.",
+  },
+  {
+    title: "Estado del lote",
+    text: "Usa el encabezado Estado, Estatus o Status. Disponible, apartado y reservado se preparan para la carga. Vendido requiere un contrato, por lo que no puede asignarse directamente al crear lotes. Si el campo está vacío, se usa Disponible.",
+  },
+  {
+    title: "Servicios opcionales",
+    text: "Encabezados: Agua Potable, Energía Eléctrica, Drenaje, Gas Natural, Internet/Fibra y Pavimento. Para indicar que sí cuenta con el servicio usa sí, 1, true, yes o x; cualquier otro valor se toma como no.",
+  },
+  {
+    title: "Lista completa de campos",
+    text: "ID Lote es obligatorio. Son opcionales: Fraccionamiento/Sección/Manzana, Estado, Superficie (m2), Frente (ML), Fondo (ML), Precio Contado, Precio Financiado, Agua Potable, Energía Eléctrica, Drenaje, Gas Natural, Internet/Fibra y Pavimento. Vendedor Asignado queda como referencia y debe revisarse después.",
+  },
+  {
+    title: "Revisión antes de guardar",
+    text: "Después de subir el archivo revisa secciones, códigos, estados, medidas y precios en el tablero. El archivo solo prepara los lotes; se guardan definitivamente al pulsar Crear fraccionamiento.",
+  },
+];
+const LOT_SELECTOR_GUIDE = {
+  title: "Guía de Carga de Lotes",
+  subtitle: "Elige el método adecuado para iniciar o continuar un fraccionamiento.",
+  steps: [
+    {
+      title: "Revisa tu portafolio",
+      text: "En la parte superior aparecen los fraccionamientos existentes. Usa Ver para abrir uno o Editar lotes para modificar su inventario.",
+    },
+    {
+      title: "Carga manual",
+      text: "Selecciona Carga Manual para crear un fraccionamiento desde cero. Puedes subir una imagen del plano o continuar sin imagen y construir las secciones manualmente.",
+    },
+    {
+      title: "Importar CAD",
+      text: "La opción CAD está pensada para archivos técnicos DWG o DXF. Úsala cuando el plano ya contiene la estructura que deseas procesar.",
+    },
+    {
+      title: "Excel y CSV",
+      text: "Para cargar lotes desde Excel o CSV entra primero a Carga Manual, selecciona una imagen o continúa sin plano, y después usa Plantilla y Subir dentro del tablero.",
+    },
+  ],
+};
+const LOT_MAP_GUIDE = {
+  title: "Guía para preparar el plano",
+  subtitle: "La imagen es opcional y sirve como referencia visual del fraccionamiento.",
+  steps: [
+    {
+      title: "Nombre del fraccionamiento",
+      text: "Escribe un nombre claro antes de continuar, por ejemplo Residencial Las Palmas. Este será el nombre visible en tu portafolio.",
+    },
+    {
+      title: "Subir imagen del plano",
+      text: "Selecciona una imagen JPG, PNG o WEBP. La imagen se mostrará como referencia mientras construyes y revisas la matriz de lotes.",
+    },
+    {
+      title: "Continuar sin plano",
+      text: "La imagen no es obligatoria. Pulsa Continuar para abrir el tablero y crear secciones manualmente o importar los lotes desde Excel o CSV.",
+    },
+    {
+      title: "Cambiar de método",
+      text: "Pulsa Cambiar modo para regresar a la vista principal y elegir otro método de carga.",
+    },
+  ],
+};
+const LOT_EDITOR_GUIDE = {
+  title: "Guía del tablero y carga Excel/CSV",
+  subtitle: "Crea secciones manualmente o prepara todos los lotes desde un archivo.",
+  steps: [
+    {
+      title: "Crear lotes manualmente",
+      text: "Escribe el nombre de la sección o manzana, indica cuántos lotes necesitas y pulsa Agregar. Después haz clic en cada lote para editar código, estado, medidas, precios y servicios.",
+    },
+    ...LOT_IMPORT_GUIDE_STEPS,
+  ],
+};
 
 function createLots(sectionName, total) {
   return Array.from({ length: total }, (_, index) => ({
@@ -255,8 +351,12 @@ function LotsPage() {
   const [loadingEditId, setLoadingEditId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [showImportGuide, setShowImportGuide] = useState(false);
-  const [showPageGuide, setShowPageGuide] = useState(false);
-  useLandsGuide(() => setShowPageGuide(true));
+  useLandsGuide(() => setShowImportGuide(true));
+  const activeGuide = draftProject.mode === "editor"
+    ? LOT_EDITOR_GUIDE
+    : draftProject.mode === "map-upload"
+      ? LOT_MAP_GUIDE
+      : LOT_SELECTOR_GUIDE;
   const [importSummary, setImportSummary] = useState(null);
   const [downloadingTemplate, setDownloadingTemplate] = useState(false);
   const importSummarySteps = importSummary ? [{
@@ -609,7 +709,7 @@ function LotsPage() {
 
   const updateMap = (file) => {
     if (!isValidMapImage(file)) {
-      showToast("El plano debe ser una imagen JPG, PNG o WEBP. El Excel solo va en Llenar con Excel.");
+      showToast("El plano debe ser una imagen JPG, PNG o WEBP. Excel y CSV solo van en Llenar con Excel o CSV.");
       return false;
     }
 
@@ -790,16 +890,13 @@ function LotsPage() {
               </div>
               <div className="lots-excel-row">
                 <div>
-                  <span className="lots-excel-title">Llenar con Excel</span>
+                  <span className="lots-excel-title">Llenar con Excel o CSV</span>
                   <span className="lots-excel-sub">
                     {importSummary
                       ? `${importSummary.imported} preparados${importSummary.skipped ? ` · ${importSummary.skipped} omitidos` : ""}`
-                      : "Importa lotes desde archivo"}
+                      : "Importa lotes desde XLSX, XLS o CSV"}
                   </span>
                 </div>
-                <button className="lots-excel-upload" onClick={() => setShowImportGuide(true)}>
-                  Guía
-                </button>
                 <button className="lots-excel-upload" onClick={downloadImportTemplate} disabled={downloadingTemplate}>
                   {downloadingTemplate ? "Descargando..." : "Plantilla"}
                 </button>
@@ -972,6 +1069,13 @@ function LotsPage() {
         );
       })()}
 
+      <GuideModal
+        open={showImportGuide}
+        onClose={() => setShowImportGuide(false)}
+        title={activeGuide.title}
+        subtitle={activeGuide.subtitle}
+        steps={[...activeGuide.steps, ...importSummarySteps]}
+      />
       </>
     );
   }
@@ -1237,30 +1341,9 @@ function LotsPage() {
       <GuideModal
         open={showImportGuide}
         onClose={() => setShowImportGuide(false)}
-        title="Guía para cargar lotes"
-        subtitle="Prepara el archivo y revisa los datos antes de crear el fraccionamiento."
-        steps={[
-          { title: "Columna obligatoria: ID Lote", text: "Cada fila debe tener un ID Lote único. Filas sin este valor o con IDs duplicados se omiten automáticamente." },
-          { title: "Agrupación por sección", text: "Usa la columna Sección, Manzana o Fraccionamiento para agrupar lotes. Si se omite, todos quedan en 'Importados'." },
-          { title: "Estado del lote", text: "La columna Estado acepta: disponible, apartado, reservado o vendido. Si el valor no se reconoce se usa Disponible." },
-          { title: "Medidas y precios", text: "Columnas aceptadas: Superficie (m2), Frente (ML), Fondo (ML), Precio Contado, Precio Financiado. Los valores pueden incluir $, comas o espacios." },
-          { title: "Servicios", text: "Agua Potable, Energía Eléctrica, Drenaje, Gas Natural, Internet/Fibra y Pavimento aceptan: sí/no, 1/0, true/false o x." },
-          { title: "Formato del archivo", text: "XLSX, XLS o CSV. Máximo 10 MB. Descarga la plantilla oficial para asegurar que los encabezados sean correctos." },
-          ...importSummarySteps,
-        ]}
-      />
-      <GuideModal
-        open={showPageGuide}
-        onClose={() => setShowPageGuide(false)}
-        title="Lotes y proyectos"
-        subtitle="Gestión completa de tu inventario de fraccionamientos."
-        steps={[
-          { title: "Ver tu portafolio", text: "La lista lateral muestra todos tus fraccionamientos activos. Selecciona uno para ver su plano interactivo con los lotes y sus estados." },
-          { title: "Crear un nuevo proyecto", text: "Pulsa 'Nuevo proyecto', sube el plano del fraccionamiento y luego arma la matriz de lotes por sección en el editor." },
-          { title: "Importar desde Excel", text: "En el editor usa el botón 'Subir' para cargar un archivo XLSX o CSV. Pulsa 'Guía' para ver las columnas aceptadas y descargar la plantilla oficial." },
-          { title: "Editar lotes", text: "Haz clic en cualquier lote de la matriz para editar su código, estado, medidas, precio y servicios disponibles." },
-          { title: "Cambiar estado de lotes", text: "Los estados disponibles son: Disponible (verde), Apartado (amarillo) y Vendido (rojo). Se puede cambiar desde la ficha del lote." },
-        ]}
+        title={activeGuide.title}
+        subtitle={activeGuide.subtitle}
+        steps={[...activeGuide.steps, ...importSummarySteps]}
       />
     </div>
   );
