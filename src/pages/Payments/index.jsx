@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import GuideModal from "@/components/shared/GuideModal";
+import PaymentReceiptModal from "@/components/shared/PaymentReceiptModal";
 import {
   HiOutlinePlus, HiOutlinePencil, HiOutlineTrash, HiOutlineCalendar,
   HiOutlineXMark, HiOutlineMagnifyingGlass, HiOutlineChevronDown,
@@ -381,10 +382,11 @@ function EgresoModal({ initial, onClose, onSave }) {
 }
 
 /* ── Modal cobro ─────────────────────────────────────────────── */
-function CobroModal({ clients, contracts, onClose, onSave }) {
+function CobroModal({ clients, contracts, onClose, onSave, loading }) {
   const [form, setForm] = useState({
     clientId: "", contractId: "", cuota: "", amount: "",
-    paid_date: new Date().toISOString().split("T")[0], notes: "",
+    paid_date: new Date().toISOString().split("T")[0],
+    payment_method: "transfer", notes: "",
   });
   const set = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
   const filtContracts = contracts.filter(c => !form.clientId || String(c.client?.id) === form.clientId);
@@ -416,14 +418,25 @@ function CobroModal({ clients, contracts, onClose, onSave }) {
             <div className="fg"><label className="fl">Monto</label>
               <input className="fi" type="number" value={form.amount} onChange={set("amount")} placeholder="0" /></div>
           </div>
-          <div className="fg"><label className="fl">Fecha de cobro</label>
-            <input className="fi" type="date" value={form.paid_date} onChange={set("paid_date")} /></div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="fg"><label className="fl">Fecha de cobro</label>
+              <input className="fi" type="date" value={form.paid_date} onChange={set("paid_date")} /></div>
+            <div className="fg"><label className="fl">Medio de pago</label>
+              <select className="fi" value={form.payment_method} onChange={set("payment_method")}>
+                <option value="transfer">Transferencia</option>
+                <option value="cash">Efectivo</option>
+                <option value="card">Tarjeta</option>
+                <option value="check">Cheque</option>
+              </select></div>
+          </div>
           <div className="fg"><label className="fl">Notas (opcional)</label>
-            <input className="fi" value={form.notes} onChange={set("notes")} placeholder="Transferencia, efectivo…" /></div>
+            <input className="fi" value={form.notes} onChange={set("notes")} placeholder="Referencia, número de operación…" /></div>
         </div>
         <div className="modal-foot">
-          <Button variant="secondary" style={{ flex: 1 }} onClick={onClose}>Cancelar</Button>
-          <Button variant="primary" style={{ flex: 2 }} onClick={() => onSave(form)}>Registrar cobro</Button>
+          <Button variant="secondary" style={{ flex: 1 }} onClick={onClose} disabled={loading}>Cancelar</Button>
+          <Button variant="primary" style={{ flex: 2 }} onClick={() => onSave(form)} disabled={loading}>
+            {loading ? "Registrando…" : "Registrar cobro"}
+          </Button>
         </div>
       </div>
     </div>
@@ -478,10 +491,12 @@ export default function PaymentsPage() {
   const { payments, clients, contracts, quickPay, sendReminder, showToast } = useAppContext();
   const qc = useQueryClient();
 
-  const [tab,       setTab]       = useState("ingresos");
-  const [modal,     setModal]     = useState(null);
-  const [editing,   setEditing]   = useState(null);
-  const [showGuide, setShowGuide] = useState(false);
+  const [tab,          setTab]          = useState("ingresos");
+  const [modal,        setModal]        = useState(null);
+  const [editing,      setEditing]      = useState(null);
+  const [receipt,      setReceipt]      = useState(null);
+  const [cobroLoading, setCobroLoading] = useState(false);
+  const [showGuide,    setShowGuide]    = useState(false);
   useLandsGuide(() => setShowGuide(true));
   const [page,    setPage]    = useState(1);
   const [limit,   setLimit]   = useState(10);
@@ -610,8 +625,49 @@ export default function PaymentsPage() {
 
   const estadoOptions = isIn ? ESTADO_IN : isEg ? ESTADO_EG : ESTADO_AL;
 
+  /* ── helpers para construir datos del recibo ── */
+  const buildReceipt = (row, paidData) => {
+    const contractId = row.contract?.id ?? row.contract_id;
+    const contract   = contracts.find(c => String(c.id) === String(contractId)) ?? row.contract ?? {};
+    const nextPayment = payments
+      .filter(p => (p.contract?.id ?? p.contract_id) === contractId && p.status !== "paid" && p.id !== row.id)
+      .sort((a, b) => (a.installment_n || 0) - (b.installment_n || 0))[0] ?? null;
+    return {
+      payment:     { ...row, ...paidData, amount_paid: paidData?.amount_paid ?? Number(row.amount) },
+      allPayments: payments,
+      contracts,
+      nextPayment,
+      contract,
+    };
+  };
+
   /* ── handlers ── */
-  const handlePagar = r => isEg ? markPaidExpense.mutate(r.id) : quickPay(r.id, Number(r.amount));
+  const handlePagar = async r => {
+    if (isEg) { markPaidExpense.mutate(r.id); return; }
+    const paidData = await quickPay(r.id, Number(r.amount), "transfer");
+    if (paidData) setReceipt(buildReceipt(r, paidData));
+  };
+
+  const handleSaveCobro = async form => {
+    const contractId = form.contractId;
+    const match = payments.find(
+      p => String(p.contract?.id ?? p.contract_id) === String(contractId) &&
+           p.installment_n === Number(form.cuota) &&
+           p.status !== "paid"
+    );
+    if (!match) { showToast("No se encontró la cuota o ya está pagada"); return; }
+    setCobroLoading(true);
+    const paidData = await quickPay(match.id, Number(form.amount || match.amount), form.payment_method);
+    setCobroLoading(false);
+    if (paidData) {
+      setModal(null);
+      setReceipt(buildReceipt(
+        { ...match, notes: form.notes || match.notes },
+        { ...paidData, paid_date: form.paid_date || paidData.paid_date, payment_method: form.payment_method }
+      ));
+    }
+  };
+
   const handleSaveEgreso = form => {
     const body = { concepto: form.concepto, categoria: form.categoria, monto: Number(form.monto),
       due_date: form.due_date, recurrencia: form.recurrencia || null, notes: form.notes || null };
@@ -759,7 +815,11 @@ export default function PaymentsPage() {
                 <div style={{ fontSize: ".75rem", color: "var(--mu)" }}>{a.detalle} · <em>{a.hace}</em></div>
               </div>
               <button className={`al-action ${a.tipo === "ingreso" ? "cobrar" : "pagar"}`}
-                onClick={() => a.tipo === "egreso" ? markPaidExpense.mutate(a.raw.id) : quickPay(a.raw.id, Number(a.raw.amount))}>
+                onClick={async () => {
+                  if (a.tipo === "egreso") { markPaidExpense.mutate(a.raw.id); return; }
+                  const paidData = await quickPay(a.raw.id, Number(a.raw.amount), "transfer");
+                  if (paidData) setReceipt(buildReceipt(a.raw, paidData));
+                }}>
                 {a.tipo === "ingreso" ? "Cobrar" : "Pagar"}
               </button>
             </div>
@@ -771,7 +831,15 @@ export default function PaymentsPage() {
       {/* ── Modales ── */}
       {modal === "tipo"   && <TipoModal onSelect={t => setModal(t)} onClose={() => setModal(null)} />}
       {modal === "egreso" && <EgresoModal initial={editing} onClose={() => { setModal(null); setEditing(null); }} onSave={handleSaveEgreso} />}
-      {modal === "cobro"  && <CobroModal clients={clients} contracts={contracts} onClose={() => setModal(null)} onSave={() => setModal(null)} />}
+      {modal === "cobro"  && <CobroModal clients={clients} contracts={contracts} onClose={() => setModal(null)} onSave={handleSaveCobro} loading={cobroLoading} />}
+      {receipt && (
+        <PaymentReceiptModal
+          payment={receipt.payment}
+          allPayments={receipt.allPayments}
+          contracts={receipt.contracts}
+          onClose={() => setReceipt(null)}
+        />
+      )}
       <GuideModal
         open={showGuide}
         onClose={() => setShowGuide(false)}

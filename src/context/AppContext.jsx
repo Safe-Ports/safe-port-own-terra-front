@@ -334,9 +334,9 @@ export function AppProvider({ children }) {
 
   // ── Payments ──────────────────────────────────────────────────────────────
   const savePayment = async (data) => {
-    let saved = false;
+    let result = null;
     if (data?.id) {
-      saved = await quickPay(data.id, Number(data.amount || 0));
+      result = await quickPay(data.id, Number(data.amount || 0), data.payment_method);
     } else {
       const match = payments.find(
         (p) =>
@@ -346,15 +346,15 @@ export function AppProvider({ children }) {
       );
       if (!match) {
         showToast("No se encontró la cuota indicada o ya está pagada");
-        return false;
+        return null;
       }
-      saved = await quickPay(match.id, Number(data.amount || match.amount || 0));
+      result = await quickPay(match.id, Number(data.amount || match.amount || 0), data.payment_method);
     }
-    if (!saved) return false;
+    if (!result) return null;
     setEditingPayment(null);
     setPaymentDraft(null);
     closeModal("paymentModal");
-    return true;
+    return result;
   };
 
   const exportAppData = async (type = "contracts", format = "xlsx") => {
@@ -379,20 +379,20 @@ export function AppProvider({ children }) {
     }
   };
 
-  const quickPay = async (paymentId, amount) => {
+  const quickPay = async (paymentId, amount, method = "transfer") => {
     try {
-      await paymentService.markPaid(paymentId, {
+      const data = await paymentService.markPaid(paymentId, {
         paid_date: new Date().toISOString().split("T")[0],
-        payment_method: "transfer",
+        payment_method: method,
         amount_paid: amount,
       });
       await queryClient.invalidateQueries({ queryKey: ["payments"] });
       await queryClient.invalidateQueries({ queryKey: ["contracts"] });
       showToast("Pago registrado correctamente");
-      return true;
+      return data ?? true;
     } catch (err) {
       showToast(getUserErrorMessage(err, "Error al registrar el pago"));
-      return false;
+      return null;
     }
   };
 
