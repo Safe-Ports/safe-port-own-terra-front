@@ -10,6 +10,7 @@ import { getUserErrorMessage } from "@/services/errors";
 import { currency } from "@/services/formatters";
 import Button from "@/components/Button";
 import GuideModal from "@/components/shared/GuideModal";
+import LotImportFormatModal from "./LotImportFormatModal";
 
 const LOT_COLORS = {
   available: { bg: "#dcfce7", border: "#86efac", text: "#15803d" },
@@ -18,17 +19,113 @@ const LOT_COLORS = {
 };
 const STATUS_CYCLE = { available: "sold", sold: "reserved", reserved: "available" };
 const MAP_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const LOT_REQUIRED_ALIASES = ["ID Lote", "id", "codigo", "código", "lote", "clave"];
+const LOT_REQUIRED_ALIASES = ["ID Lote", "id lote", "codigo", "código", "lote", "clave"];
 const LOT_TEMPLATE_GUIDE = [
-  ["GUÍA PARA CARGAR LOTES"],
+  ["GUÍA PARA CARGAR LOTES DESDE EXCEL O CSV"],
   ["Regla", "Detalle"],
-  ["Campo requerido", "ID Lote. Debe existir como columna y tener valor en todas las filas."],
-  ["Campos opcionales", "Sección/Manzana/Fraccionamiento, Estado, Superficie, medidas, precios, servicios y vendedor."],
-  ["Estados aceptados", "disponible, apartado o vendido."],
-  ["Servicios aceptados", "sí/no, 1/0, true/false o x."],
+  ["Estructura", "La primera fila contiene encabezados y cada fila siguiente representa un lote."],
+  ["Campo requerido", "ID Lote. Debe tener valor único en todas las filas. También se aceptan: id, codigo, código, lote o clave."],
+  ["Agrupación opcional", "Fraccionamiento, Sección, Manzana, Bloque o Section. Si se omite, los lotes se agrupan en Importados."],
+  ["Campos numéricos opcionales", "Superficie (m2), Frente (ML), Fondo (ML), Precio Contado y Precio Financiado."],
+  ["Estados", "disponible, apartado o reservado. Vendido requiere un contrato y no se asigna directamente durante esta carga."],
+  ["Servicios opcionales", "Agua Potable, Energía Eléctrica, Drenaje, Gas Natural, Internet/Fibra y Pavimento. Usar sí/no, 1/0, true/false o x."],
+  ["Vendedor Asignado", "Campo opcional de referencia. La asignación final del vendedor debe revisarse después de crear el fraccionamiento."],
   ["Archivos aceptados", "XLSX, XLS o CSV de hasta 10 MB."],
-  ["Importante", "Si falta un campo requerido, no se cargará ninguna fila."],
+  ["Importante", "No combines celdas ni dejes filas sin ID Lote. Revisa los lotes preparados antes de crear el fraccionamiento."],
 ];
+const LOT_IMPORT_GUIDE_STEPS = [
+  {
+    title: "Cómo subir el archivo",
+    text: "En Carga de Lotes entra al editor, pulsa Plantilla para descargar un ejemplo, completa el archivo y luego pulsa Subir. El sistema prepara los lotes para que los revises antes de crear el fraccionamiento.",
+  },
+  {
+    title: "Formato de Excel y CSV",
+    text: "Se aceptan XLSX, XLS y CSV de hasta 10 MB. Usa la primera fila para los encabezados y una fila por lote. En CSV guarda el archivo con codificación UTF-8 para conservar acentos y la letra ñ.",
+  },
+  {
+    title: "Campo obligatorio: ID Lote",
+    text: "Cada fila debe tener un identificador único, por ejemplo A-01 o L001. El encabezado recomendado es ID Lote; también se aceptan id, codigo, código, lote o clave. Si falta o está duplicado, la fila no se carga.",
+  },
+  {
+    title: "Agrupar por sección o manzana",
+    text: "Usa uno de estos encabezados: Fraccionamiento, Sección, Manzana, Bloque o Section. Escribe el nombre que agrupará cada lote, por ejemplo Manzana A. Si omites la columna, se agrupan en Importados.",
+  },
+  {
+    title: "Medidas y precios opcionales",
+    text: "Encabezados aceptados: Superficie (m2), Frente (ML), Fondo (ML), Precio Contado y Precio Financiado. Usa números positivos; precios pueden incluir el signo $ y separadores de miles.",
+  },
+  {
+    title: "Estado del lote",
+    text: "Usa el encabezado Estado, Estatus o Status. Disponible, apartado y reservado se preparan para la carga. Vendido requiere un contrato, por lo que no puede asignarse directamente al crear lotes. Si el campo está vacío, se usa Disponible.",
+  },
+  {
+    title: "Servicios opcionales",
+    text: "Encabezados: Agua Potable, Energía Eléctrica, Drenaje, Gas Natural, Internet/Fibra y Pavimento. Para indicar que sí cuenta con el servicio usa sí, 1, true, yes o x; cualquier otro valor se toma como no.",
+  },
+  {
+    title: "Lista completa de campos",
+    text: "ID Lote es obligatorio. Son opcionales: Fraccionamiento/Sección/Manzana, Estado, Superficie (m2), Frente (ML), Fondo (ML), Precio Contado, Precio Financiado, Agua Potable, Energía Eléctrica, Drenaje, Gas Natural, Internet/Fibra y Pavimento. Vendedor Asignado queda como referencia y debe revisarse después.",
+  },
+  {
+    title: "Revisión antes de guardar",
+    text: "Después de subir el archivo revisa secciones, códigos, estados, medidas y precios en el tablero. El archivo solo prepara los lotes; se guardan definitivamente al pulsar Crear fraccionamiento.",
+  },
+];
+const LOT_SELECTOR_GUIDE = {
+  title: "Guía de Carga de Lotes",
+  subtitle: "Elige el método adecuado para iniciar o continuar un fraccionamiento.",
+  steps: [
+    {
+      title: "Revisa tu portafolio",
+      text: "En la parte superior aparecen los fraccionamientos existentes. Usa Ver para abrir uno o Editar lotes para modificar su inventario.",
+    },
+    {
+      title: "Carga manual",
+      text: "Selecciona Carga Manual para crear un fraccionamiento desde cero. Puedes subir una imagen del plano o continuar sin imagen y construir las secciones manualmente.",
+    },
+    {
+      title: "Importar CAD",
+      text: "La opción CAD está pensada para archivos técnicos DWG o DXF. Úsala cuando el plano ya contiene la estructura que deseas procesar.",
+    },
+    {
+      title: "Excel y CSV",
+      text: "Para cargar lotes desde Excel o CSV entra primero a Carga Manual, selecciona una imagen o continúa sin plano, y después usa Plantilla y Subir dentro del tablero.",
+    },
+  ],
+};
+const LOT_MAP_GUIDE = {
+  title: "Guía para preparar el plano",
+  subtitle: "La imagen es opcional y sirve como referencia visual del fraccionamiento.",
+  steps: [
+    {
+      title: "Nombre del fraccionamiento",
+      text: "Escribe un nombre claro antes de continuar, por ejemplo Residencial Las Palmas. Este será el nombre visible en tu portafolio.",
+    },
+    {
+      title: "Subir imagen del plano",
+      text: "Selecciona una imagen JPG, PNG o WEBP. La imagen se mostrará como referencia mientras construyes y revisas la matriz de lotes.",
+    },
+    {
+      title: "Continuar sin plano",
+      text: "La imagen no es obligatoria. Pulsa Continuar para abrir el tablero y crear secciones manualmente o importar los lotes desde Excel o CSV.",
+    },
+    {
+      title: "Cambiar de método",
+      text: "Pulsa Cambiar modo para regresar a la vista principal y elegir otro método de carga.",
+    },
+  ],
+};
+const LOT_EDITOR_GUIDE = {
+  title: "Guía del tablero y carga Excel/CSV",
+  subtitle: "Crea secciones manualmente o prepara todos los lotes desde un archivo.",
+  steps: [
+    {
+      title: "Crear lotes manualmente",
+      text: "Escribe el nombre de la sección o manzana, indica cuántos lotes necesitas y pulsa Agregar. Después haz clic en cada lote para editar código, estado, medidas, precios y servicios.",
+    },
+    ...LOT_IMPORT_GUIDE_STEPS,
+  ],
+};
 
 function createLots(sectionName, total) {
   return Array.from({ length: total }, (_, index) => ({
@@ -106,6 +203,11 @@ function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot }) {
               <div className="mt-0.5 text-[0.56rem] opacity-70" style={{ color: c.text }}>
                 {lot.area ? `${lot.area}m²` : lot.status === "available" ? "Libre" : lot.status === "sold" ? "Vendido" : "Apartado"}
               </div>
+              {lot.price ? (
+                <div className="mt-0.5 text-[0.5rem] font-extrabold leading-none" style={{ color: c.text }}>
+                  ${Number(lot.price).toLocaleString("es-MX", { maximumFractionDigits: 0 })}
+                </div>
+              ) : null}
             </div>
           );
         })}
@@ -255,14 +357,15 @@ function LotsPage() {
   const [loadingEditId, setLoadingEditId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [showImportGuide, setShowImportGuide] = useState(false);
-  const [showPageGuide, setShowPageGuide] = useState(false);
-  useLandsGuide(() => setShowPageGuide(true));
+  const [showFormatGuide, setShowFormatGuide] = useState(false);
+  useLandsGuide(() => setShowImportGuide(true));
+  const activeGuide = draftProject.mode === "editor"
+    ? LOT_EDITOR_GUIDE
+    : draftProject.mode === "map-upload"
+      ? LOT_MAP_GUIDE
+      : LOT_SELECTOR_GUIDE;
   const [importSummary, setImportSummary] = useState(null);
   const [downloadingTemplate, setDownloadingTemplate] = useState(false);
-  const importSummarySteps = importSummary ? [{
-    title: `Última revisión · ${importSummary.fileName}`,
-    text: `${importSummary.imported} lotes preparados${importSummary.sections ? ` en ${importSummary.sections} secciones` : ""}${importSummary.skipped ? ` · ${importSummary.skipped} filas omitidas` : ""}${importSummary.warnings?.length ? ". Advertencias: " + importSummary.warnings.slice(0, 3).join("; ") : ". Sin observaciones."}`
-  }] : [];
   const changeImageRef = useRef(null);
   const excelInputRef = useRef(null);
   const portfolioScrollRef = useRef(null);
@@ -363,15 +466,24 @@ function LotsPage() {
       return;
     }
 
+    const isCsv = /\.csv$/i.test(file.name) || file.type === "text/csv";
+
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: "array" });
+        let workbook;
+        if (isCsv) {
+          // CSV: decode as UTF-8 to preserve accents (é, í, ó, ú, ñ…)
+          const text = new TextDecoder("utf-8").decode(e.target.result);
+          workbook = XLSX.read(text, { type: "string" });
+        } else {
+          workbook = XLSX.read(new Uint8Array(e.target.result), { type: "array" });
+        }
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const matrix = sheet ? XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", blankrows: false }) : [];
         const rows = sheet ? XLSX.utils.sheet_to_json(sheet, { defval: "" }) : [];
 
+        // explicit Unicode range for combining diacritical marks
         const norm = (s) => String(s || "").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
         const parseNumber = (value) => {
           const cleaned = String(value || "").replace(/[$,\s]/g, "");
@@ -399,6 +511,31 @@ function LotsPage() {
         }
 
         const headers = (matrix[0] || []).map((header) => String(header).trim());
+        const normalizedHeaders = headers.map((h) => norm(h));
+
+        // Columnas que indican que el archivo NO es de lotes (clientes, contratos, pagos, etc.)
+        const NON_LOT_SIGNALS = ["nombre", "email", "telefono", "rfc", "stage", "curp", "apellido", "correo", "vendedor asignado"];
+        // Columnas que confirman que el archivo SÍ es de lotes
+        const LOT_SIGNALS = ["superficie", "frente", "fondo", "precio contado", "precio financiado", "manzana", "seccion", "bloque", "id lote", "codigo", "codigo", "clave"];
+
+        const hasNonLotSignal = NON_LOT_SIGNALS.some((s) => normalizedHeaders.some((h) => h.includes(s)));
+        const hasLotSignal    = LOT_SIGNALS.some((s) => normalizedHeaders.some((h) => h.includes(s)));
+
+        if (hasNonLotSignal && !hasLotSignal) {
+          setImportSummary({
+            fileName: file.name,
+            imported: 0,
+            skipped: rows.length,
+            warnings: [
+              "Este archivo parece contener datos de clientes u otro módulo, no de lotes.",
+              `Columnas detectadas: ${headers.slice(0, 8).join(", ")}. Usa la plantilla de lotes para importar correctamente.`,
+            ],
+          });
+          setShowImportGuide(true);
+          showToast("Archivo incorrecto: parece ser de clientes, no de lotes");
+          return;
+        }
+
         const hasCodeColumn = headers.some((header) => LOT_REQUIRED_ALIASES.some((alias) => norm(header) === norm(alias)));
         if (!hasCodeColumn) {
           setImportSummary({
@@ -446,25 +583,26 @@ function LotsPage() {
           }
           seenCodes.add(norm(code));
 
-          const secName = findCol(row, ["Seccion", "sección", "manzana", "bloque", "section", "fraccionamiento"]) || "Importados";
+          const secName = findCol(row, ["Fraccionamiento", "Seccion", "seccion", "sección", "manzana", "bloque", "section"]) || "Importados";
           const statusRaw = norm(findCol(row, ["Estado", "estatus", "status"]));
           const status = STATUS_MAP[statusRaw] || "available";
           if (statusRaw && !STATUS_MAP[statusRaw]) warnings.push(`Fila ${rowNumber}: estado "${statusRaw}" no reconocido; se usó Disponible.`);
-          const area = parseNumber(findCol(row, ["Superficie (m2)", "superficie", "area", "área", "m2"]));
+          const area = parseNumber(findCol(row, ["Superficie (m2)", "superficie", "area", "area", "m2"]));
           const price = parseNumber(findCol(row, ["Precio Contado", "precio contado", "contado", "precio"]));
           const priceFinanciado = parseNumber(findCol(row, ["Precio Financiado", "financiado"]));
-          const frente = parseNumber(findCol(row, ["Frente (ML)", "frente"]));
-          const fondo = parseNumber(findCol(row, ["Fondo (ML)", "fondo"]));
+          const frente = parseNumber(findCol(row, ["Frente (ML)", "frente (ml)", "frente"]));
+          const fondo = parseNumber(findCol(row, ["Fondo (ML)", "fondo (ml)", "fondo"]));
+          const vendedor = findCol(row, ["Vendedor Asignado", "vendedor asignado", "vendedor", "asesor", "seller"]);
           const servicios = {
-            agua: parseBoolean(findCol(row, ["Agua Potable", "agua"])),
-            luz: parseBoolean(findCol(row, ["Energia Electrica", "Energía Eléctrica", "luz", "electricidad"])),
-            drenaje: parseBoolean(findCol(row, ["Drenaje"])),
-            gas: parseBoolean(findCol(row, ["Gas Natural", "gas"])),
-            internet: parseBoolean(findCol(row, ["Internet/Fibra", "internet"])),
-            pavimento: parseBoolean(findCol(row, ["Pavimento"])),
+            agua: parseBoolean(findCol(row, ["Agua Potable", "agua potable", "agua"])),
+            luz: parseBoolean(findCol(row, ["Energia Electrica", "Energía Eléctrica", "energia electrica", "luz", "electricidad"])),
+            drenaje: parseBoolean(findCol(row, ["Drenaje", "drenaje"])),
+            gas: parseBoolean(findCol(row, ["Gas Natural", "gas natural", "gas"])),
+            internet: parseBoolean(findCol(row, ["Internet/Fibra", "internet/fibra", "internet"])),
+            pavimento: parseBoolean(findCol(row, ["Pavimento", "pavimento"])),
           };
           if (!grouped[secName]) grouped[secName] = [];
-          grouped[secName].push({ id: `xl_${Date.now()}_${i}`, code, status, area, price, priceFinanciado, frente, fondo, servicios });
+          grouped[secName].push({ id: `xl_${Date.now()}_${i}`, code, status, area, price, priceFinanciado, frente, fondo, servicios, vendedor });
         });
 
         const newSections = Object.entries(grouped).map(([name, lots]) => ({
@@ -599,7 +737,7 @@ function LotsPage() {
 
   const updateMap = (file) => {
     if (!isValidMapImage(file)) {
-      showToast("El plano debe ser una imagen JPG, PNG o WEBP. El Excel solo va en Llenar con Excel.");
+      showToast("El plano debe ser una imagen JPG, PNG o WEBP. Excel y CSV solo van en Llenar con Excel o CSV.");
       return false;
     }
 
@@ -780,18 +918,22 @@ function LotsPage() {
               </div>
               <div className="lots-excel-row">
                 <div>
-                  <span className="lots-excel-title">Llenar con Excel</span>
+                  <span className="lots-excel-title">Llenar con Excel o CSV</span>
                   <span className="lots-excel-sub">
                     {importSummary
                       ? `${importSummary.imported} preparados${importSummary.skipped ? ` · ${importSummary.skipped} omitidos` : ""}`
-                      : "Importa lotes desde archivo"}
+                      : "Importa lotes desde XLSX, XLS o CSV"}
                   </span>
                 </div>
-                <button className="lots-excel-upload" onClick={() => setShowImportGuide(true)}>
-                  Guía
-                </button>
                 <button className="lots-excel-upload" onClick={downloadImportTemplate} disabled={downloadingTemplate}>
                   {downloadingTemplate ? "Descargando..." : "Plantilla"}
+                </button>
+                <button
+                  className="lots-excel-upload"
+                  onClick={() => setShowFormatGuide(true)}
+                  title="Ver campos y formato del archivo"
+                >
+                  Ver formato
                 </button>
                 <button
                   className="lots-excel-upload"
@@ -962,6 +1104,14 @@ function LotsPage() {
         );
       })()}
 
+      <LotImportFormatModal open={showFormatGuide} onClose={() => setShowFormatGuide(false)} />
+      <GuideModal
+        open={showImportGuide}
+        onClose={() => setShowImportGuide(false)}
+        title={activeGuide.title}
+        subtitle={activeGuide.subtitle}
+        steps={activeGuide.steps}
+      />
       </>
     );
   }
@@ -983,7 +1133,7 @@ function LotsPage() {
         <div className="mt-4 flex gap-3 overflow-x-auto pb-1 no-scrollbar">
           {draftProject.mode === "selector" && (
             <button
-              className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white"
+              className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white transition-colors hover:border-white/30 hover:bg-white/20"
               onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
             >
               Nuevo proyecto
@@ -1087,8 +1237,9 @@ function LotsPage() {
               Elige el método que mejor se adapte a tu flujo de trabajo
             </p>
             <div className="mt-8 grid gap-5 sm:grid-cols-2">
+              {/* ── Carga Manual ── */}
               <div
-                className="relative cursor-pointer overflow-hidden rounded-[16px] border-2 border-[#DCDAD2] bg-[#FBFAF6] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#355E3B] hover:shadow-[0_8px_24px_rgba(45,90,71,.15)]"
+                className="relative flex cursor-pointer flex-col overflow-hidden rounded-[16px] border-2 border-[#DCDAD2] bg-[#FBFAF6] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#355E3B] hover:shadow-[0_8px_24px_rgba(45,90,71,.15)]"
                 onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
               >
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#355E3B]" />
@@ -1099,8 +1250,32 @@ function LotsPage() {
                 <div className="mb-5 text-[0.76rem] leading-relaxed text-[#83867C]">
                   Sube la imagen del plano y construye la matriz de lotes manualmente. Define secciones, columnas y estado de cada unidad.
                 </div>
-                <button className="pointer-events-none w-full rounded-[9px] bg-[#355E3B] px-4 py-2.5 text-[0.8rem] font-bold text-white">
+                <button className="pointer-events-none mb-3 w-full rounded-[9px] bg-[#355E3B] px-4 py-2.5 text-[0.8rem] font-bold text-white">
                   Abrir editor →
+                </button>
+              </div>
+
+              {/* ── Carga CAD ── */}
+              <div
+                className="relative flex cursor-pointer flex-col overflow-hidden rounded-[16px] border-2 border-[#DCDAD2] bg-[#FBFAF6] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#4A6FA5] hover:shadow-[0_8px_24px_rgba(74,111,165,.15)]"
+                onClick={() => {
+                  setDraftProject((previous) => ({
+                    ...previous,
+                    mode: "map-upload",
+                    cadProcessing: true,
+                  }));
+                }}
+              >
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#4A6FA5]" />
+                <div className="mx-auto mb-3 flex h-[62px] w-[62px] items-center justify-center rounded-[15px] bg-[#E8EEF7] text-[1.8rem]">
+                  📐
+                </div>
+                <div className="mb-2 font-['Playfair_Display'] text-[1.05rem] text-[#1E3D2B]">Importar CAD</div>
+                <div className="mb-5 flex-1 text-[0.76rem] leading-relaxed text-[#83867C]">
+                  Sube un archivo DWG o DXF del plano técnico y el sistema extrae automáticamente la estructura de lotes.
+                </div>
+                <button className="pointer-events-none w-full rounded-[9px] bg-[#4A6FA5] px-4 py-2.5 text-[0.8rem] font-bold text-white">
+                  Subir archivo CAD →
                 </button>
               </div>
 
@@ -1182,30 +1357,9 @@ function LotsPage() {
       <GuideModal
         open={showImportGuide}
         onClose={() => setShowImportGuide(false)}
-        title="Guía para cargar lotes"
-        subtitle="Prepara el archivo y revisa los datos antes de crear el fraccionamiento."
-        steps={[
-          { title: "Columna obligatoria: ID Lote", text: "Cada fila debe tener un ID Lote único. Filas sin este valor o con IDs duplicados se omiten automáticamente." },
-          { title: "Agrupación por sección", text: "Usa la columna Sección, Manzana o Fraccionamiento para agrupar lotes. Si se omite, todos quedan en 'Importados'." },
-          { title: "Estado del lote", text: "La columna Estado acepta: disponible, apartado, reservado o vendido. Si el valor no se reconoce se usa Disponible." },
-          { title: "Medidas y precios", text: "Columnas aceptadas: Superficie (m2), Frente (ML), Fondo (ML), Precio Contado, Precio Financiado. Los valores pueden incluir $, comas o espacios." },
-          { title: "Servicios", text: "Agua Potable, Energía Eléctrica, Drenaje, Gas Natural, Internet/Fibra y Pavimento aceptan: sí/no, 1/0, true/false o x." },
-          { title: "Formato del archivo", text: "XLSX, XLS o CSV. Máximo 10 MB. Descarga la plantilla oficial para asegurar que los encabezados sean correctos." },
-          ...importSummarySteps,
-        ]}
-      />
-      <GuideModal
-        open={showPageGuide}
-        onClose={() => setShowPageGuide(false)}
-        title="Lotes y proyectos"
-        subtitle="Gestión completa de tu inventario de fraccionamientos."
-        steps={[
-          { title: "Ver tu portafolio", text: "La lista lateral muestra todos tus fraccionamientos activos. Selecciona uno para ver su plano interactivo con los lotes y sus estados." },
-          { title: "Crear un nuevo proyecto", text: "Pulsa 'Nuevo proyecto', sube el plano del fraccionamiento y luego arma la matriz de lotes por sección en el editor." },
-          { title: "Importar desde Excel", text: "En el editor usa el botón 'Subir' para cargar un archivo XLSX o CSV. Pulsa 'Guía' para ver las columnas aceptadas y descargar la plantilla oficial." },
-          { title: "Editar lotes", text: "Haz clic en cualquier lote de la matriz para editar su código, estado, medidas, precio y servicios disponibles." },
-          { title: "Cambiar estado de lotes", text: "Los estados disponibles son: Disponible (verde), Apartado (amarillo) y Vendido (rojo). Se puede cambiar desde la ficha del lote." },
-        ]}
+        title={activeGuide.title}
+        subtitle={activeGuide.subtitle}
+        steps={activeGuide.steps}
       />
     </div>
   );
