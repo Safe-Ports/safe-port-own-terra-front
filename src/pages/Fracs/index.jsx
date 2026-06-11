@@ -644,6 +644,7 @@ function FracsPage() {
                         <div className="frac-lot-grid">
                           {sectionLots.map((lot) => {
                             const meta = LOT_COLORS[lot.status] || LOT_COLORS.available;
+                            const precio = lot.price_contado || lot.price_financiado;
                             return (
                               <button
                                 key={lot.id}
@@ -653,6 +654,7 @@ function FracsPage() {
                                 <i />
                                 <strong>{lot.code}</strong>
                                 <span>{lot.area_m2 ? `${lot.area_m2} m2` : "Sin area"}</span>
+                                {precio ? <em className="frac-lot-price">{currency(precio)}</em> : null}
                               </button>
                             );
                           })}
@@ -720,6 +722,12 @@ function FracsPage() {
                     <div><strong>{draft.frente || "--"}</strong><span>Frente ML</span></div>
                     <div><strong>{draft.fondo || "--"}</strong><span>Fondo ML</span></div>
                     <div><strong>{selectedLot.area_m2 || "--"}</strong><span>Superficie m2</span></div>
+                    {selectedLot.price_contado
+                      ? <div className="frac-detail-price"><strong>{currency(selectedLot.price_contado)}</strong><span>Precio Contado</span></div>
+                      : null}
+                    {selectedLot.price_financiado
+                      ? <div className="frac-detail-price"><strong>{currency(selectedLot.price_financiado)}</strong><span>Precio Financiado</span></div>
+                      : null}
                   </div>
 
                   <div className="frac-editbar">

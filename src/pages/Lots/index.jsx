@@ -10,6 +10,7 @@ import { getUserErrorMessage } from "@/services/errors";
 import { currency } from "@/services/formatters";
 import Button from "@/components/Button";
 import GuideModal from "@/components/shared/GuideModal";
+import LotImportFormatModal from "./LotImportFormatModal";
 
 const LOT_COLORS = {
   available: { bg: "#dcfce7", border: "#86efac", text: "#15803d" },
@@ -18,7 +19,7 @@ const LOT_COLORS = {
 };
 const STATUS_CYCLE = { available: "sold", sold: "reserved", reserved: "available" };
 const MAP_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const LOT_REQUIRED_ALIASES = ["ID Lote", "id", "codigo", "código", "lote", "clave"];
+const LOT_REQUIRED_ALIASES = ["ID Lote", "id lote", "codigo", "código", "lote", "clave"];
 const LOT_TEMPLATE_GUIDE = [
   ["GUÍA PARA CARGAR LOTES DESDE EXCEL O CSV"],
   ["Regla", "Detalle"],
@@ -202,6 +203,11 @@ function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot }) {
               <div className="mt-0.5 text-[0.56rem] opacity-70" style={{ color: c.text }}>
                 {lot.area ? `${lot.area}m²` : lot.status === "available" ? "Libre" : lot.status === "sold" ? "Vendido" : "Apartado"}
               </div>
+              {lot.price ? (
+                <div className="mt-0.5 text-[0.5rem] font-extrabold leading-none" style={{ color: c.text }}>
+                  ${Number(lot.price).toLocaleString("es-MX", { maximumFractionDigits: 0 })}
+                </div>
+              ) : null}
             </div>
           );
         })}
@@ -351,6 +357,7 @@ function LotsPage() {
   const [loadingEditId, setLoadingEditId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [showImportGuide, setShowImportGuide] = useState(false);
+  const [showFormatGuide, setShowFormatGuide] = useState(false);
   useLandsGuide(() => setShowImportGuide(true));
   const activeGuide = draftProject.mode === "editor"
     ? LOT_EDITOR_GUIDE
@@ -359,10 +366,6 @@ function LotsPage() {
       : LOT_SELECTOR_GUIDE;
   const [importSummary, setImportSummary] = useState(null);
   const [downloadingTemplate, setDownloadingTemplate] = useState(false);
-  const importSummarySteps = importSummary ? [{
-    title: `Última revisión · ${importSummary.fileName}`,
-    text: `${importSummary.imported} lotes preparados${importSummary.sections ? ` en ${importSummary.sections} secciones` : ""}${importSummary.skipped ? ` · ${importSummary.skipped} filas omitidas` : ""}${importSummary.warnings?.length ? ". Advertencias: " + importSummary.warnings.slice(0, 3).join("; ") : ". Sin observaciones."}`
-  }] : [];
   const changeImageRef = useRef(null);
   const excelInputRef = useRef(null);
   const portfolioScrollRef = useRef(null);
@@ -508,6 +511,31 @@ function LotsPage() {
         }
 
         const headers = (matrix[0] || []).map((header) => String(header).trim());
+        const normalizedHeaders = headers.map((h) => norm(h));
+
+        // Columnas que indican que el archivo NO es de lotes (clientes, contratos, pagos, etc.)
+        const NON_LOT_SIGNALS = ["nombre", "email", "telefono", "rfc", "stage", "curp", "apellido", "correo", "vendedor asignado"];
+        // Columnas que confirman que el archivo SÍ es de lotes
+        const LOT_SIGNALS = ["superficie", "frente", "fondo", "precio contado", "precio financiado", "manzana", "seccion", "bloque", "id lote", "codigo", "codigo", "clave"];
+
+        const hasNonLotSignal = NON_LOT_SIGNALS.some((s) => normalizedHeaders.some((h) => h.includes(s)));
+        const hasLotSignal    = LOT_SIGNALS.some((s) => normalizedHeaders.some((h) => h.includes(s)));
+
+        if (hasNonLotSignal && !hasLotSignal) {
+          setImportSummary({
+            fileName: file.name,
+            imported: 0,
+            skipped: rows.length,
+            warnings: [
+              "Este archivo parece contener datos de clientes u otro módulo, no de lotes.",
+              `Columnas detectadas: ${headers.slice(0, 8).join(", ")}. Usa la plantilla de lotes para importar correctamente.`,
+            ],
+          });
+          setShowImportGuide(true);
+          showToast("Archivo incorrecto: parece ser de clientes, no de lotes");
+          return;
+        }
+
         const hasCodeColumn = headers.some((header) => LOT_REQUIRED_ALIASES.some((alias) => norm(header) === norm(alias)));
         if (!hasCodeColumn) {
           setImportSummary({
@@ -902,6 +930,13 @@ function LotsPage() {
                 </button>
                 <button
                   className="lots-excel-upload"
+                  onClick={() => setShowFormatGuide(true)}
+                  title="Ver campos y formato del archivo"
+                >
+                  Ver formato
+                </button>
+                <button
+                  className="lots-excel-upload"
                   onClick={() => excelInputRef.current?.click()}
                 >
                   Subir
@@ -1069,12 +1104,13 @@ function LotsPage() {
         );
       })()}
 
+      <LotImportFormatModal open={showFormatGuide} onClose={() => setShowFormatGuide(false)} />
       <GuideModal
         open={showImportGuide}
         onClose={() => setShowImportGuide(false)}
         title={activeGuide.title}
         subtitle={activeGuide.subtitle}
-        steps={[...activeGuide.steps, ...importSummarySteps]}
+        steps={activeGuide.steps}
       />
       </>
     );
@@ -1217,26 +1253,6 @@ function LotsPage() {
                 <button className="pointer-events-none mb-3 w-full rounded-[9px] bg-[#355E3B] px-4 py-2.5 text-[0.8rem] font-bold text-white">
                   Abrir editor →
                 </button>
-                <button
-                  className="w-full rounded-[9px] border border-[#DCDAD2] bg-white px-4 py-2 text-[0.72rem] font-semibold text-[#83867C] transition-colors hover:border-[#B98C58] hover:text-[#B98C58]"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const mockSections = [
-                      { id: "mock_a", name: "Manzana A", lots: Array.from({ length: 12 }, (_, i) => ({ id: `ma_${i}`, code: `A-${String(i+1).padStart(2,"0")}`, status: i < 8 ? "sold" : i < 10 ? "reserved" : "available", area: 200 + i * 5, price: 450000 + i * 10000, priceFinanciado: 520000 + i * 10000, frente: 10, fondo: 20, servicios: { agua: true, luz: true, drenaje: true, gas: false, internet: false, pavimento: true } })) },
-                      { id: "mock_b", name: "Manzana B", lots: Array.from({ length: 10 }, (_, i) => ({ id: `mb_${i}`, code: `B-${String(i+1).padStart(2,"0")}`, status: i < 4 ? "sold" : i < 6 ? "reserved" : "available", area: 180 + i * 8, price: 380000 + i * 12000, priceFinanciado: 440000 + i * 12000, frente: 9, fondo: 20, servicios: { agua: true, luz: true, drenaje: true, gas: true, internet: true, pavimento: false } })) },
-                      { id: "mock_c", name: "Zona Premium", lots: Array.from({ length: 6 }, (_, i) => ({ id: `mc_${i}`, code: `P-${String(i+1).padStart(2,"0")}`, status: i < 2 ? "sold" : "available", area: 350 + i * 20, price: 750000 + i * 30000, priceFinanciado: 880000 + i * 30000, frente: 14, fondo: 25, servicios: { agua: true, luz: true, drenaje: true, gas: true, internet: true, pavimento: true } })) },
-                    ];
-                    setDraftProject((previous) => ({
-                      ...previous,
-                      mode: "editor",
-                      name: "Residencial Demo",
-                      mapUrl: "",
-                      sections: mockSections,
-                    }));
-                  }}
-                >
-                  🏘️ Cargar demo
-                </button>
               </div>
 
               {/* ── Carga CAD ── */}
@@ -1343,7 +1359,7 @@ function LotsPage() {
         onClose={() => setShowImportGuide(false)}
         title={activeGuide.title}
         subtitle={activeGuide.subtitle}
-        steps={[...activeGuide.steps, ...importSummarySteps]}
+        steps={activeGuide.steps}
       />
     </div>
   );

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePersistentState } from "@/hooks/usePersistentState";
@@ -10,10 +10,13 @@ import { contractService } from "@/services/contractService";
 import { paymentService } from "@/services/paymentService";
 import { documentService, filenameForDocument, toBackendEntityType } from "@/services/documentService";
 import { notificationService } from "@/services/notificationService";
+import { appointmentService } from "@/services/appointmentService";
 import { folderService } from "@/services/folderService";
 import { createEmptyDraftProject } from "@/services/draftProject";
 import { canAccessApp, canUseFeature } from "@/services/permissions";
 import { getUserErrorMessage } from "@/services/errors";
+
+const AG_SEEN_KEY = "ag_triggered_seen";
 
 const AppContext = createContext(null);
 
@@ -64,6 +67,62 @@ export function AppProvider({ children }) {
     enabled: !!currentUser,
     refetchInterval: 60_000,
   });
+
+  const todayIso = (() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString();
+  })();
+  const todayEndIso = (() => {
+    const d = new Date();
+    d.setHours(23, 59, 59, 999);
+    return d.toISOString();
+  })();
+
+  const { data: todayApptsRaw = [] } = useQuery({
+    queryKey: ["appointments", "today-alerts"],
+    queryFn: () => appointmentService.list({ upcoming_only: false, from_date: todayIso, to_date: todayEndIso }),
+    enabled: !!currentUser,
+    refetchInterval: 60_000,
+  });
+
+  const [calendarAlertCount, setCalendarAlertCount] = useState(0);
+  const calendarAlertEventsRef = useRef([]);
+  const prevAlertCountRef = useRef(0);
+  const showToastRef = useRef(null);
+
+  const computeCalendarAlerts = useCallback((appts) => {
+    const now = Date.now();
+    const PRE  = 2  * 60 * 1000; // 2 min antes
+    const POST = 30 * 60 * 1000; // 30 min después
+    const triggered = appts.filter((a) => {
+      const t = new Date(a.scheduled_at).getTime();
+      return t <= now + PRE && t >= now - POST
+        && a.status !== "completed" && a.status !== "cancelled";
+    });
+    const seen = JSON.parse(sessionStorage.getItem(AG_SEEN_KEY) || "[]");
+    const unacked = triggered.filter((a) => !seen.includes(String(a.id)));
+    calendarAlertEventsRef.current = unacked;
+    setCalendarAlertCount(unacked.length);
+  }, []);
+
+  useEffect(() => {
+    computeCalendarAlerts(todayApptsRaw);
+  }, [todayApptsRaw, computeCalendarAlerts]);
+
+  useEffect(() => {
+    const interval = setInterval(() => computeCalendarAlerts(todayApptsRaw), 30_000);
+    return () => clearInterval(interval);
+  }, [todayApptsRaw, computeCalendarAlerts]);
+
+  const clearCalendarAlerts = useCallback(() => {
+    const ids = calendarAlertEventsRef.current.map((a) => String(a.id));
+    if (ids.length === 0) return;
+    const existing = JSON.parse(sessionStorage.getItem(AG_SEEN_KEY) || "[]");
+    sessionStorage.setItem(AG_SEEN_KEY, JSON.stringify([...new Set([...existing, ...ids])]));
+    calendarAlertEventsRef.current = [];
+    setCalendarAlertCount(0);
+  }, []);
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [draftProject, setDraftProject] = usePersistentState("lm_draft_project", createEmptyDraftProject());
@@ -122,6 +181,40 @@ export function AppProvider({ children }) {
     window.clearTimeout(showToast._timer);
     showToast._timer = window.setTimeout(() => setToast(null), 2600);
   };
+  // keep a stable ref so effects without showToast in deps can still call it
+  showToastRef.current = showToast;
+
+  // Pide permiso de notificaciones cuando el usuario inicia sesión
+  useEffect(() => {
+    if (currentUser && "Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, [currentUser]);
+
+  // Dispara notificación browser + toast cuando llega la hora de un evento
+  useEffect(() => {
+    if (calendarAlertCount > prevAlertCountRef.current) {
+      const events = calendarAlertEventsRef.current;
+      // Browser notification (funciona aunque la pestaña esté en segundo plano)
+      if ("Notification" in window && Notification.permission === "granted") {
+        events.slice(0, 3).forEach((a) => {
+          new Notification("⏰ Evento en tu agenda", {
+            body: a.title || "Tienes un evento programado ahora",
+            tag: `ag-event-${a.id}`,
+            requireInteraction: false,
+          });
+        });
+      }
+      // Toast en la app
+      if (events.length > 0 && showToastRef.current) {
+        const label = events.length === 1
+          ? `⏰ ${events[0].title || "Evento"} — es ahora`
+          : `⏰ ${events.length} eventos de agenda ahora`;
+        showToastRef.current(label);
+      }
+    }
+    prevAlertCountRef.current = calendarAlertCount;
+  }, [calendarAlertCount]);
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   const applyAuthSession = (data, remember = true) => {
@@ -685,6 +778,8 @@ export function AppProvider({ children }) {
     setSelectedFracId,
     notificationCount,
     markAllNotificationsRead,
+    calendarAlertCount,
+    clearCalendarAlerts,
     openModal,
     closeModal,
     toggleSidebar,

@@ -604,6 +604,24 @@
   font-size: 11px;
 }
 
+.frac-lot-price {
+  display: block;
+  margin-top: 4px;
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--deep);
+  letter-spacing: -0.2px;
+}
+
+.frac-lot-tile.reserved .frac-lot-price { color: #92400e; }
+.frac-lot-tile.sold .frac-lot-price { color: #991b1b; }
+
+.frac-detail-price strong {
+  font-size: 15px !important;
+  color: #355E3B !important;
+}
+
 .frac-lot-tile.reserved { border-color: #fcd34d; }
 .frac-lot-tile.reserved i { background: #b98c58; }
 .frac-lot-tile.sold { border-color: #fca5a5; }
