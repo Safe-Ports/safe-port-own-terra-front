@@ -383,6 +383,12 @@ export function AppProvider({ children }) {
         seller_id:           payload.seller_id || null,
         down_payment_method: payload.down_payment_method || null,
         interest_rate:       Number(payload.interest_rate ?? 0),
+        signed_date:         (payload.signed_date ?? payload.signedDate) || null,
+        has_signed_docs:     Boolean(payload.has_signed_docs),
+        commission_rate:     payload.commission_rate === "" || payload.commission_rate == null
+          ? null
+          : Number(payload.commission_rate),
+        commission_paid:     Boolean(payload.commission_paid),
       });
     } else {
       savedContract = await contractService.create({
@@ -399,6 +405,11 @@ export function AppProvider({ children }) {
         seller_id:           payload.seller_id || undefined,
         down_payment_method: payload.down_payment_method || undefined,
         notes:               payload.notes || undefined,
+        signed_date:         (payload.signed_date ?? payload.signedDate) || undefined,
+        has_signed_docs:     Boolean(payload.has_signed_docs),
+        commission_rate:     payload.commission_rate === "" || payload.commission_rate == null
+          ? undefined
+          : Number(payload.commission_rate),
       });
     }
     await queryClient.invalidateQueries({ queryKey: ["contracts"] });

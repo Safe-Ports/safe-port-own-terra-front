@@ -218,7 +218,7 @@ function validate(form, isEditing) {
     errs.clientId = "El cliente es obligatorio";
 
   if (!form.date)
-    errs.date = "La fecha de firma es obligatoria";
+    errs.date = "La fecha del contrato es obligatoria";
   if (!form.firstPaymentDate)
     errs.firstPaymentDate = "La fecha del primer pago es obligatoria";
   else if (form.date && form.firstPaymentDate < form.date)
@@ -248,6 +248,12 @@ function validate(form, isEditing) {
   if (interest < 0 || interest > 1)
     errs.interest_rate = "La tasa debe estar entre 0 y 1";
 
+  if (form.commission_rate !== "") {
+    const commission = Number(form.commission_rate);
+    if (commission < 0 || commission > 1)
+      errs.commission_rate = "La comisión debe estar entre 0 y 1";
+  }
+
   return errs;
 }
 
@@ -262,6 +268,8 @@ function parseServerErrors(err) {
     client_id: "clientId",
     lot_id: "lot",
     interest_rate: "interest_rate",
+    signed_date: "signedDate",
+    commission_rate: "commission_rate",
   });
 }
 
@@ -313,6 +321,8 @@ function ContractModal() {
     amount: 0, down_payment: 0, totalM: 96,
     interest_rate: 0.12,
     seller_id: "", down_payment_method: "cash", notes: "",
+    signedDate: "", has_signed_docs: false,
+    commission_rate: "", commission_paid: false,
   };
   const [form, setForm] = useState(defaultForm);
 
@@ -338,6 +348,10 @@ function ContractModal() {
   const setNum = k => e => {
     setForm(p => ({ ...p, [k]: e.target.value }));
     if (errors[k]) setErrors(p => { const n = { ...p }; delete n[k]; return n; });
+  };
+
+  const setChecked = k => e => {
+    setForm(p => ({ ...p, [k]: e.target.checked }));
   };
 
   const blurField = (k) => {
@@ -398,6 +412,10 @@ function ContractModal() {
         seller_id:           String(editingContract.seller?.id || editingContract.seller_id || ""),
         down_payment_method: editingContract.down_payment_method || "cash",
         notes:               editingContract.notes || "",
+        signedDate:          editingContract.signed_date?.split("T")[0] || "",
+        has_signed_docs:     Boolean(editingContract.has_signed_docs),
+        commission_rate:     editingContract.commission_rate ?? "",
+        commission_paid:     Boolean(editingContract.commission_paid),
       });
     } else {
       setForm({
@@ -445,6 +463,10 @@ function ContractModal() {
         interest_rate:       Number(form.interest_rate ?? 0),
         seller_id:           form.seller_id || undefined,
         down_payment_method: form.down_payment_method || undefined,
+        signed_date:         form.signedDate || undefined,
+        has_signed_docs:     form.has_signed_docs,
+        commission_rate:     form.commission_rate,
+        commission_paid:     form.commission_paid,
         _docs: docs.filter(d => d.file),
       });
     } catch (err) {
@@ -660,7 +682,7 @@ function ContractModal() {
         </div>
         <div className="fg" style={{ flex: 1 }}>
           <label className="fl">
-            Fecha de firma
+            Fecha del contrato
             <span style={{ color: "var(--danger)", marginLeft: 3 }}>*</span>
           </label>
           <input id="cf-date" type="date" {...fi(errors.date)} value={form.date}
@@ -699,6 +721,26 @@ function ContractModal() {
           placeholder="Buscar vendedor…"
           emptyLabel="— Sin asignar —"
         />
+      </div>
+
+      <div className="fr-row">
+        <div className="fg" style={{ flex: 1 }}>
+          <label className="fl">Fecha real de firma</label>
+          <input id="cf-signedDate" type="date" {...fi(errors.signedDate)} value={form.signedDate}
+            onChange={set("signedDate")} />
+          <FieldError msg={errors.signedDate} />
+        </div>
+        <div className="fg" style={{ flex: 1, justifyContent: "flex-end" }}>
+          <label style={{
+            display: "flex", alignItems: "center", gap: 9, minHeight: 42,
+            padding: "0 12px", border: "1px solid var(--bd)", borderRadius: 10,
+            color: "var(--tx)", fontSize: ".8rem", cursor: "pointer",
+          }}>
+            <input type="checkbox" checked={form.has_signed_docs} onChange={setChecked("has_signed_docs")}
+              style={{ width: 16, height: 16, accentColor: "var(--forest)" }} />
+            Documentación firmada recibida
+          </label>
+        </div>
       </div>
 
       <div className="fg">
@@ -785,6 +827,45 @@ function ContractModal() {
           {PAYMENT_METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
         </select>
       </div>
+
+      <div className="fr-row">
+        <div className="fg" style={{ flex: 1 }}>
+          <label className="fl">Tasa de comisión (decimal, 0 a 1)</label>
+          <input id="cf-commission_rate" type="number" min="0" max="1" step="0.01"
+            {...fi(errors.commission_rate)}
+            value={form.commission_rate}
+            onChange={setNum("commission_rate")}
+            onBlur={() => blurField("commission_rate")}
+            placeholder="Vacío usa la tasa del vendedor o 0.03" />
+          <FieldError msg={errors.commission_rate} />
+        </div>
+        <div className="fg" style={{ flex: 1 }}>
+          <label className="fl">Monto de comisión calculado</label>
+          <input
+            className="fi"
+            disabled
+            value={form.commission_rate !== ""
+              ? `$${(Number(form.amount || 0) * Number(form.commission_rate || 0)).toLocaleString("en-US", { maximumFractionDigits: 2 })}`
+              : editingContract?.commission_amount != null
+                ? `$${Number(editingContract.commission_amount).toLocaleString("en-US", { maximumFractionDigits: 2 })}`
+                : "Se calculará automáticamente"}
+          />
+        </div>
+      </div>
+
+      {editingContract && (
+        <div className="fg">
+          <label style={{
+            display: "flex", alignItems: "center", gap: 9, minHeight: 42,
+            padding: "0 12px", border: "1px solid var(--bd)", borderRadius: 10,
+            color: "var(--tx)", fontSize: ".8rem", cursor: "pointer",
+          }}>
+            <input type="checkbox" checked={form.commission_paid} onChange={setChecked("commission_paid")}
+              style={{ width: 16, height: 16, accentColor: "var(--forest)" }} />
+            Comisión pagada al vendedor
+          </label>
+        </div>
+      )}
 
       {/* ── 3. Documentos ── */}
       <SectionLabel>Documentos</SectionLabel>
