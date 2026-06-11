@@ -1,6 +1,10 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { currency } from "@/services/formatters";
+import { calculatorService } from "@/services/calculatorService";
+import { buildCalculatorVariables, numericCalculatorVariables } from "@/services/calculatorVariables";
 import GuideModal from "@/components/shared/GuideModal";
+import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
 
 /* ── Amortización Francesa (cuota fija) ── */
@@ -62,6 +66,7 @@ const AMORT_INFO = {
 };
 
 function CalculatorPage() {
+  const { openContractCreate, showToast } = useAppContext();
   const [form, setForm] = useState({
     total: 500000,
     downPayment: 100000,
@@ -75,6 +80,48 @@ function CalculatorPage() {
 
   const { payment, rows } = buildSchedule(form.total, form.downPayment, form.rate, form.months, amortType);
   const info = AMORT_INFO[amortType];
+  const { data: activeCalculator } = useQuery({
+    queryKey: ["calculators", "active", "lands"],
+    queryFn: () => calculatorService.getActive("lands"),
+    staleTime: 60_000,
+  });
+  const activeVariables = buildCalculatorVariables(activeCalculator, {
+    amount: form.total,
+    downPayment: form.downPayment,
+    annualRate: form.rate / 100,
+    months: form.months,
+  });
+  const activeValuesComplete = activeCalculator?.variables.every(
+    (name) => activeVariables[name] !== "" && activeVariables[name] != null
+  );
+  const { data: activeResult, error: activeResultError } = useQuery({
+    queryKey: ["calculator-active-test", activeCalculator?.id, activeVariables],
+    queryFn: () => calculatorService.testFormula(
+      activeCalculator.formula,
+      numericCalculatorVariables(activeVariables)
+    ),
+    enabled: !!activeCalculator && activeValuesComplete,
+    retry: false,
+  });
+
+  const createContractFromCalculator = () => {
+    if (!activeCalculator) {
+      showToast("No hay una calculadora activa para vincular al contrato");
+      return;
+    }
+    if (activeValuesComplete && activeResultError) {
+      showToast("La calculadora activa no pudo generar una mensualidad válida");
+      return;
+    }
+    openContractCreate({
+      amount: form.total,
+      down_payment: form.downPayment,
+      interest_rate: form.rate / 100,
+      totalM: form.months,
+      calculator_id: activeCalculator.id,
+      calculator_vars: numericCalculatorVariables(activeVariables),
+    });
+  };
 
   return (
     <div className="mx-auto max-w-5xl space-y-4">
@@ -181,6 +228,40 @@ function CalculatorPage() {
             <div className="flex items-center justify-between text-sm">
               <span>Tipo de amortización</span>
               <strong>{info.label}</strong>
+            </div>
+          </div>
+
+          <div style={{
+            border: "1px solid var(--line-soft, #DCDAD2)", borderRadius: 12,
+            padding: "12px 14px", background: "var(--sf, #fff)",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "center" }}>
+              <div>
+                <div style={{ fontSize: ".62rem", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--mu)", fontWeight: 800 }}>
+                  Plan activo para contratos
+                </div>
+                <div style={{ fontWeight: 700, color: "var(--forest)", marginTop: 4 }}>
+                  {activeCalculator?.name || "Sin calculadora activa"}
+                </div>
+                {activeCalculator && (
+                  <div style={{ fontSize: ".7rem", color: "var(--mu)", marginTop: 2 }}>
+                    La fórmula activa debe devolver una mensualidad fija.
+                  </div>
+                )}
+                {activeResult?.result != null && (
+                  <div style={{ fontSize: ".78rem", color: "var(--mu)", marginTop: 3 }}>
+                    Mensualidad según fórmula activa: <strong>{currency(Number(activeResult.result))}</strong>
+                  </div>
+                )}
+                {activeCalculator && !activeValuesComplete && (
+                  <div style={{ fontSize: ".74rem", color: "var(--danger)", marginTop: 3 }}>
+                    La fórmula usa variables personalizadas que deben capturarse al crear el contrato.
+                  </div>
+                )}
+              </div>
+              <button className="btn-p" type="button" onClick={createContractFromCalculator} disabled={!activeCalculator}>
+                Crear contrato con este plan
+              </button>
             </div>
           </div>
         </div>

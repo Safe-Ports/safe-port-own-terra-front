@@ -6,6 +6,12 @@ import InlineDocumentsPanel from "@/components/shared/InlineDocumentsPanel";
 import { lotService } from "@/services/lotService";
 import { orgService } from "@/services/orgService";
 import { folderService } from "@/services/folderService";
+import { calculatorService } from "@/services/calculatorService";
+import {
+  buildCalculatorVariables,
+  calculatorVariableValue,
+  numericCalculatorVariables,
+} from "@/services/calculatorVariables";
 import { getFieldErrors, getUserErrorMessage } from "@/services/errors";
 import { HiOutlinePlus, HiOutlineTrash, HiOutlineDocument } from "react-icons/hi2";
 
@@ -52,6 +58,23 @@ function SectionLabel({ children }) {
     }}>
       {children}
     </div>
+  );
+}
+
+function OptionCheck({ checked, onChange, label, helper }) {
+  return (
+    <label style={{
+      display: "flex", alignItems: "center", gap: 10, minHeight: 46,
+      padding: "8px 12px", border: "1px solid var(--bd)", borderRadius: 10,
+      color: "var(--tx)", cursor: "pointer", boxSizing: "border-box",
+    }}>
+      <input type="checkbox" checked={checked} onChange={onChange}
+        style={{ width: 17, height: 17, accentColor: "var(--forest)", flexShrink: 0 }} />
+      <span style={{ display: "grid", gap: 1 }}>
+        <strong style={{ fontSize: ".8rem", fontWeight: 600 }}>{label}</strong>
+        {helper && <small style={{ color: "var(--mu)", fontSize: ".68rem" }}>{helper}</small>}
+      </span>
+    </label>
   );
 }
 
@@ -322,7 +345,8 @@ function ContractModal() {
     interest_rate: 0.12,
     seller_id: "", down_payment_method: "cash", notes: "",
     signedDate: "", has_signed_docs: false,
-    commission_rate: "", commission_paid: false,
+    commission_enabled: false, commission_rate: "", commission_paid: false,
+    calculator_id: "", calculator_vars: {},
   };
   const [form, setForm] = useState(defaultForm);
 
@@ -372,6 +396,35 @@ function ContractModal() {
     staleTime: 120_000,
   });
   const users = usersData?.items || (Array.isArray(usersData) ? usersData : []);
+  const { data: calculators = [] } = useQuery({
+    queryKey: ["calculators", "lands"],
+    queryFn: () => calculatorService.list({ app_key: "lands" }),
+    enabled: ui.contractModal,
+    staleTime: 60_000,
+  });
+  const selectedCalculator = calculators.find((calculator) => calculator.id === form.calculator_id);
+  const calculatorVars = useMemo(
+    () => buildCalculatorVariables(selectedCalculator, {
+      amount: form.amount,
+      downPayment: form.down_payment,
+      annualRate: form.interest_rate,
+      months: form.totalM,
+    }, form.calculator_vars),
+    [selectedCalculator, form.amount, form.down_payment, form.interest_rate, form.totalM, form.calculator_vars]
+  );
+  const numericCalculatorVars = useMemo(
+    () => numericCalculatorVariables(calculatorVars),
+    [calculatorVars]
+  );
+  const calculatorValuesComplete = selectedCalculator?.variables.every(
+    (name) => calculatorVars[name] !== "" && calculatorVars[name] != null
+  );
+  const { data: calculatorTest } = useQuery({
+    queryKey: ["calculator-test", selectedCalculator?.id, numericCalculatorVars],
+    queryFn: () => calculatorService.testFormula(selectedCalculator.formula, numericCalculatorVars),
+    enabled: ui.contractModal && !editingContract && !!selectedCalculator && calculatorValuesComplete,
+    retry: false,
+  });
   const { data: folders = [] } = useQuery({
     queryKey: ["document-folders"],
     queryFn: folderService.list,
@@ -416,6 +469,10 @@ function ContractModal() {
         has_signed_docs:     Boolean(editingContract.has_signed_docs),
         commission_rate:     editingContract.commission_rate ?? "",
         commission_paid:     Boolean(editingContract.commission_paid),
+        commission_enabled:  editingContract.commission_enabled
+          ?? (Number(editingContract.commission_amount || 0) > 0 || Number(editingContract.commission_rate || 0) > 0),
+        calculator_id:       editingContract.calculator_id || "",
+        calculator_vars:     editingContract.calculator_snapshot?.variables || {},
       });
     } else {
       setForm({
@@ -448,6 +505,10 @@ function ContractModal() {
       document.getElementById(`cf-${first}`)?.focus();
       return;
     }
+    if (!editingContract && selectedCalculator && !calculatorValuesComplete) {
+      showToast("Completa todas las variables de la calculadora seleccionada");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -465,8 +526,11 @@ function ContractModal() {
         down_payment_method: form.down_payment_method || undefined,
         signed_date:         form.signedDate || undefined,
         has_signed_docs:     form.has_signed_docs,
+        commission_enabled:  form.commission_enabled,
         commission_rate:     form.commission_rate,
-        commission_paid:     form.commission_paid,
+        commission_paid:     form.commission_enabled && form.commission_paid,
+        calculator_id:       !editingContract ? form.calculator_id || undefined : undefined,
+        calculator_vars:     !editingContract && form.calculator_id ? numericCalculatorVars : undefined,
         _docs: docs.filter(d => d.file),
       });
     } catch (err) {
@@ -723,23 +787,20 @@ function ContractModal() {
         />
       </div>
 
-      <div className="fr-row">
+      <div className="fr-row" style={{ alignItems: "flex-end" }}>
         <div className="fg" style={{ flex: 1 }}>
           <label className="fl">Fecha real de firma</label>
           <input id="cf-signedDate" type="date" {...fi(errors.signedDate)} value={form.signedDate}
             onChange={set("signedDate")} />
           <FieldError msg={errors.signedDate} />
         </div>
-        <div className="fg" style={{ flex: 1, justifyContent: "flex-end" }}>
-          <label style={{
-            display: "flex", alignItems: "center", gap: 9, minHeight: 42,
-            padding: "0 12px", border: "1px solid var(--bd)", borderRadius: 10,
-            color: "var(--tx)", fontSize: ".8rem", cursor: "pointer",
-          }}>
-            <input type="checkbox" checked={form.has_signed_docs} onChange={setChecked("has_signed_docs")}
-              style={{ width: 16, height: 16, accentColor: "var(--forest)" }} />
-            Documentación firmada recibida
-          </label>
+        <div className="fg" style={{ flex: 1 }}>
+          <label className="fl">Estado de firma</label>
+          <OptionCheck
+            checked={form.has_signed_docs}
+            onChange={setChecked("has_signed_docs")}
+            label="Documentación firmada recibida"
+          />
         </div>
       </div>
 
@@ -799,8 +860,87 @@ function ContractModal() {
         </div>
       </div>
 
+      {!editingContract && (
+        <div className="fg">
+          <label className="fl">Fuente del plan de pagos</label>
+          <select
+            className="fi"
+            value={form.calculator_id}
+            onChange={(event) => setForm((previous) => ({
+              ...previous,
+              calculator_id: event.target.value,
+              calculator_vars: {},
+            }))}
+          >
+            <option value="">Cálculo estándar · amortización francesa</option>
+            {calculators.map((calculator) => (
+              <option key={calculator.id} value={calculator.id}>
+                {calculator.is_active ? "Plan activo · " : ""}{calculator.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {!editingContract && selectedCalculator && (
+        <div style={{
+          border: "1px solid var(--bd)", borderRadius: 12, padding: "12px 14px",
+          marginBottom: 12, background: "var(--tan-lt, #f5f0e8)",
+        }}>
+          <div style={{ fontWeight: 700, fontSize: ".82rem", color: "var(--forest)", marginBottom: 3 }}>
+            {selectedCalculator.name}
+          </div>
+          <div style={{ color: "var(--mu)", fontSize: ".72rem", marginBottom: 10 }}>
+            La fórmula y sus valores quedarán congelados en el contrato.
+          </div>
+          <div className="fr-row">
+            {selectedCalculator.variables.map((name) => {
+              const isStandard = calculatorVariableValue(name, {
+                amount: form.amount,
+                downPayment: form.down_payment,
+                annualRate: form.interest_rate,
+                months: form.totalM,
+              }) !== undefined;
+              return (
+                <div className="fg" style={{ flex: 1 }} key={name}>
+                  <label className="fl">{name}</label>
+                  <input
+                    className="fi"
+                    type="number"
+                    value={calculatorVars[name]}
+                    disabled={isStandard}
+                    onChange={(event) => setForm((previous) => ({
+                      ...previous,
+                      calculator_vars: {
+                        ...previous.calculator_vars,
+                        [name]: event.target.value,
+                      },
+                    }))}
+                  />
+                </div>
+              );
+            })}
+          </div>
+          {calculatorTest?.result != null && (
+            <div style={{ fontSize: ".78rem", color: "var(--tx)" }}>
+              Mensualidad calculada: <strong>${Number(calculatorTest.result).toLocaleString("en-US")}</strong>
+            </div>
+          )}
+        </div>
+      )}
+
+      {editingContract?.calculator_snapshot && (
+        <div style={{
+          border: "1px solid var(--bd)", borderRadius: 12, padding: "10px 14px",
+          marginBottom: 12, background: "var(--tan-lt, #f5f0e8)", fontSize: ".76rem",
+        }}>
+          Plan de pagos ligado a <strong>{editingContract.calculator_snapshot.name}</strong>.
+          Al cambiar monto, enganche, tasa o plazo se recalcula usando la fórmula congelada del contrato.
+        </div>
+      )}
+
       {/* Cuota mensual estimada */}
-      {!editingContract && Number(form.amount) > 0 && Number(form.totalM) > 0 && (
+      {!editingContract && !selectedCalculator && Number(form.amount) > 0 && Number(form.totalM) > 0 && (
         <div style={{
           background: "var(--tan-lt, #f5f0e8)", border: "1px solid var(--bd)",
           borderRadius: 10, padding: "10px 14px", fontSize: ".82rem",
@@ -828,42 +968,49 @@ function ContractModal() {
         </select>
       </div>
 
-      <div className="fr-row">
-        <div className="fg" style={{ flex: 1 }}>
-          <label className="fl">Tasa de comisión (decimal, 0 a 1)</label>
-          <input id="cf-commission_rate" type="number" min="0" max="1" step="0.01"
-            {...fi(errors.commission_rate)}
-            value={form.commission_rate}
-            onChange={setNum("commission_rate")}
-            onBlur={() => blurField("commission_rate")}
-            placeholder="Vacío usa la tasa del vendedor o 0.03" />
-          <FieldError msg={errors.commission_rate} />
-        </div>
-        <div className="fg" style={{ flex: 1 }}>
-          <label className="fl">Monto de comisión calculado</label>
-          <input
-            className="fi"
-            disabled
-            value={form.commission_rate !== ""
-              ? `$${(Number(form.amount || 0) * Number(form.commission_rate || 0)).toLocaleString("en-US", { maximumFractionDigits: 2 })}`
-              : editingContract?.commission_amount != null
-                ? `$${Number(editingContract.commission_amount).toLocaleString("en-US", { maximumFractionDigits: 2 })}`
-                : "Se calculará automáticamente"}
-          />
-        </div>
+      <div className="fg">
+        <OptionCheck
+          checked={form.commission_enabled}
+          onChange={setChecked("commission_enabled")}
+          label="Calcular comisión para este contrato"
+          helper="Desactívalo cuando la operación no genere comisión."
+        />
       </div>
 
-      {editingContract && (
+      {form.commission_enabled && (
+        <div className="fr-row">
+          <div className="fg" style={{ flex: 1 }}>
+            <label className="fl">Tasa de comisión (decimal, 0 a 1)</label>
+            <input id="cf-commission_rate" type="number" min="0" max="1" step="0.01"
+              {...fi(errors.commission_rate)}
+              value={form.commission_rate}
+              onChange={setNum("commission_rate")}
+              onBlur={() => blurField("commission_rate")}
+              placeholder="Vacío usa la tasa del vendedor o 0.03" />
+            <FieldError msg={errors.commission_rate} />
+          </div>
+          <div className="fg" style={{ flex: 1 }}>
+            <label className="fl">Monto de comisión calculado</label>
+            <input
+              className="fi"
+              disabled
+              value={form.commission_rate !== ""
+                ? `$${(Number(form.amount || 0) * Number(form.commission_rate || 0)).toLocaleString("en-US", { maximumFractionDigits: 2 })}`
+                : editingContract?.commission_amount != null
+                  ? `$${Number(editingContract.commission_amount).toLocaleString("en-US", { maximumFractionDigits: 2 })}`
+                  : "Usará la tasa del vendedor o 0.03"}
+            />
+          </div>
+        </div>
+      )}
+
+      {editingContract && form.commission_enabled && (
         <div className="fg">
-          <label style={{
-            display: "flex", alignItems: "center", gap: 9, minHeight: 42,
-            padding: "0 12px", border: "1px solid var(--bd)", borderRadius: 10,
-            color: "var(--tx)", fontSize: ".8rem", cursor: "pointer",
-          }}>
-            <input type="checkbox" checked={form.commission_paid} onChange={setChecked("commission_paid")}
-              style={{ width: 16, height: 16, accentColor: "var(--forest)" }} />
-            Comisión pagada al vendedor
-          </label>
+          <OptionCheck
+            checked={form.commission_paid}
+            onChange={setChecked("commission_paid")}
+            label="Comisión pagada al vendedor"
+          />
         </div>
       )}
 
