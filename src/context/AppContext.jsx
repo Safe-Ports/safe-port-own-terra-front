@@ -296,11 +296,11 @@ export function AppProvider({ children }) {
   // ── Clients ───────────────────────────────────────────────────────────────
   const saveClient = async (payload) => {
     const body = {
-      name: payload.name,
-      email: payload.email || undefined,
-      phone: payload.phone || undefined,
+      name: payload.name?.trim(),
+      email: payload.email?.trim() || null,
+      phone: payload.phone?.trim() || null,
       type: payload.type || "lead",
-      notes: payload.notes || undefined,
+      notes: payload.notes?.trim() || null,
     };
     try {
       if (payload.linkClientId) {
@@ -331,6 +331,9 @@ export function AppProvider({ children }) {
         showToast("Cliente creado correctamente");
       }
       await queryClient.invalidateQueries({ queryKey: ["clients"] });
+      if (payload.id) {
+        await queryClient.invalidateQueries({ queryKey: ["client", String(payload.id)] });
+      }
       if (payload.linkClientId || !payload.id) {
         await queryClient.invalidateQueries({ queryKey: ["client-apps"] });
       }
@@ -367,9 +370,18 @@ export function AppProvider({ children }) {
     // Lanza el error hacia el caller (ContractModal lo maneja con errores inline)
     if (payload.id) {
       savedContract = await contractService.update(payload.id, {
-        notes:               payload.notes,
-        seller_id:           payload.seller_id || undefined,
-        down_payment_method: payload.down_payment_method || undefined,
+        contract_number:     payload.number?.trim() || payload.contract_number,
+        client_id:           payload.client_id ?? payload.clientId,
+        type:                payload.type,
+        amount:              Number(payload.amount),
+        down_payment:        Number(payload.down_payment ?? 0),
+        total_months:        Number(payload.total_months ?? payload.totalM),
+        contract_date:       payload.contract_date ?? payload.date,
+        first_payment_date:  payload.first_payment_date ?? payload.firstPaymentDate ?? payload.date,
+        expiration_date:     payload.expiration_date ?? payload.expirationDate ?? null,
+        notes:               payload.notes?.trim() || null,
+        seller_id:           payload.seller_id || null,
+        down_payment_method: payload.down_payment_method || null,
         interest_rate:       Number(payload.interest_rate ?? 0),
       });
     } else {
@@ -382,7 +394,8 @@ export function AppProvider({ children }) {
         interest_rate:       Number(payload.interest_rate ?? 0),
         total_months:        Number(payload.total_months ?? payload.totalM ?? 96),
         contract_date:       payload.contract_date ?? payload.date,
-        first_payment_date:  payload.first_payment_date ?? payload.date,
+        first_payment_date:  payload.first_payment_date ?? payload.firstPaymentDate ?? payload.date,
+        expiration_date:     (payload.expiration_date ?? payload.expirationDate) || undefined,
         seller_id:           payload.seller_id || undefined,
         down_payment_method: payload.down_payment_method || undefined,
         notes:               payload.notes || undefined,
@@ -393,6 +406,8 @@ export function AppProvider({ children }) {
     await queryClient.invalidateQueries({ queryKey: ["contracts"] });
     await queryClient.invalidateQueries({ queryKey: ["payments"] });
     await queryClient.invalidateQueries({ queryKey: ["lots"] });
+    await queryClient.invalidateQueries({ queryKey: ["clients"] });
+    await queryClient.invalidateQueries({ queryKey: ["inmuebles"] });
 
     const contractId = savedContract?.id || payload.id;
     const docs = (payload._docs || []).filter(d => d.file);
@@ -410,7 +425,7 @@ export function AppProvider({ children }) {
       await queryClient.invalidateQueries({ queryKey: ["document-folders"] });
     }
 
-    showToast(`Contrato registrado${docs.length > 0 ? ` · ${docs.length} doc${docs.length > 1 ? "s" : ""} subido${docs.length > 1 ? "s" : ""}` : ""}`);
+    showToast(`Contrato ${payload.id ? "actualizado" : "registrado"}${docs.length > 0 ? ` · ${docs.length} doc${docs.length > 1 ? "s" : ""} subido${docs.length > 1 ? "s" : ""}` : ""}`);
     setEditingContract(null);
     setContractDraft(null);
     closeModal("contractModal");
@@ -648,15 +663,28 @@ export function AppProvider({ children }) {
     }
   };
 
-  const saveEditedFrac = async ({ sections, _editingFracId }) => {
+  const saveEditedFrac = async ({ name, sections, mapUrl, _editingFracId }) => {
     if (!_editingFracId) return;
     try {
+      await inmuebleService.update(_editingFracId, {
+        name: name?.trim() || "Fraccionamiento",
+      });
+      let mapUpdated = false;
+      if (mapUrl && (mapUrl.startsWith("data:") || mapUrl.startsWith("blob:"))) {
+        const blob = await fetch(mapUrl).then((r) => r.blob());
+        const file = new File([blob], "map.png", { type: blob.type || "image/png" });
+        await inmuebleService.uploadMap(_editingFracId, file);
+        mapUpdated = true;
+      }
+
       const patches = sections.flatMap((section) =>
         section.lots
           .filter((lot) => lot._backendId)
           .map((lot) => {
             const orig = lot._orig || {};
             const body = {};
+            if (lot.status && lot.status !== (orig.status || "available")) body.status = lot.status;
+            if (lot.code != null && String(lot.code) !== String(orig.code ?? "")) body.code = lot.code;
             if (String(lot.area ?? "")            !== String(orig.area ?? "")            && lot.area          != null && lot.area          !== "") body.area_m2          = Number(lot.area);
             if (String(lot.frente ?? "")           !== String(orig.frente ?? "")          && lot.frente        != null && lot.frente        !== "") body.frente_ml        = Number(lot.frente);
             if (String(lot.fondo ?? "")            !== String(orig.fondo ?? "")           && lot.fondo         != null && lot.fondo         !== "") body.fondo_ml         = Number(lot.fondo);
@@ -670,13 +698,46 @@ export function AppProvider({ children }) {
           .filter(Boolean)
       );
 
+      const newLots = sections.flatMap((section) =>
+        section.lots
+          .filter((lot) => !lot._backendId)
+          .map((lot) => ({
+            _draftStatus: lot.status || "available",
+            payload: {
+              inmueble_id: _editingFracId,
+              code: lot.code,
+              area_m2: lot.area !== "" && lot.area != null ? Number(lot.area) : null,
+              frente_ml: lot.frente !== "" && lot.frente != null ? Number(lot.frente) : null,
+              fondo_ml: lot.fondo !== "" && lot.fondo != null ? Number(lot.fondo) : null,
+              price_contado: lot.price !== "" && lot.price != null ? Number(lot.price) : null,
+              price_financiado: lot.priceFinanciado !== "" && lot.priceFinanciado != null ? Number(lot.priceFinanciado) : null,
+              services: lot.servicios
+                ? Object.fromEntries(Object.entries(lot.servicios).filter(([, value]) => value))
+                : {},
+            },
+          }))
+      );
+
       await Promise.all(patches.map(({ id, body }) => lotService.update(id, body)));
+      if (newLots.length > 0) {
+        const result = await lotService.bulkCreate({
+          inmueble_id: _editingFracId,
+          lots: newLots.map(({ payload }) => payload),
+        });
+        await Promise.all(
+          (result.lot_ids || [])
+            .map((id, index) => ({ id, status: newLots[index]?._draftStatus }))
+            .filter(({ status }) => status === "reserved")
+            .map(({ id, status }) => lotService.update(id, { status }))
+        );
+      }
       await queryClient.invalidateQueries({ queryKey: ["inmuebles"] });
       await queryClient.invalidateQueries({ queryKey: ["lots"] });
       setSelectedFracId(String(_editingFracId));
       setDraftProject(createEmptyDraftProject());
       navigate("/fraccionamientos");
-      showToast(patches.length === 0 ? "Sin cambios que guardar" : `${patches.length} lote${patches.length !== 1 ? "s" : ""} actualizado${patches.length !== 1 ? "s" : ""}`);
+      const lotChanges = patches.length + newLots.length;
+      showToast(`Fraccionamiento actualizado${lotChanges ? ` · ${lotChanges} lote${lotChanges !== 1 ? "s" : ""}` : ""}${mapUpdated ? " · plano actualizado" : ""}`);
     } catch (err) {
       showToast(getUserErrorMessage(err, "Error al guardar los cambios"));
     }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import GuideModal from "@/components/shared/GuideModal";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
@@ -9,6 +9,7 @@ import InlineDocumentsPanel from "@/components/shared/InlineDocumentsPanel";
 import Button from "@/components/Button";
 import Avatar from "@/components/Avatar";
 import { clientService } from "@/services/clientService";
+import { contractService } from "@/services/contractService";
 import { currency } from "@/services/formatters";
 import { getClientEcosystem, CORE_APPS } from "@/services/ecosystemCore";
 
@@ -134,6 +135,32 @@ function ClientsPage() {
   const [showGuide, setShowGuide] = useState(false);
   useLandsGuide(() => setShowGuide(true));
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [cancelDraft, setCancelDraft] = useState(null); // { contract } | null
+  const [cancelForm, setCancelForm] = useState({ reason: "", refund_amount: "" });
+  const [cancelling, setCancelling] = useState(false);
+
+  const openCancelModal = (contract) => {
+    setCancelDraft({ contract });
+    setCancelForm({ reason: "", refund_amount: "" });
+  };
+
+  const submitCancel = async () => {
+    if (!cancelDraft || !cancelForm.reason.trim()) return;
+    setCancelling(true);
+    try {
+      await contractService.cancel(cancelDraft.contract.id, {
+        reason: cancelForm.reason.trim(),
+        refund_amount: Number(cancelForm.refund_amount) || 0,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["contracts"] });
+      setCancelDraft(null);
+    } catch (err) {
+      alert(err?.response?.data?.detail || "Error al cancelar el contrato");
+    } finally {
+      setCancelling(false);
+    }
+  };
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const clientAppQueries = useQueries({
@@ -367,7 +394,7 @@ function ClientsPage() {
                       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".78rem" }}>
                         <thead>
                           <tr style={{ borderBottom: "1.5px solid #E7E4DB" }}>
-                            {["ID Lote", "Proyecto", "Estado", "Medidas", "Progreso"].map((h) => (
+                            {["ID Lote", "Proyecto", "Estado", "Medidas", "Progreso", ""].map((h) => (
                               <th key={h} style={{ textAlign: "left", padding: "5px 8px", fontSize: ".6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#83867C", whiteSpace: "nowrap" }}>{h}</th>
                             ))}
                           </tr>
@@ -395,6 +422,16 @@ function ClientsPage() {
                                   {prog
                                     ? `${contract.type === "reserve" ? "Enganche" : "Pagos"} (${prog.paid}/${prog.total} cuotas)`
                                     : CONTRACT_STATUS_LABEL[contract.status] || contract.status}
+                                </td>
+                                <td style={{ padding: "7px 8px" }}>
+                                  {contract.status === "active" && (
+                                    <button
+                                      onClick={() => openCancelModal(contract)}
+                                      style={{ fontSize: ".65rem", fontWeight: 700, color: "#C0392B", background: "#fee2e220", border: "1px solid #fca5a5", borderRadius: 6, padding: "2px 8px", cursor: "pointer", whiteSpace: "nowrap" }}
+                                    >
+                                      Cancelar
+                                    </button>
+                                  )}
                                 </td>
                               </tr>
                             );
@@ -434,6 +471,64 @@ function ClientsPage() {
           )}
         </div>
       </div>
+
+      {cancelDraft && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center" }}
+          onClick={() => !cancelling && setCancelDraft(null)}
+        >
+          <div style={{ background: "#fff", borderRadius: 16, width: "min(92vw, 440px)", boxShadow: "0 24px 60px rgba(0,0,0,.22)", overflow: "hidden" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 20px", borderBottom: "1px solid #EDEAE1" }}>
+              <div style={{ width: 36, height: 36, borderRadius: 8, background: "#fee2e2", color: "#991b1b", border: "1.5px solid #fca5a5", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: "1rem", flexShrink: 0 }}>!</div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: ".9rem", color: "#1E3D2B" }}>Cancelar contrato</div>
+                <div style={{ fontSize: ".72rem", color: "#83867C" }}>Lote {cancelDraft.contract.lot?.code || "—"} · {cancelDraft.contract.lot?.inmueble_name || "—"}</div>
+              </div>
+              <button onClick={() => setCancelDraft(null)} style={{ marginLeft: "auto", background: "none", border: "none", fontSize: "1.3rem", color: "#83867C", cursor: "pointer", lineHeight: 1 }}>×</button>
+            </div>
+            {/* Body */}
+            <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: 14 }}>
+              <p style={{ fontSize: ".82rem", color: "#43453F", lineHeight: 1.6, margin: 0 }}>
+                Esta acción cancelará el contrato activo, liberará el lote y cancelará los pagos pendientes. No se puede deshacer.
+              </p>
+              <div>
+                <label style={{ display: "block", fontSize: ".68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#83867C", marginBottom: 5 }}>Motivo de cancelación *</label>
+                <textarea
+                  rows={2}
+                  value={cancelForm.reason}
+                  onChange={(e) => setCancelForm((p) => ({ ...p, reason: e.target.value }))}
+                  placeholder="Ej: Solicitud del cliente, incumplimiento de pago..."
+                  style={{ width: "100%", borderRadius: 8, border: "1.5px solid #DCDAD2", padding: "8px 10px", fontSize: ".82rem", color: "#1E3D2B", outline: "none", fontFamily: "inherit", resize: "none", boxSizing: "border-box" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: ".68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#83867C", marginBottom: 5 }}>Monto de reembolso ($) <span style={{ fontWeight: 400, textTransform: "none" }}>— opcional</span></label>
+                <input
+                  type="number"
+                  min="0"
+                  value={cancelForm.refund_amount}
+                  onChange={(e) => setCancelForm((p) => ({ ...p, refund_amount: e.target.value }))}
+                  placeholder="0"
+                  style={{ width: "100%", borderRadius: 8, border: "1.5px solid #DCDAD2", padding: "8px 10px", fontSize: ".82rem", color: "#1E3D2B", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
+                />
+              </div>
+            </div>
+            {/* Footer */}
+            <div style={{ display: "flex", gap: 8, padding: "14px 20px", borderTop: "1px solid #EDEAE1", justifyContent: "flex-end" }}>
+              <button onClick={() => setCancelDraft(null)} disabled={cancelling}
+                style={{ borderRadius: 8, border: "1.5px solid #DCDAD2", background: "#F1EEE6", color: "#43453F", padding: "7px 16px", fontSize: ".78rem", fontWeight: 700, cursor: "pointer" }}>
+                Cerrar
+              </button>
+              <button onClick={submitCancel} disabled={cancelling || !cancelForm.reason.trim()}
+                style={{ borderRadius: 8, border: "1.5px solid #991b1b", background: "#C0392B", color: "#fff", padding: "7px 16px", fontSize: ".78rem", fontWeight: 700, cursor: "pointer", opacity: (!cancelForm.reason.trim() || cancelling) ? 0.5 : 1 }}>
+                {cancelling ? "Cancelando..." : "Confirmar cancelación"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ClientModal />
       <GuideModal
