@@ -59,21 +59,6 @@ function generateAmort(priceF, enganche, tasaAnual, plazo) {
   return rows;
 }
 
-function makeDraft(lot) {
-  return {
-    frente: lot?.frente_ml ?? "",
-    fondo: lot?.fondo_ml ?? "",
-    services: {
-      agua: false,
-      luz: false,
-      drenaje: false,
-      gas: false,
-      internet: false,
-      pavimento: false,
-      ...(lot?.services || {}),
-    },
-  };
-}
 
 async function fetchAllFracLots(inmuebleId) {
   const limit = 200;
@@ -172,11 +157,9 @@ function FracsPage() {
     fracs,
     selectedFracId,
     setSelectedFracId,
-    deleteFrac,
     exportAppData,
     showToast,
     setDraftProject,
-    currentUser,
     fracsResetKey,
   } = useAppContext();
   const navigate = useNavigate();
@@ -197,19 +180,13 @@ function FracsPage() {
   const [selectedLotId, setSelectedLotId] = useState(null);
   const [showLotModal, setShowLotModal] = useState(false);
   const [activeTab, setActiveTab] = useState("ficha");
-  const [editMode, setEditMode] = useState(false);
-  const [draft, setDraft] = useState(null);
-  const [saving, setSaving] = useState(false);
   const [showMapViewer, setShowMapViewer] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [showCotizador, setShowCotizador] = useState(false);
   const [cotPrecioF, setCotPrecioF] = useState(0);
   const [cotEnganche, setCotEnganche] = useState(0);
   const [cotTasa, setCotTasa] = useState(12);
   const [cotPlazo, setCotPlazo] = useState(96);
-  const [pendingStatus, setPendingStatus] = useState(null);
-  const [confirmName, setConfirmName] = useState("");
   const [showApptForm, setShowApptForm] = useState(false);
   const [apptDraft, setApptDraft] = useState({ contact_name: "", contact_phone: "", scheduled_at: "", notes: "" });
   const [apptSaving, setApptSaving] = useState(false);
@@ -268,10 +245,8 @@ function FracsPage() {
     setStatusFilter("all");
     setSearch("");
     setSectionFilter("");
-    setEditMode(false);
     setActiveTab("ficha");
     setShowLotModal(false);
-    setShowDeleteConfirm(false);
   }, [selectedFrac?.id]);
 
   useEffect(() => {
@@ -280,8 +255,6 @@ function FracsPage() {
 
   useEffect(() => {
     if (!selectedLot) return;
-    setDraft(makeDraft(selectedLot));
-    setEditMode(false);
     setCotPrecioF(Number(selectedLot.price_financiado || selectedLot.price_contado || 0));
     setCotEnganche(0);
   }, [selectedLot?.id]);
@@ -290,7 +263,6 @@ function FracsPage() {
     const onKey = (event) => {
       if (event.key === "Escape") {
         setShowLotModal(false);
-        setPendingStatus(null);
         setShowCotizador(false);
       }
     };
@@ -408,6 +380,8 @@ function FracsPage() {
         id: lot.id,
         _backendId: lot.id,
         _orig: {
+          status: lot.status || "available",
+          code: lot.code ?? "",
           area: lot.area_m2 ?? "",
           price: lot.price_contado ?? "",
           priceFinanciado: lot.price_financiado ?? "",
@@ -428,7 +402,7 @@ function FracsPage() {
     setDraftProject({
       mode: "editor",
       name: selectedFrac.name,
-      mapUrl: "",
+      mapUrl: selectedFrac.map_image_url || "",
       cadProcessing: false,
       sections: Object.values(sectionMap),
       _editingFracId: selectedFrac.id,
@@ -436,44 +410,6 @@ function FracsPage() {
     navigate("/lotes");
   };
 
-  const saveDraft = async () => {
-    if (!selectedLot || !draft) return;
-    setSaving(true);
-    try {
-      await lotService.update(selectedLot.id, {
-        frente_ml: draft.frente !== "" ? Number(draft.frente) : null,
-        fondo_ml: draft.fondo !== "" ? Number(draft.fondo) : null,
-        services: draft.services,
-      });
-      await queryClient.invalidateQueries({ queryKey: ["lots", selectedFrac?.id] });
-      setEditMode(false);
-      showToast("Lote actualizado");
-    } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al guardar"));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const requestStatusChange = (lotId, fromStatus, toStatus) => {
-    if (fromStatus === toStatus) return;
-    setPendingStatus({ lotId, from: fromStatus, to: toStatus });
-    setConfirmName(currentUser?.name || "");
-  };
-
-  const confirmStatusChange = async () => {
-    if (!pendingStatus) return;
-    try {
-      await lotService.update(pendingStatus.lotId, { status: pendingStatus.to });
-      await queryClient.invalidateQueries({ queryKey: ["lots", selectedFrac?.id] });
-      showToast(`Estado actualizado: ${LOT_COLORS[pendingStatus.to]?.label || pendingStatus.to}`);
-    } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al cambiar estado"));
-    } finally {
-      setPendingStatus(null);
-      setConfirmName("");
-    }
-  };
 
   const saveAppointment = async () => {
     if (!selectedLot || !apptDraft.contact_name.trim() || !apptDraft.scheduled_at) return;
@@ -551,6 +487,7 @@ function FracsPage() {
             <p>Inventario territorial consolidado con lectura rapida de disponibilidad, plano de referencia, detalle tecnico y cotizador comercial por lote.</p>
             <div className="frac-hero-actions">
               <Button variant="secondary" onClick={() => selectedFrac.map_image_url && setShowMapViewer(true)} disabled={!selectedFrac.map_image_url}>Ver plano</Button>
+              <Button variant="secondary" onClick={openEditor}>Editar</Button>
               <Button variant="secondary" onClick={() => exportAppData("lots")}>Exportar</Button>
             </div>
           </article>
@@ -695,7 +632,7 @@ function FracsPage() {
         </div>
       </article>
 
-      {showLotModal && selectedLot && draft ? (
+      {showLotModal && selectedLot ? (
         <div className="frac-modal-overlay" onClick={(event) => event.target === event.currentTarget && setShowLotModal(false)}>
           <article className="frac-lot-modal">
             <div className="frac-modal-head">
@@ -719,8 +656,8 @@ function FracsPage() {
               {activeTab === "ficha" ? (
                 <>
                   <div className="frac-detail-grid">
-                    <div><strong>{draft.frente || "--"}</strong><span>Frente ML</span></div>
-                    <div><strong>{draft.fondo || "--"}</strong><span>Fondo ML</span></div>
+                    <div><strong>{selectedLot.frente_ml || "--"}</strong><span>Frente ML</span></div>
+                    <div><strong>{selectedLot.fondo_ml || "--"}</strong><span>Fondo ML</span></div>
                     <div><strong>{selectedLot.area_m2 || "--"}</strong><span>Superficie m2</span></div>
                     {selectedLot.price_contado
                       ? <div className="frac-detail-price"><strong>{currency(selectedLot.price_contado)}</strong><span>Precio Contado</span></div>
@@ -730,47 +667,13 @@ function FracsPage() {
                       : null}
                   </div>
 
-                  <div className="frac-editbar">
-                    <span>{editMode ? "Modo edicion" : "Ficha tecnica"}</span>
-                    {!editMode ? (
-                      <Button variant="secondary" size="sm" onClick={() => setEditMode(true)}>Editar</Button>
-                    ) : (
-                      <div>
-                        <Button variant="primary" size="sm" onClick={saveDraft} disabled={saving}>{saving ? "Guardando..." : "Guardar"}</Button>
-                        <Button variant="secondary" size="sm" onClick={() => { setDraft(makeDraft(selectedLot)); setEditMode(false); }}>Cancelar</Button>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="frac-form-grid">
-                    {[
-                      ["frente", "Frente (ml)"],
-                      ["fondo", "Fondo (ml)"],
-                    ].map(([key, label]) => (
-                      <label key={key}>
-                        <span>{label}</span>
-                        <input
-                          type="number"
-                          value={draft[key]}
-                          disabled={!editMode}
-                          onChange={(event) => setDraft((prev) => ({ ...prev, [key]: event.target.value }))}
-                        />
-                      </label>
-                    ))}
-                  </div>
-
                   <div className="frac-services">
                     {SERVICES.map((service) => {
-                      const on = !!draft.services[service.k];
+                      const on = !!(selectedLot.services?.[service.k]);
                       return (
                         <label key={service.k} className="frac-service">
                           <span>{service.lbl}</span>
-                          <input
-                            type="checkbox"
-                            checked={on}
-                            disabled={!editMode}
-                            onChange={(event) => setDraft((prev) => ({ ...prev, services: { ...prev.services, [service.k]: event.target.checked } }))}
-                          />
+                          <input type="checkbox" checked={on} readOnly disabled />
                           <i className={on ? "on" : ""} />
                         </label>
                       );
@@ -781,21 +684,14 @@ function FracsPage() {
 
               {activeTab === "gestion" ? (
                 <div className="frac-management">
-                  <div className="frac-section-label">Estado del lote</div>
-                  <div className="frac-status-options">
-                    {Object.entries(LOT_COLORS).map(([status, meta]) => (
-                      <button
-                        key={status}
-                        className={`${meta.className} ${selectedLot.status === status ? "on" : ""}`}
-                        onClick={() => requestStatusChange(selectedLot.id, selectedLot.status, status)}
-                      >
-                        {meta.label}
-                      </button>
-                    ))}
+                  <div className="frac-section-label">Estado actual</div>
+                  <div style={{ marginBottom: 14 }}>
+                    <StatusBadge status={selectedLot.status} />
                   </div>
                   <div className="frac-actions-list">
                     {selectedLot.status !== "sold" ? <button onClick={() => navigate("/contratos")}>Registrar venta</button> : null}
                     <button onClick={() => setShowApptForm((value) => !value)}>Agendar cita</button>
+                    <button onClick={openEditor}>Editar en Carga de Lotes</button>
                   </div>
                   {showApptForm ? (
                     <div className="frac-appointment-form">
@@ -898,34 +794,6 @@ function FracsPage() {
         </div>
       ) : null}
 
-      {pendingStatus && selectedLot ? (
-        <div className="frac-modal-overlay" onClick={(event) => event.target === event.currentTarget && setPendingStatus(null)}>
-          <article className="frac-confirm-modal">
-            <div className="frac-modal-head">
-              <div>
-                <h2>Confirmar cambio</h2>
-                <p>{selectedFrac.name} / {selectedLot.code}</p>
-              </div>
-              <button className="frac-modal-close" onClick={() => setPendingStatus(null)}>×</button>
-            </div>
-            <div className="frac-confirm-body">
-              <div className="frac-status-transition">
-                <StatusBadge status={pendingStatus.from} />
-                <span>→</span>
-                <StatusBadge status={pendingStatus.to} />
-              </div>
-              <label>
-                <span>Confirmado por</span>
-                <input value={confirmName} onChange={(event) => setConfirmName(event.target.value)} placeholder="Nombre del responsable" />
-              </label>
-              <div className="frac-confirm-actions">
-                <Button variant="secondary" onClick={() => setPendingStatus(null)}>Cancelar</Button>
-                <Button variant="primary" onClick={confirmStatusChange} disabled={!confirmName.trim()}>Confirmar cambio</Button>
-              </div>
-            </div>
-          </article>
-        </div>
-      ) : null}
 
 
       {showMapViewer && selectedFrac.map_image_url ? <MapViewer src={selectedFrac.map_image_url} onClose={() => setShowMapViewer(false)} /> : null}

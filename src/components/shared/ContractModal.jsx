@@ -219,28 +219,34 @@ function validate(form, isEditing) {
 
   if (!form.date)
     errs.date = "La fecha de firma es obligatoria";
+  if (!form.firstPaymentDate)
+    errs.firstPaymentDate = "La fecha del primer pago es obligatoria";
+  else if (form.date && form.firstPaymentDate < form.date)
+    errs.firstPaymentDate = "Debe ser igual o posterior a la firma";
+  if (form.type === "reserve" && !form.expirationDate)
+    errs.expirationDate = "Indica el vencimiento de la reserva";
 
   const amount = Number(form.amount);
-  if (!isEditing) {
-    if (!amount || amount <= 0)
-      errs.amount = "El monto debe ser mayor a $0";
-    else if (amount < 1000)
-      errs.amount = "El monto parece muy bajo, verifica el valor";
-  }
+  if (!amount || amount <= 0)
+    errs.amount = "El monto debe ser mayor a $0";
+  else if (amount < 1000)
+    errs.amount = "El monto parece muy bajo, verifica el valor";
 
   const down = Number(form.down_payment);
   if (down < 0)
     errs.down_payment = "El enganche no puede ser negativo";
-  else if (!isEditing && amount > 0 && down > amount)
-    errs.down_payment = "El enganche no puede superar el monto total";
+  else if (amount > 0 && down >= amount)
+    errs.down_payment = "El enganche debe ser menor al monto total";
 
   const meses = Number(form.totalM);
-  if (!isEditing) {
-    if (!meses || meses < 1)
-      errs.totalM = "El plazo debe ser al menos 1 mes";
-    else if (meses > 360)
-      errs.totalM = "El plazo máximo es 360 meses (30 años)";
-  }
+  if (!meses || meses < 1)
+    errs.totalM = "El plazo debe ser al menos 1 mes";
+  else if (meses > 360)
+    errs.totalM = "El plazo máximo es 360 meses (30 años)";
+
+  const interest = Number(form.interest_rate);
+  if (interest < 0 || interest > 1)
+    errs.interest_rate = "La tasa debe estar entre 0 y 1";
 
   return errs;
 }
@@ -251,6 +257,8 @@ function parseServerErrors(err) {
     down_payment: "down_payment",
     total_months: "totalM",
     contract_date: "date",
+    first_payment_date: "firstPaymentDate",
+    expiration_date: "expirationDate",
     client_id: "clientId",
     lot_id: "lot",
     interest_rate: "interest_rate",
@@ -301,6 +309,7 @@ function ContractModal() {
   const defaultForm = {
     number: "", inmuebleId: defaultInmuebleId, lot: "", clientId: clients[0]?.id || "",
     type: "sale", date: new Date().toISOString().split("T")[0],
+    firstPaymentDate: new Date().toISOString().split("T")[0], expirationDate: "",
     amount: 0, down_payment: 0, totalM: 96,
     interest_rate: 0.12,
     seller_id: "", down_payment_method: "cash", notes: "",
@@ -380,6 +389,8 @@ function ContractModal() {
         clientId:            String(editingContract.client?.id || editingContract.client_id || ""),
         type:                editingContract.type || "sale",
         date:                (editingContract.contract_date || editingContract.date || defaultForm.date).split("T")[0],
+        firstPaymentDate:    (editingContract.first_payment_date || editingContract.contract_date || defaultForm.firstPaymentDate).split("T")[0],
+        expirationDate:      editingContract.expiration_date?.split("T")[0] || "",
         amount:              editingContract.amount ?? 0,
         down_payment:        editingContract.down_payment ?? 0,
         totalM:              editingContract.total_months || editingContract.totalM || 96,
@@ -428,7 +439,8 @@ function ContractModal() {
         client_id:           form.clientId,
         lot_id:              form.lot,
         contract_date:       form.date,
-        first_payment_date:  form.date,
+        first_payment_date:  form.firstPaymentDate,
+        expiration_date:     form.expirationDate || undefined,
         total_months:        Number(form.totalM),
         interest_rate:       Number(form.interest_rate ?? 0),
         seller_id:           form.seller_id || undefined,
@@ -470,7 +482,7 @@ function ContractModal() {
             </button>
           )}
           <button className="btn-p" onClick={handleSave} disabled={saving}>
-            {saving ? "Guardando…" : "✓ Registrar"}
+            {saving ? "Guardando…" : editingContract ? "✓ Guardar cambios" : "✓ Registrar"}
           </button>
         </>
       }
@@ -655,7 +667,28 @@ function ContractModal() {
             onChange={set("date")} onBlur={() => blurField("date")} />
           <FieldError msg={errors.date} />
         </div>
+        <div className="fg" style={{ flex: 1 }}>
+          <label className="fl">
+            Primer pago
+            <span style={{ color: "var(--danger)", marginLeft: 3 }}>*</span>
+          </label>
+          <input id="cf-firstPaymentDate" type="date" {...fi(errors.firstPaymentDate)} value={form.firstPaymentDate}
+            onChange={set("firstPaymentDate")} onBlur={() => blurField("firstPaymentDate")} />
+          <FieldError msg={errors.firstPaymentDate} />
+        </div>
       </div>
+
+      {form.type === "reserve" && (
+        <div className="fg">
+          <label className="fl">
+            Vencimiento de la reserva
+            <span style={{ color: "var(--danger)", marginLeft: 3 }}>*</span>
+          </label>
+          <input id="cf-expirationDate" type="date" {...fi(errors.expirationDate)} value={form.expirationDate}
+            onChange={set("expirationDate")} onBlur={() => blurField("expirationDate")} />
+          <FieldError msg={errors.expirationDate} />
+        </div>
+      )}
 
       <div className="fg">
         <label className="fl">Vendedor asignado</label>
@@ -738,6 +771,13 @@ function ContractModal() {
           </b>
         </div>
       )}
+
+      <div className="fg">
+        <label className="fl">Tasa anual (decimal, 0 a 1)</label>
+        <input id="cf-interest_rate" type="number" min="0" max="1" step="0.01" {...fi(errors.interest_rate)}
+          value={form.interest_rate} onChange={setNum("interest_rate")} onBlur={() => blurField("interest_rate")} />
+        <FieldError msg={errors.interest_rate} />
+      </div>
 
       <div className="fg">
         <label className="fl">Método de pago del enganche</label>

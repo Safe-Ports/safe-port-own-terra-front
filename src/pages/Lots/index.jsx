@@ -6,8 +6,8 @@ import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
 import { useProjectsQuery } from "@/hooks/queries/useAppQueries";
 import { lotService } from "@/services/lotService";
+import { inmuebleService } from "@/services/inmuebleService";
 import { getUserErrorMessage } from "@/services/errors";
-import { currency } from "@/services/formatters";
 import Button from "@/components/Button";
 import GuideModal from "@/components/shared/GuideModal";
 import LotImportFormatModal from "./LotImportFormatModal";
@@ -19,56 +19,55 @@ const LOT_COLORS = {
 };
 const STATUS_CYCLE = { available: "sold", sold: "reserved", reserved: "available" };
 const MAP_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const LOT_REQUIRED_ALIASES = ["ID Lote", "id lote", "codigo", "código", "lote", "clave"];
 const LOT_TEMPLATE_GUIDE = [
   ["GUÍA PARA CARGAR LOTES DESDE EXCEL O CSV"],
   ["Regla", "Detalle"],
-  ["Estructura", "La primera fila contiene encabezados y cada fila siguiente representa un lote."],
-  ["Campo requerido", "ID Lote. Debe tener valor único en todas las filas. También se aceptan: id, codigo, código, lote o clave."],
-  ["Agrupación opcional", "Fraccionamiento, Sección, Manzana, Bloque o Section. Si se omite, los lotes se agrupan en Importados."],
-  ["Campos numéricos opcionales", "Superficie (m2), Frente (ML), Fondo (ML), Precio Contado y Precio Financiado."],
-  ["Estados", "disponible, apartado o reservado. Vendido requiere un contrato y no se asigna directamente durante esta carga."],
-  ["Servicios opcionales", "Agua Potable, Energía Eléctrica, Drenaje, Gas Natural, Internet/Fibra y Pavimento. Usar sí/no, 1/0, true/false o x."],
-  ["Vendedor Asignado", "Campo opcional de referencia. La asignación final del vendedor debe revisarse después de crear el fraccionamiento."],
-  ["Archivos aceptados", "XLSX, XLS o CSV de hasta 10 MB."],
-  ["Importante", "No combines celdas ni dejes filas sin ID Lote. Revisa los lotes preparados antes de crear el fraccionamiento."],
+  ["Estructura", "La primera fila contiene encabezados y cada fila siguiente representa un lote. Máximo 5,000 filas por archivo."],
+  ["Campo requerido", "ID Lote (único por fila). También se aceptan: id, codigo, código, lote o clave. Filas sin ID Lote o con duplicados son rechazadas."],
+  ["Agrupación opcional", "Fraccionamiento, Fracc, Desarrollo, Proyecto. Si se omite, los lotes se agrupan en Importados."],
+  ["Campos numéricos opcionales", "Superficie (m2), Frente (ML), Fondo (ML), Precio Contado y Precio Financiado. Acepta formato $400,000.50."],
+  ["Estados válidos", "disponible / libre / vacante → Disponible. apartado / apartada / reservado / reservada → Apartado. vendido / ocupado → Vendido. Vacío = Disponible."],
+  ["Servicios opcionales", "Agua Potable, Energía Eléctrica, Drenaje, Gas Natural, Internet/Fibra y Pavimento. Activar con: sí, 1, yes, true, x o ✓."],
+  ["Vendedor Asignado", "Opcional. Se busca por nombre exacto o parcial entre usuarios activos. Si hay ambigüedad queda sin asignar (advertencia)."],
+  ["Archivos aceptados", "XLSX, XLS, CSV o TXT de hasta 10 MB."],
+  ["Importante", "El archivo se valida en el servidor. Los lotes se guardan en cuanto el archivo pasa la validación. No combines celdas ni dejes filas sin ID Lote."],
 ];
 const LOT_IMPORT_GUIDE_STEPS = [
   {
     title: "Cómo subir el archivo",
-    text: "En Carga de Lotes entra al editor, pulsa Plantilla para descargar un ejemplo, completa el archivo y luego pulsa Subir. El sistema prepara los lotes para que los revises antes de crear el fraccionamiento.",
+    text: "En Carga de Lotes entra al editor, pulsa Plantilla para descargar un ejemplo, completa el archivo y luego pulsa Subir. El servidor valida el archivo y guarda los lotes si no hay errores.",
   },
   {
     title: "Formato de Excel y CSV",
-    text: "Se aceptan XLSX, XLS y CSV de hasta 10 MB. Usa la primera fila para los encabezados y una fila por lote. En CSV guarda el archivo con codificación UTF-8 para conservar acentos y la letra ñ.",
+    text: "Se aceptan XLSX, XLS, CSV y TXT de hasta 10 MB y máximo 5,000 filas de datos. Usa la primera fila para los encabezados y una fila por lote. En CSV guarda con UTF-8 para conservar acentos y la ñ.",
   },
   {
     title: "Campo obligatorio: ID Lote",
-    text: "Cada fila debe tener un identificador único, por ejemplo A-01 o L001. El encabezado recomendado es ID Lote; también se aceptan id, codigo, código, lote o clave. Si falta o está duplicado, la fila no se carga.",
+    text: "Cada fila debe tener un identificador único, por ejemplo A-01 o L001. El encabezado recomendado es ID Lote; también se aceptan id, codigo, código, lote o clave. Filas sin ID o con código duplicado son rechazadas.",
   },
   {
     title: "Agrupar por sección o manzana",
-    text: "Usa uno de estos encabezados: Fraccionamiento, Sección, Manzana, Bloque o Section. Escribe el nombre que agrupará cada lote, por ejemplo Manzana A. Si omites la columna, se agrupan en Importados.",
+    text: "Usa uno de estos encabezados: Fraccionamiento, Fracc, Desarrollo o Proyecto. Escribe el nombre que agrupará cada lote, por ejemplo Manzana A. Si omites la columna, todos los lotes quedan en Importados.",
   },
   {
     title: "Medidas y precios opcionales",
-    text: "Encabezados aceptados: Superficie (m2), Frente (ML), Fondo (ML), Precio Contado y Precio Financiado. Usa números positivos; precios pueden incluir el signo $ y separadores de miles.",
+    text: "Encabezados aceptados: Superficie (m2), Frente (ML), Fondo (ML), Precio Contado y Precio Financiado. Los precios aceptan formato con $, comas y decimales: $400,000.50.",
   },
   {
     title: "Estado del lote",
-    text: "Usa el encabezado Estado, Estatus o Status. Disponible, apartado y reservado se preparan para la carga. Vendido requiere un contrato, por lo que no puede asignarse directamente al crear lotes. Si el campo está vacío, se usa Disponible.",
+    text: "Usa el encabezado Estado, Estatus o Status. Valores aceptados: disponible/libre/vacante → Disponible; apartado/reservado → Apartado; vendido/ocupado → Vendido. Si está vacío se usa Disponible.",
   },
   {
     title: "Servicios opcionales",
-    text: "Encabezados: Agua Potable, Energía Eléctrica, Drenaje, Gas Natural, Internet/Fibra y Pavimento. Para indicar que sí cuenta con el servicio usa sí, 1, true, yes o x; cualquier otro valor se toma como no.",
+    text: "Encabezados: Agua Potable, Energía Eléctrica, Drenaje, Gas Natural, Internet/Fibra y Pavimento. Para indicar que sí tiene el servicio usa: sí, 1, true, yes, x o ✓.",
   },
   {
-    title: "Lista completa de campos",
-    text: "ID Lote es obligatorio. Son opcionales: Fraccionamiento/Sección/Manzana, Estado, Superficie (m2), Frente (ML), Fondo (ML), Precio Contado, Precio Financiado, Agua Potable, Energía Eléctrica, Drenaje, Gas Natural, Internet/Fibra y Pavimento. Vendedor Asignado queda como referencia y debe revisarse después.",
+    title: "Vendedor Asignado",
+    text: "Campo opcional. El servidor busca al usuario por nombre exacto y, si no lo encuentra, por coincidencia parcial. Si el nombre es ambiguo, el lote se importa sin vendedor y se registra una advertencia.",
   },
   {
-    title: "Revisión antes de guardar",
-    text: "Después de subir el archivo revisa secciones, códigos, estados, medidas y precios en el tablero. El archivo solo prepara los lotes; se guardan definitivamente al pulsar Crear fraccionamiento.",
+    title: "Validación en servidor y errores",
+    text: "La validación ocurre en el servidor. Los lotes válidos se guardan inmediatamente. Si hay errores en filas individuales se muestran con el número de fila para que puedas corregirlos. Columnas no reconocidas se ignoran con una advertencia.",
   },
 ];
 const LOT_SELECTOR_GUIDE = {
@@ -146,7 +145,7 @@ function sortLotsByCode(lots) {
   );
 }
 
-function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot }) {
+function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot, onDeleteLot }) {
   const [page, setPage] = useState(0);
   const sortedLots = useMemo(() => sortLotsByCode(section.lots), [section.lots]);
   const totalPages = Math.max(1, Math.ceil(sortedLots.length / LOTS_PER_PAGE));
@@ -184,30 +183,34 @@ function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot }) {
           return (
             <div
               key={lot.id}
-              title={`${lot.code} — click para editar`}
-              className="select-none cursor-pointer rounded-[8px] border-[1.5px] px-1 py-2 text-center transition-all hover:opacity-80 hover:shadow-md"
+              className="group relative select-none rounded-[8px] border-[1.5px] transition-all hover:shadow-md"
               style={{ background: c.bg, borderColor: c.border }}
-              onClick={() => onEditLot(section.id, lot.id)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  onEditLot(section.id, lot.id);
-                }
-              }}
             >
-              <div className="text-[0.78rem] font-extrabold leading-none" style={{ color: c.text }}>
-                {lot.code}
-              </div>
-              <div className="mt-0.5 text-[0.56rem] opacity-70" style={{ color: c.text }}>
-                {lot.area ? `${lot.area}m²` : lot.status === "available" ? "Libre" : lot.status === "sold" ? "Vendido" : "Apartado"}
-              </div>
-              {lot.price ? (
-                <div className="mt-0.5 text-[0.5rem] font-extrabold leading-none" style={{ color: c.text }}>
-                  ${Number(lot.price).toLocaleString("es-MX", { maximumFractionDigits: 0 })}
+              <div
+                title={`${lot.code} — click para editar`}
+                className="cursor-pointer px-1 py-2 text-center"
+                onClick={() => onEditLot(section.id, lot.id)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onEditLot(section.id, lot.id);
+                  }
+                }}
+              >
+                <div className="text-[0.78rem] font-extrabold leading-none" style={{ color: c.text }}>
+                  {lot.code}
                 </div>
-              ) : null}
+                <div className="mt-0.5 text-[0.56rem] opacity-70" style={{ color: c.text }}>
+                  {lot.area ? `${lot.area}m²` : lot.status === "available" ? "Libre" : lot.status === "sold" ? "Vendido" : "Apartado"}
+                </div>
+                {lot.price ? (
+                  <div className="mt-0.5 text-[0.5rem] font-extrabold leading-none" style={{ color: c.text }}>
+                    ${Number(lot.price).toLocaleString("es-MX", { maximumFractionDigits: 0 })}
+                  </div>
+                ) : null}
+              </div>
             </div>
           );
         })}
@@ -343,7 +346,7 @@ function cropPlanImage(dataUrl) {
 function LotsPage() {
   const navigate = useNavigate();
   const { data: projects = [] } = useProjectsQuery();
-  const { draftProject, setDraftProject, saveFrac, saveEditedFrac, setSelectedFracId, showToast } = useAppContext();
+  const { draftProject, setDraftProject, saveFrac, saveEditedFrac, deleteFrac, setSelectedFracId, showToast } = useAppContext();
   const isEditing = !!draftProject._editingFracId;
 
   useEffect(() => {
@@ -353,9 +356,12 @@ function LotsPage() {
   const [sectionName, setSectionName] = useState("");
   const [sectionTotal, setSectionTotal] = useState(20);
   const [mapFileName, setMapFileName] = useState("");
-  const [lotEditDraft, setLotEditDraft] = useState(null); // null | { sectionId, ...lot }
+  const [lotEditDraft, setLotEditDraft] = useState(null);
   const [loadingEditId, setLoadingEditId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [deletedLotIds, setDeletedLotIds] = useState(new Set());
+  const [showDeleteFracConfirm, setShowDeleteFracConfirm] = useState(false);
+  const [deletingFrac, setDeletingFrac] = useState(false);
   const [showImportGuide, setShowImportGuide] = useState(false);
   const [showFormatGuide, setShowFormatGuide] = useState(false);
   useLandsGuide(() => setShowImportGuide(true));
@@ -365,6 +371,7 @@ function LotsPage() {
       ? LOT_MAP_GUIDE
       : LOT_SELECTOR_GUIDE;
   const [importSummary, setImportSummary] = useState(null);
+  const [importLoading, setImportLoading] = useState(false);
   const [downloadingTemplate, setDownloadingTemplate] = useState(false);
   const changeImageRef = useRef(null);
   const excelInputRef = useRef(null);
@@ -391,6 +398,8 @@ function LotsPage() {
           id:              lot.id,
           _backendId:      lot.id,
           _orig: {
+            status:          lot.status || "available",
+            code:            lot.code ?? "",
             area:            lot.area_m2 ?? "",
             price:           lot.price_contado ?? "",
             priceFinanciado: lot.price_financiado ?? "",
@@ -411,7 +420,7 @@ function LotsPage() {
       setDraftProject({
         mode:           "editor",
         name:           project.name,
-        mapUrl:         "",
+        mapUrl:         project.mapImageUrl || "",
         cadProcessing:  false,
         sections:       Object.values(sectionMap),
         _editingFracId: project.id,
@@ -421,12 +430,6 @@ function LotsPage() {
     } finally {
       setLoadingEditId(null);
     }
-  };
-
-  const STATUS_MAP = {
-    disponible: "available", libre: "available", available: "available", vacante: "available",
-    vendido: "sold", sold: "sold", ocupado: "sold",
-    apartado: "reserved", apartada: "reserved", reservado: "reserved", reserved: "reserved",
   };
 
   const downloadImportTemplate = async () => {
@@ -449,194 +452,114 @@ function LotsPage() {
     }
   };
 
-  const handleExcelFile = (event) => {
+  const handleExcelFile = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
     event.target.value = "";
 
-    if (file.size > 10 * 1024 * 1024) {
+    setImportLoading(true);
+    setImportSummary(null);
+
+    try {
+      let fracId = draftProject._editingFracId;
+
+      // Para fraccionamiento nuevo: crear el inmueble primero y guardar los lotes manuales previos
+      if (!fracId) {
+        const inmueble = await inmuebleService.create({ name: draftProject.name || "Fraccionamiento" });
+        fracId = inmueble.id;
+
+        if (draftProject.mapUrl) {
+          try {
+            const blob = await fetch(draftProject.mapUrl).then((r) => r.blob());
+            const mapFile = new File([blob], "map.png", { type: blob.type || "image/png" });
+            await inmuebleService.uploadMap(inmueble.id, mapFile);
+          } catch { /* fallo de imagen no es crítico */ }
+        }
+
+        const manualLots = draftProject.sections.flatMap((s) =>
+          s.lots.map((lot) => ({
+            code: lot.code,
+            section: s.name,
+            area_m2: lot.area ? Number(lot.area) : null,
+            frente_ml: lot.frente ? Number(lot.frente) : null,
+            fondo_ml: lot.fondo ? Number(lot.fondo) : null,
+            price_contado: lot.price ? Number(lot.price) : null,
+            price_financiado: lot.priceFinanciado ? Number(lot.priceFinanciado) : null,
+            services: lot.servicios ? Object.fromEntries(Object.entries(lot.servicios).filter(([, v]) => v)) : {},
+          }))
+        );
+        if (manualLots.length > 0) {
+          await lotService.bulkCreate({ inmueble_id: fracId, lots: manualLots });
+        }
+      }
+
+      // Enviar archivo al backend para validación e importación
+      const result = await lotService.importCsv(file, { fraccionamiento_id: fracId });
+
+      // Nada fue importado y hay errores: mostrar sin actualizar la vista
+      if (result.imported === 0 && result.failed > 0) {
+        setImportSummary({ fileName: file.name, imported: 0, failed: result.failed, errors: result.errors, warnings: result.warnings });
+        setShowImportGuide(true);
+        showToast(result.errors[0]?.message || "No se importaron lotes: revisa los errores");
+        return;
+      }
+
+      // Recargar todos los lotes desde el backend y reconstruir secciones
+      const { items: lots } = await lotService.list({ inmueble_id: fracId, limit: 200 });
+      const sectionMap = {};
+      lots.forEach((lot) => {
+        const sec = lot.section || "Importados";
+        if (!sectionMap[sec]) sectionMap[sec] = { id: `sec_${sec}`, name: sec, lots: [] };
+        sectionMap[sec].lots.push({
+          id:              lot.id,
+          _backendId:      lot.id,
+          _orig: {
+            status:          lot.status || "available",
+            code:            lot.code ?? "",
+            area:            lot.area_m2 ?? "",
+            price:           lot.price_contado ?? "",
+            priceFinanciado: lot.price_financiado ?? "",
+            frente:          lot.frente_ml ?? "",
+            fondo:           lot.fondo_ml ?? "",
+            servicios:       JSON.stringify(lot.services || {}),
+          },
+          code:            lot.code,
+          status:          lot.status || "available",
+          area:            lot.area_m2 ?? "",
+          price:           lot.price_contado ?? "",
+          priceFinanciado: lot.price_financiado ?? "",
+          frente:          lot.frente_ml ?? "",
+          fondo:           lot.fondo_ml ?? "",
+          servicios:       lot.services || {},
+        });
+      });
+
+      setDraftProject((prev) => ({
+        ...prev,
+        sections: Object.values(sectionMap),
+        _editingFracId: fracId,
+      }));
+
       setImportSummary({
         fileName: file.name,
-        imported: 0,
-        skipped: 0,
-        warnings: ["No se cargó ninguna fila: el archivo supera el límite de 10 MB."],
+        imported: result.imported,
+        updated: result.updated ?? 0,
+        failed: result.failed ?? 0,
+        errors: result.errors || [],
+        warnings: result.warnings || [],
       });
+
+      showToast(`${result.imported} lotes importados${result.failed ? ` · ${result.failed} con errores` : ""}`);
+      if (result.failed > 0) setShowImportGuide(true);
+
+    } catch (err) {
+      const msg = getUserErrorMessage(err, "Error al importar el archivo. Descarga la plantilla y verifica el formato.");
+      setImportSummary({ fileName: file?.name ?? null, imported: 0, failed: 0, errors: [{ message: msg }], warnings: [] });
       setShowImportGuide(true);
-      showToast("El archivo no puede superar 10 MB");
-      return;
+      showToast(msg);
+    } finally {
+      setImportLoading(false);
     }
-
-    const isCsv = /\.csv$/i.test(file.name) || file.type === "text/csv";
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        let workbook;
-        if (isCsv) {
-          // CSV: decode as UTF-8 to preserve accents (é, í, ó, ú, ñ…)
-          const text = new TextDecoder("utf-8").decode(e.target.result);
-          workbook = XLSX.read(text, { type: "string" });
-        } else {
-          workbook = XLSX.read(new Uint8Array(e.target.result), { type: "array" });
-        }
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const matrix = sheet ? XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", blankrows: false }) : [];
-        const rows = sheet ? XLSX.utils.sheet_to_json(sheet, { defval: "" }) : [];
-
-        // explicit Unicode range for combining diacritical marks
-        const norm = (s) => String(s || "").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-        const parseNumber = (value) => {
-          const cleaned = String(value || "").replace(/[$,\s]/g, "");
-          if (!cleaned) return "";
-          const parsed = Number(cleaned);
-          return Number.isFinite(parsed) && parsed >= 0 ? parsed : "";
-        };
-        const parseBoolean = (value) => ["1", "si", "yes", "true", "x"].includes(norm(value));
-
-        const findCol = (row, aliases) => {
-          const key = Object.keys(row).find((k) => aliases.some((a) => norm(k) === norm(a)));
-          return key ? String(row[key]).trim() : "";
-        };
-
-        if (!rows.length) {
-          setImportSummary({
-            fileName: file.name,
-            imported: 0,
-            skipped: 0,
-            warnings: ["El archivo no contiene filas de datos."],
-          });
-          setShowImportGuide(true);
-          showToast("El archivo no contiene filas de datos");
-          return;
-        }
-
-        const headers = (matrix[0] || []).map((header) => String(header).trim());
-        const normalizedHeaders = headers.map((h) => norm(h));
-
-        // Columnas que indican que el archivo NO es de lotes (clientes, contratos, pagos, etc.)
-        const NON_LOT_SIGNALS = ["nombre", "email", "telefono", "rfc", "stage", "curp", "apellido", "correo", "vendedor asignado"];
-        // Columnas que confirman que el archivo SÍ es de lotes
-        const LOT_SIGNALS = ["superficie", "frente", "fondo", "precio contado", "precio financiado", "manzana", "seccion", "bloque", "id lote", "codigo", "codigo", "clave"];
-
-        const hasNonLotSignal = NON_LOT_SIGNALS.some((s) => normalizedHeaders.some((h) => h.includes(s)));
-        const hasLotSignal    = LOT_SIGNALS.some((s) => normalizedHeaders.some((h) => h.includes(s)));
-
-        if (hasNonLotSignal && !hasLotSignal) {
-          setImportSummary({
-            fileName: file.name,
-            imported: 0,
-            skipped: rows.length,
-            warnings: [
-              "Este archivo parece contener datos de clientes u otro módulo, no de lotes.",
-              `Columnas detectadas: ${headers.slice(0, 8).join(", ")}. Usa la plantilla de lotes para importar correctamente.`,
-            ],
-          });
-          setShowImportGuide(true);
-          showToast("Archivo incorrecto: parece ser de clientes, no de lotes");
-          return;
-        }
-
-        const hasCodeColumn = headers.some((header) => LOT_REQUIRED_ALIASES.some((alias) => norm(header) === norm(alias)));
-        if (!hasCodeColumn) {
-          setImportSummary({
-            fileName: file.name,
-            imported: 0,
-            skipped: rows.length,
-            warnings: ["No se cargó ninguna fila: falta la columna obligatoria ID Lote."],
-          });
-          setShowImportGuide(true);
-          showToast("Falta la columna obligatoria ID Lote");
-          return;
-        }
-
-        const rowsWithoutCode = rows.flatMap((row, index) =>
-          findCol(row, LOT_REQUIRED_ALIASES) ? [] : [index + 2]
-        );
-        if (rowsWithoutCode.length) {
-          const visibleRows = rowsWithoutCode.slice(0, 8).join(", ");
-          const remaining = rowsWithoutCode.length > 8 ? ` y ${rowsWithoutCode.length - 8} más` : "";
-          setImportSummary({
-            fileName: file.name,
-            imported: 0,
-            skipped: rows.length,
-            warnings: [
-              "No se cargó ninguna fila porque existen valores requeridos vacíos.",
-              `ID Lote vacío en filas: ${visibleRows}${remaining}.`,
-            ],
-          });
-          setShowImportGuide(true);
-          showToast("No se cargó el archivo: hay filas sin ID Lote");
-          return;
-        }
-
-        const grouped = {};
-        const warnings = [];
-        const seenCodes = new Set();
-        let skipped = 0;
-        rows.forEach((row, i) => {
-          const rowNumber = i + 2;
-          const code = findCol(row, LOT_REQUIRED_ALIASES);
-          if (seenCodes.has(norm(code))) {
-            skipped += 1;
-            warnings.push(`Fila ${rowNumber}: ID Lote duplicado (${code}).`);
-            return;
-          }
-          seenCodes.add(norm(code));
-
-          const secName = findCol(row, ["Fraccionamiento", "Seccion", "seccion", "sección", "manzana", "bloque", "section"]) || "Importados";
-          const statusRaw = norm(findCol(row, ["Estado", "estatus", "status"]));
-          const status = STATUS_MAP[statusRaw] || "available";
-          if (statusRaw && !STATUS_MAP[statusRaw]) warnings.push(`Fila ${rowNumber}: estado "${statusRaw}" no reconocido; se usó Disponible.`);
-          const area = parseNumber(findCol(row, ["Superficie (m2)", "superficie", "area", "area", "m2"]));
-          const price = parseNumber(findCol(row, ["Precio Contado", "precio contado", "contado", "precio"]));
-          const priceFinanciado = parseNumber(findCol(row, ["Precio Financiado", "financiado"]));
-          const frente = parseNumber(findCol(row, ["Frente (ML)", "frente (ml)", "frente"]));
-          const fondo = parseNumber(findCol(row, ["Fondo (ML)", "fondo (ml)", "fondo"]));
-          const vendedor = findCol(row, ["Vendedor Asignado", "vendedor asignado", "vendedor", "asesor", "seller"]);
-          const servicios = {
-            agua: parseBoolean(findCol(row, ["Agua Potable", "agua potable", "agua"])),
-            luz: parseBoolean(findCol(row, ["Energia Electrica", "Energía Eléctrica", "energia electrica", "luz", "electricidad"])),
-            drenaje: parseBoolean(findCol(row, ["Drenaje", "drenaje"])),
-            gas: parseBoolean(findCol(row, ["Gas Natural", "gas natural", "gas"])),
-            internet: parseBoolean(findCol(row, ["Internet/Fibra", "internet/fibra", "internet"])),
-            pavimento: parseBoolean(findCol(row, ["Pavimento", "pavimento"])),
-          };
-          if (!grouped[secName]) grouped[secName] = [];
-          grouped[secName].push({ id: `xl_${Date.now()}_${i}`, code, status, area, price, priceFinanciado, frente, fondo, servicios, vendedor });
-        });
-
-        const newSections = Object.entries(grouped).map(([name, lots]) => ({
-          id: `section_xl_${Date.now()}_${name}`,
-          name,
-          lots,
-        }));
-
-        setDraftProject((prev) => ({
-          ...prev,
-          sections: [...prev.sections, ...newSections],
-        }));
-
-        const total = newSections.reduce((s, sec) => s + sec.lots.length, 0);
-        setImportSummary({
-          fileName: file.name,
-          imported: total,
-          skipped,
-          warnings,
-          sections: newSections.length,
-        });
-        showToast(`${total} lotes preparados desde Excel${skipped ? ` · ${skipped} omitidos` : ""}`);
-      } catch (err) {
-        setImportSummary({
-          fileName: file.name,
-          imported: 0,
-          skipped: 0,
-          warnings: ["No fue posible leer el archivo. Descarga la plantilla y verifica el formato."],
-        });
-        setShowImportGuide(true);
-        showToast(getUserErrorMessage(err, "Error al leer el archivo. Usa el formato de plantilla."));
-      }
-    };
-    reader.readAsArrayBuffer(file);
   };
 
   const openEditLot = (sectionId, lotId) => {
@@ -705,9 +628,26 @@ function LotsPage() {
   };
 
   const removeSection = (sectionId) => {
+    const sec = draftProject.sections.find((s) => s.id === sectionId);
+    if (sec) {
+      const backendIds = sec.lots.filter((l) => l._backendId).map((l) => l._backendId);
+      if (backendIds.length) setDeletedLotIds((prev) => new Set([...prev, ...backendIds]));
+    }
     setDraftProject((previous) => ({
       ...previous,
       sections: previous.sections.filter((sec) => sec.id !== sectionId)
+    }));
+  };
+
+  const deleteLotFromSection = (sectionId, lotId) => {
+    const sec = draftProject.sections.find((s) => s.id === sectionId);
+    const lot = sec?.lots.find((l) => l.id === lotId);
+    if (lot?._backendId) setDeletedLotIds((prev) => new Set([...prev, lot._backendId]));
+    setDraftProject((previous) => ({
+      ...previous,
+      sections: previous.sections.map((s) =>
+        s.id !== sectionId ? s : { ...s, lots: s.lots.filter((l) => l.id !== lotId) }
+      ),
     }));
   };
 
@@ -814,19 +754,32 @@ function LotsPage() {
               Apartado
             </span>
           </div>
+          {isEditing && (
+            <button
+              className="lots-editor-btn"
+              style={{ color: "#C0392B", borderColor: "#fca5a5" }}
+              onClick={() => setShowDeleteFracConfirm(true)}
+            >
+              Eliminar
+            </button>
+          )}
           <button
             className="lots-editor-btn lots-editor-primary"
             onClick={async () => {
               if (saving) return;
               setSaving(true);
               try {
+                if (deletedLotIds.size > 0) {
+                  await Promise.all([...deletedLotIds].map((id) => lotService.delete(id)));
+                  setDeletedLotIds(new Set());
+                }
                 if (isEditing) await saveEditedFrac(draftProject);
                 else await saveFrac(draftProject);
               } finally {
                 setSaving(false);
               }
             }}
-            disabled={!draftProject.sections.length || saving}
+            disabled={!draftProject.name?.trim() || saving}
           >
             {saving ? "Guardando..." : isEditing ? "Guardar cambios" : "Crear fraccionamiento"}
           </button>
@@ -886,6 +839,17 @@ function LotsPage() {
                 </div>
               </div>
               <div className="lots-section-form">
+                <div className="lots-section-name" style={{ flex: 1 }}>
+                  <div className="lots-builder-label">Nombre del fraccionamiento</div>
+                  <input
+                    value={draftProject.name}
+                    onChange={(event) => setDraftProject((previous) => ({ ...previous, name: event.target.value }))}
+                    placeholder="Nombre del fraccionamiento"
+                    className="lots-builder-input"
+                  />
+                </div>
+              </div>
+              <div className="lots-section-form">
                 <div className="lots-section-name">
                   <div className="lots-builder-label">
                     Nombre de sección
@@ -920,9 +884,11 @@ function LotsPage() {
                 <div>
                   <span className="lots-excel-title">Llenar con Excel o CSV</span>
                   <span className="lots-excel-sub">
-                    {importSummary
-                      ? `${importSummary.imported} preparados${importSummary.skipped ? ` · ${importSummary.skipped} omitidos` : ""}`
-                      : "Importa lotes desde XLSX, XLS o CSV"}
+                    {importLoading
+                      ? "Validando e importando..."
+                      : importSummary
+                        ? `${importSummary.imported} importados${importSummary.failed ? ` · ${importSummary.failed} con errores` : ""}${importSummary.warnings?.length ? ` · ${importSummary.warnings.length} advertencias` : ""}`
+                        : "Importa lotes desde XLSX, XLS o CSV"}
                   </span>
                 </div>
                 <button className="lots-excel-upload" onClick={downloadImportTemplate} disabled={downloadingTemplate}>
@@ -938,13 +904,14 @@ function LotsPage() {
                 <button
                   className="lots-excel-upload"
                   onClick={() => excelInputRef.current?.click()}
+                  disabled={importLoading}
                 >
-                  Subir
+                  {importLoading ? "Importando..." : "Subir"}
                 </button>
                 <input
                   ref={excelInputRef}
                   type="file"
-                  accept=".xlsx,.xls,.csv"
+                  accept=".xlsx,.xls,.csv,.txt"
                   className="hidden"
                   onChange={handleExcelFile}
                 />
@@ -970,6 +937,7 @@ function LotsPage() {
                       onAddLots={addLotsToSection}
                       onRemoveSection={removeSection}
                       onEditLot={openEditLot}
+                      onDeleteLot={deleteLotFromSection}
                     />
                   ))}
                 </div>
@@ -1009,6 +977,34 @@ function LotsPage() {
 
               {/* Body */}
               <div className="lot-edit-body">
+
+                {/* Imagen del plano */}
+                <div className="lot-edit-sec">Imagen del plano</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
+                  {draftProject.mapUrl ? (
+                    <img
+                      src={draftProject.mapUrl}
+                      alt="Plano"
+                      style={{ width: 90, height: 64, objectFit: "cover", borderRadius: 8, border: "1.5px solid #DCDAD2", flexShrink: 0 }}
+                    />
+                  ) : (
+                    <div style={{ width: 90, height: 64, borderRadius: 8, border: "1.5px dashed #DCDAD2", background: "#F1EEE6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <span style={{ fontSize: "0.6rem", color: "#83867C", textAlign: "center", lineHeight: 1.3 }}>Sin imagen</span>
+                    </div>
+                  )}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: "0.72rem", color: "#83867C", marginBottom: 6 }}>
+                      {draftProject.mapUrl ? "Imagen del plano cargada" : "No hay imagen de plano"}
+                    </div>
+                    <button
+                      className="lot-edit-ghost"
+                      style={{ fontSize: "0.72rem", padding: "4px 10px" }}
+                      onClick={() => changeImageRef.current?.click()}
+                    >
+                      {draftProject.mapUrl ? "Cambiar imagen" : "Subir imagen"}
+                    </button>
+                  </div>
+                </div>
 
                 {/* Identificación */}
                 <div className="lot-edit-sec">Identificación</div>
@@ -1096,6 +1092,16 @@ function LotsPage() {
 
               {/* Footer */}
               <div className="lot-edit-foot">
+                <button
+                  className="lot-edit-ghost"
+                  style={{ color: "#C0392B", borderColor: "#fca5a5", marginRight: "auto" }}
+                  onClick={() => {
+                    deleteLotFromSection(d.sectionId, d.id);
+                    setLotEditDraft(null);
+                  }}
+                >
+                  Eliminar lote
+                </button>
                 <button className="lot-edit-primary" onClick={saveLotEdit}>Guardar</button>
                 <button className="lot-edit-ghost" onClick={() => setLotEditDraft(null)}>Cancelar</button>
               </div>
@@ -1112,6 +1118,46 @@ function LotsPage() {
         subtitle={activeGuide.subtitle}
         steps={activeGuide.steps}
       />
+
+      {showDeleteFracConfirm && (
+        <div className="lot-edit-overlay" onClick={() => setShowDeleteFracConfirm(false)}>
+          <div className="lot-edit-modal" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
+            <div className="lot-edit-head">
+              <div className="lot-edit-badge" style={{ background: "#fee2e2", color: "#991b1b", borderColor: "#fca5a5" }}>!</div>
+              <div>
+                <div className="lot-edit-title">Eliminar fraccionamiento</div>
+                <div className="lot-edit-sub">{draftProject.name}</div>
+              </div>
+              <button className="lot-edit-close" onClick={() => setShowDeleteFracConfirm(false)}>×</button>
+            </div>
+            <div className="lot-edit-body" style={{ gap: 12 }}>
+              <p style={{ fontSize: "0.84rem", color: "#43453F", lineHeight: 1.6 }}>
+                Esta acción eliminará el fraccionamiento <strong>{draftProject.name}</strong> y todos sus lotes de forma permanente. No se puede deshacer.
+              </p>
+              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8 }}>
+                <button className="lot-edit-ghost" onClick={() => setShowDeleteFracConfirm(false)}>Cancelar</button>
+                <button
+                  className="lot-edit-primary"
+                  style={{ background: "#C0392B", borderColor: "#991b1b" }}
+                  disabled={deletingFrac}
+                  onClick={async () => {
+                    setDeletingFrac(true);
+                    try {
+                      await deleteFrac(draftProject._editingFracId);
+                      setShowDeleteFracConfirm(false);
+                      navigate("/fraccionamientos");
+                    } finally {
+                      setDeletingFrac(false);
+                    }
+                  }}
+                >
+                  {deletingFrac ? "Eliminando..." : "Sí, eliminar"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       </>
     );
   }
