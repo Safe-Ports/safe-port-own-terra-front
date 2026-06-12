@@ -11,6 +11,7 @@ import { getUserErrorMessage } from "@/services/errors";
 import Button from "@/components/Button";
 import GuideModal from "@/components/shared/GuideModal";
 import LotImportFormatModal from "./LotImportFormatModal";
+import "../Fracs/fracs.css";
 
 const LOT_COLORS = {
   available: { bg: "#dcfce7", border: "#86efac", text: "#15803d" },
@@ -145,99 +146,69 @@ function sortLotsByCode(lots) {
   );
 }
 
-function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot, onDeleteLot }) {
+function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot }) {
   const [page, setPage] = useState(0);
   const sortedLots = useMemo(() => sortLotsByCode(section.lots), [section.lots]);
   const totalPages = Math.max(1, Math.ceil(sortedLots.length / LOTS_PER_PAGE));
   const safePage = Math.min(page, totalPages - 1);
   const pageLots = sortedLots.slice(safePage * LOTS_PER_PAGE, safePage * LOTS_PER_PAGE + LOTS_PER_PAGE);
 
+  const STATUS_CLASS = { available: "available", sold: "sold", reserved: "reserved" };
+
   return (
-    <div>
-      {/* Section header */}
-      <div className="mb-2.5 flex items-center gap-2">
-        <div className="text-[0.7rem] font-extrabold uppercase tracking-[0.5px] text-[#43453F]">
+    <section className="frac-section">
+      <div className="frac-section-head">
+        <span>
           {section.name}
-          <span className="ml-1 font-normal opacity-55 text-[0.62rem]">{section.lots.length} lotes</span>
-        </div>
-        <div className="h-px flex-1 bg-[#DCDAD2]" />
-        <button
-          onClick={() => onAddLots(section.id, 10)}
-          title="Añadir 10 lotes"
-          className="flex h-[22px] w-[22px] items-center justify-center rounded-[5px] border border-[#DCDAD2] bg-[#F1EEE6] text-[0.8rem] font-black text-[#355E3B]"
-        >
-          +
-        </button>
-        <button
-          onClick={() => onRemoveSection(section.id)}
-          title="Eliminar sección"
-          className="flex h-[22px] w-[22px] items-center justify-center rounded-[5px] border border-[#DCDAD2] bg-[#F1EEE6] text-[0.8rem] font-black text-[#C0392B]"
-        >
-          ✕
-        </button>
+          <small style={{ marginLeft: 6, fontWeight: 400, opacity: 0.6 }}>{section.lots.length} lotes</small>
+        </span>
+        <span style={{ display: "flex", gap: 6 }}>
+          <button
+            onClick={() => onAddLots(section.id, 10)}
+            title="Añadir 10 lotes"
+            style={{ border: "1px solid var(--bd)", background: "var(--sf2)", borderRadius: 5, width: 22, height: 22, fontWeight: 900, fontSize: "0.8rem", color: "var(--leaf)", cursor: "pointer", lineHeight: 1 }}
+          >+</button>
+          <button
+            onClick={() => onRemoveSection(section.id)}
+            title="Eliminar sección"
+            style={{ border: "1px solid var(--bd)", background: "var(--sf2)", borderRadius: 5, width: 22, height: 22, fontWeight: 900, fontSize: "0.8rem", color: "var(--danger)", cursor: "pointer", lineHeight: 1 }}
+          >✕</button>
+        </span>
       </div>
-      {/* Lot grid — 6 columnas */}
-      <div className="grid gap-1.5" style={{ gridTemplateColumns: "repeat(6, 1fr)" }}>
+
+      <div className="frac-lot-grid">
         {pageLots.map((lot) => {
-          const c = LOT_COLORS[lot.status] || LOT_COLORS.available;
+          const cls = STATUS_CLASS[lot.status] || "available";
           return (
-            <div
+            <button
               key={lot.id}
-              className="group relative select-none rounded-[8px] border-[1.5px] transition-all hover:shadow-md"
-              style={{ background: c.bg, borderColor: c.border }}
+              className={`frac-lot-tile ${cls}`}
+              title={`${lot.code} — click para editar`}
+              onClick={() => onEditLot(section.id, lot.id)}
             >
-              <div
-                title={`${lot.code} — click para editar`}
-                className="cursor-pointer px-1 py-2 text-center"
-                onClick={() => onEditLot(section.id, lot.id)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    onEditLot(section.id, lot.id);
-                  }
-                }}
-              >
-                <div className="text-[0.78rem] font-extrabold leading-none" style={{ color: c.text }}>
-                  {lot.code}
-                </div>
-                <div className="mt-0.5 text-[0.56rem] opacity-70" style={{ color: c.text }}>
-                  {lot.area ? `${lot.area}m²` : lot.status === "available" ? "Libre" : lot.status === "sold" ? "Vendido" : "Apartado"}
-                </div>
-                {lot.price ? (
-                  <div className="mt-0.5 text-[0.5rem] font-extrabold leading-none" style={{ color: c.text }}>
-                    ${Number(lot.price).toLocaleString("es-MX", { maximumFractionDigits: 0 })}
-                  </div>
-                ) : null}
-              </div>
-            </div>
+              <i />
+              <strong>{lot.code}</strong>
+              <span>{lot.area ? `${lot.area} m²` : lot.status === "sold" ? "Vendido" : lot.status === "reserved" ? "Apartado" : "Libre"}</span>
+              {lot.price ? <em className="frac-lot-price">${Number(lot.price).toLocaleString("es-MX", { maximumFractionDigits: 0 })}</em> : null}
+            </button>
           );
         })}
       </div>
-      {/* Paginación */}
+
       {totalPages > 1 && (
         <div className="mt-2.5 flex items-center justify-center gap-3">
-          <button
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
-            disabled={safePage === 0}
-            className="flex h-[26px] w-[26px] items-center justify-center rounded-[6px] border border-[#DCDAD2] bg-[#F1EEE6] text-[#355E3B] disabled:opacity-35"
-          >
+          <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={safePage === 0}
+            className="flex h-[26px] w-[26px] items-center justify-center rounded-[6px] border border-[#DCDAD2] bg-[#F1EEE6] text-[#355E3B] disabled:opacity-35">
             <HiChevronLeft />
           </button>
-          <span className="text-[0.66rem] font-semibold text-[#43453F]">
-            Página {safePage + 1} de {totalPages}
-          </span>
-          <button
-            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-            disabled={safePage >= totalPages - 1}
-            className="flex h-[26px] w-[26px] items-center justify-center rounded-[6px] border border-[#DCDAD2] bg-[#F1EEE6] text-[#355E3B] disabled:opacity-35"
-          >
+          <span className="text-[0.66rem] font-semibold text-[#43453F]">Página {safePage + 1} de {totalPages}</span>
+          <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={safePage >= totalPages - 1}
+            className="flex h-[26px] w-[26px] items-center justify-center rounded-[6px] border border-[#DCDAD2] bg-[#F1EEE6] text-[#355E3B] disabled:opacity-35">
             <HiChevronRight />
           </button>
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -937,7 +908,6 @@ function LotsPage() {
                       onAddLots={addLotsToSection}
                       onRemoveSection={removeSection}
                       onEditLot={openEditLot}
-                      onDeleteLot={deleteLotFromSection}
                     />
                   ))}
                 </div>

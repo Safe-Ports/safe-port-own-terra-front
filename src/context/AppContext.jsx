@@ -385,14 +385,10 @@ export function AppProvider({ children }) {
         interest_rate:       Number(payload.interest_rate ?? 0),
         signed_date:         (payload.signed_date ?? payload.signedDate) || null,
         has_signed_docs:     Boolean(payload.has_signed_docs),
-        commission_enabled:  Boolean(payload.commission_enabled),
-        commission_rate:     payload.commission_rate === "" || payload.commission_rate == null
-          ? null
-          : Number(payload.commission_rate),
-        commission_paid:     Boolean(payload.commission_paid),
       });
     } else {
       savedContract = await contractService.create({
+        contract_number:     payload.number?.trim() || undefined,
         client_id:           payload.client_id ?? payload.clientId,
         lot_id:              payload.lot_id || payload.lotId || payload.lot || undefined,
         type:                payload.type,
@@ -408,10 +404,6 @@ export function AppProvider({ children }) {
         notes:               payload.notes || undefined,
         signed_date:         (payload.signed_date ?? payload.signedDate) || undefined,
         has_signed_docs:     Boolean(payload.has_signed_docs),
-        commission_enabled:  Boolean(payload.commission_enabled),
-        commission_rate:     payload.commission_rate === "" || payload.commission_rate == null
-          ? undefined
-          : Number(payload.commission_rate),
         calculator_id:       payload.calculator_id || undefined,
         calculator_vars:     payload.calculator_vars || undefined,
       });

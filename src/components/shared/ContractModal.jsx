@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
 import Modal from "@/components/ui/Modal";
 import InlineDocumentsPanel from "@/components/shared/InlineDocumentsPanel";
@@ -7,11 +8,7 @@ import { lotService } from "@/services/lotService";
 import { orgService } from "@/services/orgService";
 import { folderService } from "@/services/folderService";
 import { calculatorService } from "@/services/calculatorService";
-import {
-  buildCalculatorVariables,
-  calculatorVariableValue,
-  numericCalculatorVariables,
-} from "@/services/calculatorVariables";
+import { evaluate, FormulaError } from "@/services/formulaEngine";
 import { getFieldErrors, getUserErrorMessage } from "@/services/errors";
 import { HiOutlinePlus, HiOutlineTrash, HiOutlineDocument } from "react-icons/hi2";
 
@@ -271,12 +268,6 @@ function validate(form, isEditing) {
   if (interest < 0 || interest > 1)
     errs.interest_rate = "La tasa debe estar entre 0 y 1";
 
-  if (form.commission_rate !== "") {
-    const commission = Number(form.commission_rate);
-    if (commission < 0 || commission > 1)
-      errs.commission_rate = "La comisión debe estar entre 0 y 1";
-  }
-
   return errs;
 }
 
@@ -292,7 +283,6 @@ function parseServerErrors(err) {
     lot_id: "lot",
     interest_rate: "interest_rate",
     signed_date: "signedDate",
-    commission_rate: "commission_rate",
   });
 }
 
@@ -316,12 +306,33 @@ async function fetchAvailableLotsForFrac(inmuebleId) {
   return [...(firstPage.items || []), ...remainingPages.flat()];
 }
 
+/* ── Pre-relleno de variables de la calculadora desde los campos del contrato ── */
+function guessVarValue(varName, form) {
+  const k = varName.toLowerCase().normalize("NFD").replace(/[̀-ͯ_]/g, "");
+  const amount = Number(form.amount) || 0;
+  const down   = Number(form.down_payment) || 0;
+  if (/(precio|monto|total|valor)/.test(k)) return amount;
+  if (/(enganche|down|inicial|anticipo)/.test(k)) return down;
+  if (/(tasa|interes|rate)/.test(k)) return (Number(form.interest_rate) || 0) * 100;
+  if (/(plazo|mes|month|term)/.test(k)) return Number(form.totalM) || 0;
+  if (/(principal|financ|saldo|capital)/.test(k)) return Math.max(0, amount - down);
+  return "";
+}
+
 /* ══ MODAL ═══════════════════════════════════════════════════ */
 function ContractModal() {
   const {
     ui, closeModal, clients, fracs, selectedFracId, editingContract, contractDraft,
     saveContract, deleteContract, resetContractDraft, showToast,
   } = useAppContext();
+  const navigate = useNavigate();
+
+  const goToCalculator = () => {
+    resetContractDraft();
+    closeModal("contractModal");
+    setErrors({});
+    navigate("/calculadora");
+  };
 
   const [docs, setDocs]       = useState([]);
   const [errors, setErrors]   = useState({});
@@ -345,8 +356,6 @@ function ContractModal() {
     interest_rate: 0.12,
     seller_id: "", down_payment_method: "cash", notes: "",
     signedDate: "", has_signed_docs: false,
-    commission_enabled: false, commission_rate: "", commission_paid: false,
-    calculator_id: "", calculator_vars: {},
   };
   const [form, setForm] = useState(defaultForm);
 
@@ -396,35 +405,38 @@ function ContractModal() {
     staleTime: 120_000,
   });
   const users = usersData?.items || (Array.isArray(usersData) ? usersData : []);
-  const { data: calculators = [] } = useQuery({
-    queryKey: ["calculators", "lands"],
-    queryFn: () => calculatorService.list({ app_key: "lands" }),
-    enabled: ui.contractModal,
+
+  /* ── Calculadora de financiamiento activa ── */
+  const useCalculator = ui.contractModal && !editingContract && form.type === "sale";
+  const { data: activeCalc, isSuccess: calcLoaded } = useQuery({
+    queryKey: ["calculators", "active", "lands"],
+    queryFn: () => calculatorService.getActive("lands"),
+    enabled: useCalculator,
     staleTime: 60_000,
   });
-  const selectedCalculator = calculators.find((calculator) => calculator.id === form.calculator_id);
-  const calculatorVars = useMemo(
-    () => buildCalculatorVariables(selectedCalculator, {
-      amount: form.amount,
-      downPayment: form.down_payment,
-      annualRate: form.interest_rate,
-      months: form.totalM,
-    }, form.calculator_vars),
-    [selectedCalculator, form.amount, form.down_payment, form.interest_rate, form.totalM, form.calculator_vars]
-  );
-  const numericCalculatorVars = useMemo(
-    () => numericCalculatorVariables(calculatorVars),
-    [calculatorVars]
-  );
-  const calculatorValuesComplete = selectedCalculator?.variables.every(
-    (name) => calculatorVars[name] !== "" && calculatorVars[name] != null
-  );
-  const { data: calculatorTest } = useQuery({
-    queryKey: ["calculator-test", selectedCalculator?.id, numericCalculatorVars],
-    queryFn: () => calculatorService.testFormula(selectedCalculator.formula, numericCalculatorVars),
-    enabled: ui.contractModal && !editingContract && !!selectedCalculator && calculatorValuesComplete,
-    retry: false,
-  });
+  const noCalculator = useCalculator && calcLoaded && !activeCalc;
+  const [calcVars, setCalcVars] = useState({});
+  const calcEditedRef = useRef({});
+  useEffect(() => { calcEditedRef.current = {}; }, [activeCalc?.id, ui.contractModal]);
+  useEffect(() => {
+    if (!activeCalc?.variables?.length) return;
+    setCalcVars((prev) => {
+      const next = {};
+      for (const v of activeCalc.variables) {
+        next[v] = calcEditedRef.current[v] ? prev[v] : guessVarValue(v, form);
+      }
+      return next;
+    });
+  }, [activeCalc, form.amount, form.down_payment, form.interest_rate, form.totalM]);
+  const calcResult = useMemo(() => {
+    if (!activeCalc?.formula || !activeCalc.variables?.length) return { value: null, error: "" };
+    if (activeCalc.variables.some((v) => calcVars[v] === "" || calcVars[v] == null)) return { value: null, error: "" };
+    try {
+      return { value: evaluate(activeCalc.formula, calcVars), error: "" };
+    } catch (err) {
+      return { value: null, error: err instanceof FormulaError ? err.message : "Fórmula inválida" };
+    }
+  }, [activeCalc, calcVars]);
   const { data: folders = [] } = useQuery({
     queryKey: ["document-folders"],
     queryFn: folderService.list,
@@ -467,12 +479,6 @@ function ContractModal() {
         notes:               editingContract.notes || "",
         signedDate:          editingContract.signed_date?.split("T")[0] || "",
         has_signed_docs:     Boolean(editingContract.has_signed_docs),
-        commission_rate:     editingContract.commission_rate ?? "",
-        commission_paid:     Boolean(editingContract.commission_paid),
-        commission_enabled:  editingContract.commission_enabled
-          ?? (Number(editingContract.commission_amount || 0) > 0 || Number(editingContract.commission_rate || 0) > 0),
-        calculator_id:       editingContract.calculator_id || "",
-        calculator_vars:     editingContract.calculator_snapshot?.variables || {},
       });
     } else {
       setForm({
@@ -505,10 +511,19 @@ function ContractModal() {
       document.getElementById(`cf-${first}`)?.focus();
       return;
     }
-    if (!editingContract && selectedCalculator && !calculatorValuesComplete) {
-      showToast("Completa todas las variables de la calculadora seleccionada");
+    if (noCalculator) {
+      showToast("Primero crea y activa una calculadora en Calculadora de financiamiento");
       return;
     }
+
+    const calcPayload = (useCalculator && activeCalc)
+      ? {
+          calculator_id: activeCalc.id,
+          calculator_vars: Object.fromEntries(
+            (activeCalc.variables || []).map((v) => [v, Number(calcVars[v]) || 0])
+          ),
+        }
+      : {};
 
     setSaving(true);
     try {
@@ -526,11 +541,7 @@ function ContractModal() {
         down_payment_method: form.down_payment_method || undefined,
         signed_date:         form.signedDate || undefined,
         has_signed_docs:     form.has_signed_docs,
-        commission_enabled:  form.commission_enabled,
-        commission_rate:     form.commission_rate,
-        commission_paid:     form.commission_enabled && form.commission_paid,
-        calculator_id:       !editingContract ? form.calculator_id || undefined : undefined,
-        calculator_vars:     !editingContract && form.calculator_id ? numericCalculatorVars : undefined,
+        ...calcPayload,
         _docs: docs.filter(d => d.file),
       });
     } catch (err) {
@@ -673,10 +684,15 @@ function ContractModal() {
                       key={l.id}
                       onMouseDown={(e) => {
                         e.preventDefault();
-                        setForm(p => ({ ...p, lot: l.id }));
+                        setForm(p => ({
+                          ...p,
+                          lot: l.id,
+                          ...(l.price_contado != null ? { amount: l.price_contado } : {}),
+                        }));
                         setLotSearch("");
                         setShowLotDrop(false);
                         if (errors.lot) setErrors(p => { const n = { ...p }; delete n.lot; return n; });
+                        if (errors.amount) setErrors(p => { const n = { ...p }; delete n.amount; return n; });
                       }}
                       style={{
                         padding: "9px 12px", cursor: "pointer", fontSize: ".82rem",
@@ -860,87 +876,73 @@ function ContractModal() {
         </div>
       </div>
 
-      {!editingContract && (
-        <div className="fg">
-          <label className="fl">Fuente del plan de pagos</label>
-          <select
-            className="fi"
-            value={form.calculator_id}
-            onChange={(event) => setForm((previous) => ({
-              ...previous,
-              calculator_id: event.target.value,
-              calculator_vars: {},
-            }))}
-          >
-            <option value="">Cálculo estándar · amortización francesa</option>
-            {calculators.map((calculator) => (
-              <option key={calculator.id} value={calculator.id}>
-                {calculator.is_active ? "Plan activo · " : ""}{calculator.name}
-              </option>
-            ))}
-          </select>
+      {/* ── Sin calculadora activa (solo aplica para ventas nuevas) ── */}
+      {noCalculator && (
+        <div style={{
+          border: "1px solid rgba(192,57,43,.45)", borderRadius: 16,
+          padding: 14, marginBottom: 4, background: "rgba(192,57,43,.05)",
+        }}>
+          <div style={{ fontWeight: 700, fontSize: ".82rem", color: "var(--danger)", marginBottom: 4 }}>
+            ⚠ No hay una calculadora de financiamiento activa
+          </div>
+          <div style={{ fontSize: ".76rem", color: "var(--tx)", marginBottom: 10, lineHeight: 1.5 }}>
+            Para registrar una venta primero debes crear y activar una calculadora con la
+            fórmula de la mensualidad. La venta guardará una copia exacta de esa fórmula.
+          </div>
+          <button type="button" className="btn-p" style={{ padding: "6px 12px", fontSize: ".75rem" }} onClick={goToCalculator}>
+            Crear calculadora →
+          </button>
         </div>
       )}
 
-      {!editingContract && selectedCalculator && (
+      {/* ── Calculadora activa ── */}
+      {useCalculator && activeCalc && (
         <div style={{
-          border: "1px solid var(--bd)", borderRadius: 12, padding: "12px 14px",
-          marginBottom: 12, background: "var(--tan-lt, #f5f0e8)",
+          border: "1px solid rgba(53,94,59,.45)", borderRadius: 16,
+          padding: 14, marginBottom: 4,
+          background: "linear-gradient(135deg, var(--tan-lt), var(--sf))",
+          boxShadow: "0 12px 28px rgba(30,61,43,.08)",
         }}>
-          <div style={{ fontWeight: 700, fontSize: ".82rem", color: "var(--forest)", marginBottom: 3 }}>
-            {selectedCalculator.name}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+            <span style={{ fontWeight: 700, fontSize: ".82rem", color: "var(--forest)" }}>
+              🧮 {activeCalc.name}
+            </span>
+            <span style={{
+              fontSize: ".6rem", fontWeight: 800, letterSpacing: ".06em", color: "var(--forest)",
+              background: "var(--sf)", padding: "2px 9px", borderRadius: 999, border: "1px solid rgba(53,94,59,.30)",
+            }}>CALCULADORA ACTIVA</span>
           </div>
-          <div style={{ color: "var(--mu)", fontSize: ".72rem", marginBottom: 10 }}>
-            La fórmula y sus valores quedarán congelados en el contrato.
+          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".7rem", color: "var(--mu)", marginBottom: 10 }}>
+            {activeCalc.formula}
           </div>
-          <div className="fr-row">
-            {selectedCalculator.variables.map((name) => {
-              const isStandard = calculatorVariableValue(name, {
-                amount: form.amount,
-                downPayment: form.down_payment,
-                annualRate: form.interest_rate,
-                months: form.totalM,
-              }) !== undefined;
-              return (
-                <div className="fg" style={{ flex: 1 }} key={name}>
-                  <label className="fl">{name}</label>
-                  <input
-                    className="fi"
-                    type="number"
-                    value={calculatorVars[name]}
-                    disabled={isStandard}
-                    onChange={(event) => setForm((previous) => ({
-                      ...previous,
-                      calculator_vars: {
-                        ...previous.calculator_vars,
-                        [name]: event.target.value,
-                      },
-                    }))}
-                  />
+          {activeCalc.variables?.length > 0 && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(120px,1fr))", gap: 8 }}>
+              {activeCalc.variables.map((v) => (
+                <div className="fg" key={v} style={{ margin: 0 }}>
+                  <label className="fl" style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".68rem" }}>{v}</label>
+                  <input className="fi" type="number" value={calcVars[v] ?? ""}
+                    onChange={(e) => { calcEditedRef.current[v] = true; setCalcVars((p) => ({ ...p, [v]: e.target.value })); }}
+                    placeholder="0" />
                 </div>
-              );
-            })}
-          </div>
-          {calculatorTest?.result != null && (
-            <div style={{ fontSize: ".78rem", color: "var(--tx)" }}>
-              Mensualidad calculada: <strong>${Number(calculatorTest.result).toLocaleString("en-US")}</strong>
+              ))}
+            </div>
+          )}
+          {calcResult.error && (
+            <div style={{ marginTop: 8, fontSize: ".72rem", color: "var(--danger)" }}>{calcResult.error}</div>
+          )}
+          {calcResult.value != null && !calcResult.error && (
+            <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: ".78rem", color: "var(--mu)" }}>Mensualidad (se congela en la venta)</span>
+              <b style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".95rem", color: "var(--forest)" }}>
+                ${calcResult.value.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              </b>
             </div>
           )}
         </div>
       )}
 
-      {editingContract?.calculator_snapshot && (
-        <div style={{
-          border: "1px solid var(--bd)", borderRadius: 12, padding: "10px 14px",
-          marginBottom: 12, background: "var(--tan-lt, #f5f0e8)", fontSize: ".76rem",
-        }}>
-          Plan de pagos ligado a <strong>{editingContract.calculator_snapshot.name}</strong>.
-          Al cambiar monto, enganche, tasa o plazo se recalcula usando la fórmula congelada del contrato.
-        </div>
-      )}
-
-      {/* Cuota mensual estimada */}
-      {!editingContract && !selectedCalculator && Number(form.amount) > 0 && Number(form.totalM) > 0 && (
+      {/* ── Cuota estimada (amortización francesa, sin calculadora activa) ── */}
+      {!editingContract && !useCalculator && Number(form.amount) > 0 && Number(form.totalM) > 0 && (
         <div style={{
           background: "var(--tan-lt, #f5f0e8)", border: "1px solid var(--bd)",
           borderRadius: 10, padding: "10px 14px", fontSize: ".82rem",
@@ -951,6 +953,16 @@ function ContractModal() {
           <b style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".92rem" }}>
             ${Math.round((Number(form.amount) - Number(form.down_payment || 0)) / Number(form.totalM)).toLocaleString("en-US")} / mes
           </b>
+        </div>
+      )}
+
+      {editingContract?.calculator_snapshot && (
+        <div style={{
+          border: "1px solid var(--bd)", borderRadius: 12, padding: "10px 14px",
+          marginBottom: 12, background: "var(--tan-lt, #f5f0e8)", fontSize: ".76rem",
+        }}>
+          Plan de pagos ligado a <strong>{editingContract.calculator_snapshot.name}</strong>.
+          Al cambiar monto, enganche, tasa o plazo se recalcula usando la fórmula congelada del contrato.
         </div>
       )}
 
@@ -967,52 +979,6 @@ function ContractModal() {
           {PAYMENT_METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
         </select>
       </div>
-
-      <div className="fg">
-        <OptionCheck
-          checked={form.commission_enabled}
-          onChange={setChecked("commission_enabled")}
-          label="Calcular comisión para este contrato"
-          helper="Desactívalo cuando la operación no genere comisión."
-        />
-      </div>
-
-      {form.commission_enabled && (
-        <div className="fr-row">
-          <div className="fg" style={{ flex: 1 }}>
-            <label className="fl">Tasa de comisión (decimal, 0 a 1)</label>
-            <input id="cf-commission_rate" type="number" min="0" max="1" step="0.01"
-              {...fi(errors.commission_rate)}
-              value={form.commission_rate}
-              onChange={setNum("commission_rate")}
-              onBlur={() => blurField("commission_rate")}
-              placeholder="Vacío usa la tasa del vendedor o 0.03" />
-            <FieldError msg={errors.commission_rate} />
-          </div>
-          <div className="fg" style={{ flex: 1 }}>
-            <label className="fl">Monto de comisión calculado</label>
-            <input
-              className="fi"
-              disabled
-              value={form.commission_rate !== ""
-                ? `$${(Number(form.amount || 0) * Number(form.commission_rate || 0)).toLocaleString("en-US", { maximumFractionDigits: 2 })}`
-                : editingContract?.commission_amount != null
-                  ? `$${Number(editingContract.commission_amount).toLocaleString("en-US", { maximumFractionDigits: 2 })}`
-                  : "Usará la tasa del vendedor o 0.03"}
-            />
-          </div>
-        </div>
-      )}
-
-      {editingContract && form.commission_enabled && (
-        <div className="fg">
-          <OptionCheck
-            checked={form.commission_paid}
-            onChange={setChecked("commission_paid")}
-            label="Comisión pagada al vendedor"
-          />
-        </div>
-      )}
 
       {/* ── 3. Documentos ── */}
       <SectionLabel>Documentos</SectionLabel>
