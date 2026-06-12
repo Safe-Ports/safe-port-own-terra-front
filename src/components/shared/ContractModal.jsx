@@ -573,8 +573,15 @@ function ContractModal() {
           <button className="btn-s" onClick={() => { resetContractDraft(); closeModal("contractModal"); setErrors({}); }}>
             Cancelar
           </button>
-          {editingContract && (
-            <button className="btn-dan" onClick={() => deleteContract(editingContract.id)}>
+          {editingContract?.status === "cancelled" && (
+            <button
+              className="btn-dan"
+              onClick={() => {
+                if (window.confirm("¿Eliminar definitivamente este contrato cancelado?")) {
+                  deleteContract(editingContract.id);
+                }
+              }}
+            >
               🗑 Eliminar
             </button>
           )}

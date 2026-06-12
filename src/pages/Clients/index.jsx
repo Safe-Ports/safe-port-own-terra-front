@@ -10,6 +10,7 @@ import Button from "@/components/Button";
 import Avatar from "@/components/Avatar";
 import { clientService } from "@/services/clientService";
 import { contractService } from "@/services/contractService";
+import { getUserErrorMessage } from "@/services/errors";
 import { currency } from "@/services/formatters";
 import { getClientEcosystem, CORE_APPS } from "@/services/ecosystemCore";
 
@@ -130,7 +131,7 @@ function ClientsPage() {
     clients, contracts, payments,
     selectedClientId, setSelectedClientId,
     openModal, setEditingClient,
-    openClientReport, sendClientMessage, openContractCreate,
+    openClientReport, sendClientMessage, openContractCreate, showToast,
   } = useAppContext();
   const [showGuide, setShowGuide] = useState(false);
   useLandsGuide(() => setShowGuide(true));
@@ -153,10 +154,16 @@ function ClientsPage() {
         reason: cancelForm.reason.trim(),
         refund_amount: Number(cancelForm.refund_amount) || 0,
       });
-      await queryClient.invalidateQueries({ queryKey: ["contracts"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["contracts"] }),
+        queryClient.invalidateQueries({ queryKey: ["payments"] }),
+        queryClient.invalidateQueries({ queryKey: ["lots"] }),
+        queryClient.invalidateQueries({ queryKey: ["clients"] }),
+      ]);
+      showToast("Contrato cancelado y lote liberado");
       setCancelDraft(null);
     } catch (err) {
-      alert(err?.response?.data?.detail || "Error al cancelar el contrato");
+      showToast(getUserErrorMessage(err, "Error al cancelar el contrato"));
     } finally {
       setCancelling(false);
     }
