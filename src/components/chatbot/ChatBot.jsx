@@ -9,6 +9,7 @@ import {
 } from "react-icons/hi2";
 import {
   createSupportTicket,
+  getSupportTicket,
   getSupportTicketMessages,
   markSupportTicketMessagesRead,
   sendSupportTicketMessage,
@@ -20,6 +21,10 @@ import "./ChatBot.css";
 const DEFAULT_DEVICE = "No especificado";
 const ACTIVE_TICKET_STORAGE_KEY = "ownterra_active_support_ticket";
 const SUPPORT_POLL_INTERVAL = 10_000;
+const LIVE_CHAT_FALLBACK_TICKET = {
+  live_chat_active: true,
+  live_chat_closed_reason: "",
+};
 const TICKET_STATUS_LABELS = {
   open: "Abierto",
   in_progress: "En proceso",
@@ -31,7 +36,8 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TICKET_CLOSURE_MESSAGES = {
   resolved: "Tu ticket fue marcado como resuelto.\n\nSi el problema continúa, puedes iniciar una nueva consulta con el asistente.",
   closed: "Este ticket fue cerrado por el equipo de soporte.\n\nEl asistente virtual vuelve a estar disponible si necesitas crear una nueva consulta.",
-  timeout: "El tiempo de atención en este chat ha finalizado.\n\nEl seguimiento continuará por correo electrónico. Te recomendamos revisar tu bandeja de entrada y correo no deseado.\n\nPuedes iniciar una nueva consulta con el asistente si necesitas más ayuda.",
+  inactivity_timeout: "El chat con el agente se cerró por inactividad. Podrás dar seguimiento a tu caso por correo. Si necesitas más ayuda, puedo seguir apoyándote por este chat.",
+  agent_closed: "Gracias por contactarnos. Si necesitas más ayuda, puedo seguir apoyándote por este chat.",
   unavailable: "El caso de soporte activo ya no está disponible.\n\nEl asistente virtual vuelve a estar disponible si necesitas crear una nueva consulta.",
 };
 
@@ -59,15 +65,49 @@ function getTicketStatusLabel(status) {
 
 function getStoredActiveTicketId() {
   try {
-    return window.localStorage.getItem(ACTIVE_TICKET_STORAGE_KEY) || "";
+    const storedValue = window.localStorage.getItem(ACTIVE_TICKET_STORAGE_KEY) || "";
+    if (!storedValue) return "";
+
+    try {
+      const storedTicket = JSON.parse(storedValue);
+      return storedTicket?.id || storedTicket?.ticket_id || "";
+    } catch {
+      return storedValue;
+    }
   } catch {
     return "";
   }
 }
 
-function storeActiveTicketId(ticketId) {
+function getStoredActiveTicket() {
   try {
-    window.localStorage.setItem(ACTIVE_TICKET_STORAGE_KEY, ticketId);
+    const storedValue = window.localStorage.getItem(ACTIVE_TICKET_STORAGE_KEY) || "";
+    if (!storedValue) return null;
+
+    try {
+      const storedTicket = JSON.parse(storedValue);
+      const ticketId = storedTicket?.id || storedTicket?.ticket_id || "";
+      if (!ticketId) return null;
+
+      return {
+        ...storedTicket,
+        id: ticketId,
+        live_chat_closed_reason: normalizeClosureReason(storedTicket.live_chat_closed_reason || ""),
+      };
+    } catch {
+      return {
+        id: storedValue,
+        ...LIVE_CHAT_FALLBACK_TICKET,
+      };
+    }
+  } catch {
+    return null;
+  }
+}
+
+function storeActiveTicket(ticket) {
+  try {
+    window.localStorage.setItem(ACTIVE_TICKET_STORAGE_KEY, JSON.stringify(ticket));
   } catch {
     // El ticket sigue activo durante la sesión aunque el navegador bloquee storage.
   }
@@ -79,6 +119,15 @@ function clearStoredActiveTicketId() {
   } catch {
     // El estado en memoria se limpia aunque el navegador bloquee storage.
   }
+}
+
+function normalizeClosureReason(reason) {
+  const value = String(reason || "").toLowerCase();
+
+  if (value === "timeout" || value === "inactivity_timeout") return "inactivity_timeout";
+  if (value === "agent_closed" || value === "closed_by_agent") return "agent_closed";
+
+  return value;
 }
 
 function isValidEmail(value) {
@@ -117,21 +166,72 @@ function getTicketClosureReason(meta, messages = []) {
     ""
   ).toLowerCase();
   const liveChatActive = getTicketMetaValue(meta, "live_chat_active");
-  const closedReason = String(
+  const closedReason = normalizeClosureReason(
     getTicketMetaValue(meta, "live_chat_closed_reason") ||
     getTicketMetaValue(meta, "closed_reason") ||
     ""
-  ).toLowerCase();
+  );
   const hasTimeoutMessage = messages.some((message) => (
     String(message?.sender_type || "").toLowerCase() === "system" &&
-    getMessageText(message).includes("timeout")
+    (getMessageText(message).includes("timeout") || getMessageText(message).includes("inactividad"))
   ));
 
-  if (closedReason === "timeout" || hasTimeoutMessage) return "timeout";
+  if (closedReason) return closedReason;
+  if (hasTimeoutMessage) return "inactivity_timeout";
+  if (isFalseLike(liveChatActive)) return "agent_closed";
   if (TERMINAL_TICKET_STATUS.has(status)) return status;
-  if (isFalseLike(liveChatActive)) return closedReason === "timeout" ? "timeout" : (TERMINAL_TICKET_STATUS.has(status) ? status : "closed");
 
   return "";
+}
+
+function getTicketFromPayload(payload, fallbackId = "") {
+  const ticket =
+    payload?.ticket ||
+    payload?.support_ticket ||
+    payload?.data?.ticket ||
+    payload?.data?.support_ticket ||
+    payload?.data ||
+    payload ||
+    {};
+
+  return {
+    ...ticket,
+    id: getTicketMetaValue(payload, "id") || ticket.id || fallbackId,
+    status: getTicketMetaValue(payload, "status") || ticket.status,
+    live_chat_active: getTicketMetaValue(payload, "live_chat_active") ?? ticket.live_chat_active,
+    live_chat_closed_reason: normalizeClosureReason(
+      getTicketMetaValue(payload, "live_chat_closed_reason") ||
+      getTicketMetaValue(payload, "closed_reason") ||
+      ticket.live_chat_closed_reason ||
+      ticket.closed_reason ||
+      ""
+    ),
+  };
+}
+
+function mergeTicketState(...tickets) {
+  return tickets.reduce((mergedTicket, ticket) => {
+    if (!ticket) return mergedTicket;
+
+    Object.entries(ticket).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        mergedTicket[key] = value;
+      }
+    });
+
+    return mergedTicket;
+  }, {});
+}
+
+function isTicketLiveChatActive(ticket) {
+  if (!ticket) return false;
+  if (ticket.live_chat_closed_reason) return false;
+  return ticket.live_chat_active === true;
+}
+
+function isTicketLiveChatClosed(ticket) {
+  if (!ticket) return false;
+  return ticket.live_chat_active === false || Boolean(ticket.live_chat_closed_reason);
 }
 
 function toChatMessage(ticketMessage) {
@@ -201,16 +301,13 @@ function TicketForm({ support, lastUserMessage, authenticatedEmail, onCancel, on
   const [form, setForm] = useState({
     name: "",
     email: authenticatedEmail || "",
-    alternateEmail: "",
     description: lastUserMessage || "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const alternateEmail = form.alternateEmail.trim();
 
   const canSubmit =
     form.name.trim() &&
     isValidEmail(form.email) &&
-    (!alternateEmail || isValidEmail(alternateEmail)) &&
     form.description.trim().length >= 10;
 
   async function handleSubmit(event) {
@@ -222,14 +319,13 @@ function TicketForm({ support, lastUserMessage, authenticatedEmail, onCancel, on
       const ticket = await createSupportTicket({
         name: form.name.trim(),
         email: form.email.trim(),
-        alternate_email: alternateEmail,
         description: form.description.trim(),
         device: DEFAULT_DEVICE,
         screenshot: "",
         intent: support?.intent || "general_support",
         severity: support?.severity || "low",
       });
-      onCreated(ticket, Boolean(alternateEmail));
+      onCreated(ticket);
     } catch {
       onError("No se pudo crear el ticket. Intenta nuevamente.");
     } finally {
@@ -255,15 +351,6 @@ function TicketForm({ support, lastUserMessage, authenticatedEmail, onCancel, on
         readOnly={Boolean(authenticatedEmail)}
         type="email"
       />
-      <div className="ot-ticket-secondary-field">
-        <input
-          value={form.alternateEmail}
-          onChange={(event) => setForm((prev) => ({ ...prev, alternateEmail: event.target.value }))}
-          placeholder="Correo alternativo de contacto"
-          type="email"
-        />
-        <small>Úsalo solo si no tienes acceso al correo de tu cuenta.</small>
-      </div>
       <textarea
         value={form.description}
         onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
@@ -287,7 +374,6 @@ function ChatMessage({ message, onGenerateTicket }) {
   const isSystem = message.role === "system";
   const ticketConfirmation = message.payload?.ticketConfirmation;
   const senderName = message.payload?.ticketMessage?.sender_name;
-  const usesAlternateEmail = message.payload?.usesAlternateEmail;
 
   return (
     <div className={`ot-chat-row ${isUser ? "is-user" : isAgent ? "is-agent" : isSystem ? "is-system" : "is-bot"}`}>
@@ -306,12 +392,6 @@ function ChatMessage({ message, onGenerateTicket }) {
             </div>
             <div className="ot-ticket-success-note">
               Si no estás en línea cuando el agente responda, también podremos contactarte por correo.
-              {usesAlternateEmail ? (
-                <>
-                  <br />
-                  También usaremos tu correo alternativo si no tienes acceso al principal.
-                </>
-              ) : null}
             </div>
           </>
         ) : <p>{message.text}</p>}
@@ -340,17 +420,41 @@ function ChatBot() {
   const [ticketContext, setTicketContext] = useState(null);
   const [lastUserMessage, setLastUserMessage] = useState("");
   const [activeTicketId, setActiveTicketId] = useState(getStoredActiveTicketId);
+  const [activeTicket, setActiveTicket] = useState(getStoredActiveTicket);
   const messagesEndRef = useRef(null);
   const pollInFlightRef = useRef(false);
+  const isLiveChatActive =
+    activeTicket?.live_chat_active === true &&
+    !activeTicket?.live_chat_closed_reason;
+  const shouldPollSupportTicket = Boolean(activeTicketId && !isTicketLiveChatClosed(activeTicket));
 
-  function closeActiveSupportTicket(reason = "closed") {
-    clearStoredActiveTicketId();
-    setActiveTicketId("");
+  function closeActiveSupportTicket(reason = "closed", ticketPayload = null) {
+    const closureReason = normalizeClosureReason(reason) || "closed";
+    const closureMessageId = `ticket-closure-${activeTicketId || "current"}-${closureReason}`;
     setTicketContext(null);
+    setActiveTicket((prev) => ({
+      ...(prev || {}),
+      ...getTicketFromPayload(ticketPayload || {}, activeTicketId),
+      id: activeTicketId || getTicketMetaValue(ticketPayload, "id") || prev?.id || "",
+      live_chat_active: false,
+      live_chat_closed_reason: closureReason,
+    }));
+    storeActiveTicket({
+      ...(activeTicket || {}),
+      ...getTicketFromPayload(ticketPayload || {}, activeTicketId),
+      id: activeTicketId || getTicketMetaValue(ticketPayload, "id") || activeTicket?.id || "",
+      live_chat_active: false,
+      live_chat_closed_reason: closureReason,
+    });
     setMessages((prev) => [
       ...prev,
-      makeSystemMessage(TICKET_CLOSURE_MESSAGES[reason] || TICKET_CLOSURE_MESSAGES.closed, `ticket-${reason}`),
-    ]);
+      prev.some((message) => message.id === closureMessageId)
+        ? null
+        : {
+          ...makeSystemMessage(TICKET_CLOSURE_MESSAGES[closureReason] || TICKET_CLOSURE_MESSAGES.closed, `ticket-${closureReason}`),
+          id: closureMessageId,
+        },
+    ].filter(Boolean));
   }
 
   useEffect(() => {
@@ -360,7 +464,7 @@ function ChatBot() {
   }, [isOpen, messages, isLoading, ticketContext]);
 
   useEffect(() => {
-    if (!activeTicketId) return undefined;
+    if (!shouldPollSupportTicket) return undefined;
 
     let isActive = true;
 
@@ -369,17 +473,8 @@ function ChatBot() {
       pollInFlightRef.current = true;
 
       try {
-        const ticketPayload = await getSupportTicketMessages(activeTicketId);
+        const { ticketMessages } = await syncActiveTicket(activeTicketId);
         if (!isActive) return;
-
-        const { messages: ticketMessages, meta } = normalizeTicketPayload(ticketPayload);
-        setMessages((prev) => mergeTicketMessages(prev, ticketMessages));
-
-        const closureReason = getTicketClosureReason(meta, ticketMessages);
-        if (closureReason) {
-          closeActiveSupportTicket(closureReason);
-          return;
-        }
 
         if (ticketMessages.some((message) => message.sender_type === "agent" && !message.read_by_client)) {
           await markSupportTicketMessagesRead(activeTicketId);
@@ -389,9 +484,21 @@ function ChatBot() {
 
         const closureReason = getTicketClosureReason(pollError.response?.data, []);
         if (closureReason) {
-          closeActiveSupportTicket(closureReason);
+          closeActiveSupportTicket(closureReason, pollError.response?.data);
         } else if (pollError.response?.status === 404) {
-          closeActiveSupportTicket("unavailable");
+          clearStoredActiveTicketId();
+          setActiveTicketId("");
+          setActiveTicket(null);
+          setTicketContext(null);
+          setMessages((prev) => [
+            ...prev,
+            prev.some((message) => message.id === "ticket-closure-unavailable")
+              ? null
+              : {
+                ...makeSystemMessage(TICKET_CLOSURE_MESSAGES.unavailable, "ticket-unavailable"),
+                id: "ticket-closure-unavailable",
+              },
+          ].filter(Boolean));
         }
       } finally {
         pollInFlightRef.current = false;
@@ -405,7 +512,59 @@ function ChatBot() {
       isActive = false;
       window.clearInterval(pollTimer);
     };
-  }, [activeTicketId]);
+  }, [activeTicketId, shouldPollSupportTicket]);
+
+  async function syncActiveTicket(ticketId) {
+    if (!ticketId) return null;
+
+    const previousTicket = activeTicket?.id === ticketId ? activeTicket : getStoredActiveTicket();
+    let ticketPayload = null;
+
+    try {
+      ticketPayload = await getSupportTicket(ticketId);
+    } catch (ticketError) {
+      if (ticketError.response?.status === 404) throw ticketError;
+    }
+
+    const messagesPayload = await getSupportTicketMessages(ticketId);
+    const { messages: ticketMessages, meta } = normalizeTicketPayload(messagesPayload);
+    const nextTicket = mergeTicketState(
+      { id: ticketId },
+      previousTicket,
+      getTicketFromPayload(meta, ticketId),
+      ticketPayload ? getTicketFromPayload(ticketPayload, ticketId) : null
+    );
+    const closureReason = getTicketClosureReason(nextTicket, ticketMessages);
+    setMessages((prev) => mergeTicketMessages(prev, ticketMessages));
+
+    if (closureReason) {
+      closeActiveSupportTicket(closureReason, nextTicket);
+      return {
+        activeTicket: { ...nextTicket, live_chat_active: false, live_chat_closed_reason: closureReason },
+        ticketMessages,
+      };
+    }
+
+    setActiveTicket(nextTicket);
+    storeActiveTicket(nextTicket);
+
+    return { activeTicket: nextTicket, ticketMessages };
+  }
+
+  async function sendBotMessage(text) {
+    setLastUserMessage(text);
+    setMessages((prev) => [...prev, { id: makeId("user"), role: "user", text }]);
+    const data = await sendMessageToBot(text);
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: makeId("bot"),
+        role: "bot",
+        text: data.response || "Listo, ya revisé tu consulta.",
+        payload: data,
+      },
+    ]);
+  }
 
   async function handleSend(event) {
     event.preventDefault();
@@ -418,7 +577,13 @@ function ChatBot() {
     setIsLoading(true);
 
     try {
+      let ticketForRouting = activeTicket;
       if (activeTicketId) {
+        const syncedTicket = await syncActiveTicket(activeTicketId);
+        ticketForRouting = syncedTicket?.activeTicket || ticketForRouting;
+      }
+
+      if (activeTicketId && isTicketLiveChatActive(ticketForRouting)) {
         const data = await sendSupportTicketMessage(activeTicketId, {
           sender_type: "client",
           sender_name: currentUser?.name || "Cliente Own Terra",
@@ -427,31 +592,32 @@ function ChatBot() {
         });
         const { messages: sentMessages, meta } = normalizeTicketPayload(data);
         const nextMessages = sentMessages.length ? sentMessages : [data.message].filter(Boolean);
+        const nextTicket = mergeTicketState(
+          { id: activeTicketId },
+          ticketForRouting,
+          getTicketFromPayload(meta, activeTicketId)
+        );
+        setActiveTicket(nextTicket);
+        storeActiveTicket(nextTicket);
         setMessages((prev) => mergeTicketMessages(prev, nextMessages));
 
-        const closureReason = getTicketClosureReason(meta, nextMessages);
-        if (closureReason) closeActiveSupportTicket(closureReason);
+        const closureReason = getTicketClosureReason(nextTicket, nextMessages);
+        if (closureReason) closeActiveSupportTicket(closureReason, nextTicket);
         return;
       }
 
-      setLastUserMessage(text);
-      setMessages((prev) => [...prev, { id: makeId("user"), role: "user", text }]);
-      const data = await sendMessageToBot(text);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: makeId("bot"),
-          role: "bot",
-          text: data.response || "Listo, ya revisé tu consulta.",
-          payload: data,
-        },
-      ]);
+      await sendBotMessage(text);
     } catch (sendError) {
       const closureReason = getTicketClosureReason(sendError.response?.data, []);
       if (activeTicketId && closureReason) {
-        closeActiveSupportTicket(closureReason);
+        closeActiveSupportTicket(closureReason, sendError.response?.data);
+        try {
+          await sendBotMessage(text);
+        } catch {
+          setError("No se pudo conectar con el asistente. Intenta nuevamente.");
+        }
       } else {
-        setError(activeTicketId
+        setError(activeTicketId && isLiveChatActive
           ? "No se pudo enviar el mensaje a soporte. Intenta nuevamente."
           : "No se pudo conectar con el asistente. Intenta nuevamente.");
       }
@@ -460,12 +626,18 @@ function ChatBot() {
     }
   }
 
-  function handleTicketCreated(ticket, usesAlternateEmail = false) {
+  function handleTicketCreated(ticket) {
     setTicketContext(null);
     const closureReason = getTicketClosureReason(ticket, []);
+    const nextTicket = {
+      ...getTicketFromPayload(ticket, ticket.id),
+      live_chat_active: closureReason ? false : getTicketMetaValue(ticket, "live_chat_active") !== false,
+      live_chat_closed_reason: closureReason,
+    };
+    setActiveTicket(nextTicket);
     if (ticket.id && !closureReason) {
       setActiveTicketId(ticket.id);
-      storeActiveTicketId(ticket.id);
+      storeActiveTicket(nextTicket);
     }
     setMessages((prev) => [
       ...prev,
@@ -477,7 +649,6 @@ function ChatBot() {
             folio: getTicketFolio(ticket.id),
             status: getTicketStatusLabel(ticket.status),
           },
-          usesAlternateEmail,
         },
       },
       ...(closureReason ? [makeSystemMessage(TICKET_CLOSURE_MESSAGES[closureReason], `ticket-${closureReason}`)] : []),
@@ -491,7 +662,7 @@ function ChatBot() {
           <header className="ot-chat-header">
             <div>
               <span>Asistente Own Terra</span>
-              <small>{activeTicketId ? "Caso de soporte activo" : "Soporte técnico de la plataforma"}</small>
+              <small>{isLiveChatActive ? "Caso de soporte activo" : "Soporte técnico de la plataforma"}</small>
             </div>
             <button type="button" onClick={() => setIsOpen(false)} aria-label="Cerrar asistente">
               <HiXMark />
@@ -501,8 +672,12 @@ function ChatBot() {
           <div className="ot-chat-messages">
             {activeTicketId ? (
               <div className="ot-active-ticket-notice">
-                <strong>Caso de soporte activo · {getTicketFolio(activeTicketId)}</strong>
-                <span>Un agente podrá responderte por este chat o por correo.</span>
+                <strong>{isLiveChatActive ? "Caso de soporte activo" : "Caso de soporte"} · {getTicketFolio(activeTicketId)}</strong>
+                <span>
+                  {isLiveChatActive
+                    ? "Un agente podrá responderte por este chat o por correo."
+                    : "El seguimiento del caso continuará por correo. El asistente puede seguir apoyándote por este chat."}
+                </span>
               </div>
             ) : null}
             {messages.map((message) => (
@@ -515,7 +690,7 @@ function ChatBot() {
             {isLoading ? (
               <div className="ot-chat-row is-bot">
                 <div className="ot-chat-bubble ot-chat-loading">
-                  {activeTicketId ? "Enviando..." : "Consultando..."}
+                  {isLiveChatActive ? "Enviando..." : "Consultando..."}
                 </div>
               </div>
             ) : null}
@@ -537,7 +712,7 @@ function ChatBot() {
             <input
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder={activeTicketId ? "Escribe un mensaje para soporte" : "Describe el problema que tienes"}
+              placeholder={isLiveChatActive ? "Escribe un mensaje para soporte" : "Describe el problema que tienes"}
               aria-label="Mensaje para el asistente"
             />
             <button type="submit" disabled={!input.trim() || isLoading} aria-label="Enviar mensaje">

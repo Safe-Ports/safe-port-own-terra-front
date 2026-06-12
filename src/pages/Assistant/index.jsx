@@ -55,15 +55,12 @@ function TicketForm({ support, authenticatedEmail, initialDescription, onSubmit,
   const [form, setForm] = useState({
     name: "",
     email: authenticatedEmail || "",
-    alternateEmail: "",
     description: initialDescription || "",
   });
-  const alternateEmail = form.alternateEmail.trim();
 
   const canSubmit =
     form.name.trim() &&
     isValidEmail(form.email) &&
-    (!alternateEmail || isValidEmail(alternateEmail)) &&
     form.description.trim().length >= 10;
 
   return (
@@ -75,7 +72,6 @@ function TicketForm({ support, authenticatedEmail, initialDescription, onSubmit,
         onSubmit({
           name: form.name.trim(),
           email: form.email.trim(),
-          alternate_email: alternateEmail,
           description: form.description.trim(),
           device: DEFAULT_DEVICE,
           screenshot: "",
@@ -91,16 +87,6 @@ function TicketForm({ support, authenticatedEmail, initialDescription, onSubmit,
       <div className="grid gap-3 md:grid-cols-2">
         <input className="mobile-input" placeholder="Nombre" value={form.name} onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))} />
         <input className="mobile-input" placeholder="Correo electrónico" readOnly={Boolean(authenticatedEmail)} type="email" value={form.email} onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))} />
-      </div>
-      <div className="mt-3">
-        <input
-          className="mobile-input bg-[#FBFAF6]"
-          placeholder="Correo alternativo de contacto"
-          type="email"
-          value={form.alternateEmail}
-          onChange={(event) => setForm((prev) => ({ ...prev, alternateEmail: event.target.value }))}
-        />
-        <p className="mt-1 px-1 text-xs font-medium text-[#83867C]">Úsalo solo si no tienes acceso al correo de tu cuenta.</p>
       </div>
       <textarea
         className="mobile-input mt-3 min-h-[96px] resize-none"
@@ -163,7 +149,7 @@ function AssistantPage() {
 
     try {
       const ticket = await botService.createTicket(body);
-      setTicketCreated({ ...ticket, alternate_email: body.alternate_email });
+      setTicketCreated(ticket);
       setLatestResponse(null);
     } catch {
       setError("No se pudo crear el ticket. Intenta de nuevo en unos segundos.");
@@ -267,9 +253,6 @@ function AssistantPage() {
               </div>
               <p className="mt-2 leading-6">Tu reporte fue registrado correctamente. Nuestro equipo de soporte dará seguimiento a tu caso.</p>
               <p className="mt-2 leading-6">Si no estás en línea cuando el agente responda, también podremos contactarte por correo.</p>
-              {ticketCreated.alternate_email ? (
-                <p className="mt-2 leading-6">También usaremos tu correo alternativo si no tienes acceso al principal.</p>
-              ) : null}
               <div className="mt-3 grid gap-1 border-t border-[#C8DDD0] pt-3 text-xs">
                 <span>Folio: <strong>{getTicketFolio(ticketCreated.id)}</strong></span>
                 <span>Estado: <strong>{getTicketStatusLabel(ticketCreated.status)}</strong></span>

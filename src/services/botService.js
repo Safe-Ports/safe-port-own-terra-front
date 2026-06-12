@@ -15,6 +15,10 @@ export function createSupportTicket(ticketData) {
   return botApi.post("/support/tickets", ticketData).then((r) => r.data);
 }
 
+export function getSupportTicket(ticketId) {
+  return botApi.get(`/support/tickets/${ticketId}`).then((r) => r.data);
+}
+
 export function getSupportTicketMessages(ticketId) {
   return botApi.get(`/support/tickets/${ticketId}/messages`).then((r) => r.data);
 }
@@ -33,11 +37,13 @@ export const botService = {
   health: () => botApi.get("/health").then((r) => r.data),
   chat: sendMessageToBot,
   createTicket: createSupportTicket,
+  getTicket: getSupportTicket,
   getTicketMessages: getSupportTicketMessages,
   sendTicketMessage: sendSupportTicketMessage,
   markTicketMessagesRead: markSupportTicketMessagesRead,
   sendMessageToBot,
   createSupportTicket,
+  getSupportTicket,
   getSupportTicketMessages,
   sendSupportTicketMessage,
   markSupportTicketMessagesRead,
