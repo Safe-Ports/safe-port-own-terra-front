@@ -106,6 +106,14 @@
   justify-content: flex-start;
 }
 
+.ot-chat-row.is-agent {
+  justify-content: flex-start;
+}
+
+.ot-chat-row.is-system {
+  justify-content: center;
+}
+
 .ot-chat-bubble {
   max-width: 86%;
   border-radius: 18px;
@@ -133,6 +141,30 @@
   color: #2d2f2a;
 }
 
+.ot-chat-row.is-agent .ot-chat-bubble {
+  border: 1px solid rgba(53, 94, 59, 0.18);
+  border-bottom-left-radius: 6px;
+  background: #eef6f1;
+  color: #1e3d2b;
+}
+
+.ot-chat-row.is-system .ot-chat-bubble {
+  max-width: 92%;
+  border: 1px solid rgba(67, 69, 63, 0.1);
+  background: rgba(255, 255, 255, 0.64);
+  color: #6e7168;
+  text-align: center;
+  font-size: 0.76rem;
+}
+
+.ot-chat-sender {
+  display: block;
+  margin-bottom: 4px;
+  color: #355e3b;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
 .ot-chat-loading {
   color: #6e7168;
   font-weight: 700;
@@ -147,6 +179,64 @@
   padding: 10px 12px;
   font-size: 0.82rem;
   font-weight: 700;
+}
+
+.ot-ticket-success {
+  border-color: rgba(53, 94, 59, 0.22);
+  background: #eef6f1;
+}
+
+.ot-ticket-success-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #1e3d2b;
+}
+
+.ot-ticket-success-title svg {
+  flex: 0 0 auto;
+  font-size: 1.15rem;
+}
+
+.ot-ticket-success p {
+  margin-top: 8px;
+}
+
+.ot-ticket-success-meta {
+  display: grid;
+  gap: 5px;
+  margin-top: 10px;
+  border-top: 1px solid rgba(53, 94, 59, 0.14);
+  padding-top: 9px;
+  color: #355e3b;
+  font-size: 0.76rem;
+}
+
+.ot-ticket-success-meta strong {
+  font-family: inherit;
+}
+
+.ot-ticket-success-note {
+  margin-top: 9px;
+  color: #5a4e41;
+  font-size: 0.7rem;
+}
+
+.ot-active-ticket-notice {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(53, 94, 59, 0.15);
+  border-radius: 14px;
+  background: rgba(238, 246, 241, 0.86);
+  color: #355e3b;
+  padding: 9px 11px;
+  font-size: 0.72rem;
+}
+
+.ot-active-ticket-notice span {
+  color: #6e7168;
+  font-size: 0.68rem;
 }
 
 .ot-chat-input {
@@ -315,6 +405,23 @@
 .ot-ticket-form textarea {
   margin-top: 8px;
   padding: 10px 11px;
+}
+
+.ot-ticket-secondary-field {
+  margin-top: 2px;
+}
+
+.ot-ticket-secondary-field small {
+  display: block;
+  margin-top: 4px;
+  padding-left: 2px;
+  color: #83867c;
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.ot-ticket-secondary-field input {
+  background: #fbfaf6;
 }
 
 .ot-ticket-form textarea {

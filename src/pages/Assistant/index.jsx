@@ -1,15 +1,37 @@
 import { useMemo, useState } from "react";
-import { HiChatBubbleLeftRight, HiPaperAirplane, HiTicket, HiWrenchScrewdriver } from "react-icons/hi2";
+import { HiChatBubbleLeftRight, HiCheckCircle, HiPaperAirplane, HiTicket, HiWrenchScrewdriver } from "react-icons/hi2";
 import botService from "@/services/botService";
-import { currency } from "@/services/formatters";
+import { useAppContext } from "@/context/AppContext";
+
+const DEFAULT_DEVICE = "No especificado";
+const TICKET_STATUS_LABELS = {
+  open: "Abierto",
+  in_progress: "En proceso",
+  resolved: "Resuelto",
+  closed: "Cerrado",
+};
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const INITIAL_MESSAGES = [
   {
     id: "welcome",
     role: "assistant",
-    text: "Hola, soy el asistente de OwnTerra. Puedo ayudarte con lotes, precios, disponibilidad o soporte tecnico de la app.",
+    text: "Hola, soy el asistente de soporte de Own Terra. Cuéntame qué problema tienes con la app y te ayudaré a resolverlo o generar un ticket.",
   },
 ];
+
+function getTicketFolio(ticketId) {
+  const id = String(ticketId || "");
+  return id.length > 8 ? `${id.slice(0, 8)}…` : id || "Pendiente";
+}
+
+function getTicketStatusLabel(status) {
+  return TICKET_STATUS_LABELS[String(status || "").toLowerCase()] || "Registrado";
+}
+
+function isValidEmail(value) {
+  return EMAIL_PATTERN.test(String(value || "").trim());
+}
 
 function MessageBubble({ message }) {
   const isUser = message.role === "user";
@@ -29,44 +51,20 @@ function MessageBubble({ message }) {
   );
 }
 
-function LotCard({ lot }) {
-  return (
-    <article className="rounded-[22px] border border-[#DCDAD2] bg-[#FBFAF6] p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-sm font-bold text-[#1E3D2B]">{lot.name}</div>
-          <div className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#83867C]">{lot.id}</div>
-        </div>
-        <span className="rounded-full bg-[#EEF6F1] px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-[#355E3B]">
-          {lot.status_label || lot.status}
-        </span>
-      </div>
-      <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-        <div>
-          <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Area</div>
-          <div className="mt-1 font-semibold text-[#1E3D2B]">{lot.area_m2} m2</div>
-        </div>
-        <div>
-          <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Precio</div>
-          <div className="mt-1 font-semibold text-[#1E3D2B]">{currency(lot.price_mxn)}</div>
-        </div>
-      </div>
-      <div className="mt-3 text-sm text-[#43453F]">{lot.location}</div>
-      {lot.description ? <div className="mt-2 text-sm text-[#6E7168]">{lot.description}</div> : null}
-    </article>
-  );
-}
-
-function TicketForm({ support, onSubmit, isSubmitting }) {
+function TicketForm({ support, authenticatedEmail, initialDescription, onSubmit, isSubmitting }) {
   const [form, setForm] = useState({
     name: "",
-    email: "",
-    description: "",
-    device: "",
-    screenshot: "",
+    email: authenticatedEmail || "",
+    alternateEmail: "",
+    description: initialDescription || "",
   });
+  const alternateEmail = form.alternateEmail.trim();
 
-  const canSubmit = form.name && form.email && form.description.length >= 10 && form.device;
+  const canSubmit =
+    form.name.trim() &&
+    isValidEmail(form.email) &&
+    (!alternateEmail || isValidEmail(alternateEmail)) &&
+    form.description.trim().length >= 10;
 
   return (
     <form
@@ -75,8 +73,12 @@ function TicketForm({ support, onSubmit, isSubmitting }) {
         event.preventDefault();
         if (!canSubmit) return;
         onSubmit({
-          ...form,
-          screenshot: form.screenshot || null,
+          name: form.name.trim(),
+          email: form.email.trim(),
+          alternate_email: alternateEmail,
+          description: form.description.trim(),
+          device: DEFAULT_DEVICE,
+          screenshot: "",
           intent: support?.intent || "general_support",
           severity: support?.severity || "low",
         });
@@ -88,9 +90,17 @@ function TicketForm({ support, onSubmit, isSubmitting }) {
       </div>
       <div className="grid gap-3 md:grid-cols-2">
         <input className="mobile-input" placeholder="Nombre" value={form.name} onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))} />
-        <input className="mobile-input" placeholder="Correo" type="email" value={form.email} onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))} />
-        <input className="mobile-input" placeholder="Dispositivo" value={form.device} onChange={(event) => setForm((prev) => ({ ...prev, device: event.target.value }))} />
-        <input className="mobile-input" placeholder="URL de captura opcional" value={form.screenshot} onChange={(event) => setForm((prev) => ({ ...prev, screenshot: event.target.value }))} />
+        <input className="mobile-input" placeholder="Correo electrónico" readOnly={Boolean(authenticatedEmail)} type="email" value={form.email} onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))} />
+      </div>
+      <div className="mt-3">
+        <input
+          className="mobile-input bg-[#FBFAF6]"
+          placeholder="Correo alternativo de contacto"
+          type="email"
+          value={form.alternateEmail}
+          onChange={(event) => setForm((prev) => ({ ...prev, alternateEmail: event.target.value }))}
+        />
+        <p className="mt-1 px-1 text-xs font-medium text-[#83867C]">Úsalo solo si no tienes acceso al correo de tu cuenta.</p>
       </div>
       <textarea
         className="mobile-input mt-3 min-h-[96px] resize-none"
@@ -107,6 +117,7 @@ function TicketForm({ support, onSubmit, isSubmitting }) {
 }
 
 function AssistantPage() {
+  const { currentUser } = useAppContext();
   const [messages, setMessages] = useState(INITIAL_MESSAGES);
   const [input, setInput] = useState("");
   const [latestResponse, setLatestResponse] = useState(null);
@@ -117,10 +128,10 @@ function AssistantPage() {
 
   const quickPrompts = useMemo(
     () => [
-      "Hola, que puedes hacer?",
-      "Hay lotes disponibles?",
-      "No puedo iniciar sesion",
-      "Tengo un error de pago",
+      "¿Cómo puedes ayudarme con la app?",
+      "No puedo iniciar sesión",
+      "Tengo un error al usar una función",
+      "Necesito generar un ticket de soporte",
     ],
     []
   );
@@ -152,7 +163,8 @@ function AssistantPage() {
 
     try {
       const ticket = await botService.createTicket(body);
-      setTicketCreated(ticket);
+      setTicketCreated({ ...ticket, alternate_email: body.alternate_email });
+      setLatestResponse(null);
     } catch {
       setError("No se pudo crear el ticket. Intenta de nuevo en unos segundos.");
     } finally {
@@ -166,7 +178,7 @@ function AssistantPage() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <div className="text-[0.7rem] font-bold uppercase tracking-[0.24em] text-[#BFD8C8]">Asistente conectado</div>
-            <div className="mt-2 font-['Playfair_Display'] text-[1.9rem] leading-none">OwnTerra Bot</div>
+            <div className="mt-2 font-['Playfair_Display'] text-[1.9rem] leading-none">Soporte técnico Own Terra</div>
           </div>
           <div className="rounded-2xl bg-white/10 p-3">
             <HiChatBubbleLeftRight className="text-xl" />
@@ -205,7 +217,7 @@ function AssistantPage() {
             >
               <input
                 className="mobile-input flex-1"
-                placeholder="Escribe tu pregunta"
+                placeholder="Escribe tu problema o duda técnica"
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
               />
@@ -219,14 +231,6 @@ function AssistantPage() {
         <aside className="space-y-4">
           {error ? (
             <div className="rounded-[22px] border border-[#F0C9C2] bg-[#FDECEA] p-4 text-sm font-semibold text-[#8A2D24]">{error}</div>
-          ) : null}
-
-          {latestResponse?.lots?.length ? (
-            <section className="space-y-3">
-              {latestResponse.lots.map((lot) => (
-                <LotCard key={lot.id} lot={lot} />
-              ))}
-            </section>
           ) : null}
 
           {latestResponse?.support ? (
@@ -246,13 +250,30 @@ function AssistantPage() {
           ) : null}
 
           {latestResponse?.ticket?.suggested ? (
-            <TicketForm support={latestResponse.support} onSubmit={createTicket} isSubmitting={isCreatingTicket} />
+            <TicketForm
+              support={latestResponse.support}
+              authenticatedEmail={currentUser?.email}
+              initialDescription={messages.filter((message) => message.role === "user").at(-1)?.text}
+              onSubmit={createTicket}
+              isSubmitting={isCreatingTicket}
+            />
           ) : null}
 
           {ticketCreated ? (
             <div className="rounded-[22px] border border-[#C8DDD0] bg-[#EEF6F1] p-4 text-sm text-[#1E3D2B]">
-              <div className="font-bold">Ticket creado</div>
-              <div className="mt-1 font-mono text-xs">{ticketCreated.id}</div>
+              <div className="flex items-center gap-2 font-bold">
+                <HiCheckCircle className="text-lg" />
+                Solicitud enviada
+              </div>
+              <p className="mt-2 leading-6">Tu reporte fue registrado correctamente. Nuestro equipo de soporte dará seguimiento a tu caso.</p>
+              <p className="mt-2 leading-6">Si no estás en línea cuando el agente responda, también podremos contactarte por correo.</p>
+              {ticketCreated.alternate_email ? (
+                <p className="mt-2 leading-6">También usaremos tu correo alternativo si no tienes acceso al principal.</p>
+              ) : null}
+              <div className="mt-3 grid gap-1 border-t border-[#C8DDD0] pt-3 text-xs">
+                <span>Folio: <strong>{getTicketFolio(ticketCreated.id)}</strong></span>
+                <span>Estado: <strong>{getTicketStatusLabel(ticketCreated.status)}</strong></span>
+              </div>
             </div>
           ) : null}
         </aside>
