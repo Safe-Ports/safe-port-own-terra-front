@@ -1,12 +1,16 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
+import { useLandsGuide } from "@/context/LandsGuideContext";
 import { orgService } from "@/services/orgService";
+import GuideModal from "@/components/shared/GuideModal";
 import { getUserErrorMessage } from "@/services/errors";
 import Button from "@/components/Button";
 
 function SettingsPage() {
   const { currentUser, showToast, canUseFeature } = useAppContext();
+  const [showGuide, setShowGuide] = useState(false);
+  useLandsGuide(() => setShowGuide(true));
   const queryClient = useQueryClient();
   const isAdmin = canUseFeature("core.config");
 
@@ -213,6 +217,19 @@ function SettingsPage() {
           )}
         </div>
       </div>
+      <GuideModal
+        open={showGuide}
+        onClose={() => setShowGuide(false)}
+        title="Configuración"
+        subtitle="Administración de la organización y usuarios del equipo."
+        steps={[
+          { title: "Información de la organización", text: "Aquí puedes ver el nombre y detalles de tu organización. Solo administradores pueden editar esta información." },
+          { title: "Usuarios del equipo", text: "Lista de todos los usuarios activos con su rol (Admin o Vendedor). Puedes crear nuevos usuarios con el botón '+ Nuevo usuario'." },
+          { title: "Roles disponibles", text: "Admin: acceso completo a todas las funciones incluyendo configuración y eliminación de usuarios. Vendor: acceso a operaciones comerciales sin configuración." },
+          { title: "Restablecer contraseña", text: "Como administrador puedes generar una nueva contraseña temporal para cualquier usuario del equipo." },
+          { title: "Eliminar usuario", text: "Solo los administradores pueden eliminar usuarios. Esta acción es irreversible y elimina el acceso del usuario al sistema." },
+        ]}
+      />
     </div>
   );
 }

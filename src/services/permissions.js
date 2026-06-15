@@ -5,14 +5,14 @@ export const GLOBAL_ROLES = {
 
 export const APP_CATALOG = [
   { key: "core", name: "Ecosistema Core", icon: "eco-brand", cls: "ic-lands", roles: ["admin", "manager", "viewer"], defaultRole: "viewer", desc: "Panel central, clientes, equipo y configuración." },
-  { key: "lands", name: "OwnTerra Lands", icon: "eco-g-lands", cls: "ic-lands", roles: ["seller", "manager", "collections", "viewer"], defaultRole: "seller", desc: "Lotes, fraccionamientos, ventas y cobranza.", vertical: true },
-  { key: "homes", name: "OwnTerra Homes", icon: "eco-g-homes", cls: "ic-homes", roles: ["seller", "manager", "viewer"], defaultRole: "seller", desc: "Casas, desarrollos y pipeline residencial.", vertical: true },
-  { key: "neighb", name: "Neighborhoods", icon: "eco-g-neighb", cls: "ic-neighb", roles: ["seller", "manager", "viewer"], defaultRole: "seller", desc: "Departamentos y comunidades.", vertical: true },
+  { key: "lands", name: "OwnTerra Lands", icon: "eco-g-lands", cls: "ic-lands", roles: ["seller", "manager", "collections", "viewer"], defaultRole: "seller", desc: "Lotes, fraccionamientos, ventas y cobranza.", vertical: true, live: true },
+  { key: "homes", name: "OwnTerra Homes", icon: "eco-g-homes", cls: "ic-homes", roles: ["seller", "manager", "viewer"], defaultRole: "seller", desc: "Casas, desarrollos y pipeline residencial.", vertical: true, live: false },
+  { key: "neighb", name: "Neighborhoods", icon: "eco-g-neighb", cls: "ic-neighb", roles: ["seller", "manager", "viewer"], defaultRole: "seller", desc: "Departamentos y comunidades.", vertical: true, live: false },
   { key: "vault", name: "OwnTerra Vault", icon: "eco-n-vault", cls: "ic-lands", roles: ["admin", "editor", "viewer"], defaultRole: "viewer", desc: "Documentos, expedientes y permisos de lectura." },
   { key: "finanzas", name: "Finanzas", icon: "eco-n-chart", cls: "ic-lands", roles: ["admin", "collections", "viewer"], defaultRole: "viewer", desc: "Cobranza, reportes y estados financieros." },
 ];
 
-export const VERTICAL_APP_CATALOG = APP_CATALOG.filter((app) => app.vertical);
+export const VERTICAL_APP_CATALOG = APP_CATALOG.filter((app) => app.vertical && app.live);
 
 export const APP_ROLE_LABEL = {
   admin: "Administrador",

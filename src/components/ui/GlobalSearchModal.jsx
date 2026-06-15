@@ -274,7 +274,7 @@ function GlobalSearchModal() {
       open={ui.globalSearch}
       icon="🔍"
       title="Búsqueda global"
-      subtitle="Busca o ejecuta acciones rápidas como en la maqueta original."
+      subtitle="Busca registros o ejecuta acciones rápidas."
       onClose={() => closeModal("globalSearch")}
       width="max-w-[680px]"
       footer={

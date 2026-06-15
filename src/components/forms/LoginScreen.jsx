@@ -54,20 +54,6 @@ function LeftPanel() {
           Administra lotes, clientes, contratos y amortizaciones desde un solo lugar. El ecosistema completo para desarrolladores inmobiliarios.
         </div>
       </div>
-      <div className="ll-stats">
-        <div>
-          <div className="ll-stat-v">100%</div>
-          <div className="ll-stat-l">Sin papel</div>
-        </div>
-        <div>
-          <div className="ll-stat-v">∞</div>
-          <div className="ll-stat-l">Lotes &amp; Frac.</div>
-        </div>
-        <div>
-          <div className="ll-stat-v">0</div>
-          <div className="ll-stat-l">Pagos perdidos</div>
-        </div>
-      </div>
     </div>
   );
 }
@@ -93,12 +79,6 @@ function LoginView({ onForgot, onRegister }) {
       setError(result.error || { code: "OT-SYS-9000", message: result.msg || "No pudimos iniciar sesión.", action: "", requestId: null });
       if (result.needsVerification) setUnverifiedEmail(result.email || form.identifier);
     }
-  };
-
-  const fillDemo = (identifier, password) => {
-    setForm({ identifier, password, remember: true });
-    setError(null);
-    setUnverifiedEmail("");
   };
 
   const resend = async () => {
@@ -181,32 +161,6 @@ function LoginView({ onForgot, onRegister }) {
         {loading ? "Ingresando..." : "Iniciar sesión"}
       </button>
 
-      <div className="lf-divider">Ambientes de prueba</div>
-
-      <div className="lf-demo-box">
-        <div className="lf-demo-title">Usuarios de prueba</div>
-        <div className="lf-demo-user" onClick={() => fillDemo("admin", "admin123")}>
-          <div className="lf-demo-info">
-            <div className="lf-demo-av" style={{ background: "var(--forest)" }}>AD</div>
-            <div>
-              <div className="lf-demo-nm">Administrador</div>
-              <div className="lf-demo-role">admin · Acceso total</div>
-            </div>
-          </div>
-          <div className="lf-demo-fill">Usar</div>
-        </div>
-        <div className="lf-demo-user" onClick={() => fillDemo("vendedor", "vende123")} style={{ marginTop: 4 }}>
-          <div className="lf-demo-info">
-            <div className="lf-demo-av" style={{ background: "var(--mid)" }}>VN</div>
-            <div>
-              <div className="lf-demo-nm">Vendedor</div>
-              <div className="lf-demo-role">vendedor · Solo lectura</div>
-            </div>
-          </div>
-          <div className="lf-demo-fill">Usar</div>
-        </div>
-      </div>
-
       <div style={{ textAlign: "center", marginTop: 16, fontSize: ".82rem", color: "#83867C" }}>
         ¿No tienes cuenta?{" "}
         <button
@@ -219,7 +173,7 @@ function LoginView({ onForgot, onRegister }) {
       </div>
 
       <div className="lf-footer">
-        OwnTerra v1.0 &nbsp;·&nbsp; © 2026 &nbsp;·&nbsp; <button type="button" className="lf-link-btn" onClick={() => showToast("Aviso de privacidad próximamente")}>Privacidad</button>
+        OwnTerra v1.0 &nbsp;·&nbsp; © 2026
       </div>
     </div>
   );
@@ -462,12 +416,7 @@ function RegisterView({ onBack }) {
         {loading ? "Creando cuenta..." : "🚀 Crear cuenta"}
       </button>
 
-      <div className="lf-footer" style={{ marginTop: 16 }}>
-        Al registrarte aceptas nuestros{" "}
-        <button type="button" className="lf-link-btn" onClick={() => showToast("Términos de uso próximamente")}>Términos de uso</button>
-        {" "}y{" "}
-        <button type="button" className="lf-link-btn" onClick={() => showToast("Aviso de privacidad próximamente")}>Privacidad</button>.
-      </div>
+      <div className="lf-footer" style={{ marginTop: 16 }}>OwnTerra v1.0 &nbsp;·&nbsp; © 2026</div>
     </div>
   );
 }

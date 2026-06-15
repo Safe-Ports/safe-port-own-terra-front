@@ -7,6 +7,55 @@ import { appointmentService } from "@/services/appointmentService";
 import { paymentService } from "@/services/paymentService";
 import { notificationService } from "@/services/notificationService";
 import EcoLayout from "./EcoLayout";
+import GuideModal from "@/components/shared/GuideModal";
+
+const TOUR_STEPS = [
+  {
+    title: "Bienvenido al Ecosistema OwnTerra",
+    text: "Este es tu hub central. Desde aquí controlas todas las aplicaciones, tu agenda, documentos y finanzas en un solo lugar. El menú lateral izquierdo es tu punto de partida para navegar.",
+  },
+  {
+    title: "☀️ Mi Día",
+    text: "La vista que ves ahora. Muestra tu progreso diario: citas agendadas, tareas prioritarias, pagos vencidos y alertas recientes. Es tu resumen ejecutivo cada mañana.",
+  },
+  {
+    title: "📅 Agenda",
+    text: "Administra visitas, llamadas y firmas de contratos. Puedes crear citas, asignarles clientes y verlas en vista de semana o lista. Está sincronizada con todas las apps del ecosistema.",
+  },
+  {
+    title: "⚡ Acciones rápidas",
+    text: "Los botones 'Visita', 'Cobro' y 'Documento' en la barra de bienvenida te llevan directamente al módulo correspondiente sin buscar en el menú.",
+  },
+  {
+    title: "📊 Panel General",
+    text: "Vista de métricas globales: ingresos, actividad reciente y estadísticas del negocio. Ideal para revisiones semanales o presentaciones de resultados.",
+  },
+  {
+    title: "🔒 OwnTerra Vault",
+    text: "Bóveda centralizada de documentos. Organiza contratos, identificaciones, escrituras y planos en carpetas jerárquicas. Todos los documentos de tus clientes viven aquí.",
+  },
+  {
+    title: "👥 Clientes del core",
+    text: "El directorio maestro de identidades. Cada cliente tiene un perfil único que se comparte entre todas las apps. Aquí puedes vincularlos a Lands, Neighborhoods o Homes.",
+  },
+  {
+    title: "🛡️ Equipo",
+    text: "Gestiona los usuarios de tu organización: roles, permisos y acceso por aplicación. Solo los administradores pueden modificar esta sección.",
+  },
+  {
+    title: "💹 Estados Financieros",
+    text: "Resumen de ingresos, gastos y flujo de caja de tu operación. Registra egresos y consulta el estado económico en tiempo real.",
+  },
+  {
+    title: "🏡 OwnTerra Lands",
+    text: "La app principal de gestión inmobiliaria: fraccionamientos, lotes, contratos de compraventa y cobranza. Accede desde el menú lateral bajo 'Aplicaciones'.",
+  },
+  {
+    title: "🔔 Alertas y pendientes",
+    text: "Al final de Mi Día ves todas tus notificaciones agrupadas por fecha. Puedes marcarlas como leídas individualmente o todas de una vez con el enlace 'Marcar todas como leídas'.",
+  },
+];
+
 
 const APP_META = {
   lands: { name: "Lands", color: "#6FAF6B", live: true },
@@ -36,11 +85,17 @@ function toTime(iso) {
   return new Date(iso).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
+function toDateLabel(iso) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "short" });
+}
+
 function EcosystemDia() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { currentUser } = useAppContext();
   const [ntab, setNtab] = useState("Todas");
+  const [showTour, setShowTour] = useState(false);
 
   const { data: midia } = useQuery({
     queryKey: ["dashboard-midia"],
@@ -83,8 +138,10 @@ function EcosystemDia() {
   });
 
   const totalAppts = todayAppts.length;
-  const done = todayAppts.filter((a) => a.status === "confirmed").length;
+  const done = todayAppts.filter((a) => a.status === "completed").length;
   const pct = totalAppts > 0 ? Math.round((done / totalAppts) * 100) : 0;
+  const agendaAppts = todayAppts.length ? todayAppts : rawAppts.slice(0, 4);
+  const showingUpcoming = todayAppts.length === 0 && agendaAppts.length > 0;
 
   const totalOverdue = overdueItems.reduce((s, o) => s + Number(o.amount || 0), 0);
 
@@ -125,7 +182,7 @@ function EcosystemDia() {
   const open = (app) => APP_META[app]?.live && navigate("/dashboard");
 
   return (
-    <EcoLayout active="miday" title="Mi Día" subtitle="Tu jornada consolidada en el ecosistema">
+    <EcoLayout active="miday" title="Mi Día" subtitle="Tu jornada consolidada en el ecosistema" onGuide={() => setShowTour(true)}>
 
       {/* HERO motivador */}
       <div className="md-hero">
@@ -205,17 +262,22 @@ function EcosystemDia() {
         <div className="md-card">
           <div className="md-card-head">
             <div>
-              <div className="md-card-title">Agenda del día</div>
-              <div className="md-card-sub">visitas, llamadas y firmas</div>
+              <div className="md-card-title">{showingUpcoming ? "Próximas citas" : "Agenda del día"}</div>
+              <div className="md-card-sub">
+                {showingUpcoming ? "sin citas hoy · mostrando las siguientes" : "visitas, llamadas y firmas"}
+              </div>
             </div>
             <button className="sh-link" onClick={() => navigate("/ecosistema/agenda")}>Ver agenda completa →</button>
           </div>
-          {todayAppts.length ? todayAppts.map((a) => {
+          {agendaAppts.length ? agendaAppts.map((a) => {
             const appKey = a.app_key || "lands";
             const appOk = !!APP_META[appKey];
             return (
               <div key={a.id} className={`md-visit ${a.status === "confirmed" ? "is-active" : ""}`}>
-                <div className="md-time"><b>{toTime(a.scheduled_at)}</b><span>HRS</span></div>
+                <div className="md-time">
+                  <b>{toTime(a.scheduled_at)}</b>
+                  <span>{showingUpcoming ? toDateLabel(a.scheduled_at) : "HRS"}</span>
+                </div>
                 <div className="md-st">
                   <span className={`md-sdot ${a.status}`}>{a.status === "confirmed" ? "✓" : ""}</span>
                 </div>
@@ -293,6 +355,14 @@ function EcosystemDia() {
           </div>
         </div>
       </div>
+
+      <GuideModal
+        open={showTour}
+        onClose={() => setShowTour(false)}
+        title="Recorrido del Ecosistema"
+        subtitle="Un vistazo a todo lo que puedes hacer desde aquí."
+        steps={TOUR_STEPS}
+      />
 
       {/* ALERTAS Y PENDIENTES */}
       <div className="md-card" style={{ marginBottom: 30 }}>

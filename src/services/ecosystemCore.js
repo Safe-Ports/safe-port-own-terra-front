@@ -1,8 +1,7 @@
 /* ════════════════════════════════════════════════════════════════════
-   MOCK FRONT del "core" del ecosistema.
-   Pendiente de backend: tablas `core_clients` (identidad única) +
-   `client_app_assignments` (client_id, app). Por ahora derivamos la
-   presencia multi-app de forma determinista para la maqueta.
+   Representación compartida de la identidad del cliente en el core.
+   La presencia multi-app solo puede venir de asignaciones explícitas;
+   nunca debe inferirse a partir de los datos del cliente.
    ════════════════════════════════════════════════════════════════════ */
 
 export const CORE_APPS = [
@@ -11,22 +10,31 @@ export const CORE_APPS = [
   { key: "homes", name: "OwnTerra Homes", short: "Homes", color: "#A7CBA1" },
 ];
 
-const hash = (s = "") => {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
-  return Math.abs(h);
+const getAssignedAppKeys = (client) => {
+  const assignments = client?.apps ?? client?.app_assignments ?? [];
+  if (!Array.isArray(assignments)) return [];
+
+  return assignments
+    .map((assignment) => (
+      typeof assignment === "string"
+        ? assignment
+        : assignment?.app_key ?? assignment?.key
+    ))
+    .filter(Boolean);
 };
 
-/* Presencia del cliente en el ecosistema (mock determinista por id/email).
-   Todo cliente que vive en Lands tiene, por definición, acceso a `lands`. */
+/* La presencia en cada app solo se muestra cuando el backend entrega una
+   asignación explícita. */
 export function getClientEcosystem(client) {
-  const seed = hash(String(client?.id ?? client?.email ?? client?.name ?? ""));
-  const apps = { lands: true, neighb: seed % 3 === 0, homes: seed % 5 === 0 };
+  const assignedAppKeys = new Set(getAssignedAppKeys(client));
+  const apps = Object.fromEntries(
+    CORE_APPS.map((app) => [app.key, assignedAppKeys.has(app.key)])
+  );
   const otherApps = CORE_APPS.filter((a) => a.key !== "lands" && apps[a.key]);
   return {
     apps,
     otherApps,
     multiApp: otherApps.length > 0,
-    coreId: `core_${(seed % 9000) + 1000}`,
+    coreId: client?.id != null ? String(client.id) : null,
   };
 }

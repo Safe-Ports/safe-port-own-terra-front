@@ -1,5 +1,5 @@
 import path from "node:path";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
@@ -9,7 +9,13 @@ import { sentryVitePlugin } from "@sentry/vite-plugin";
 // build funciona igual pero no sube source maps.
 const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN;
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+  if (mode === "production" && !env.VITE_API_URL?.trim()) {
+    throw new Error("VITE_API_URL es obligatoria para generar el build de producción");
+  }
+
+  return {
   // Genera source maps solo cuando vamos a subirlos (no se exponen en el sitio:
   // el plugin de Sentry los borra del dist tras subirlos).
   build: {
@@ -20,9 +26,6 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "pwa-icon.svg", "apple-touch-icon.png", "mask-icon.svg"],
-      workbox: {
-        navigateFallbackDenylist: [/^\/LoteManager_v32_rento(?:\.html)?/]
-      },
       manifest: {
         name: "Ownterra",
         short_name: "Ownterra",
@@ -99,4 +102,5 @@ export default defineConfig({
     host: true,
     port: 5173
   }
+  };
 });
