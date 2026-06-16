@@ -4,11 +4,10 @@ import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
 import { orgService } from "@/services/orgService";
 import GuideModal from "@/components/shared/GuideModal";
-import { getUserErrorMessage } from "@/services/errors";
 import Button from "@/components/Button";
 
 function SettingsPage() {
-  const { currentUser, showToast, canUseFeature } = useAppContext();
+  const { currentUser, showToast, showError, canUseFeature } = useAppContext();
   const [showGuide, setShowGuide] = useState(false);
   useLandsGuide(() => setShowGuide(true));
   const queryClient = useQueryClient();
@@ -43,7 +42,7 @@ function SettingsPage() {
       setShowForm(false);
       showToast("Usuario creado");
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al crear usuario"));
+      showError(err, "Error al crear usuario");
     } finally {
       setCreating(false);
     }
@@ -54,7 +53,7 @@ function SettingsPage() {
       await orgService.resetPassword(id);
       showToast(`Contraseña restablecida para ${name}`);
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al restablecer contraseña"));
+      showError(err, "Error al restablecer contraseña");
     }
   };
 
@@ -65,7 +64,7 @@ function SettingsPage() {
       await queryClient.invalidateQueries({ queryKey: ["users"] });
       showToast("Usuario eliminado");
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al eliminar usuario"));
+      showError(err, "Error al eliminar usuario");
     }
   };
 

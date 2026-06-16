@@ -3,7 +3,6 @@ import { useAppContext } from "@/context/AppContext";
 import Modal from "@/components/ui/Modal";
 import { currency, dateLabel, progress } from "@/services/formatters";
 import { clientService } from "@/services/clientService";
-import { getUserErrorMessage } from "@/services/errors";
 
 function buildPrintHTML(data) {
   const rows = data.clientPayments
@@ -70,7 +69,7 @@ function buildPrintHTML(data) {
 }
 
 function ClientReportModal() {
-  const { ui, clients, contracts, payments, reportClientId, closeClientReport, showToast } = useAppContext();
+  const { ui, clients, contracts, payments, reportClientId, closeClientReport, showToast, showError } = useAppContext();
   const [downloading, setDownloading] = useState(false);
   const [sending, setSending] = useState(false);
 
@@ -109,7 +108,7 @@ function ClientReportModal() {
       URL.revokeObjectURL(url);
       showToast("Estado de cuenta descargado");
     } catch (err) {
-      showToast(getUserErrorMessage(err, "No se pudo descargar el estado de cuenta"));
+      showError(err, "No se pudo descargar el estado de cuenta");
     } finally {
       setDownloading(false);
     }
@@ -121,7 +120,7 @@ function ClientReportModal() {
       await clientService.sendStatement(data.client.id);
       showToast("Estado de cuenta enviado por correo");
     } catch (err) {
-      showToast(getUserErrorMessage(err, "No se pudo enviar el estado de cuenta"));
+      showError(err, "No se pudo enviar el estado de cuenta");
     } finally {
       setSending(false);
     }

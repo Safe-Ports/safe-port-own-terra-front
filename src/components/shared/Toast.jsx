@@ -15,9 +15,12 @@ function ErrorToast({ data }) {
     }
   };
 
+  const severity = data.severity || "error";
+  const ICON = { fatal: "✕", error: "⚠", warning: "!" };
+
   return (
-    <div className="app-toast app-toast--error" role="alert">
-      <div className="error-toast__title">⚠ {data.title}</div>
+    <div className="app-toast app-toast--error" data-severity={severity} role="alert">
+      <div className="error-toast__title">{ICON[severity] ?? "⚠"} {data.title}</div>
       <div className="error-toast__msg">{data.message}</div>
       {data.action ? <div className="error-toast__action">{data.action}</div> : null}
       <div className="error-toast__meta">
@@ -42,7 +45,7 @@ function Toast() {
     return <ErrorToast data={toast} />;
   }
 
-  return <div className="app-toast">{toast}</div>;
+  return <div className="app-toast app-toast--success">{toast}</div>;
 }
 
 export default Toast;

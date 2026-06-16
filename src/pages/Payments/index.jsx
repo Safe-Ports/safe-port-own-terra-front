@@ -9,7 +9,7 @@ import {
 import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
 import { expenseService, CAT_LABEL, CAT_STYLE } from "@/services/expenseService";
-import { getUserErrorMessage } from "@/services/errors";
+
 import FieldError from "@/components/shared/FieldError";
 import { useFieldErrors } from "@/hooks/useFieldErrors";
 
@@ -492,7 +492,7 @@ const ESTADO_EG  = [["all","Todos los estados"],["pending","Pendiente"],["overdu
 const ESTADO_AL  = [["all","Todas las alertas"],["roja","Urgentes"],["amarilla","Próximas"]];
 
 export default function PaymentsPage() {
-  const { payments, clients, contracts, quickPay, sendReminder, showToast } = useAppContext();
+  const { payments, clients, contracts, quickPay, sendReminder, showToast, showError } = useAppContext();
   const qc = useQueryClient();
 
   const [tab,       setTab]       = useState("ingresos");
@@ -537,12 +537,12 @@ export default function PaymentsPage() {
   const createExpense = useMutation({
     mutationFn: expenseService.create,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["expenses"] }); setModal(null); showToast("Egreso registrado"); },
-    onError: e => showToast(getUserErrorMessage(e, "Error al guardar egreso")),
+    onError: e => showError(e, "Error al guardar egreso"),
   });
   const updateExpense = useMutation({
     mutationFn: ({ id, data }) => expenseService.update(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["expenses"] }); setModal(null); setEditing(null); showToast("Egreso actualizado"); },
-    onError: e => showToast(getUserErrorMessage(e, "Error al actualizar egreso")),
+    onError: e => showError(e, "Error al actualizar egreso"),
   });
   const deleteExpense = useMutation({
     mutationFn: expenseService.delete,

@@ -5,7 +5,7 @@ import { HiOutlineEllipsisVertical, HiOutlineFolderPlus, HiOutlinePencil, HiOutl
 import { documentService, filenameForDocument } from "@/services/documentService";
 import { folderService } from "@/services/folderService";
 import { useAppContext } from "@/context/AppContext";
-import { getUserErrorMessage } from "@/services/errors";
+
 import EcoLayout from "./EcoLayout";
 
 const CATEGORIES = ["otro", "contrato", "identificacion", "comprobante", "escritura", "plano"];
@@ -29,7 +29,7 @@ const SearchIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentCo
 
 function EcosystemVault() {
   const qc = useQueryClient();
-  const { downloadDocument, showToast } = useAppContext();
+  const { downloadDocument, showToast, showError } = useAppContext();
   const [activeId, setActiveId] = useState(null);
   const [expanded, setExpanded] = useState(() => new Set());
   const [modal, setModal]         = useState(null);
@@ -77,13 +77,13 @@ function EcosystemVault() {
       setActiveId(String(created.id));
       showToast("Carpeta creada");
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al crear la carpeta")),
+    onError: (err) => showError(err, "Error al crear la carpeta"),
   });
 
   const renameFolderMutation = useMutation({
     mutationFn: ({ id, name }) => folderService.update(id, { name }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["folders"] }); showToast("Carpeta renombrada"); },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al renombrar la carpeta")),
+    onError: (err) => showError(err, "Error al renombrar la carpeta"),
   });
 
   const deleteFolderMutation = useMutation({
@@ -94,7 +94,7 @@ function EcosystemVault() {
       setActiveId(roots[0] ? String(roots[0].id) : null);
       showToast("Carpeta eliminada");
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al eliminar la carpeta")),
+    onError: (err) => showError(err, "Error al eliminar la carpeta"),
   });
 
   const uploadMutation = useMutation({
@@ -107,13 +107,13 @@ function EcosystemVault() {
       setUploadFile(null);
       showToast("Documento subido");
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al subir el documento")),
+    onError: (err) => showError(err, "Error al subir el documento"),
   });
 
   const deleteDocMutation = useMutation({
     mutationFn: (id) => documentService.delete(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["docs", "folder", activeId] }); showToast("Documento eliminado"); },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al eliminar el documento")),
+    onError: (err) => showError(err, "Error al eliminar el documento"),
   });
 
   const active = folders.find((f) => String(f.id) === activeId) || null;

@@ -21,8 +21,10 @@ function InlineError({ error, children }) {
     }
   };
 
+  const severity = error.severity || "error";
+
   return (
-    <div className="lf-error" role="alert">
+    <div className="lf-error" data-severity={severity} role="alert">
       <div>{error.message}</div>
       {error.action ? <div className="lf-error__action">{error.action}</div> : null}
       {children}

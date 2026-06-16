@@ -9,7 +9,6 @@ import InlineDocumentsPanel from "@/components/shared/InlineDocumentsPanel";
 import Button from "@/components/Button";
 import { lotService } from "@/services/lotService";
 import { appointmentService } from "@/services/appointmentService";
-import { getUserErrorMessage } from "@/services/errors";
 import { currency } from "@/services/formatters";
 import "./fracs.css";
 
@@ -159,6 +158,7 @@ function FracsPage() {
     setSelectedFracId,
     exportAppData,
     showToast,
+    showError,
     setDraftProject,
     fracsResetKey,
   } = useAppContext();
@@ -427,7 +427,7 @@ function FracsPage() {
       setShowApptForm(false);
       showToast("Cita agendada");
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al agendar la cita"));
+      showError(err, "Error al agendar la cita");
     } finally {
       setApptSaving(false);
     }
@@ -439,7 +439,7 @@ function FracsPage() {
       await refetchAppts();
       showToast("Cita cancelada");
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al cancelar"));
+      showError(err, "Error al cancelar");
     }
   };
 

@@ -14,7 +14,6 @@ import { appointmentService } from "@/services/appointmentService";
 import { folderService } from "@/services/folderService";
 import { createEmptyDraftProject } from "@/services/draftProject";
 import { canAccessApp, canUseFeature } from "@/services/permissions";
-import { getUserErrorMessage } from "@/services/errors";
 import { parseApiError } from "@/errors/parseApiError";
 
 const AG_SEEN_KEY = "ag_triggered_seen";
@@ -67,6 +66,7 @@ export function AppProvider({ children }) {
     queryFn: () => notificationService.unreadCount(),
     enabled: !!currentUser,
     refetchInterval: 60_000,
+    retry: 0,
   });
 
   const todayIso = (() => {
@@ -85,6 +85,7 @@ export function AppProvider({ children }) {
     queryFn: () => appointmentService.list({ upcoming_only: false, from_date: todayIso, to_date: todayEndIso }),
     enabled: !!currentUser,
     refetchInterval: 60_000,
+    retry: 0,
   });
 
   const [calendarAlertCount, setCalendarAlertCount] = useState(0);
@@ -265,7 +266,8 @@ export function AppProvider({ children }) {
       applyAuthSession(data, true);
       return { ok: true };
     } catch (err) {
-      return { ok: false, msg: getUserErrorMessage(err, "Enlace de verificación inválido o expirado") };
+      const parsed = parseApiError(err, "Enlace de verificación inválido o expirado");
+      return { ok: false, msg: parsed.message, error: parsed };
     }
   };
 
@@ -274,7 +276,8 @@ export function AppProvider({ children }) {
       await api.post("/auth/resend-verification", { email });
       return { ok: true };
     } catch (err) {
-      return { ok: false, msg: getUserErrorMessage(err, "No se pudo reenviar el correo") };
+      const parsed = parseApiError(err, "No se pudo reenviar el correo");
+      return { ok: false, msg: parsed.message, error: parsed };
     }
   };
 
@@ -332,7 +335,7 @@ export function AppProvider({ children }) {
           await queryClient.invalidateQueries({ queryKey: ["client-apps"] });
           setEditingClient(null);
           closeModal("clientModal");
-          showToast(getUserErrorMessage(err, "Cliente creado en el Core, pero no se pudo vincular a Lands"));
+          showError(err, "Cliente creado en el Core, pero no se pudo vincular a Lands");
           return false;
         }
         try {
@@ -355,7 +358,7 @@ export function AppProvider({ children }) {
         : payload.id
           ? "No se pudo actualizar el cliente"
           : "No se pudo crear el cliente";
-      showToast(getUserErrorMessage(err, fallback));
+      showError(err, fallback);
       return false;
     }
     setEditingClient(null);
@@ -529,7 +532,7 @@ export function AppProvider({ children }) {
       showToast(`Recordatorio enviado a ${name}`);
       return true;
     } catch (err) {
-      showToast(getUserErrorMessage(err, "No se pudo enviar el recordatorio"));
+      showError(err, "No se pudo enviar el recordatorio");
       return false;
     }
   };

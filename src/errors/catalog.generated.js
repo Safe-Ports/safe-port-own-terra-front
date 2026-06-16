@@ -68,6 +68,38 @@ export const ERROR_CATALOG = {
     "name": "AUTH_INVALID_RESET_TOKEN",
     "severity": "warning"
   },
+  "OT-CALC-1001": {
+    "action": "Revisa la sintaxis: solo se permiten números, variables, + - * / % ^, paréntesis y funciones (min, max, abs, round, floor, ceil, sqrt, pow).",
+    "domain": "CALC",
+    "http_status": 400,
+    "message": "La fórmula no es válida.",
+    "name": "CALC_INVALID_FORMULA",
+    "severity": "warning"
+  },
+  "OT-CALC-1002": {
+    "action": "Captura un valor para cada variable detectada.",
+    "domain": "CALC",
+    "http_status": 400,
+    "message": "Falta el valor de una variable de la fórmula.",
+    "name": "CALC_MISSING_VARIABLE",
+    "severity": "warning"
+  },
+  "OT-CALC-1003": {
+    "action": "Revisa divisiones por cero o valores fuera de rango.",
+    "domain": "CALC",
+    "http_status": 400,
+    "message": "La fórmula produce un resultado no válido.",
+    "name": "CALC_BAD_RESULT",
+    "severity": "warning"
+  },
+  "OT-CALC-3001": {
+    "action": "Activa una calculadora antes de continuar.",
+    "domain": "CALC",
+    "http_status": 409,
+    "message": "No hay una calculadora activa para este módulo.",
+    "name": "CALC_NO_ACTIVE",
+    "severity": "warning"
+  },
   "OT-CLI-1001": {
     "action": "Revísalo: deben ser 12 o 13 caracteres.",
     "domain": "CLI",

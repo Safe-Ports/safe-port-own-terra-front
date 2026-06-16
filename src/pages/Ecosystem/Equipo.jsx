@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import EcoLayout from "./EcoLayout";
 import GuideModal from "@/components/shared/GuideModal";
+import InlineError from "@/components/shared/InlineError";
 import { userService } from "@/services/userService";
 import { useAppContext } from "@/context/AppContext";
-import { getUserErrorMessage } from "@/services/errors";
+import { parseApiError } from "@/errors/parseApiError";
 import { GLOBAL_ROLES, VERTICAL_APP_CATALOG, defaultPermissionsFor } from "@/services/permissions";
 
 const ROLE_LABEL = Object.fromEntries(Object.entries(GLOBAL_ROLES).map(([key, value]) => [key, value.label]));
@@ -25,7 +26,7 @@ const emailOk = (value = "") => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
 function EcosystemEquipo() {
   const qc = useQueryClient();
-  const { showToast } = useAppContext();
+  const { showToast, showError } = useAppContext();
   const [query, setQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [selectedId, setSelectedId] = useState(null);
@@ -33,7 +34,7 @@ function EcosystemEquipo() {
   const [showGuide, setShowGuide] = useState(false);
   const [accessDraft, setAccessDraft] = useState(null);
   const [confirmAccessSave, setConfirmAccessSave] = useState(false);
-  const [formError, setFormError] = useState("");
+  const [formError, setFormError] = useState(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["users", "eco-team"],
@@ -100,10 +101,10 @@ function EcosystemEquipo() {
       qc.invalidateQueries({ queryKey: ["users"] });
       setSelectedId(String(created.id));
       setModal(null);
-      setFormError("");
+      setFormError(null);
       showToast("Integrante creado");
     },
-    onError: (err) => setFormError(getUserErrorMessage(err, "Error al crear el integrante")),
+    onError: (err) => setFormError(parseApiError(err, "Error al crear el integrante")),
   });
 
   const updateMutation = useMutation({
@@ -112,10 +113,10 @@ function EcosystemEquipo() {
       qc.invalidateQueries({ queryKey: ["users"] });
       setSelectedId(String(updated.id));
       setModal(null);
-      setFormError("");
+      setFormError(null);
       showToast("Integrante actualizado");
     },
-    onError: (err) => setFormError(getUserErrorMessage(err, "Error al actualizar el integrante")),
+    onError: (err) => setFormError(parseApiError(err, "Error al actualizar el integrante")),
   });
 
   const accessMutation = useMutation({
@@ -147,21 +148,21 @@ function EcosystemEquipo() {
       setConfirmAccessSave(false);
       showToast("Accesos actualizados");
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al actualizar accesos")),
+    onError: (err) => showError(err, "Error al actualizar accesos"),
   });
 
   const resetPasswordMutation = useMutation({
     mutationFn: (id) => userService.resetPassword(id),
     onSuccess: () => showToast("Contraseña restablecida"),
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al restablecer contraseña")),
+    onError: (err) => showError(err, "Error al restablecer contraseña"),
   });
 
   const openCreate = () => {
-    setFormError("");
+    setFormError(null);
     setModal({ mode: "create", draft: blankDraft });
   };
   const openEdit = (user) => {
-    setFormError("");
+    setFormError(null);
     setModal({
       mode: "edit",
       userId: user.id,
@@ -179,17 +180,17 @@ function EcosystemEquipo() {
 
   const saveDraft = () => {
     const draft = modal.draft;
-    setFormError("");
+    setFormError(null);
     if (!draft.name.trim()) {
-      setFormError("El nombre es obligatorio");
+      setFormError({ message: "El nombre es obligatorio." });
       return;
     }
     if (!emailOk(draft.email)) {
-      setFormError("Ingresa un correo válido");
+      setFormError({ message: "Ingresa un correo electrónico válido." });
       return;
     }
     if (modal.mode === "create" && draft.password.trim().length < 8) {
-      setFormError("La contraseña temporal debe tener al menos 8 caracteres");
+      setFormError({ message: "La contraseña temporal debe tener al menos 8 caracteres." });
       return;
     }
     if (modal.mode === "create") {
@@ -389,7 +390,7 @@ function EcosystemEquipo() {
               <button className="usr-modal-close" onClick={() => setModal(null)}>x</button>
             </div>
             <div className="usr-modal-body">
-              {formError && <div className="usr-error">{formError}</div>}
+              <InlineError error={formError} />
               <div className="usr-field-row">
                 <div className="usr-field">
                   <label className="usr-field-lbl">Nombre</label>
