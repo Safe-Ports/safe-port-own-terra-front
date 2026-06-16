@@ -2213,7 +2213,131 @@ textarea.is-invalid {
   margin-bottom: 24px;
 }
 
-/* ── InlineError base (severity="error") ─────────────────── */
+/* ── InlineError — popup flotante centrado ───────────────── */
+.ie-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.16);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.ie-card {
+  border-radius: 18px;
+  padding: 32px 36px 0;
+  width: min(420px, calc(100vw - 48px));
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.20);
+}
+
+.ie-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.ie-icon {
+  font-size: 1.15rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+  opacity: 0.70;
+}
+
+.ie-body { flex: 1; min-width: 0; }
+
+.ie-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.55;
+  margin-bottom: 5px;
+}
+
+.ie-msg {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.ie-action {
+  font-size: 0.84rem;
+  opacity: 0.75;
+  margin-top: 6px;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.ie-close {
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.06);
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  opacity: 0.55;
+  color: inherit;
+  transition: opacity 0.15s, background 0.15s;
+}
+.ie-close:hover { opacity: 1; background: rgba(0, 0, 0, 0.10); }
+
+.ie-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 16px 0 28px;
+  border-top-width: 1px;
+  border-top-style: solid;
+}
+
+.ie-meta-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.ie-support {
+  font-size: 0.75rem;
+  font-weight: 400;
+  opacity: 0.60;
+  line-height: 1.35;
+}
+
+.ie-codes {
+  font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  opacity: 0.75;
+  letter-spacing: 0.01em;
+}
+
+.ie-copy {
+  flex-shrink: 0;
+  border-radius: 8px;
+  border-width: 1px;
+  border-style: solid;
+  background: rgba(255, 255, 255, 0.70);
+  cursor: pointer;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 5px 12px;
+  transition: background 0.15s;
+}
+.ie-copy:hover { background: rgba(255, 255, 255, 0.90); }
+
+/* ── InlineError inline (sin onDismiss, ej. LoginScreen) ─── */
 .lf-error {
   background: #fdecea;
   border: 1.5px solid #c0392b;

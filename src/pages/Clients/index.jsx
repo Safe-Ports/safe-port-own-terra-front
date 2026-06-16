@@ -162,6 +162,7 @@ function ClientsPage() {
     selectedClientId, setSelectedClientId,
     openModal, setEditingClient,
     openClientReport, sendClientMessage, openContractCreate,
+    showError,
   } = useAppContext();
   const [showGuide, setShowGuide] = useState(false);
   useLandsGuide(() => setShowGuide(true));
@@ -187,7 +188,7 @@ function ClientsPage() {
       await queryClient.invalidateQueries({ queryKey: ["contracts"] });
       setCancelDraft(null);
     } catch (err) {
-      alert(err?.response?.data?.detail || "Error al cancelar el contrato");
+      showError(err, "Error al cancelar el contrato");
     } finally {
       setCancelling(false);
     }

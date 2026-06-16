@@ -37,6 +37,11 @@ const TYPES = {
 
 const FILTERS = ["Todos", "Core", "Lands"];
 
+const AGENDA_RULES = {
+  date: (v) => (!v ? "La fecha es obligatoria." : ""),
+  time: (v) => (!v ? "La hora es obligatoria." : ""),
+};
+
 function toDateKey(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");

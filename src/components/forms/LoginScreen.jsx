@@ -185,18 +185,18 @@ function ForgotView({ onBack }) {
   const [email, setEmail]   = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent]     = useState(false);
-  const [error, setError]   = useState(false);
+  const [error, setError]   = useState(null);
 
   const submit = async () => {
     if (!email.trim()) return;
     setLoading(true);
-    setError(false);
+    setError(null);
     const result = await forgotPassword(email.trim());
     setLoading(false);
     if (result.ok) {
       setSent(true);
     } else {
-      setError(true);
+      setError({ message: "Ocurrió un error al enviar el correo.", action: "Verifica tu dirección e intenta de nuevo.", severity: "warning" });
     }
   };
 
@@ -227,18 +227,14 @@ function ForgotView({ onBack }) {
       <div className="lf-title">Recuperar contraseña</div>
       <div className="lf-sub">Ingresa tu correo y te enviaremos instrucciones para recuperar el acceso.</div>
 
-      {error && (
-        <div className="lf-error">
-          Ocurrió un error. Intenta de nuevo.
-        </div>
-      )}
+      <InlineError error={error} />
 
       <div className="lf-field">
         <label className="lf-label">Correo electrónico</label>
         <div className="lf-input-wrap">
           <span className="lf-ico">✉️</span>
           <input
-            className={`lf-input${error ? " error" : ""}`}
+            className="lf-input"
             type="email"
             placeholder="correo@empresa.mx"
             value={email}
