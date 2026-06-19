@@ -6,7 +6,8 @@ import { clientService } from "@/services/clientService";
 import { documentService, filenameForDocument } from "@/services/documentService";
 import { userService } from "@/services/userService";
 import { useAppContext } from "@/context/AppContext";
-import { getUserErrorMessage } from "@/services/errors";
+import { parseApiError } from "@/errors/parseApiError";
+
 import EcoLayout from "./EcoLayout";
 
 const APPS = [
@@ -42,7 +43,7 @@ const DownloadIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="current
 
 function EcosystemClientes() {
   const qc = useQueryClient();
-  const { downloadDocument, exportAppData, showToast } = useAppContext();
+  const { downloadDocument, exportAppData, showToast, showError } = useAppContext();
   const [selectedId, setSelectedId] = useState(null);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState("contracts");
@@ -121,7 +122,7 @@ function EcosystemClientes() {
       setModal(null);
       showToast("Documento de identidad subido");
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al subir documento")),
+    onError: (err) => showError(err, "Error al subir documento"),
   });
 
   const createClientMutation = useMutation({
@@ -149,7 +150,7 @@ function EcosystemClientes() {
       setModal(null);
       showToast("Cliente creado en el Core");
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al crear cliente")),
+    onError: (err) => showError(err, "Error al crear cliente"),
   });
 
   const updateClientMutation = useMutation({
@@ -182,7 +183,7 @@ function EcosystemClientes() {
       setModal(null);
       showToast("Cliente actualizado en el Core");
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al actualizar cliente")),
+    onError: (err) => showError(err, "Error al actualizar cliente"),
   });
 
   const importClientsMutation = useMutation({
@@ -195,10 +196,10 @@ function EcosystemClientes() {
           try {
             await clientService.assignApp(created.id, "lands");
           } catch (err) {
-            result.warnings.push(`${row.name}: creado, pero no se pudo vincular con Lands (${getUserErrorMessage(err, "error de acceso")}).`);
+            result.warnings.push(`${row.name}: creado, pero no se pudo vincular con Lands (${parseApiError(err, "error de acceso").message}).`);
           }
         } catch (err) {
-          result.failed.push(`${row.name}: ${getUserErrorMessage(err, "No se pudo crear")}`);
+          result.failed.push(`${row.name}: ${parseApiError(err, "No se pudo crear").message}`);
         }
       }
       return result;
@@ -208,7 +209,7 @@ function EcosystemClientes() {
       setClientImport((current) => ({ ...current, rows: [], result }));
       showToast(`${result.created} clientes creados${result.failed.length ? ` · ${result.failed.length} omitidos` : ""}`);
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al cargar clientes")),
+    onError: (err) => showError(err, "Error al cargar clientes"),
   });
 
   // App assignment mutations (persist to backend)
@@ -218,7 +219,7 @@ function EcosystemClientes() {
       qc.invalidateQueries({ queryKey: ["client-apps"] });
       showToast("Acceso de cliente actualizado");
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al asignar app")),
+    onError: (err) => showError(err, "Error al asignar app"),
   });
 
   const removeAppMutation = useMutation({
@@ -227,7 +228,7 @@ function EcosystemClientes() {
       qc.invalidateQueries({ queryKey: ["client-apps"] });
       showToast("Acceso de cliente removido");
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al remover app")),
+    onError: (err) => showError(err, "Error al remover app"),
   });
 
   const selected = detail || clients.find((c) => String(c.id) === effectiveSelectedId) || null;
@@ -437,7 +438,7 @@ function EcosystemClientes() {
           errors: ["No fue posible leer el archivo. Descarga la plantilla y verifica el formato."],
           result: null,
         });
-        showToast(getUserErrorMessage(err, "No fue posible leer el archivo"));
+        showError(err, "No fue posible leer el archivo");
       }
     };
     reader.readAsArrayBuffer(file);

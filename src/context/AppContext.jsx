@@ -14,7 +14,7 @@ import { appointmentService } from "@/services/appointmentService";
 import { folderService } from "@/services/folderService";
 import { createEmptyDraftProject } from "@/services/draftProject";
 import { canAccessApp, canUseFeature } from "@/services/permissions";
-import { getUserErrorMessage } from "@/services/errors";
+import { parseApiError } from "@/errors/parseApiError";
 
 const AG_SEEN_KEY = "ag_triggered_seen";
 
@@ -66,6 +66,7 @@ export function AppProvider({ children }) {
     queryFn: () => notificationService.unreadCount(),
     enabled: !!currentUser,
     refetchInterval: 60_000,
+    retry: 0,
   });
 
   const todayIso = (() => {
@@ -84,6 +85,7 @@ export function AppProvider({ children }) {
     queryFn: () => appointmentService.list({ upcoming_only: false, from_date: todayIso, to_date: todayEndIso }),
     enabled: !!currentUser,
     refetchInterval: 60_000,
+    retry: 0,
   });
 
   const [calendarAlertCount, setCalendarAlertCount] = useState(0);
@@ -216,6 +218,16 @@ export function AppProvider({ children }) {
     prevAlertCountRef.current = calendarAlertCount;
   }, [calendarAlertCount]);
 
+  // Muestra un error homologado (código + Ref + copiar). El reporte a Sentry lo hace el
+  // interceptor de api.js, así que aquí solo presentamos. Dura más para dar tiempo a copiar.
+  const showError = (error, fallbackMessage) => {
+    const parsed = parseApiError(error, fallbackMessage);
+    setToast({ kind: "error", ...parsed });
+    window.clearTimeout(showToast._timer);
+    showToast._timer = window.setTimeout(() => setToast(null), 9000);
+    return parsed;
+  };
+
   // ── Auth ──────────────────────────────────────────────────────────────────
   const applyAuthSession = (data, remember = true) => {
     setCurrentUser({
@@ -240,11 +252,11 @@ export function AppProvider({ children }) {
       navigate("/ecosistema");
       return { ok: true };
     } catch (err) {
-      const code = err?.response?.data?.error?.code;
-      if (code === "EMAIL_NOT_VERIFIED") {
-        return { ok: false, needsVerification: true, email: identifier, msg: getUserErrorMessage(err, "Confirma tu correo") };
+      const parsed = parseApiError(err, "No pudimos iniciar sesión.");
+      if (parsed.code === "OT-AUTH-2005") {
+        return { ok: false, needsVerification: true, email: identifier, msg: parsed.message, error: parsed };
       }
-      return { ok: false, msg: getUserErrorMessage(err, "Credenciales inválidas") };
+      return { ok: false, msg: parsed.message, error: parsed };
     }
   };
 
@@ -254,7 +266,8 @@ export function AppProvider({ children }) {
       applyAuthSession(data, true);
       return { ok: true };
     } catch (err) {
-      return { ok: false, msg: getUserErrorMessage(err, "Enlace de verificación inválido o expirado") };
+      const parsed = parseApiError(err, "Enlace de verificación inválido o expirado");
+      return { ok: false, msg: parsed.message, error: parsed };
     }
   };
 
@@ -263,7 +276,8 @@ export function AppProvider({ children }) {
       await api.post("/auth/resend-verification", { email });
       return { ok: true };
     } catch (err) {
-      return { ok: false, msg: getUserErrorMessage(err, "No se pudo reenviar el correo") };
+      const parsed = parseApiError(err, "No se pudo reenviar el correo");
+      return { ok: false, msg: parsed.message, error: parsed };
     }
   };
 
@@ -273,7 +287,8 @@ export function AppProvider({ children }) {
       // Flujo bloqueante: el backend no devuelve tokens, el usuario debe confirmar su correo.
       return { ok: true, pendingVerification: true, email: data.email || email };
     } catch (err) {
-      return { ok: false, msg: getUserErrorMessage(err, "Error al registrar") };
+      const parsed = parseApiError(err, "No pudimos crear la cuenta.");
+      return { ok: false, msg: parsed.message, error: parsed };
     }
   };
 
@@ -320,7 +335,7 @@ export function AppProvider({ children }) {
           await queryClient.invalidateQueries({ queryKey: ["client-apps"] });
           setEditingClient(null);
           closeModal("clientModal");
-          showToast(getUserErrorMessage(err, "Cliente creado en el Core, pero no se pudo vincular a Lands"));
+          showError(err, "Cliente creado en el Core, pero no se pudo vincular a Lands");
           return false;
         }
         try {
@@ -343,7 +358,7 @@ export function AppProvider({ children }) {
         : payload.id
           ? "No se pudo actualizar el cliente"
           : "No se pudo crear el cliente";
-      showToast(getUserErrorMessage(err, fallback));
+      showError(err, fallback);
       return false;
     }
     setEditingClient(null);
@@ -359,8 +374,7 @@ export function AppProvider({ children }) {
       closeModal("clientModal");
       return true;
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al eliminar el cliente"));
-      return false;
+      showError(err, "Error al eliminar el cliente");
     }
   };
 
@@ -441,8 +455,7 @@ export function AppProvider({ children }) {
       closeModal("contractModal");
       return true;
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al eliminar el contrato"));
-      return false;
+      showError(err, "Error al eliminar el contrato");
     }
   };
 
@@ -488,8 +501,7 @@ export function AppProvider({ children }) {
       showToast(`Exportación de ${type} descargada`);
       return true;
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al exportar"));
-      return false;
+      showError(err, "Error al exportar");
     }
   };
 
@@ -505,8 +517,7 @@ export function AppProvider({ children }) {
       showToast("Pago registrado correctamente");
       return true;
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al registrar el pago"));
-      return false;
+      showError(err, "Error al registrar el pago");
     }
   };
 
@@ -521,7 +532,7 @@ export function AppProvider({ children }) {
       showToast(`Recordatorio enviado a ${name}`);
       return true;
     } catch (err) {
-      showToast(getUserErrorMessage(err, "No se pudo enviar el recordatorio"));
+      showError(err, "No se pudo enviar el recordatorio");
       return false;
     }
   };
@@ -549,7 +560,7 @@ export function AppProvider({ children }) {
       closeModal("documentModal");
       return true;
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al subir el documento"));
+      showError(err, "Error al subir el documento");
       console.error("Upload error:", err?.response?.data);
       return false;
     }
@@ -567,7 +578,7 @@ export function AppProvider({ children }) {
       }
       showToast("Documento eliminado");
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al eliminar el documento"));
+      showError(err, "Error al eliminar el documento");
     }
   };
 
@@ -587,7 +598,7 @@ export function AppProvider({ children }) {
       document.body.removeChild(a);
       window.setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al descargar el documento"));
+      showError(err, "Error al descargar el documento");
     }
   };
 
@@ -659,7 +670,7 @@ export function AppProvider({ children }) {
       navigate("/fraccionamientos");
       showToast(`Fraccionamiento "${name || "Fraccionamiento"}" creado${draftLots.length > 0 ? ` con ${draftLots.length} lote${draftLots.length !== 1 ? "s" : ""}` : ""}`);
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al crear el fraccionamiento"));
+      showError(err, "Error al crear el fraccionamiento");
     }
   };
 
@@ -739,7 +750,7 @@ export function AppProvider({ children }) {
       const lotChanges = patches.length + newLots.length;
       showToast(`Fraccionamiento actualizado${lotChanges ? ` · ${lotChanges} lote${lotChanges !== 1 ? "s" : ""}` : ""}${mapUpdated ? " · plano actualizado" : ""}`);
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al guardar los cambios"));
+      showError(err, "Error al guardar los cambios");
     }
   };
 
@@ -749,7 +760,7 @@ export function AppProvider({ children }) {
       await queryClient.invalidateQueries({ queryKey: ["inmuebles"] });
       showToast("Fraccionamiento eliminado");
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al eliminar el fraccionamiento"));
+      showError(err, "Error al eliminar el fraccionamiento");
     }
   };
 
@@ -764,7 +775,7 @@ export function AppProvider({ children }) {
       await notificationService.markAllRead();
       refetchNotifications();
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al marcar notificaciones"));
+      showError(err, "Error al marcar notificaciones");
     }
   };
 
@@ -848,6 +859,7 @@ export function AppProvider({ children }) {
     toggleSidebar,
     closeSidebar,
     showToast,
+    showError,
     canAccessApp: (appKey) => canAccessApp(currentUser, appKey),
     canUseFeature: (feature) => canUseFeature(currentUser, feature),
     login,

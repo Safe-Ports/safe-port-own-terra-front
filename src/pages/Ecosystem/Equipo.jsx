@@ -2,9 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import EcoLayout from "./EcoLayout";
 import GuideModal from "@/components/shared/GuideModal";
+import InlineError from "@/components/shared/InlineError";
+import FieldError from "@/components/shared/FieldError";
+import { useFieldErrors } from "@/hooks/useFieldErrors";
 import { userService } from "@/services/userService";
 import { useAppContext } from "@/context/AppContext";
-import { getUserErrorMessage } from "@/services/errors";
+import { parseApiError } from "@/errors/parseApiError";
 import { GLOBAL_ROLES, VERTICAL_APP_CATALOG, defaultPermissionsFor } from "@/services/permissions";
 
 const ROLE_LABEL = Object.fromEntries(Object.entries(GLOBAL_ROLES).map(([key, value]) => [key, value.label]));
@@ -25,7 +28,7 @@ const emailOk = (value = "") => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
 function EcosystemEquipo() {
   const qc = useQueryClient();
-  const { showToast } = useAppContext();
+  const { showToast, showError } = useAppContext();
   const [query, setQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [selectedId, setSelectedId] = useState(null);
@@ -33,7 +36,8 @@ function EcosystemEquipo() {
   const [showGuide, setShowGuide] = useState(false);
   const [accessDraft, setAccessDraft] = useState(null);
   const [confirmAccessSave, setConfirmAccessSave] = useState(false);
-  const [formError, setFormError] = useState("");
+  const [formError, setFormError] = useState(null);
+  const fe = useFieldErrors();
 
   const { data, isLoading } = useQuery({
     queryKey: ["users", "eco-team"],
@@ -100,10 +104,10 @@ function EcosystemEquipo() {
       qc.invalidateQueries({ queryKey: ["users"] });
       setSelectedId(String(created.id));
       setModal(null);
-      setFormError("");
+      setFormError(null);
       showToast("Integrante creado");
     },
-    onError: (err) => setFormError(getUserErrorMessage(err, "Error al crear el integrante")),
+    onError: (err) => setFormError(parseApiError(err, "Error al crear el integrante")),
   });
 
   const updateMutation = useMutation({
@@ -112,10 +116,10 @@ function EcosystemEquipo() {
       qc.invalidateQueries({ queryKey: ["users"] });
       setSelectedId(String(updated.id));
       setModal(null);
-      setFormError("");
+      setFormError(null);
       showToast("Integrante actualizado");
     },
-    onError: (err) => setFormError(getUserErrorMessage(err, "Error al actualizar el integrante")),
+    onError: (err) => setFormError(parseApiError(err, "Error al actualizar el integrante")),
   });
 
   const accessMutation = useMutation({
@@ -147,21 +151,23 @@ function EcosystemEquipo() {
       setConfirmAccessSave(false);
       showToast("Accesos actualizados");
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al actualizar accesos")),
+    onError: (err) => showError(err, "Error al actualizar accesos"),
   });
 
   const resetPasswordMutation = useMutation({
     mutationFn: (id) => userService.resetPassword(id),
     onSuccess: () => showToast("Contraseña restablecida"),
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al restablecer contraseña")),
+    onError: (err) => showError(err, "Error al restablecer contraseña"),
   });
 
   const openCreate = () => {
-    setFormError("");
+    setFormError(null);
+    fe.clearAll();
     setModal({ mode: "create", draft: blankDraft });
   };
   const openEdit = (user) => {
-    setFormError("");
+    setFormError(null);
+    fe.clearAll();
     setModal({
       mode: "edit",
       userId: user.id,
@@ -179,19 +185,13 @@ function EcosystemEquipo() {
 
   const saveDraft = () => {
     const draft = modal.draft;
-    setFormError("");
-    if (!draft.name.trim()) {
-      setFormError("El nombre es obligatorio");
-      return;
-    }
-    if (!emailOk(draft.email)) {
-      setFormError("Ingresa un correo válido");
-      return;
-    }
-    if (modal.mode === "create" && draft.password.trim().length < 8) {
-      setFormError("La contraseña temporal debe tener al menos 8 caracteres");
-      return;
-    }
+    setFormError(null);
+    fe.clearAll();
+    const fieldErrs = {};
+    if (!draft.name.trim()) fieldErrs.name = "El nombre es obligatorio.";
+    if (modal.mode !== "edit" && !emailOk(draft.email)) fieldErrs.email = "Ingresa un correo electrónico válido.";
+    if (modal.mode === "create" && draft.password.trim().length < 8) fieldErrs.password = "La contraseña temporal debe tener al menos 8 caracteres.";
+    if (Object.keys(fieldErrs).length) { fe.setErrors(fieldErrs); return; }
     if (modal.mode === "create") {
       createMutation.mutate(draft);
       return;
@@ -389,11 +389,12 @@ function EcosystemEquipo() {
               <button className="usr-modal-close" onClick={() => setModal(null)}>x</button>
             </div>
             <div className="usr-modal-body">
-              {formError && <div className="usr-error">{formError}</div>}
+              <InlineError error={formError} onDismiss={() => setFormError(null)} />
               <div className="usr-field-row">
                 <div className="usr-field">
                   <label className="usr-field-lbl">Nombre</label>
-                  <input className="usr-input" value={modal.draft.name} onChange={(e) => setDraft({ name: e.target.value })} />
+                  <input {...fe.fieldProps("name", "usr-input")} value={modal.draft.name} onChange={(e) => { setDraft({ name: e.target.value }); fe.clear("name"); }} />
+                  <FieldError msg={fe.errors.name} />
                 </div>
                 <div className="usr-field">
                   <label className="usr-field-lbl">Rol</label>
@@ -405,7 +406,8 @@ function EcosystemEquipo() {
               </div>
               <div className="usr-field">
                 <label className="usr-field-lbl">Correo</label>
-                <input className="usr-input" type="email" disabled={modal.mode === "edit"} value={modal.draft.email} onChange={(e) => setDraft({ email: e.target.value })} />
+                <input {...fe.fieldProps("email", "usr-input")} type="email" disabled={modal.mode === "edit"} value={modal.draft.email} onChange={(e) => { setDraft({ email: e.target.value }); fe.clear("email"); }} />
+                <FieldError msg={fe.errors.email} />
               </div>
               <div className="usr-field">
                 <label className="usr-field-lbl">Teléfono</label>
@@ -414,7 +416,8 @@ function EcosystemEquipo() {
               {modal.mode === "create" && (
                 <div className="usr-field">
                   <label className="usr-field-lbl">Contraseña temporal</label>
-                  <input className="usr-input" value={modal.draft.password} onChange={(e) => setDraft({ password: e.target.value })} />
+                  <input {...fe.fieldProps("password", "usr-input")} value={modal.draft.password} onChange={(e) => { setDraft({ password: e.target.value }); fe.clear("password"); }} />
+                  <FieldError msg={fe.errors.password} />
                 </div>
               )}
               {modal.mode === "create" && modal.draft.role === "vendor" && (

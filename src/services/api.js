@@ -1,5 +1,6 @@
 import axios from "axios";
 import * as Sentry from "@sentry/react";
+import { localRef } from "@/errors/parseApiError";
 
 const configuredBaseUrl = import.meta.env.VITE_API_URL?.trim();
 export const BASE_URL = configuredBaseUrl || (import.meta.env.DEV ? "http://127.0.0.1:8000/api/v1" : "");
@@ -56,9 +57,21 @@ api.interceptors.response.use(
     if (!isRoutineRefresh) {
       const level = !error.response || status >= 500 ? "error" : "warning";
       const kind = !error.response ? "network" : status >= 500 ? "server_5xx" : "client_4xx";
+      // Tags homologados: el `code` del catálogo y el `request_id` (Ref) que dicta el
+      // usuario. Así el dashboard de Sentry es buscable por lo que copian del toast.
+      const envelope = error.response?.data?.error;
+      const code = envelope?.code || (!error.response ? "OT-NET-9001" : undefined);
+      const headerRef = error.response?.headers?.["x-request-id"];
+      // Si el fallo no trae Ref del backend (red, o respuesta sin envelope), generamos una
+      // Ref local AQUÍ y la guardamos en el error para que parseApiError reuse la MISMA.
+      // Así la Ref que el usuario copia del toast es la que se encuentra en Sentry.
+      if (!envelope?.request_id && !headerRef && !error.__refLocal) {
+        error.__refLocal = localRef();
+      }
+      const requestId = envelope?.request_id || headerRef || error.__refLocal;
       Sentry.captureException(error, {
         level,
-        tags: { source: "api", kind },
+        tags: { source: "api", kind, code, request_id: requestId },
         extra: {
           method: error.config?.method?.toUpperCase(),
           url: error.config?.url,

@@ -835,6 +835,19 @@ a {
   color: #9A9C90;
 }
 
+/* Marca de validación por campo (capa de "llenado"): borde rojo en cualquier input. */
+.is-invalid,
+input.is-invalid,
+select.is-invalid,
+textarea.is-invalid {
+  border-color: var(--danger, #c0392b);
+  background: #fff;
+}
+.is-invalid:focus {
+  border-color: var(--danger, #c0392b);
+  box-shadow: 0 0 0 4px rgba(192, 57, 43, 0.12);
+}
+
 .tb-btn {
   display: inline-flex;
   align-items: center;
@@ -1855,21 +1868,93 @@ a {
   background: var(--sf2);
 }
 
+/* ── Toast base (layout + fallback neutral) ─────────────── */
 .app-toast {
   position: fixed;
   left: 50%;
   bottom: calc(env(safe-area-inset-bottom) + 108px);
-  z-index: 80;
+  z-index: 500;
   transform: translateX(-50%);
   max-width: calc(100vw - 32px);
   border-radius: 999px;
-  background: rgba(22, 18, 15, 0.96);
-  color: #E9E5DB;
-  padding: 12px 16px;
+  padding: 13px 24px;
   font-size: 0.86rem;
   font-weight: 600;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.26);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.36);
+  background: rgba(22, 18, 15, 0.96);
+  color: #E9E5DB;
 }
+
+/* ── Éxito (showToast) — píldora verde con borde luminoso ── */
+.app-toast--success {
+  background: rgba(28, 90, 48, 0.96);
+  border: 1px solid rgba(111, 175, 107, 0.55);
+  color: #d0f5d8;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.36), 0 0 0 1px rgba(111, 175, 107, 0.15);
+}
+
+/* ── Error card — tarjeta con código + Ref + severidad ───── */
+.app-toast--error {
+  border-radius: 14px;
+  padding: 16px 20px;
+  font-weight: 500;
+  max-width: min(420px, calc(100vw - 32px));
+  text-align: left;
+  /* default: severity="error" */
+  background: rgba(110, 28, 14, 0.94);
+  border: 1px solid rgba(215, 85, 58, 0.50);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.40);
+}
+
+/* severity="fatal" — rojo intenso */
+.app-toast--error[data-severity="fatal"] {
+  background: rgba(90, 8, 8, 0.96);
+  border-color: rgba(230, 45, 45, 0.60);
+}
+
+/* severity="warning" — ámbar */
+.app-toast--error[data-severity="warning"] {
+  background: rgba(96, 66, 6, 0.94);
+  border-color: rgba(212, 158, 28, 0.55);
+}
+
+/* Título del error card */
+.error-toast__title {
+  font-weight: 700;
+  font-size: 0.92rem;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ffb8a0;
+}
+.app-toast--error[data-severity="fatal"] .error-toast__title { color: #ff9898; }
+.app-toast--error[data-severity="warning"] .error-toast__title { color: #fde68a; }
+
+.error-toast__msg { font-size: 0.86rem; line-height: 1.35; color: #E9E5DB; }
+.error-toast__action { font-size: 0.8rem; color: #C9C2B4; margin-top: 6px; }
+.error-toast__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(233, 229, 219, 0.12);
+}
+.error-toast__codes { font-size: 0.72rem; font-family: ui-monospace, monospace; color: #B7AE9E; }
+.error-toast__copy {
+  flex-shrink: 0;
+  border: 1px solid rgba(233, 229, 219, 0.24);
+  background: rgba(255, 255, 255, 0.07);
+  color: #E9E5DB;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.error-toast__copy:hover { background: rgba(233, 229, 219, 0.12); }
 
 @media (min-width: 768px) {
   .modal-overlay {
@@ -2128,17 +2213,166 @@ a {
   margin-bottom: 24px;
 }
 
+/* ── InlineError — popup flotante centrado ───────────────── */
+.ie-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.16);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.ie-card {
+  border-radius: 18px;
+  padding: 32px 36px 0;
+  width: min(420px, calc(100vw - 48px));
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.20);
+}
+
+.ie-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.ie-icon {
+  font-size: 1.15rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+  opacity: 0.70;
+}
+
+.ie-body { flex: 1; min-width: 0; }
+
+.ie-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.55;
+  margin-bottom: 5px;
+}
+
+.ie-msg {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.ie-action {
+  font-size: 0.84rem;
+  opacity: 0.75;
+  margin-top: 6px;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.ie-close {
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.06);
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  opacity: 0.55;
+  color: inherit;
+  transition: opacity 0.15s, background 0.15s;
+}
+.ie-close:hover { opacity: 1; background: rgba(0, 0, 0, 0.10); }
+
+.ie-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 16px 0 28px;
+  border-top-width: 1px;
+  border-top-style: solid;
+}
+
+.ie-meta-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.ie-support {
+  font-size: 0.75rem;
+  font-weight: 400;
+  opacity: 0.60;
+  line-height: 1.35;
+}
+
+.ie-codes {
+  font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  opacity: 0.75;
+  letter-spacing: 0.01em;
+}
+
+.ie-copy {
+  flex-shrink: 0;
+  border-radius: 8px;
+  border-width: 1px;
+  border-style: solid;
+  background: rgba(255, 255, 255, 0.70);
+  cursor: pointer;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 5px 12px;
+  transition: background 0.15s;
+}
+.ie-copy:hover { background: rgba(255, 255, 255, 0.90); }
+
+/* ── InlineError inline (sin onDismiss, ej. LoginScreen) ─── */
 .lf-error {
   background: #fdecea;
   border: 1.5px solid #c0392b;
   border-radius: 8px;
   padding: 10px 14px;
   font-size: 0.8rem;
-  color: #c0392b;
+  color: #7F1C10;
   margin-bottom: 16px;
   font-weight: 500;
   display: grid;
   gap: 10px;
+}
+
+/* severity="fatal" — rojo más intenso */
+.lf-error[data-severity="fatal"] {
+  background: #fce4e0;
+  border-color: #9b1212;
+  color: #5E0A0A;
+}
+
+/* severity="warning" — ámbar */
+.lf-error[data-severity="warning"] {
+  background: #fefbeb;
+  border: 1.5px solid #b2760e;
+  color: #7A4F00;
+}
+
+.lf-error[data-severity="warning"] .lf-error__meta {
+  border-top-color: rgba(178, 118, 14, 0.22);
+}
+
+.lf-error[data-severity="warning"] .lf-error__copy {
+  border-color: rgba(178, 118, 14, 0.32);
+  background: rgba(255, 255, 255, 0.72);
+  color: #7A4F00;
 }
 
 .lf-error-action {
@@ -2156,6 +2390,39 @@ a {
 .lf-error-action:disabled {
   cursor: progress;
   opacity: 0.7;
+}
+
+.lf-error__action {
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.lf-error__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(192, 57, 43, 0.20);
+}
+
+.lf-error__codes {
+  font-family: ui-monospace, monospace;
+  font-size: 0.7rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.lf-error__copy {
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1px solid rgba(192, 57, 43, 0.28);
+  background: rgba(255, 255, 255, 0.70);
+  color: #7F241B;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 5px 10px;
 }
 
 .lf-field {

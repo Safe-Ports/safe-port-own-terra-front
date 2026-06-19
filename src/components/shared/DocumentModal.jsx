@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useAppContext } from "@/context/AppContext";
 import Modal from "@/components/ui/Modal";
+import FieldError from "@/components/shared/FieldError";
+import { useFieldErrors } from "@/hooks/useFieldErrors";
 import { HiOutlineMagnifyingGlass } from "react-icons/hi2";
 
 const CATEGORIES = [
@@ -60,12 +62,14 @@ function DocumentModal() {
     });
   }, [documentDraft, ui.documentModal]);
 
-  const set = (key) => (e) => setForm((p) => ({ ...p, [key]: e.target.value }));
+  const fe = useFieldErrors();
+  const set = (key) => (e) => { const v = e.target.value; setForm((p) => ({ ...p, [key]: v })); fe.clear(key); };
 
   const handleFile = (file) => {
     if (!file) return;
     fileRef.current = file;
     setFileName(file.name);
+    fe.clear("file");
     setForm((p) => ({ ...p, name: p.name || file.name.replace(/\.[^.]+$/, "") }));
   };
 
@@ -75,6 +79,12 @@ function DocumentModal() {
 
   const handleSave = async () => {
     if (uploading) return;
+    // Validación de llenado por campo (no toast general).
+    const errs = {};
+    if (!form.name || !form.name.trim()) errs.name = "Ponle un nombre al documento.";
+    if (!fileRef.current) errs.file = "Selecciona un archivo para subir.";
+    fe.setErrors(errs);
+    if (Object.keys(errs).length) return;
     setUploading(true);
     try {
       await saveDocument({ ...form, folderId: documentDraft?.folderId || undefined }, fileRef.current || null);
@@ -100,7 +110,7 @@ function DocumentModal() {
       }
     >
       <div className="space-y-3">
-        <label className="mobile-input flex cursor-pointer items-center justify-between">
+        <label className={`mobile-input flex cursor-pointer items-center justify-between${fe.errors.file ? " is-invalid" : ""}`}>
           <span className="truncate text-sm">{fileName || "Seleccionar archivo"}</span>
           <input
             type="file"
@@ -109,13 +119,15 @@ function DocumentModal() {
           />
           <span className="text-xs font-semibold text-[#1E3D2B]">Examinar</span>
         </label>
+        <FieldError msg={fe.errors.file} />
 
         <input
-          className="mobile-input"
+          className={fe.errors.name ? "mobile-input is-invalid" : "mobile-input"}
           value={form.name}
           onChange={set("name")}
           placeholder="Nombre descriptivo"
         />
+        <FieldError msg={fe.errors.name} />
 
         <select className="mobile-input" value={form.category} onChange={set("category")}>
           {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}

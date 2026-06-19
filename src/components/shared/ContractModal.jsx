@@ -9,7 +9,7 @@ import { orgService } from "@/services/orgService";
 import { folderService } from "@/services/folderService";
 import { calculatorService } from "@/services/calculatorService";
 import { evaluate, FormulaError } from "@/services/formulaEngine";
-import { getFieldErrors, getUserErrorMessage } from "@/services/errors";
+import { getFieldErrors } from "@/services/errors";
 import { HiOutlinePlus, HiOutlineTrash, HiOutlineDocument } from "react-icons/hi2";
 
 const PAYMENT_METHODS = [
@@ -307,7 +307,7 @@ async function fetchAvailableLotsForFrac(inmuebleId) {
 function ContractModal() {
   const {
     ui, closeModal, clients, fracs, selectedFracId, editingContract, contractDraft,
-    saveContract, deleteContract, resetContractDraft, showToast,
+    saveContract, deleteContract, resetContractDraft, showToast, showError,
   } = useAppContext();
   const navigate = useNavigate();
 
@@ -537,7 +537,7 @@ function ContractModal() {
         setErrors(serverErrs);
         showToast("Revisa los campos marcados en rojo");
       } else {
-        showToast(getUserErrorMessage(err, "Error al guardar el contrato"));
+        showError(err, "Error al guardar el contrato");
       }
     } finally {
       setSaving(false);
