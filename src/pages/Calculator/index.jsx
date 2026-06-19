@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { currency } from "@/services/formatters";
 import { calculatorService } from "@/services/calculatorService";
 import { extractVariables, evaluate, buildFlatSchedule, FormulaError } from "@/services/formulaEngine";
-import { getUserErrorMessage } from "@/services/errors";
+
 import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
 import GuideModal from "@/components/shared/GuideModal";
@@ -32,7 +32,7 @@ function guessPrincipal(vars, vals) {
 }
 
 function CalculatorPage() {
-  const { showToast } = useAppContext();
+  const { showToast, showError } = useAppContext();
   const qc = useQueryClient();
   const [showGuide, setShowGuide] = useState(false);
   useLandsGuide(() => setShowGuide(true));
@@ -130,7 +130,7 @@ function CalculatorPage() {
       loadIntoEditor(saved);
       showToast(isEditing ? "Calculadora actualizada" : "Calculadora creada");
     } catch (err) {
-      showToast(getUserErrorMessage(err, "No se pudo guardar la calculadora"));
+      showError(err, "No se pudo guardar la calculadora");
     } finally {
       setSaving(false);
     }
@@ -146,7 +146,7 @@ function CalculatorPage() {
       if (editor.id === calc.id) setEditor((e) => ({ ...e, is_active: true }));
       showToast(`«${calc.name}» es ahora la calculadora activa`);
     } catch (err) {
-      showToast(getUserErrorMessage(err, "No se pudo activar la calculadora"));
+      showError(err, "No se pudo activar la calculadora");
     } finally {
       setPendingId(null);
     }
@@ -162,7 +162,7 @@ function CalculatorPage() {
       if (editor.id === calc.id) { setOpen(false); setEditor(EMPTY); }
       showToast("Calculadora eliminada");
     } catch (err) {
-      showToast(getUserErrorMessage(err, "No se pudo eliminar la calculadora"));
+      showError(err, "No se pudo eliminar la calculadora");
     } finally {
       setPendingId(null);
     }

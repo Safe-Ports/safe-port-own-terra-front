@@ -5,8 +5,17 @@ import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
 import Modal from "@/components/ui/Modal";
+import FieldError from "@/components/shared/FieldError";
+import { useFieldErrors } from "@/hooks/useFieldErrors";
 import { currency, dateLabel, relativeDays } from "@/services/formatters";
 import { notificationService } from "@/services/notificationService";
+
+const PAYMENT_RULES = {
+  clientId: (v) => (!v ? "Selecciona un cliente." : ""),
+  contractId: (v) => (!v ? "Selecciona un contrato." : ""),
+  cuota: (v) => (!v || Number(v) < 1 ? "La cuota debe ser 1 o mayor." : ""),
+  amount: (v) => (!v || Number(v) <= 0 ? "Ingresa un monto mayor a 0." : ""),
+};
 
 function PaymentModal() {
   const { ui, closeModal, clients, contracts, editingPayment, paymentDraft, savePayment, resetPaymentDraft } = useAppContext();
@@ -68,24 +77,41 @@ function PaymentModal() {
           >
             Cancelar
           </button>
-          <button className="btn-p" onClick={() => savePayment({ ...(editingPayment || {}), ...form })}>Guardar</button>
+          {editingPayment ? (
+            <button className="btn-dan" onClick={() => deletePayment(editingPayment.id)}>Eliminar</button>
+          ) : null}
+          <button className="btn-p" onClick={save}>Guardar</button>
         </>
       }
     >
       <div className="space-y-3">
-        <select className="mobile-input" value={form.clientId} onChange={(event) => setForm((prev) => ({ ...prev, clientId: event.target.value }))}>
-          {clients.map((client) => (
-            <option key={client.id} value={client.id}>{client.name}</option>
-          ))}
-        </select>
-        <select className="mobile-input" value={form.contractId} onChange={(event) => setForm((prev) => ({ ...prev, contractId: event.target.value }))}>
-          {contracts.map((contract) => (
-            <option key={contract.id} value={contract.id}>{contract.contract_number}</option>
-          ))}
-        </select>
+        <div>
+          <select className={fe.errors.clientId ? "mobile-input is-invalid" : "mobile-input"} value={form.clientId} onChange={(event) => { setForm((prev) => ({ ...prev, clientId: event.target.value })); fe.clear("clientId"); }}>
+            <option value="">— Seleccionar cliente —</option>
+            {clients.map((client) => (
+              <option key={client.id} value={client.id}>{client.name}</option>
+            ))}
+          </select>
+          <FieldError msg={fe.errors.clientId} />
+        </div>
+        <div>
+          <select className={fe.errors.contractId ? "mobile-input is-invalid" : "mobile-input"} value={form.contractId} onChange={(event) => { setForm((prev) => ({ ...prev, contractId: event.target.value })); fe.clear("contractId"); }}>
+            <option value="">— Seleccionar contrato —</option>
+            {contracts.map((contract) => (
+              <option key={contract.id} value={contract.id}>{contract.contract_number}</option>
+            ))}
+          </select>
+          <FieldError msg={fe.errors.contractId} />
+        </div>
         <div className="grid grid-cols-2 gap-3">
-          <input className="mobile-input" type="number" value={form.cuota} onChange={(event) => setForm((prev) => ({ ...prev, cuota: Number(event.target.value) }))} placeholder="Cuota" />
-          <input className="mobile-input" type="number" value={form.amount} onChange={(event) => setForm((prev) => ({ ...prev, amount: Number(event.target.value) }))} placeholder="Monto" />
+          <div>
+            <input className={fe.errors.cuota ? "mobile-input is-invalid" : "mobile-input"} type="number" value={form.cuota} onChange={(event) => { setForm((prev) => ({ ...prev, cuota: Number(event.target.value) })); fe.clear("cuota"); }} placeholder="Cuota" />
+            <FieldError msg={fe.errors.cuota} />
+          </div>
+          <div>
+            <input className={fe.errors.amount ? "mobile-input is-invalid" : "mobile-input"} type="number" value={form.amount} onChange={(event) => { setForm((prev) => ({ ...prev, amount: Number(event.target.value) })); fe.clear("amount"); }} placeholder="Monto" />
+            <FieldError msg={fe.errors.amount} />
+          </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <input className="mobile-input" type="date" value={form.dueDate} onChange={(event) => setForm((prev) => ({ ...prev, dueDate: event.target.value }))} />

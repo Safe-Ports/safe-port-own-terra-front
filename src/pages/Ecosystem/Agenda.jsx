@@ -3,7 +3,9 @@ import GuideModal from "@/components/shared/GuideModal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { appointmentService } from "@/services/appointmentService";
 import { useAppContext } from "@/context/AppContext";
-import { getUserErrorMessage } from "@/services/errors";
+
+import FieldError from "@/components/shared/FieldError";
+import { useFieldErrors } from "@/hooks/useFieldErrors";
 import EcoLayout from "./EcoLayout";
 
 function buildWhatsAppLink(phone, message) {
@@ -34,6 +36,11 @@ const TYPES = {
 };
 
 const FILTERS = ["Todos", "Core", "Lands"];
+
+const AGENDA_RULES = {
+  date: (v) => (!v ? "La fecha es obligatoria." : ""),
+  time: (v) => (!v ? "La hora es obligatoria." : ""),
+};
 
 function toDateKey(date) {
   const year = date.getFullYear();
@@ -86,7 +93,7 @@ function AppTag({ app }) {
 function AgendaPage() {
   const today = new Date();
   const qc = useQueryClient();
-  const { showToast, clearCalendarAlerts, clients } = useAppContext();
+  const { showToast, showError, clearCalendarAlerts, clients } = useAppContext();
   const [visibleMonth, setVisibleMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [showGuide, setShowGuide] = useState(false);
 
@@ -110,7 +117,7 @@ function AgendaPage() {
       qc.invalidateQueries({ queryKey: ["appointments"] });
       showToast("Evento guardado");
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al guardar el evento")),
+    onError: (err) => showError(err, "Error al guardar el evento"),
   });
 
   const cancelMutation = useMutation({
@@ -119,7 +126,7 @@ function AgendaPage() {
       qc.invalidateQueries({ queryKey: ["appointments"] });
       showToast("Evento eliminado");
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al eliminar el evento")),
+    onError: (err) => showError(err, "Error al eliminar el evento"),
   });
 
   const updateMutation = useMutation({
@@ -128,7 +135,7 @@ function AgendaPage() {
       qc.invalidateQueries({ queryKey: ["appointments"] });
       showToast("Evento actualizado");
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al actualizar el evento")),
+    onError: (err) => showError(err, "Error al actualizar el evento"),
   });
 
   const [selectedDate, setSelectedDate] = useState(toDateKey(today));
@@ -185,6 +192,7 @@ function AgendaPage() {
 
   const saveAppointment = async (event) => {
     event.preventDefault();
+    if (!fe.validate(form, AGENDA_RULES)) return;
     const [h, m] = form.time.split(":");
     const dt = new Date(`${form.date}T${h}:${m}:00`);
     const body = {
@@ -400,11 +408,13 @@ function AgendaPage() {
               </label>
               <label>
                 Fecha
-                <input type="date" value={form.date} onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))} />
+                <input type="date" className={fe.errors.date ? "is-invalid" : undefined} value={form.date} onChange={(e) => { setForm((p) => ({ ...p, date: e.target.value })); fe.clear("date"); }} />
+                <FieldError msg={fe.errors.date} />
               </label>
               <label>
                 Hora
-                <input type="time" value={form.time} onChange={(e) => setForm((p) => ({ ...p, time: e.target.value }))} />
+                <input type="time" className={fe.errors.time ? "is-invalid" : undefined} value={form.time} onChange={(e) => { setForm((p) => ({ ...p, time: e.target.value })); fe.clear("time"); }} />
+                <FieldError msg={fe.errors.time} />
               </label>
               <label>
                 App / Área

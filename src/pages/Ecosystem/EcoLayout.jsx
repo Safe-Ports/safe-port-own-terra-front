@@ -4,6 +4,7 @@ import { useAppContext } from "@/context/AppContext";
 import EcoSprite from "./EcoSprite";
 import "@/styles/ecosystem.css";
 import Avatar from "@/components/Avatar";
+import Toast from "@/components/shared/Toast";
 
 /* Layout compartido del hub Aurora: sidebar + topbar + área de scroll.
    `active` marca el item activo del menú. */
@@ -128,6 +129,7 @@ function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
 
         <div className="scroll-area">{children}</div>
       </div>
+      <Toast />
     </div>
   );
 }

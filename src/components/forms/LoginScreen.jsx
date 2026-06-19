@@ -1,5 +1,17 @@
 import { useState } from "react";
 import { useAppContext } from "@/context/AppContext";
+import InlineError from "@/components/shared/InlineError";
+import FieldError from "@/components/shared/FieldError";
+import { useFieldErrors } from "@/hooks/useFieldErrors";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const REGISTER_RULES = {
+  organization_name: (v) => (!v || v.trim().length < 3 ? "El nombre de la empresa debe tener al menos 3 caracteres." : ""),
+  name: (v) => (!v || v.trim().length < 2 ? "Tu nombre debe tener al menos 2 caracteres." : ""),
+  email: (v) => (!EMAIL_RE.test((v || "").trim()) ? "Escribe un correo electrónico válido." : ""),
+  password: (v) => ((v || "").length < 8 ? "La contraseña debe tener al menos 8 caracteres." : ""),
+  confirm: (v, form) => (v !== form.password ? "Las contraseñas no coinciden." : ""),
+};
 
 const MAP_SVG = (
   <svg className="ll-map-deco" width="340" height="320" viewBox="0 0 340 320" fill="none">
@@ -50,7 +62,7 @@ function LeftPanel() {
 function LoginView({ onForgot, onRegister }) {
   const { login, resendVerification, showToast } = useAppContext();
   const [form, setForm]     = useState({ identifier: "", password: "", remember: false });
-  const [error, setError]   = useState("");
+  const [error, setError]   = useState(null);
   const [unverifiedEmail, setUnverifiedEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
@@ -59,12 +71,12 @@ function LoginView({ onForgot, onRegister }) {
   const submit = async () => {
     if (!form.identifier || !form.password) return;
     setLoading(true);
-    setError("");
+    setError(null);
     setUnverifiedEmail("");
     const result = await login(form);
     setLoading(false);
     if (!result.ok) {
-      setError(result.msg || "Usuario o contraseña incorrectos. Intenta de nuevo.");
+      setError(result.error || { code: "OT-SYS-9000", message: result.msg || "No pudimos iniciar sesión.", action: "", requestId: null });
       if (result.needsVerification) setUnverifiedEmail(result.email || form.identifier);
     }
   };
@@ -82,16 +94,13 @@ function LoginView({ onForgot, onRegister }) {
       <div className="lf-title">Bienvenido</div>
       <div className="lf-sub">Accede a tu sistema de gestión inmobiliaria</div>
 
-      {error && (
-        <div className="lf-error">
-          <div>{error}</div>
-          {unverifiedEmail ? (
-            <button type="button" className="lf-error-action" onClick={resend} disabled={resending}>
-              {resending ? "Reenviando..." : "Reenviar correo de verificación"}
-            </button>
-          ) : null}
-        </div>
-      )}
+      <InlineError error={error}>
+        {unverifiedEmail ? (
+          <button type="button" className="lf-error-action" onClick={resend} disabled={resending}>
+            {resending ? "Reenviando..." : "Reenviar correo de verificación"}
+          </button>
+        ) : null}
+      </InlineError>
 
       <div className="lf-field">
         <label className="lf-label">Usuario / Correo</label>
@@ -176,18 +185,18 @@ function ForgotView({ onBack }) {
   const [email, setEmail]   = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent]     = useState(false);
-  const [error, setError]   = useState(false);
+  const [error, setError]   = useState(null);
 
   const submit = async () => {
     if (!email.trim()) return;
     setLoading(true);
-    setError(false);
+    setError(null);
     const result = await forgotPassword(email.trim());
     setLoading(false);
     if (result.ok) {
       setSent(true);
     } else {
-      setError(true);
+      setError({ message: "Ocurrió un error al enviar el correo.", action: "Verifica tu dirección e intenta de nuevo.", severity: "warning" });
     }
   };
 
@@ -218,18 +227,14 @@ function ForgotView({ onBack }) {
       <div className="lf-title">Recuperar contraseña</div>
       <div className="lf-sub">Ingresa tu correo y te enviaremos instrucciones para recuperar el acceso.</div>
 
-      {error && (
-        <div className="lf-error">
-          Ocurrió un error. Intenta de nuevo.
-        </div>
-      )}
+      <InlineError error={error} />
 
       <div className="lf-field">
         <label className="lf-label">Correo electrónico</label>
         <div className="lf-input-wrap">
           <span className="lf-ico">✉️</span>
           <input
-            className={`lf-input${error ? " error" : ""}`}
+            className="lf-input"
             type="email"
             placeholder="correo@empresa.mx"
             value={email}
@@ -265,33 +270,18 @@ function RegisterView({ onBack }) {
   });
   const { resendVerification } = useAppContext();
   const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState("");
+  const [error, setError]     = useState(null);
   const [showPass, setShowPass] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
+  const fe = useFieldErrors();
 
-  const set = (key) => (e) => setForm((p) => ({ ...p, [key]: e.target.value }));
-
-  const validate = () => {
-    const organizationName = form.organization_name.trim();
-    const name = form.name.trim();
-    const email = form.email.trim();
-
-    if (organizationName.length < 3) return "El nombre de la empresa debe tener al menos 3 caracteres.";
-    if (name.length < 2) return "Tu nombre debe tener al menos 2 caracteres.";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Escribe un correo electrónico válido.";
-    if (form.password.length < 8) return "La contraseña debe tener al menos 8 caracteres.";
-    if (form.password !== form.confirm) return "Las contraseñas no coinciden.";
-    return "";
-  };
+  const set = (key) => (e) => { const v = e.target.value; setForm((p) => ({ ...p, [key]: v })); fe.clear(key); };
 
   const submit = async () => {
-    const validationError = validate();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+    // Validación de llenado: por campo (rojo bajo el input), no en la caja general.
+    if (!fe.validate(form, REGISTER_RULES)) return;
     setLoading(true);
-    setError("");
+    setError(null);
     const result = await register({
       organization_name: form.organization_name.trim(),
       name: form.name.trim(),
@@ -303,7 +293,7 @@ function RegisterView({ onBack }) {
       setRegisteredEmail(result.email || form.email.trim());
       return;
     }
-    if (!result.ok) setError(result.msg || "Error al crear la cuenta. Verifica los datos.");
+    if (!result.ok) setError(result.error || { message: result.msg || "Error al crear la cuenta. Verifica los datos." });
   };
 
   if (registeredEmail) {
@@ -355,7 +345,7 @@ function RegisterView({ onBack }) {
       <div className="lf-title">Crear cuenta nueva</div>
       <div className="lf-sub">Registra tu empresa y comienza a gestionar tu fraccionamiento.</div>
 
-      {error && <div className="lf-error">{error}</div>}
+      <InlineError error={error} />
 
       {fields.map((f) => (
         <div className="lf-field" key={f.key}>
@@ -363,7 +353,7 @@ function RegisterView({ onBack }) {
           <div className="lf-input-wrap">
             <span className="lf-ico">{f.ico}</span>
             <input
-              className={`lf-input${error ? " error" : ""}`}
+              className={fe.errors[f.key] ? "lf-input is-invalid" : "lf-input"}
               type={f.type}
               placeholder={f.placeholder}
               value={form[f.key]}
@@ -372,6 +362,7 @@ function RegisterView({ onBack }) {
               autoComplete={f.auto}
             />
           </div>
+          <FieldError msg={fe.errors[f.key]} />
         </div>
       ))}
 
@@ -380,7 +371,7 @@ function RegisterView({ onBack }) {
         <div className="lf-input-wrap">
           <span className="lf-ico">🔒</span>
           <input
-            className={`lf-input${error ? " error" : ""}`}
+            className={fe.errors.password ? "lf-input is-invalid" : "lf-input"}
             type={showPass ? "text" : "password"}
             placeholder="Mínimo 8 caracteres"
             value={form.password}
@@ -392,6 +383,7 @@ function RegisterView({ onBack }) {
             {showPass ? "🙈" : "👁"}
           </button>
         </div>
+        <FieldError msg={fe.errors.password} />
       </div>
 
       <div className="lf-field">
@@ -399,7 +391,7 @@ function RegisterView({ onBack }) {
         <div className="lf-input-wrap">
           <span className="lf-ico">🔒</span>
           <input
-            className={`lf-input${error ? " error" : ""}`}
+            className={fe.errors.confirm ? "lf-input is-invalid" : "lf-input"}
             type={showPass ? "text" : "password"}
             placeholder="Repite la contraseña"
             value={form.confirm}
@@ -408,6 +400,7 @@ function RegisterView({ onBack }) {
             autoComplete="new-password"
           />
         </div>
+        <FieldError msg={fe.errors.confirm} />
       </div>
 
       <button

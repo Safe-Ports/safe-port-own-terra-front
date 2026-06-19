@@ -7,7 +7,7 @@ import { useLandsGuide } from "@/context/LandsGuideContext";
 import { useProjectsQuery } from "@/hooks/queries/useAppQueries";
 import { lotService } from "@/services/lotService";
 import { inmuebleService } from "@/services/inmuebleService";
-import { getUserErrorMessage } from "@/services/errors";
+import { parseApiError } from "@/errors/parseApiError";
 import Button from "@/components/Button";
 import GuideModal from "@/components/shared/GuideModal";
 import LotImportFormatModal from "./LotImportFormatModal";
@@ -346,7 +346,7 @@ function cropPlanImage(dataUrl) {
 function LotsPage() {
   const navigate = useNavigate();
   const { data: projects = [] } = useProjectsQuery();
-  const { draftProject, setDraftProject, saveFrac, saveEditedFrac, deleteFrac, setSelectedFracId, showToast } = useAppContext();
+  const { draftProject, setDraftProject, saveFrac, saveEditedFrac, deleteFrac, setSelectedFracId, showToast, showError } = useAppContext();
   const isEditing = !!draftProject._editingFracId;
 
   useEffect(() => {
@@ -426,7 +426,7 @@ function LotsPage() {
         _editingFracId: project.id,
       });
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al cargar los lotes para editar"));
+      showError(err, "Error al cargar los lotes para editar");
     } finally {
       setLoadingEditId(null);
     }
@@ -446,7 +446,7 @@ function LotsPage() {
       XLSX.writeFile(workbook, "plantilla_lotes.xlsx");
       showToast("Plantilla de lotes descargada");
     } catch (err) {
-      showToast(getUserErrorMessage(err, "No se pudo descargar la plantilla"));
+      showError(err, "No se pudo descargar la plantilla");
     } finally {
       setDownloadingTemplate(false);
     }
@@ -553,10 +553,10 @@ function LotsPage() {
       if (result.failed > 0) setShowImportGuide(true);
 
     } catch (err) {
-      const msg = getUserErrorMessage(err, "Error al importar el archivo. Descarga la plantilla y verifica el formato.");
+      const msg = parseApiError(err, "Error al importar el archivo. Descarga la plantilla y verifica el formato.").message;
       setImportSummary({ fileName: file?.name ?? null, imported: 0, failed: 0, errors: [{ message: msg }], warnings: [] });
       setShowImportGuide(true);
-      showToast(msg);
+      showError(err, "Error al importar el archivo. Descarga la plantilla y verifica el formato.");
     } finally {
       setImportLoading(false);
     }

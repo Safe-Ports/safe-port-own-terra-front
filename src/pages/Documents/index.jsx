@@ -11,7 +11,7 @@ import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
 import { folderService } from "@/services/folderService";
 import { documentService, filenameForDocument } from "@/services/documentService";
-import { getUserErrorMessage } from "@/services/errors";
+
 
 /* ── helpers ────────────────────────────────────────────────────────────── */
 const CAT_LABEL = {
@@ -182,7 +182,7 @@ function MoveModal({ folders, doc, onMove, onClose }) {
 
 /* ── main page ──────────────────────────────────────────────────────────── */
 export default function DocumentsPage() {
-  const { documents, openDocumentUpload, openDocumentPreview, downloadDocument, deleteDocument, showToast } = useAppContext();
+  const { documents, openDocumentUpload, openDocumentPreview, downloadDocument, deleteDocument, showToast, showError } = useAppContext();
   const [showGuide, setShowGuide] = useState(false);
   useLandsGuide(() => setShowGuide(true));
   const qc = useQueryClient();
@@ -196,22 +196,22 @@ export default function DocumentsPage() {
   const createFolder = useMutation({
     mutationFn: folderService.create,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["document-folders"] }); showToast("Carpeta creada"); },
-    onError: (e) => showToast(getUserErrorMessage(e, "Error al crear carpeta")),
+    onError: (e) => showError(e, "Error al crear carpeta"),
   });
   const renameFolder = useMutation({
     mutationFn: ({ id, name }) => folderService.update(id, { name }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["document-folders"] }); showToast("Carpeta renombrada"); },
-    onError: (e) => showToast(getUserErrorMessage(e, "Error al renombrar la carpeta")),
+    onError: (e) => showError(e, "Error al renombrar la carpeta"),
   });
   const deleteFolder = useMutation({
     mutationFn: folderService.delete,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["document-folders"] }); qc.invalidateQueries({ queryKey: ["documents"] }); showToast("Carpeta eliminada"); },
-    onError: (e) => showToast(getUserErrorMessage(e, "Error al eliminar la carpeta")),
+    onError: (e) => showError(e, "Error al eliminar la carpeta"),
   });
   const moveDoc = useMutation({
     mutationFn: ({ id, folderId }) => documentService.move(id, folderId),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["documents"] }); qc.invalidateQueries({ queryKey: ["document-folders"] }); showToast("Archivo movido"); },
-    onError: (e) => showToast(getUserErrorMessage(e, "Error al mover el archivo")),
+    onError: (e) => showError(e, "Error al mover el archivo"),
   });
 
   const [activeId,    setActiveId]    = useState("all");

@@ -4,11 +4,12 @@ import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
 import { orgService } from "@/services/orgService";
 import GuideModal from "@/components/shared/GuideModal";
-import { getUserErrorMessage } from "@/services/errors";
 import Button from "@/components/Button";
+import FieldError from "@/components/shared/FieldError";
+import { useFieldErrors } from "@/hooks/useFieldErrors";
 
 function SettingsPage() {
-  const { currentUser, showToast, canUseFeature } = useAppContext();
+  const { currentUser, showToast, showError, canUseFeature } = useAppContext();
   const [showGuide, setShowGuide] = useState(false);
   useLandsGuide(() => setShowGuide(true));
   const queryClient = useQueryClient();
@@ -29,21 +30,25 @@ function SettingsPage() {
   const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: "vendor" });
   const [creating, setCreating] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const fe = useFieldErrors();
 
   const handleCreateUser = async () => {
-    if (!newUser.name || !newUser.email || !newUser.password) {
-      showToast("Nombre, correo y contraseña son obligatorios");
-      return;
-    }
+    const errs = {};
+    if (!newUser.name.trim()) errs.name = "El nombre es obligatorio.";
+    if (!newUser.email.trim()) errs.email = "El correo es obligatorio.";
+    if (!newUser.password) errs.password = "La contraseña es obligatoria.";
+    if (Object.keys(errs).length) { fe.setErrors(errs); return; }
+    fe.clearAll();
     setCreating(true);
     try {
       await orgService.createUser(newUser);
       await queryClient.invalidateQueries({ queryKey: ["users"] });
       setNewUser({ name: "", email: "", password: "", role: "vendor" });
+      fe.clearAll();
       setShowForm(false);
       showToast("Usuario creado");
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al crear usuario"));
+      showError(err, "Error al crear usuario");
     } finally {
       setCreating(false);
     }
@@ -54,7 +59,7 @@ function SettingsPage() {
       await orgService.resetPassword(id);
       showToast(`Contraseña restablecida para ${name}`);
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al restablecer contraseña"));
+      showError(err, "Error al restablecer contraseña");
     }
   };
 
@@ -65,7 +70,7 @@ function SettingsPage() {
       await queryClient.invalidateQueries({ queryKey: ["users"] });
       showToast("Usuario eliminado");
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al eliminar usuario"));
+      showError(err, "Error al eliminar usuario");
     }
   };
 
@@ -132,15 +137,18 @@ function SettingsPage() {
             <div className="fr-row" style={{ flexWrap: "wrap", gap: 10, marginBottom: 16, padding: "14px", background: "var(--sf2)", borderRadius: 10, border: "1px solid var(--bd)" }}>
               <div className="fg" style={{ flex: 1, minWidth: 160 }}>
                 <label className="fl">Nombre</label>
-                <input className="fi" value={newUser.name} onChange={(e) => setNewUser((p) => ({ ...p, name: e.target.value }))} placeholder="Juan García" />
+                <input {...fe.fieldProps("name", "fi")} value={newUser.name} onChange={(e) => { setNewUser((p) => ({ ...p, name: e.target.value })); fe.clear("name"); }} placeholder="Juan García" />
+                <FieldError msg={fe.errors.name} />
               </div>
               <div className="fg" style={{ flex: 1, minWidth: 160 }}>
                 <label className="fl">Correo</label>
-                <input className="fi" type="email" value={newUser.email} onChange={(e) => setNewUser((p) => ({ ...p, email: e.target.value }))} placeholder="juan@empresa.com" />
+                <input {...fe.fieldProps("email", "fi")} type="email" value={newUser.email} onChange={(e) => { setNewUser((p) => ({ ...p, email: e.target.value })); fe.clear("email"); }} placeholder="juan@empresa.com" />
+                <FieldError msg={fe.errors.email} />
               </div>
               <div className="fg" style={{ flex: 1, minWidth: 140 }}>
                 <label className="fl">Contraseña temporal</label>
-                <input className="fi" type="password" value={newUser.password} onChange={(e) => setNewUser((p) => ({ ...p, password: e.target.value }))} />
+                <input {...fe.fieldProps("password", "fi")} type="password" value={newUser.password} onChange={(e) => { setNewUser((p) => ({ ...p, password: e.target.value })); fe.clear("password"); }} />
+                <FieldError msg={fe.errors.password} />
               </div>
               <div className="fg" style={{ minWidth: 120 }}>
                 <label className="fl">Rol</label>

@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sync:errors": "node scripts/sync-errors.mjs",
+    "sync:errors:check": "node scripts/sync-errors.mjs --check"
   },
   "dependencies": {
     "@sentry/react": "^10.56.0",
