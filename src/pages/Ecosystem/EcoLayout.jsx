@@ -51,6 +51,7 @@ function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
             {navItem("agenda", "Agenda", "eco-n-calendar", () => navigate("/ecosistema/agenda"))}
             {navItem("panel", "Panel General", "eco-n-grid", () => navigate("/ecosistema"))}
             {navItem("vault", "OwnTerra Vault", "eco-n-vault", () => navigate("/ecosistema/documentos"), !canUseFeature("core.vault"))}
+            {navItem("formularios", "Formularios", "eco-n-forms", () => navigate("/ecosistema/formularios"))}
             {navItem("users", "Clientes del core", "eco-n-users", () => navigate("/ecosistema/clientes"), !canUseFeature("core.clients"))}
             {navItem("team", "Equipo", "eco-n-shield", () => navigate("/ecosistema/equipo"), !canUseFeature("core.team"))}
             {navItem("fin", "Estados Financieros", "eco-n-chart", () => navigate("/ecosistema/finanzas"), !canUseFeature("core.finance"))}

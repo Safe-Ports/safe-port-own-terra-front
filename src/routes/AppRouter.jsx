@@ -11,6 +11,9 @@ const EcosystemDia = lazy(() => import("@/pages/Ecosystem/Dia"));
 const EcosystemFinanzas = lazy(() => import("@/pages/Ecosystem/Finanzas"));
 const EcosystemAgenda = lazy(() => import("@/pages/Ecosystem/Agenda"));
 const EcosystemEquipo = lazy(() => import("@/pages/Ecosystem/Equipo"));
+const EcosystemFormularios = lazy(() => import("@/pages/Ecosystem/Formularios"));
+const EcosystemFormEditor = lazy(() => import("@/pages/Ecosystem/Formularios/Editor"));
+const EcosystemFormRespuestas = lazy(() => import("@/pages/Ecosystem/Formularios/Respuestas"));
 const DashboardPage = lazy(() => import("@/pages/Dashboard"));
 const LotsPage = lazy(() => import("@/pages/Lots"));
 const FracsPage = lazy(() => import("@/pages/Fracs"));
@@ -55,6 +58,10 @@ function AppRouter() {
         <Route path="/ecosistema/finanzas" element={<RequireFeature feature="core.finance"><EcosystemFinanzas /></RequireFeature>} />
         <Route path="/ecosistema/agenda" element={<EcosystemAgenda />} />
         <Route path="/ecosistema/equipo" element={<RequireFeature feature="core.team"><EcosystemEquipo /></RequireFeature>} />
+        <Route path="/ecosistema/formularios" element={<RequireFeature feature="core.forms"><EcosystemFormularios /></RequireFeature>} />
+        <Route path="/ecosistema/formularios/nuevo" element={<RequireFeature feature="core.forms"><EcosystemFormEditor /></RequireFeature>} />
+        <Route path="/ecosistema/formularios/:id/editar" element={<RequireFeature feature="core.forms"><EcosystemFormEditor /></RequireFeature>} />
+        <Route path="/ecosistema/formularios/:id/respuestas" element={<RequireFeature feature="core.forms"><EcosystemFormRespuestas /></RequireFeature>} />
         <Route element={<AppShell />}>
           <Route path="/dashboard" element={<RequireFeature app="lands"><DashboardPage /></RequireFeature>} />
           <Route path="/lotes" element={<RequireFeature app="lands"><LotsPage /></RequireFeature>} />
