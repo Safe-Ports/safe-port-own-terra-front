@@ -122,7 +122,34 @@
   background: rgba(192, 57, 43, .08);
   border-radius: 10px;
   border: 1px solid rgba(192, 57, 43, .2);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
+
+.fp-error-ref {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10.5px;
+  font-family: 'JetBrains Mono', monospace;
+  color: #a93226;
+  opacity: .85;
+}
+
+.fp-error-copy {
+  border: 1px solid rgba(192, 57, 43, .3);
+  background: transparent;
+  color: #a93226;
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 2px 7px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background .12s;
+}
+
+.fp-error-copy:hover { background: rgba(192, 57, 43, .1); }
 
 .fp-submit {
   width: 100%;

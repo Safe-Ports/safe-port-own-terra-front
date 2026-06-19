@@ -5,7 +5,6 @@ import GuideModal from "@/components/shared/GuideModal";
 import EcoLayout from "../EcoLayout";
 import { formService } from "@/services/formService";
 import { useAppContext } from "@/context/AppContext";
-import { getUserErrorMessage } from "@/services/errors";
 
 const FormIco = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -58,7 +57,7 @@ const IcoTrash = () => (
 function EcosystemFormularios() {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { showToast, currentUser } = useAppContext();
+  const { showToast, showError, currentUser } = useAppContext();
   const [showGuide, setShowGuide] = useState(false);
 
   const isAdmin = ["admin", "owner", "superadmin"].includes((currentUser?.role ?? "").toLowerCase());
@@ -74,7 +73,7 @@ function EcosystemFormularios() {
       qc.invalidateQueries({ queryKey: ["form-templates"] });
       showToast("Formulario eliminado");
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al eliminar")),
+    onError: (err) => showError(err, "Error al eliminar"),
   });
 
   const toggleMutation = useMutation({
@@ -83,7 +82,7 @@ function EcosystemFormularios() {
       qc.invalidateQueries({ queryKey: ["form-templates"] });
       showToast(updated.is_published ? "Formulario publicado" : "Formulario despublicado");
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al cambiar estado")),
+    onError: (err) => showError(err, "Error al cambiar estado"),
   });
 
   const copyLink = (slug) => {

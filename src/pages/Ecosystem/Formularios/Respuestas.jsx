@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import EcoLayout from "../EcoLayout";
 import { formService } from "@/services/formService";
 import { useAppContext } from "@/context/AppContext";
-import { getUserErrorMessage } from "@/services/errors";
 
 const PAGE_SIZE = 25;
 
@@ -28,7 +27,7 @@ function EcosystemFormRespuestas() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { id } = useParams();
-  const { showToast, currentUser } = useAppContext();
+  const { showToast, showError, currentUser } = useAppContext();
   const [page, setPage] = useState(1);
 
   const isAdmin = ["admin", "owner", "superadmin"].includes((currentUser?.role ?? "").toLowerCase());
@@ -55,7 +54,7 @@ function EcosystemFormRespuestas() {
       qc.invalidateQueries({ queryKey: ["form-templates"] });
       showToast("Respuesta eliminada");
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al eliminar")),
+    onError: (err) => showError(err, "Error al eliminar"),
   });
 
   const handleDelete = (sub) => {

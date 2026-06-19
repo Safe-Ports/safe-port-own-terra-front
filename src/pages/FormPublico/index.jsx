@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { formService } from "@/services/formService";
+import { parseApiError } from "@/errors/parseApiError";
 import "./FormPublico.css";
 
 function FormPublico() {
@@ -43,8 +44,9 @@ function FormPublico() {
     try {
       await formService.publicSubmit(slug, { data: values });
       setPhase("success");
-    } catch {
-      setErrors({ __global: "No fue posible enviar el formulario. Intenta de nuevo en un momento." });
+    } catch (err) {
+      const parsed = parseApiError(err, "No fue posible enviar el formulario.");
+      setErrors({ __global: parsed });
     } finally {
       setSubmitting(false);
     }
@@ -114,7 +116,19 @@ function FormPublico() {
 
           <form onSubmit={handleSubmit} noValidate>
             {errors.__global && (
-              <div className="fp-global-error">{errors.__global}</div>
+              <div className="fp-global-error">
+                <div>{errors.__global.message}</div>
+                <div className="fp-error-ref">
+                  {errors.__global.code} · Ref: {errors.__global.requestId ?? "—"}
+                  <button
+                    type="button"
+                    className="fp-error-copy"
+                    onClick={() => navigator.clipboard.writeText(`${errors.__global.code} · Ref: ${errors.__global.requestId ?? "—"}`)}
+                  >
+                    Copiar
+                  </button>
+                </div>
+              </div>
             )}
 
             <div className="fp-fields">

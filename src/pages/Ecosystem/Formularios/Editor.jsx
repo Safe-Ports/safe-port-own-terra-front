@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import EcoLayout from "../EcoLayout";
 import { formService } from "@/services/formService";
 import { useAppContext } from "@/context/AppContext";
-import { getUserErrorMessage } from "@/services/errors";
 
 let _fieldCounter = 0;
 const makeFieldId = () => `f${++_fieldCounter}`;
@@ -108,7 +107,7 @@ function EcosystemFormEditor() {
   const qc = useQueryClient();
   const { id } = useParams();
   const isEdit = !!id;
-  const { showToast } = useAppContext();
+  const { showToast, showError } = useAppContext();
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -151,7 +150,7 @@ function EcosystemFormEditor() {
       showToast(isEdit ? "Formulario actualizado" : "Formulario guardado como borrador");
       goBack();
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al guardar")),
+    onError: (err) => showError(err, "Error al guardar"),
   });
 
   const publishMutation = useMutation({
@@ -171,7 +170,7 @@ function EcosystemFormEditor() {
       showToast("Formulario publicado · link activo");
       goBack();
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al publicar")),
+    onError: (err) => showError(err, "Error al publicar"),
   });
 
   const moveField = (index, dir) => {
