@@ -1,0 +1,238 @@
+/* OwnTerra — Formulario Público · standalone, sin eco-root */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+.fp-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 36px 16px 56px;
+  background: #f4f2ee;
+  font-family: 'Outfit', system-ui, sans-serif;
+  color: #1a1a1a;
+  -webkit-font-smoothing: antialiased;
+}
+
+.fp-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 28px;
+}
+
+.fp-logo {
+  height: 52px;
+  width: auto;
+  object-fit: contain;
+}
+
+.fp-powered {
+  font-size: 10px;
+  color: #999;
+  letter-spacing: .06em;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.fp-card {
+  width: 100%;
+  max-width: 540px;
+  background: #fff;
+  border: 1px solid #e2dfd9;
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 8px 32px rgba(30, 61, 43, .09);
+}
+
+.fp-title {
+  font-size: 23px;
+  font-weight: 700;
+  color: #1E3D2B;
+  line-height: 1.2;
+  margin-bottom: 8px;
+  font-family: 'Playfair Display', serif;
+}
+
+.fp-desc {
+  font-size: 13.5px;
+  color: #666;
+  line-height: 1.55;
+  margin-bottom: 20px;
+}
+
+.fp-divider {
+  height: 1px;
+  background: #ece9e2;
+  margin-bottom: 22px;
+}
+
+.fp-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.fp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.fp-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.fp-required { color: #C0392B; margin-left: 2px; }
+
+.fp-hint {
+  font-size: 11.5px;
+  color: #888;
+  line-height: 1.4;
+}
+
+.fp-input {
+  width: 100%;
+  border: 1px solid #d4d0c9;
+  border-radius: 10px;
+  padding: 11px 13px;
+  font-size: 14px;
+  color: #1a1a1a;
+  font-family: inherit;
+  outline: none;
+  background: #fdfcfa;
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.fp-input:focus {
+  border-color: #6FAF6B;
+  box-shadow: 0 0 0 3px rgba(111, 175, 107, .15);
+}
+
+.fp-input.error { border-color: #C0392B; }
+.fp-error { font-size: 11.5px; color: #C0392B; font-weight: 600; }
+
+.fp-global-error {
+  color: #C0392B;
+  font-size: 13px;
+  margin-bottom: 14px;
+  padding: 10px 13px;
+  background: rgba(192, 57, 43, .08);
+  border-radius: 10px;
+  border: 1px solid rgba(192, 57, 43, .2);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fp-error-ref {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10.5px;
+  font-family: 'JetBrains Mono', monospace;
+  color: #a93226;
+  opacity: .85;
+}
+
+.fp-error-copy {
+  border: 1px solid rgba(192, 57, 43, .3);
+  background: transparent;
+  color: #a93226;
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 2px 7px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background .12s;
+}
+
+.fp-error-copy:hover { background: rgba(192, 57, 43, .1); }
+
+.fp-submit {
+  width: 100%;
+  padding: 13px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(140deg, #355E3B, #1E3D2B);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: filter .15s, transform .15s;
+  letter-spacing: .01em;
+}
+
+.fp-submit:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.fp-submit:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.fp-footer {
+  margin-top: 18px;
+  font-size: 11px;
+  color: #aaa;
+  text-align: center;
+  line-height: 1.55;
+}
+
+/* Success */
+.fp-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+  padding: 8px 0;
+}
+
+.fp-success-icon { line-height: 0; }
+.fp-success-title { font-size: 22px; font-weight: 700; color: #1E3D2B; font-family: 'Playfair Display', serif; }
+.fp-success-sub { font-size: 13.5px; color: #666; line-height: 1.55; max-width: 340px; }
+
+/* Unavailable */
+.fp-unavail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.fp-unavail-icon { font-size: 40px; }
+.fp-unavail-title { font-size: 18px; font-weight: 700; color: #1E3D2B; }
+.fp-unavail-sub { font-size: 13.5px; color: #666; max-width: 320px; }
+
+/* Spinner */
+.fp-spinner {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(111, 175, 107, .3);
+  border-top-color: #6FAF6B;
+  border-radius: 50%;
+  animation: fp-spin .7s linear infinite;
+}
+
+.fp-loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px;
+}
+
+@keyframes fp-spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 560px) {
+  .fp-card { padding: 22px 18px; border-radius: 16px; }
+  .fp-title { font-size: 20px; }
+}
