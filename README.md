@@ -2,6 +2,8 @@
 
 Frontend de OwnTerra para el ecosistema inmobiliario: Core central, OwnTerra Lands y modulos operativos de clientes, lotes, contratos, pagos, agenda y documentos.
 
+> **Pruebas automatizadas** — ver [TESTING.md](./TESTING.md) para el stack completo, comandos y guía de como agregar nuevos tests.
+
 ## Scope Actual
 
 - Login, registro, recuperacion de contrasena y sesion con tokens API.
