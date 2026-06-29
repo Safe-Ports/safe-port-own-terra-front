@@ -8,7 +8,8 @@ import DocumentPreviewModal from "@/components/shared/DocumentPreviewModal";
 import ClientReportModal from "@/components/shared/ClientReportModal";
 import ContractModal from "@/components/shared/ContractModal";
 import DocumentModal from "@/components/shared/DocumentModal";
-import Toast from "@/components/shared/Toast";
+import Toast from "@/components/shared/Toast"
+import SupportWidget from "@/components/support/SupportWidget";
 
 function AppShell() {
   const location = useLocation();
@@ -35,6 +36,7 @@ function AppShell() {
         <ContractModal />
         <DocumentModal />
         <Toast />
+        <SupportWidget />
       </div>
     </LandsGuideContext.Provider>
   );
