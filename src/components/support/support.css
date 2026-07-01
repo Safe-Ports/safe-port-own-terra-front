@@ -301,6 +301,55 @@
   text-align: center; flex-shrink: 0;
 }
 
+/* ── Preview de imagen antes de enviar ── */
+.sp-img-preview-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border, rgba(67,69,63,.10));
+  background: var(--bg2, #EDE9DF);
+  flex-shrink: 0;
+}
+.sp-img-preview-thumb {
+  width: 40px; height: 40px; border-radius: 8px;
+  object-fit: cover; flex-shrink: 0;
+  border: 1px solid var(--border2, rgba(67,69,63,.18));
+}
+.sp-img-preview-name {
+  flex: 1; font-size: 11px; color: var(--text2, #43453F);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.sp-img-preview-clear {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 1px solid var(--border2, rgba(67,69,63,.18));
+  background: none; cursor: pointer;
+  font-size: 11px; color: var(--text3, #83867C);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: background .12s;
+}
+.sp-img-preview-clear:hover { background: rgba(192,57,43,.1); color: #C0392B; }
+
+/* ── Imagen en burbuja ── */
+.sp-msg-img {
+  display: block; max-width: 100%; max-height: 200px;
+  border-radius: 10px; margin-bottom: 4px;
+  cursor: pointer; object-fit: cover;
+}
+.sp-msg--user .sp-msg-img { border-radius: 10px 10px 4px 10px; }
+.sp-msg--support .sp-msg-img { border-radius: 10px 10px 10px 4px; }
+
+/* ── Botón de adjuntar imagen ── */
+.sp-img-btn {
+  width: 36px; height: 36px; border-radius: 11px; border: none;
+  background: var(--bg2, #EDE9DF);
+  color: var(--text3, #83867C); cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  align-self: flex-end; transition: background .14s, color .14s;
+  border: 1px solid var(--border2, rgba(67,69,63,.18));
+}
+.sp-img-btn:hover:not(:disabled) { background: var(--surface2, #F1EEE6); color: var(--mid, #355E3B); }
+.sp-img-btn:disabled { opacity: .4; cursor: not-allowed; }
+.sp-img-btn svg { width: 15px; height: 15px; }
+
 .sp-input-bar {
   display: flex; gap: 8px; padding: 10px 12px;
   border-top: 1px solid var(--border, rgba(67,69,63,.10));

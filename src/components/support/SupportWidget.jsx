@@ -61,6 +61,13 @@ const IconSend = () => (
     <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
   </svg>
 )
+const IconImage = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+    <circle cx="8.5" cy="8.5" r="1.5" />
+    <polyline points="21 15 16 10 5 21" />
+  </svg>
+)
 
 // ── Views ──────────────────────────────────────────────────────────────────
 
@@ -285,7 +292,10 @@ function ThreadView({ ticketId, botFetch }) {
   const [messages, setMessages] = useState([])
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
+  const [imageFile, setImageFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
   const bottomRef = useRef(null)
+  const fileInputRef = useRef(null)
   const sendLock = useRef(false)
 
   useEffect(() => {
@@ -311,15 +321,41 @@ function ThreadView({ ticketId, botFetch }) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  function handleFileChange(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+    e.target.value = ''
+  }
+
+  function clearImage() {
+    if (imagePreview) URL.revokeObjectURL(imagePreview)
+    setImageFile(null)
+    setImagePreview(null)
+  }
+
   async function sendMessage() {
-    if (!text.trim() || sendLock.current) return
+    if ((!text.trim() && !imageFile) || sendLock.current) return
     sendLock.current = true
     setSending(true)
     try {
-      const msg = await botFetch(`/support/tickets/${ticketId}/messages`, {
-        method: 'POST',
-        body: JSON.stringify({ content: text.trim() }),
-      })
+      let msg
+      if (imageFile) {
+        const fd = new FormData()
+        fd.append('file', imageFile)
+        if (text.trim()) fd.append('caption', text.trim())
+        msg = await botFetch(`/support/tickets/${ticketId}/messages/upload`, {
+          method: 'POST',
+          body: fd,
+        })
+        clearImage()
+      } else {
+        msg = await botFetch(`/support/tickets/${ticketId}/messages`, {
+          method: 'POST',
+          body: JSON.stringify({ content: text.trim() }),
+        })
+      }
       setMessages(prev => [...prev, msg])
       setText('')
     } catch {}
@@ -330,8 +366,6 @@ function ThreadView({ ticketId, botFetch }) {
   function onKeyDown(e) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() }
   }
-
-  const closed = ticket?.status === 'closed'
 
   return (
     <div className="sp-thread">
@@ -348,31 +382,69 @@ function ThreadView({ ticketId, botFetch }) {
             <span className="sp-msg-author">
               {msg.sender === 'user' ? 'Tú' : (msg.author_name ?? 'Soporte OwnTerra')}
             </span>
-            <div className="sp-msg-bubble">{msg.content}</div>
+            <div className="sp-msg-bubble">
+              {msg.image_url && (
+                <img
+                  src={`${BOT_URL}${msg.image_url}`}
+                  alt="imagen adjunta"
+                  className="sp-msg-img"
+                  onClick={() => window.open(`${BOT_URL}${msg.image_url}`, '_blank')}
+                />
+              )}
+              {msg.content && <span>{msg.content}</span>}
+            </div>
             <span className="sp-msg-time">{formatTime(msg.created_at)}</span>
           </div>
         ))}
         <div ref={bottomRef} />
       </div>
+
       {ticket?.status === 'closed' && (
         <div className="sp-closed-banner">
           Ticket cerrado por el equipo de soporte.
         </div>
       )}
+
       {ticket?.status !== 'closed' && (
-        <div className="sp-input-bar">
-          <textarea
-            className="sp-msg-input"
-            rows={1}
-            placeholder={ticket?.status === 'resolved' ? 'Ticket resuelto — escribe para reabrir' : 'Escribe un mensaje…'}
-            value={text}
-            onChange={e => setText(e.target.value)}
-            onKeyDown={onKeyDown}
-          />
-          <button className="sp-send-btn" onClick={sendMessage} disabled={!text.trim() || sending}>
-            <IconSend />
-          </button>
-        </div>
+        <>
+          {imagePreview && (
+            <div className="sp-img-preview-bar">
+              <img src={imagePreview} className="sp-img-preview-thumb" alt="preview" />
+              <span className="sp-img-preview-name">{imageFile?.name}</span>
+              <button className="sp-img-preview-clear" onClick={clearImage} title="Quitar">✕</button>
+            </div>
+          )}
+          <div className="sp-input-bar">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+            />
+            <button
+              className="sp-img-btn"
+              onClick={() => fileInputRef.current?.click()}
+              title="Adjuntar imagen"
+              disabled={sending}
+            >
+              <IconImage />
+            </button>
+            <textarea
+              className="sp-msg-input"
+              rows={1}
+              placeholder={imageFile ? 'Añadir descripción (opcional)…' : ticket?.status === 'resolved' ? 'Ticket resuelto — escribe para reabrir' : 'Escribe un mensaje…'}
+              value={text}
+              onChange={e => setText(e.target.value)}
+              onKeyDown={onKeyDown}
+            />
+            <button className="sp-send-btn" onClick={sendMessage} disabled={(!text.trim() && !imageFile) || sending}>
+              {sending
+                ? <div style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', animation: 'sp-spin .7s linear infinite' }} />
+                : <IconSend />}
+            </button>
+          </div>
+        </>
       )}
     </div>
   )
@@ -388,10 +460,11 @@ export default function SupportWidget() {
   const [unreadDot, setUnreadDot] = useState(false)
 
   const botFetch = useCallback(async (path, options = {}) => {
+    const isFormData = options.body instanceof FormData
     const res = await fetch(`${BOT_URL}${path}`, {
       ...options,
       headers: {
-        'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         Authorization: `Bearer ${currentUser?.token}`,
         ...options.headers,
       },
