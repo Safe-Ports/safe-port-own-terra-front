@@ -142,6 +142,7 @@ function AgendaPage() {
   const [filter, setFilter] = useState("Todos");
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const fe = useFieldErrors();
   const [form, setForm] = useState({
     title: "",
     date: toDateKey(today),
