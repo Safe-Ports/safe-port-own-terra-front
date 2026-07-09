@@ -138,6 +138,7 @@ function AgendaPage() {
     onError: (err) => showError(err, "Error al actualizar el evento"),
   });
 
+  const fe = useFieldErrors();
   const [selectedDate, setSelectedDate] = useState(toDateKey(today));
   const [filter, setFilter] = useState("Todos");
   const [showModal, setShowModal] = useState(false);
@@ -168,6 +169,7 @@ function AgendaPage() {
   const today_count = appointments.filter((a) => a.date === toDateKey(today)).length;
 
   const openCreate = (date = selectedDate) => {
+    fe.clearAll();
     setEditingId(null);
     setForm({ title: "", date, time: "10:00", client: "", app: "core", type: "evento", context: "", owner: "" });
     setSelectedDate(date);
@@ -175,6 +177,7 @@ function AgendaPage() {
   };
 
   const openEdit = (appointment) => {
+    fe.clearAll();
     setEditingId(appointment.id);
     setSelectedDate(appointment.date);
     setForm({
