@@ -687,6 +687,47 @@
 @keyframes eco-fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @keyframes eco-barGrow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
 
+/* ───── AGENDA: REJILLA HORARIA (semana/día) ───── */
+.eco-root .ag-timegrid{display:flex;flex-direction:column;margin-top:4px}
+.eco-root .ag-timegrid-head{display:flex;border-bottom:1px solid var(--border)}
+.eco-root .ag-timegrid-corner{width:52px;flex-shrink:0}
+.eco-root .ag-timegrid-daylabels{display:flex;flex:1;min-width:0}
+.eco-root .ag-timegrid-daylabel{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border-left:1px solid var(--border)}
+.eco-root .ag-timegrid-daylabel-dow{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)}
+.eco-root .ag-timegrid-daylabel-num{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--deep);width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center}
+.eco-root .ag-timegrid-daylabel.today .ag-timegrid-daylabel-num{background:var(--deep);color:var(--cream)}
+.eco-root .ag-timegrid-daylabel.today .ag-timegrid-daylabel-dow{color:var(--mid);font-weight:700}
+.eco-root .ag-timegrid-body{display:flex;overflow-y:auto;max-height:calc(100vh - 430px);min-height:360px}
+.eco-root .ag-timegrid-hours{width:52px;flex-shrink:0;position:relative}
+.eco-root .ag-timegrid-hour{box-sizing:border-box;border-top:1px solid var(--border);padding:2px 8px 0 0;text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);transform:translateY(-6px)}
+.eco-root .ag-timegrid-days{display:flex;flex:1;min-width:0}
+.eco-root .ag-daycol{flex:1;min-width:0;position:relative;border-left:1px solid var(--border)}
+.eco-root .ag-daycol-slots{display:flex;flex-direction:column}
+.eco-root .ag-slot{display:block;width:100%;box-sizing:border-box;border:0;border-top:1px solid rgba(67,69,63,.06);background:transparent;cursor:pointer;padding:0}
+.eco-root .ag-slot:nth-child(2n+1){border-top-color:var(--border)}
+.eco-root .ag-slot:hover{background:rgba(111,175,107,.08)}
+.eco-root .ag-events-layer{position:absolute;inset:0;pointer-events:none}
+.eco-root .ag-event-block{position:absolute;pointer-events:auto;overflow:hidden;text-align:left;border:0;border-left:3px solid var(--leaf);border-radius:8px;background:rgba(111,175,107,.16);color:var(--deep);padding:3px 7px;cursor:pointer;font-family:'Outfit',sans-serif;box-shadow:0 2px 6px rgba(30,61,43,.08);transition:box-shadow .15s,transform .15s}
+.eco-root .ag-event-block:hover{box-shadow:0 6px 16px rgba(30,61,43,.16);transform:translateY(-1px);z-index:5}
+.eco-root .ag-event-block-time{display:block;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--mid);font-weight:700}
+.eco-root .ag-event-block-title{display:block;font-size:11.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eco-root .ag-now-line{position:absolute;left:0;right:0;height:0;border-top:2px solid #C0392B}
+.eco-root .ag-now-line::before{content:"";position:absolute;left:-4px;top:-4px;width:8px;height:8px;border-radius:50%;background:#C0392B}
+.eco-root .ag-timegrid-day .ag-timegrid-daylabels,.eco-root .ag-timegrid-day .ag-timegrid-days{max-width:100%}
+
+/* ───── AGENDA: POPOVER DE CREACIÓN RÁPIDA ───── */
+.eco-root .ag-quickcreate{z-index:60;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-sm);box-shadow:0 20px 50px rgba(0,0,0,.22);padding:16px;animation:eco-fadeUp .15s ease both}
+.eco-root .ag-quickcreate form{display:flex;flex-direction:column;gap:10px}
+.eco-root .ag-quickcreate-slot{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)}
+.eco-root .ag-quickcreate-title{height:38px;border:1px solid var(--border2);border-radius:10px;background:var(--surface);color:var(--deep);padding:0 11px;outline:none;font-family:'Outfit',sans-serif;font-size:14px}
+.eco-root .ag-quickcreate-title:focus{border-color:var(--leaf);box-shadow:0 0 0 4px rgba(111,175,107,.12)}
+.eco-root .ag-quickcreate-row{display:flex;gap:8px}
+.eco-root .ag-quickcreate-row select{flex:1;min-width:0;height:34px;border:1px solid var(--border2);border-radius:9px;background:var(--surface);color:var(--text2);padding:0 8px;outline:none;font-family:'Outfit',sans-serif;font-size:12px}
+.eco-root .ag-quickcreate-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:2px}
+.eco-root .ag-quickcreate-more{border:0;background:transparent;color:var(--mid);font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:6px 0}
+.eco-root .ag-quickcreate-more:hover{color:var(--deep);text-decoration:underline}
+.eco-root .ag-quickcreate .ag-primary{padding:8px 16px;font-size:12.5px}
+
 /* ───── FORMULARIOS DEL ECOSISTEMA ───── */
 .eco-root .fom-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-bottom:24px}
 .eco-root .fom-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;transition:transform .2s,box-shadow .2s,border-color .2s;animation:eco-fadeUp .5s ease both}
