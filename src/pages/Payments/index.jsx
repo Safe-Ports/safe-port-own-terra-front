@@ -23,7 +23,7 @@ import Button from "@/components/Button";
 import Input from "@/components/Input";
 
 /* ── helpers ─────────────────────────────────────────────────── */
-const ESTADO_LABEL = { pending: "Pendiente", paid: "Pagado", overdue: "Vencido" };
+const ESTADO_LABEL = { pending: "Pendiente", paid: "Pagado", overdue: "Vencido", partial: "Parcial", cancelled: "Cancelado" };
 const fmtD = iso => !iso ? "—" : new Date(iso).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
 
 function badgeCls(iso, status) {
@@ -298,7 +298,7 @@ function PagoTable({ rows, isEgreso, historial, onPagar, onRecordar, onEdit, onD
               {!historial && (
                 <td>
                   <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                    {status !== "paid" && (
+                    {status !== "paid" && status !== "cancelled" && (
                       <button onClick={() => onPagar(r)} className={isEgreso ? "btn-s" : "btn-p"} style={{ padding: "6px 12px", fontSize: ".74rem", whiteSpace: "nowrap" }}>
                         {isEgreso ? "Pagar" : "Cobrar"}
                       </button>
@@ -447,6 +447,79 @@ function CobroModal({ clients, contracts, onClose, onSave }) {
   );
 }
 
+/* ── Modal abono / cobro de cuota ────────────────────────────── */
+function AbonoModal({ payment, onClose, onConfirm, busy }) {
+  const total   = Number(payment.amount || 0);
+  const abonado = Number(payment.amount_paid || 0);
+  const saldo   = Math.max(total - abonado, 0);
+  const [monto, setMonto] = useState(saldo ? String(saldo) : "");
+  const [err, setErr]     = useState("");
+
+  const val       = Number(monto);
+  const invalid   = monto === "" || isNaN(val) || val <= 0 || val > saldo + 0.001;
+  const restante  = Math.max(saldo - (isNaN(val) ? 0 : val), 0);
+  const esParcial = !invalid && val < saldo - 0.001;
+
+  const confirm = () => {
+    if (invalid) { setErr(`Ingresa un monto entre ${currency(0.01)} y ${currency(saldo)}.`); return; }
+    onConfirm(Number(val.toFixed(2)));
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-box" style={{ maxWidth: 420 }}>
+        <div className="modal-hd">
+          <div className="modal-ico">💰</div>
+          <div style={{ flex: 1 }}>
+            <div className="modal-title" style={{ fontSize: "1.3rem" }}>Registrar cobro</div>
+            <div className="modal-sub">
+              {payment.client?.name || "Cliente"} · Cuota {payment.installment_n ?? "—"}
+              {payment.contract?.contract_number ? ` · ${payment.contract.contract_number}` : ""}
+            </div>
+          </div>
+          <button className="modal-close" onClick={onClose}><HiOutlineXMark /></button>
+        </div>
+        <div className="modal-body">
+          <div style={{ background: "var(--sf2)", borderRadius: 12, padding: "12px 14px", marginBottom: 14, fontSize: ".82rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: abonado > 0 ? 6 : 0 }}>
+              <span style={{ color: "var(--mu)" }}>Monto de la cuota</span>
+              <span style={{ fontWeight: 700 }}>{currency(total)}</span>
+            </div>
+            {abonado > 0 && (
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, color: "#2f5fa8" }}>
+                  <span>Ya abonado</span><span style={{ fontWeight: 700 }}>−{currency(abonado)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 6, borderTop: "1px solid rgba(67,69,63,.1)" }}>
+                  <span style={{ color: "var(--mu)" }}>Saldo pendiente</span>
+                  <span style={{ fontWeight: 800, color: "var(--earth)" }}>{currency(saldo)}</span>
+                </div>
+              </>
+            )}
+          </div>
+          <div className="fg">
+            <label className="fl">Monto a cobrar ahora</label>
+            <input className={`fi ${err ? "is-invalid" : ""}`} type="number" min="0" step="0.01" max={saldo}
+              value={monto} onChange={e => { setMonto(e.target.value); setErr(""); }} autoFocus />
+            <FieldError msg={err} />
+            {!err && !invalid && (
+              <div style={{ marginTop: 6, fontSize: ".76rem", fontWeight: 600, color: esParcial ? "#2f5fa8" : "#2F6A38" }}>
+                {esParcial ? `Abono parcial · quedará un saldo de ${currency(restante)}` : "Salda la cuota completa"}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="modal-foot">
+          <Button variant="secondary" style={{ flex: 1 }} onClick={onClose} disabled={busy}>Cancelar</Button>
+          <Button variant="primary" style={{ flex: 2 }} onClick={confirm} disabled={busy}>
+            {busy ? "Registrando…" : esParcial ? "Registrar abono" : "Registrar cobro"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Modal selector tipo ─────────────────────────────────────── */
 function TipoModal({ onSelect, onClose }) {
   return (
@@ -487,7 +560,7 @@ function TipoModal({ onSelect, onClose }) {
 const INIT_PERIOD = "todo";
 const { desde: INIT_DESDE, hasta: INIT_HASTA } = getDateRange(INIT_PERIOD); // "", ""
 
-const ESTADO_IN  = [["all","Todos los estados"],["pending","Pendiente"],["overdue","Vencido"],["paid","Pagado"]];
+const ESTADO_IN  = [["all","Todos los estados"],["pending","Pendiente"],["overdue","Vencido"],["partial","Parcial"],["paid","Pagado"],["cancelled","Cancelado"]];
 const ESTADO_EG  = [["all","Todos los estados"],["pending","Pendiente"],["overdue","Vencido"],["paid","Pagado"]];
 const ESTADO_AL  = [["all","Todas las alertas"],["roja","Urgentes"],["amarilla","Próximas"]];
 
@@ -498,6 +571,8 @@ export default function PaymentsPage() {
   const [tab,       setTab]       = useState("ingresos");
   const [modal,     setModal]     = useState(null);
   const [editing,   setEditing]   = useState(null);
+  const [abono,     setAbono]     = useState(null);   // cuota (payment) en cobro/abono
+  const [abonoBusy, setAbonoBusy] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   useLandsGuide(() => setShowGuide(true));
   const [page,    setPage]    = useState(1);
@@ -575,10 +650,14 @@ export default function PaymentsPage() {
   const egAll = useMemo(() => applyFilters(egresosNorm,  F), [egresosNorm,  search, estado, desde, hasta]);
 
   /* ── KPIs respetan desde/hasta ── */
+  // "cancelled" queda fuera de ambos KPIs (dinero que no entrará); "partial" aporta
+  // lo ya abonado a Cobrado y el remanente a Por cobrar, igual que el backend.
+  const inCobradoAmt   = ingresos
+    .filter(p => (p.status === "paid" || p.status === "partial") && inRange(p.due_date, desde, hasta))
+    .reduce((s, p) => s + (Number(p.amount_paid ?? (p.status === "paid" ? p.amount : 0)) || 0), 0);
+  const inPendienteArr = ingresos.filter(p => ["pending", "overdue", "partial"].includes(p.status) && inRange(p.due_date, desde, hasta));
   const inCobrado      = ingresos.filter(p => p.status === "paid" && inRange(p.due_date, desde, hasta));
-  const inPendienteArr = ingresos.filter(p => p.status !== "paid" && inRange(p.due_date, desde, hasta));
-  const inCobradoAmt   = inCobrado.reduce((s, p) => s + Number(p.amount || 0), 0);
-  const inPendienteAmt = inPendienteArr.reduce((s, p) => s + Number(p.amount || 0), 0);
+  const inPendienteAmt = inPendienteArr.reduce((s, p) => s + Math.max(Number(p.amount || 0) - Number(p.amount_paid || 0), 0), 0);
   const monthlyData    = useMemo(() => getMonthlyData(ingresos, expenses), [ingresos, expenses]);
 
   /* ── alertas ── */
@@ -628,7 +707,13 @@ export default function PaymentsPage() {
   const estadoOptions = isIn ? ESTADO_IN : isEg ? ESTADO_EG : ESTADO_AL;
 
   /* ── handlers ── */
-  const handlePagar = r => isEg ? markPaidExpense.mutate(r.id) : quickPay(r.id, Number(r.amount));
+  const handlePagar = r => isEg ? markPaidExpense.mutate(r.id) : setAbono(r);
+  const confirmAbono = async (amount) => {
+    setAbonoBusy(true);
+    const ok = await quickPay(abono.id, amount);
+    setAbonoBusy(false);
+    if (ok) setAbono(null);
+  };
   const handleSaveEgreso = form => {
     const body = { concepto: form.concepto, categoria: form.categoria, monto: Number(form.monto),
       due_date: form.due_date, recurrencia: form.recurrencia || null, notes: form.notes || null };
@@ -776,7 +861,7 @@ export default function PaymentsPage() {
                 <div style={{ fontSize: ".75rem", color: "var(--mu)" }}>{a.detalle} · <em>{a.hace}</em></div>
               </div>
               <button className={`al-action ${a.tipo === "ingreso" ? "cobrar" : "pagar"}`}
-                onClick={() => a.tipo === "egreso" ? markPaidExpense.mutate(a.raw.id) : quickPay(a.raw.id, Number(a.raw.amount))}>
+                onClick={() => a.tipo === "egreso" ? markPaidExpense.mutate(a.raw.id) : setAbono(a.raw)}>
                 {a.tipo === "ingreso" ? "Cobrar" : "Pagar"}
               </button>
             </div>
@@ -789,6 +874,7 @@ export default function PaymentsPage() {
       {modal === "tipo"   && <TipoModal onSelect={t => setModal(t)} onClose={() => setModal(null)} />}
       {modal === "egreso" && <EgresoModal initial={editing} onClose={() => { setModal(null); setEditing(null); }} onSave={handleSaveEgreso} />}
       {modal === "cobro"  && <CobroModal clients={clients} contracts={contracts} onClose={() => setModal(null)} onSave={() => setModal(null)} />}
+      {abono && <AbonoModal payment={abono} busy={abonoBusy} onClose={() => setAbono(null)} onConfirm={confirmAbono} />}
       <GuideModal
         open={showGuide}
         onClose={() => setShowGuide(false)}

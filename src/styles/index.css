@@ -967,6 +967,16 @@ textarea.is-invalid {
   color: #c0392b;
 }
 
+.pc-chip.partial {
+  background: #e7eefb;
+  color: #2f5fa8;
+}
+
+.pc-chip.cancelled {
+  background: #ececec;
+  color: #6b6b6b;
+}
+
 .days-badge {
   display: inline-flex;
   align-items: center;
