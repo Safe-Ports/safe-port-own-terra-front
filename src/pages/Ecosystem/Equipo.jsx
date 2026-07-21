@@ -8,7 +8,7 @@ import { useFieldErrors } from "@/hooks/useFieldErrors";
 import { userService } from "@/services/userService";
 import { useAppContext } from "@/context/AppContext";
 import { parseApiError } from "@/errors/parseApiError";
-import { GLOBAL_ROLES, VERTICAL_APP_CATALOG, defaultPermissionsFor } from "@/services/permissions";
+import { GLOBAL_ROLES, VERTICAL_APP_CATALOG } from "@/services/permissions";
 
 const ROLE_LABEL = Object.fromEntries(Object.entries(GLOBAL_ROLES).map(([key, value]) => [key, value.label]));
 const APP_LABEL = Object.fromEntries(VERTICAL_APP_CATALOG.map((app) => [app.key, app]));
@@ -93,8 +93,6 @@ function EcosystemEquipo() {
             app_key: app.key,
             role,
             is_active: true,
-            permissions: defaultPermissionsFor(app.key, role),
-            metadata: { scope: "vertical" },
           });
         }));
       }
@@ -137,8 +135,6 @@ function EcosystemEquipo() {
             app_key: app.key,
             role,
             is_active: true,
-            permissions: defaultPermissionsFor(app.key, role),
-            metadata: { scope: "vertical" },
           });
         }
         return null;

@@ -150,8 +150,6 @@ function EcosystemFinanzas() {
                 ["Nuevos clientes", stats.new_clients],
                 ["Nuevos prospectos", stats.new_leads],
                 ["Tasa de cobranza", `${(stats.collection_rate * 100).toFixed(1)}%`],
-                ["Comisiones pagadas", fmtK(stats.commissions_paid)],
-                ["Comisiones pendientes", fmtK(stats.commissions_pending)],
               ].map(([label, val]) => (
                 <div key={label} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, borderBottom: "1px solid var(--border)", paddingBottom: 10 }}>
                   <span style={{ color: "var(--text2)" }}>{label}</span>
