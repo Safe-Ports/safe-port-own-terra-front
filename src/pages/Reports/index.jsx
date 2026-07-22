@@ -14,7 +14,7 @@ import { currency, compactCurrency } from "@/services/formatters";
 /* ── helpers ─────────────────────────────────────────────────── */
 const fmtD = iso => !iso ? "—" : new Date(`${iso}T12:00:00`).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
 const fmtDLong = iso => !iso ? "—" : new Date(`${iso}T12:00:00`).toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" });
-const ESTADO_LABEL = { pending: "Pendiente", paid: "Pagado", overdue: "Vencido", partial: "Parcial" };
+const ESTADO_LABEL = { pending: "Pendiente", paid: "Pagado", overdue: "Vencido", partial: "Parcial", cancelled: "Cancelado" };
 const TYPE_LABEL   = { sale: "Compraventa", rent: "Arrendamiento", reserve: "Reserva" };
 const STATUS_LABEL = { active: "Activo", paid: "Pagado", cancelled: "Cancelado", default: "Mora" };
 
