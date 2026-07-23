@@ -5,7 +5,7 @@ import { usePersistentState } from "@/hooks/usePersistentState";
 import api from "@/services/api";
 import { clientService } from "@/services/clientService";
 import { inmuebleService } from "@/services/inmuebleService";
-import { mapFileFromUrl, mapUploadErrorMessage } from "@/utils/mapImage";
+import { mapFileFromUrl } from "@/utils/mapImage";
 import { lotService } from "@/services/lotService";
 import { contractService } from "@/services/contractService";
 import { paymentService } from "@/services/paymentService";
@@ -221,9 +221,9 @@ export function AppProvider({ children }) {
 
   // Muestra un error homologado (código + Ref + copiar). El reporte a Sentry lo hace el
   // interceptor de api.js, así que aquí solo presentamos. Dura más para dar tiempo a copiar.
-  const showError = (error, fallbackMessage, overrides = {}) => {
+  const showError = (error, fallbackMessage) => {
     const parsed = parseApiError(error, fallbackMessage);
-    setToast({ kind: "error", ...parsed, ...overrides });
+    setToast({ kind: "error", ...parsed });
     window.clearTimeout(showToast._timer);
     showToast._timer = window.setTimeout(() => setToast(null), 9000);
     return parsed;
@@ -674,9 +674,7 @@ export function AppProvider({ children }) {
       setDraftProject(createEmptyDraftProject());
       navigate("/fraccionamientos");
       if (mapUploadError) {
-        showError(mapUploadError, "No se pudo subir el plano", {
-          message: mapUploadErrorMessage(mapUploadError, true),
-        });
+        showError(mapUploadError, "No se pudo subir el plano");
       } else {
         showToast(`Fraccionamiento "${name || "Fraccionamiento"}" creado${draftLots.length > 0 ? ` con ${draftLots.length} lote${draftLots.length !== 1 ? "s" : ""}` : ""}`);
       }
@@ -764,9 +762,7 @@ export function AppProvider({ children }) {
       navigate("/fraccionamientos");
       const lotChanges = patches.length + newLots.length;
       if (mapUploadError) {
-        showError(mapUploadError, "No se pudo actualizar el plano", {
-          message: mapUploadErrorMessage(mapUploadError, true),
-        });
+        showError(mapUploadError, "No se pudo actualizar el plano");
       } else {
         showToast(`Fraccionamiento actualizado${lotChanges ? ` · ${lotChanges} lote${lotChanges !== 1 ? "s" : ""}` : ""}${mapUpdated ? " · plano actualizado" : ""}`);
       }

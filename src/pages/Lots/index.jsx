@@ -9,7 +9,7 @@ import { useProjectsQuery } from "@/hooks/queries/useAppQueries";
 import { lotService } from "@/services/lotService";
 import { inmuebleService } from "@/services/inmuebleService";
 import { parseApiError } from "@/errors/parseApiError";
-import { MAP_IMAGE_ACCEPT, isSupportedMapImage, mapFileFromUrl, mapUploadErrorMessage, prepareMapImage } from "@/utils/mapImage";
+import { MAP_IMAGE_ACCEPT, isSupportedMapImage, mapFileFromUrl, prepareMapImage } from "@/utils/mapImage";
 import Button from "@/components/Button";
 import GuideModal from "@/components/shared/GuideModal";
 import LotImportFormatModal from "./LotImportFormatModal";
@@ -457,9 +457,7 @@ function LotsPage() {
       });
 
       if (mapUploadError) {
-        showError(mapUploadError, "Los lotes se importaron, pero el plano no pudo subirse", {
-          message: mapUploadErrorMessage(mapUploadError, true),
-        });
+        showError(mapUploadError, "Los lotes se importaron, pero el plano no pudo subirse");
       } else {
         showToast(`${result.imported} lotes importados${result.failed ? ` · ${result.failed} con errores` : ""}`);
       }
