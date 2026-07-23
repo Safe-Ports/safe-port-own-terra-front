@@ -7,6 +7,21 @@
 /*
   Cache-Control: public, max-age=0, must-revalidate
 
+# El service worker contiene el manifiesto de cada build. Nunca debe permanecer
+# fresco en navegador ni CDN: de él depende descubrir y activar cada deploy.
+/sw.js
+  Cache-Control: no-store, no-cache, must-revalidate
+  CDN-Cache-Control: no-store
+  Cloudflare-CDN-Cache-Control: no-store
+  Service-Worker-Allowed: /
+
+# Se conserva para que clientes que todavía tengan el registro automático del
+# build anterior también reciban de inmediato el script de transición.
+/registerSW.js
+  Cache-Control: no-store, no-cache, must-revalidate
+  CDN-Cache-Control: no-store
+  Cloudflare-CDN-Cache-Control: no-store
+
 # Assets con hash en el nombre (JS/CSS): el nombre cambia cuando cambia el contenido,
 # así que se pueden cachear "para siempre" sin riesgo de quedar viejos.
 /assets/*
