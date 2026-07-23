@@ -26,6 +26,7 @@ const CalculatorPage = lazy(() => import("@/pages/Calculator"));
 const ProfilePage = lazy(() => import("@/pages/Profile"));
 const SettingsPage = lazy(() => import("@/pages/Settings"));
 const ReportsPage = lazy(() => import("@/pages/Reports"));
+const PricingPage = lazy(() => import("@/pages/Pricing"));
 const AccessDenied = lazy(() => import("@/pages/AccessDenied"));
 
 function PageLoader() {
@@ -39,7 +40,12 @@ function PageLoader() {
 }
 
 function RequireFeature({ feature, app, children }) {
-  const { canAccessApp, canUseFeature } = useAppContext();
+  const { canAccessApp, canUseFeature, authHydrating } = useAppContext();
+
+  // Aún revalidando la sesión contra /auth/me: no decidir con datos posiblemente
+  // viejos (evita mandar a "sin acceso" a un admin legítimo con sesión cacheada).
+  if (authHydrating) return <PageLoader />;
+
   const allowed = app ? canAccessApp(app) : canUseFeature(feature);
 
   if (!allowed) return <Navigate to="/sin-acceso" replace state={{ message: getDeniedMessage(feature || `${app}.read`) }} />;
@@ -53,6 +59,8 @@ function AppRouter() {
         <Routes>
           <Route index element={<Navigate to="/ecosistema" replace />} />
           <Route path="/sin-acceso" element={<AccessDenied />} />
+          {/* Página de planes a pantalla completa (fuera del AppShell, sin sidebar) */}
+          <Route path="/planes" element={<RequireFeature feature="core.config"><PricingPage /></RequireFeature>} />
           <Route path="/ecosistema" element={<EcosystemHub />} />
           <Route path="/ecosistema/clientes" element={<RequireFeature feature="core.clients"><EcosystemClientes /></RequireFeature>} />
           <Route path="/ecosistema/documentos" element={<RequireFeature feature="core.vault"><EcosystemVault /></RequireFeature>} />

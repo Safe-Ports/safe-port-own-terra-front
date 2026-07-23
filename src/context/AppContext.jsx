@@ -25,6 +25,55 @@ export function AppProvider({ children }) {
   const queryClient = useQueryClient();
   const [currentUser, setCurrentUser] = usePersistentState("lm_session", null);
 
+  // ── Rehidratación de sesión (fuente de verdad = backend) ────────────────────
+  // La sesión persiste en localStorage, pero role/permissions/apps pueden quedar
+  // viejos o incompletos (login anterior, cambio de permisos server-side). Al
+  // arrancar, si hay token, revalidamos contra /auth/me y refrescamos esos campos.
+  // Así una sesión desactualizada se autocorrige sola, sin pedirle nada al usuario.
+  // Mientras resuelve, authHydrating bloquea a los guards de ruta para que no
+  // manden a "sin acceso" con datos aún sin refrescar.
+  const [authHydrating, setAuthHydrating] = useState(() => Boolean(currentUser?.token));
+  const didHydrateRef = useRef(false);
+
+  useEffect(() => {
+    if (didHydrateRef.current) return;
+    didHydrateRef.current = true;
+    if (!currentUser?.token) {
+      setAuthHydrating(false);
+      return;
+    }
+    // Sin flag `cancelled`: con StrictMode (doble montaje en dev) el cleanup del
+    // primer montaje cancelaría esta única petición (didHydrateRef evita relanzarla),
+    // dejando authHydrating en true para siempre. AppProvider es raíz y no se
+    // desmonta en runtime, así que aplicar el estado al resolver es seguro.
+    api
+      .get("/auth/me")
+      .then(({ data }) => {
+        setCurrentUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                id: String(data.user.id),
+                name: data.user.name,
+                initials: data.user.initials || data.user.name.slice(0, 2).toUpperCase(),
+                email: data.user.email,
+                role: data.user.role,
+                apps: data.user.apps || data.user.user_apps || [],
+                permissions: data.user.permissions || [],
+                organization: data.organization,
+              }
+            : prev
+        );
+      })
+      .catch(() => {
+        // 401 lo maneja el interceptor de api.js (refresh o logout). Ante otros
+        // fallos (red), conservamos la sesión cacheada para no desloguear por un hipo.
+      })
+      .finally(() => setAuthHydrating(false));
+    // Solo en el montaje: revalidar una vez por carga de la app.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Data queries ──────────────────────────────────────────────────────────
   const { data: clientsData } = useQuery({
     queryKey: ["clients"],
@@ -821,6 +870,7 @@ export function AppProvider({ children }) {
   // ── Context value ─────────────────────────────────────────────────────────
   const value = {
     currentUser,
+    authHydrating,
     clients,
     fracs,
     contracts,
