@@ -4,3 +4,6 @@ dist
 ownterra-native/
 .env.local
 .env
+coverage
+test-results
+playwright-report

@@ -12,6 +12,7 @@ import { expenseService, CAT_LABEL, CAT_STYLE } from "@/services/expenseService"
 
 import FieldError from "@/components/shared/FieldError";
 import { useFieldErrors } from "@/hooks/useFieldErrors";
+import useEscapeKey from "@/hooks/useEscapeKey";
 
 const reqText = (label) => (v) => (!v || !String(v).trim() ? `${label} es obligatorio.` : "");
 const reqNum = (label) => (v) => (v === "" || v == null || isNaN(Number(v)) || Number(v) <= 0 ? `Ingresa un ${label} válido (> 0).` : "");
@@ -331,6 +332,7 @@ function PagoTable({ rows, isEgreso, historial, onPagar, onRecordar, onEdit, onD
 
 /* ── Modal egreso ────────────────────────────────────────────── */
 function EgresoModal({ initial, onClose, onSave }) {
+  useEscapeKey(onClose);
   const [form, setForm] = useState({
     concepto:    initial?.concepto    || "",
     categoria:   initial?.categoria   || "servicios",
@@ -393,6 +395,7 @@ function EgresoModal({ initial, onClose, onSave }) {
 
 /* ── Modal cobro ─────────────────────────────────────────────── */
 function CobroModal({ clients, contracts, onClose, onSave }) {
+  useEscapeKey(onClose);
   const [form, setForm] = useState({
     clientId: "", contractId: "", cuota: "", amount: "",
     paid_date: new Date().toISOString().split("T")[0], notes: "",
@@ -449,6 +452,7 @@ function CobroModal({ clients, contracts, onClose, onSave }) {
 
 /* ── Modal abono / cobro de cuota ────────────────────────────── */
 function AbonoModal({ payment, onClose, onConfirm, busy }) {
+  useEscapeKey(onClose);
   const total   = Number(payment.amount || 0);
   const abonado = Number(payment.amount_paid || 0);
   const saldo   = Math.max(total - abonado, 0);
@@ -522,6 +526,7 @@ function AbonoModal({ payment, onClose, onConfirm, busy }) {
 
 /* ── Modal selector tipo ─────────────────────────────────────── */
 function TipoModal({ onSelect, onClose }) {
+  useEscapeKey(onClose);
   return (
     <div className="modal-overlay">
       <div className="modal-box" style={{ maxWidth: 400 }}>

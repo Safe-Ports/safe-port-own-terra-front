@@ -18,42 +18,28 @@ const ESTADO_LABEL = { pending: "Pendiente", paid: "Pagado", overdue: "Vencido",
 const TYPE_LABEL   = { sale: "Compraventa", rent: "Arrendamiento", reserve: "Reserva" };
 const STATUS_LABEL = { active: "Activo", paid: "Pagado", cancelled: "Cancelado", default: "Mora" };
 
-/* ── OwnTerra logo (SVG inline) ──────────────────────────────── */
-function OwnTerraLogo({ size = 44 }) {
+/* ── Logotipo oficial de OwnTerra Lands ──────────────────────── */
+function OwnTerraLogo({ width = 142, className = "" }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 64 64" fill="none">
-      {/* círculo de fondo claro */}
-      <circle cx="32" cy="32" r="30" fill="#F3F0E4" stroke="#2A5020" strokeWidth="1.5"/>
-      {/* hoja izquierda */}
-      <path d="M14 22c0-5 4-9 9-9 .5 3-1 7-5 8.5-1.5.5-4 1.5-4 .5z" fill="#2A5020" opacity="0.9"/>
-      {/* hoja derecha pequeña */}
-      <path d="M40 18c2-3 5-3 6-1-.5 2-3 4-5 3.5-.5-.1-1.3-1-1-2.5z" fill="#2A5020" opacity="0.7"/>
-      {/* casita */}
-      <path d="M24 36l8-6 8 6v10h-5v-6h-6v6h-5V36z" fill="#2A5020"/>
-      {/* segunda casita (más alta) */}
-      <path d="M40 32l5-4 5 4v14h-3v-7h-4v7h-3V32z" fill="#2A5020"/>
-      {/* colinas */}
-      <path d="M10 50 Q22 42 32 50 Q42 42 54 50 L54 56 L10 56 Z" fill="#2A5020" opacity="0.85"/>
-      <path d="M8 54 Q24 48 32 54 Q40 48 56 54 L56 58 L8 58 Z" fill="#2A5020" opacity="0.9"/>
-    </svg>
+    <img
+      src="/ownterra_land.png"
+      alt="OwnTerra Lands"
+      className={className}
+      style={{
+        display: "block",
+        width,
+        height: "auto",
+        objectFit: "contain",
+        mixBlendMode: "multiply",
+        flexShrink: 0,
+      }}
+    />
   );
 }
 
 /* ── OwnTerra brand wordmark (para footer) ───────────────────── */
 function OwnTerraWordmark() {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <OwnTerraLogo size={26} />
-      <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1rem",
-        fontWeight: 700, color: "var(--navy)", lineHeight: 1 }}>
-        Own<span style={{ color: "var(--forest)" }}>Terra</span>
-        <div style={{ fontSize: ".5rem", letterSpacing: ".22em", color: "var(--mu)",
-          fontFamily: "'Inter',sans-serif", fontWeight: 600, textTransform: "uppercase", marginTop: 2 }}>
-          Ecosistem
-        </div>
-      </div>
-    </div>
-  );
+  return <OwnTerraLogo width={104} />;
 }
 
 /* ── Lista de clientes (izquierda) ───────────────────────────── */
@@ -413,13 +399,9 @@ function ClientReport({ clientId }) {
 
         {/* ─── HEADER ─── */}
         <div style={{ display: "flex", alignItems: "flex-start", gap: 18, marginBottom: 26 }}>
-          <OwnTerraLogo size={64} />
+          <OwnTerraLogo width={150} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.55rem",
-              fontWeight: 700, color: "var(--navy)", lineHeight: 1 }}>
-              Own<span style={{ color: "var(--forest)" }}>Terra</span>
-            </div>
-            <div style={{ marginTop: 14 }}>
+            <div style={{ marginTop: 4 }}>
               <div style={{ fontSize: "1.35rem", fontFamily: "'Playfair Display',serif",
                 fontWeight: 700, color: "var(--tx)", letterSpacing: "0.02em",
                 textTransform: "uppercase", lineHeight: 1.1 }}>

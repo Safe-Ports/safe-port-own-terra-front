@@ -22,22 +22,42 @@ function parseTimeToMinutes(time) {
 // Asigna cada evento de un día a un "carril" (como Google Calendar cuando hay
 // traslape): recorre los eventos ordenados por hora y reutiliza el primer
 // carril que ya quedó libre, o abre uno nuevo si ninguno lo está.
-function layoutDayEvents(items) {
+export function layoutDayEvents(items) {
   const sorted = [...items].sort((a, b) => a.startMinutes - b.startMinutes);
-  const laneEnds = [];
-  const placed = sorted.map((item) => {
+  const placed = [];
+  let group = [];
+  let groupEnd = -1;
+
+  const flushGroup = () => {
+    if (!group.length) return;
+    const laneEnds = [];
+    const groupItems = group.map((item) => {
+      const endMinutes = item.startMinutes + DEFAULT_DURATION_MINUTES;
+      let laneIndex = laneEnds.findIndex((end) => end <= item.startMinutes);
+      if (laneIndex === -1) {
+        laneIndex = laneEnds.length;
+        laneEnds.push(endMinutes);
+      } else {
+        laneEnds[laneIndex] = endMinutes;
+      }
+      return { ...item, laneIndex };
+    });
+    const laneCount = Math.max(laneEnds.length, 1);
+    placed.push(...groupItems.map((item) => ({ ...item, laneCount })));
+    group = [];
+  };
+
+  for (const item of sorted) {
     const endMinutes = item.startMinutes + DEFAULT_DURATION_MINUTES;
-    let laneIndex = laneEnds.findIndex((end) => end <= item.startMinutes);
-    if (laneIndex === -1) {
-      laneIndex = laneEnds.length;
-      laneEnds.push(endMinutes);
-    } else {
-      laneEnds[laneIndex] = endMinutes;
+    if (group.length && item.startMinutes >= groupEnd) {
+      flushGroup();
+      groupEnd = -1;
     }
-    return { ...item, laneIndex };
-  });
-  const laneCount = Math.max(laneEnds.length, 1);
-  return placed.map((item) => ({ ...item, laneCount }));
+    group.push(item);
+    groupEnd = Math.max(groupEnd, endMinutes);
+  }
+  flushGroup();
+  return placed;
 }
 
 function EventBlock({ item, onClick }) {

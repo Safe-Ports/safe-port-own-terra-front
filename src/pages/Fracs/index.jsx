@@ -10,6 +10,7 @@ import Button from "@/components/Button";
 import { lotService } from "@/services/lotService";
 import { appointmentService } from "@/services/appointmentService";
 import { currency } from "@/services/formatters";
+import useEscapeKey from "@/hooks/useEscapeKey";
 import "./fracs.css";
 
 const LOT_COLORS = {
@@ -190,6 +191,10 @@ function FracsPage() {
   const [showApptForm, setShowApptForm] = useState(false);
   const [apptDraft, setApptDraft] = useState({ contact_name: "", contact_phone: "", scheduled_at: "", notes: "" });
   const [apptSaving, setApptSaving] = useState(false);
+  useEscapeKey(() => {
+    if (showCotizador) setShowCotizador(false);
+    else if (showLotModal) setShowLotModal(false);
+  }, showCotizador || showLotModal);
 
   const selectedFrac = fracs.find((f) => f.id === selectedFracId) || fracs[0] || null;
 

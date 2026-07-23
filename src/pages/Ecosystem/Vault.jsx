@@ -5,6 +5,7 @@ import { HiOutlineEllipsisVertical, HiOutlineFolderPlus, HiOutlinePencil, HiOutl
 import { documentService, filenameForDocument } from "@/services/documentService";
 import { folderService } from "@/services/folderService";
 import { useAppContext } from "@/context/AppContext";
+import useEscapeKey from "@/hooks/useEscapeKey";
 
 import EcoLayout from "./EcoLayout";
 
@@ -42,6 +43,10 @@ function EcosystemVault() {
   const [search, setSearch] = useState("");
   const [uploadFile, setUploadFile] = useState(null);
   const menuRef = useRef(null);
+  useEscapeKey(() => {
+    setModal(null);
+    setUploadFile(null);
+  }, Boolean(modal));
 
   const { data: folders = [] } = useQuery({
     queryKey: ["folders"],

@@ -6,6 +6,7 @@ import { useAppContext } from "@/context/AppContext";
 
 import FieldError from "@/components/shared/FieldError";
 import { useFieldErrors } from "@/hooks/useFieldErrors";
+import useEscapeKey from "@/hooks/useEscapeKey";
 import EcoLayout from "./EcoLayout";
 import AgendaTimeGrid from "./AgendaTimeGrid";
 import AgendaQuickCreate from "./AgendaQuickCreate";
@@ -36,7 +37,7 @@ const VIEW_OPTIONS = [
 ];
 
 const TOTAL_LABEL = {
-  day: "Eventos de hoy",
+  day: "Eventos del día",
   week: "Eventos esta semana",
   month: "Eventos este mes",
 };
@@ -75,6 +76,21 @@ function AgendaPage() {
     }),
   });
 
+  const todayRange = useMemo(
+    () => getVisibleRange("day", visibleMonth, toDateKey(today)),
+    [visibleMonth]
+  );
+  const visibleRangeIncludesToday = today >= visibleRange.start && today <= visibleRange.end;
+  const { data: rawTodayAppts = [], isLoading: isTodayLoading } = useQuery({
+    queryKey: ["appointments", "agenda", "today", todayRange.start.toISOString()],
+    queryFn: () => appointmentService.list({
+      upcoming_only: false,
+      from_date: todayRange.start.toISOString(),
+      to_date: todayRange.end.toISOString(),
+    }),
+    enabled: !visibleRangeIncludesToday,
+  });
+
   const appointments = useMemo(() => rawAppts.map(normalizeAppt), [rawAppts]);
 
   const createMutation = useMutation({
@@ -107,6 +123,10 @@ function AgendaPage() {
   const [filter, setFilter] = useState("Todos");
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  useEscapeKey(() => {
+    setShowModal(false);
+    setEditingId(null);
+  }, showModal);
   const fe = useFieldErrors();
   const [form, setForm] = useState({
     title: "",
@@ -131,7 +151,9 @@ function AgendaPage() {
   const total = appointments.length;
   const pending = appointments.filter((a) => a.status === "pending").length;
   const completed = appointments.filter((a) => a.status === "completed").length;
-  const today_count = appointments.filter((a) => a.date === toDateKey(today)).length;
+  const today_count = visibleRangeIncludesToday
+    ? appointments.filter((a) => a.date === toDateKey(today)).length
+    : rawTodayAppts.length;
 
   const openCreate = (date = selectedDate, time = "10:00") => {
     setEditingId(null);
@@ -225,7 +247,7 @@ function AgendaPage() {
         <div className="ag-kpi"><span>Total</span><b>{isLoading ? "—" : total}</b><small>{TOTAL_LABEL[view]}</small></div>
         <div className="ag-kpi"><span>Completados</span><b>{completed}</b><small>Realizados</small></div>
         <div className="ag-kpi"><span>Pendientes</span><b>{pending}</b><small>Por realizar</small></div>
-        <div className="ag-kpi"><span>Hoy</span><b>{today_count}</b><small>Eventos de hoy</small></div>
+        <div className="ag-kpi"><span>Hoy</span><b>{isTodayLoading ? "—" : today_count}</b><small>Eventos de hoy</small></div>
       </div>
 
       <div className="ag-layout">

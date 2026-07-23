@@ -12,7 +12,7 @@ function EcoSprite() {
         </g>
         <circle cx="36.5" cy="20.5" r="2.6" fill="#fff" />
       </symbol>
-      {/* NEIGHBORHOODS */}
+      {/* PROPERTIES (internal key: neighb) */}
       <symbol id="eco-g-neighb" viewBox="0 0 56 56">
         <g fill="#fff">
           <rect x="13" y="24" width="10" height="18" rx="2" />

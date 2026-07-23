@@ -1,0 +1,2 @@
+Documento de prueba E2E en vivo — Own Terra.
+Este archivo se sube y se archiva automáticamente al final del test.

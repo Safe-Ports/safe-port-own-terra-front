@@ -5,6 +5,7 @@ import { usePersistentState } from "@/hooks/usePersistentState";
 import api from "@/services/api";
 import { clientService } from "@/services/clientService";
 import { inmuebleService } from "@/services/inmuebleService";
+import { mapFileFromUrl } from "@/utils/mapImage";
 import { lotService } from "@/services/lotService";
 import { contractService } from "@/services/contractService";
 import { paymentService } from "@/services/paymentService";
@@ -178,8 +179,8 @@ export function AppProvider({ children }) {
   const closeModal = (modal) => setUi((p) => ({ ...p, [modal]: false }));
   const toggleSidebar = () => setUi((p) => ({ ...p, sidebarOpen: !p.sidebarOpen }));
   const closeSidebar = () => setUi((p) => ({ ...p, sidebarOpen: false }));
-  const showToast = (message) => {
-    setToast(message);
+  const showToast = (message, kind = "success") => {
+    setToast(typeof message === "object" ? message : { kind, message });
     window.clearTimeout(showToast._timer);
     showToast._timer = window.setTimeout(() => setToast(null), 2600);
   };
@@ -624,8 +625,7 @@ export function AppProvider({ children }) {
     try {
       const inmueble = await inmuebleService.create({ name: name || "Fraccionamiento" });
       if (mapUrl) {
-        const blob = await fetch(mapUrl).then((r) => r.blob());
-        const file = new File([blob], "map.png", { type: blob.type || "image/png" });
+        const file = await mapFileFromUrl(mapUrl);
         await inmuebleService.uploadMap(inmueble.id, file);
       }
 
@@ -682,8 +682,7 @@ export function AppProvider({ children }) {
       });
       let mapUpdated = false;
       if (mapUrl && (mapUrl.startsWith("data:") || mapUrl.startsWith("blob:"))) {
-        const blob = await fetch(mapUrl).then((r) => r.blob());
-        const file = new File([blob], "map.png", { type: blob.type || "image/png" });
+        const file = await mapFileFromUrl(mapUrl);
         await inmuebleService.uploadMap(_editingFracId, file);
         mapUpdated = true;
       }

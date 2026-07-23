@@ -822,8 +822,10 @@
 .frac-confirm-modal,
 .frac-calculator-modal {
   width: min(560px, 100%);
-  max-height: min(760px, 92vh);
-  overflow: auto;
+  max-height: min(760px, 92dvh);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   border-radius: 22px;
   background: var(--sf);
   border: 1px solid var(--bd);
@@ -842,6 +844,7 @@
   background: var(--sf);
   border-bottom: 1px solid var(--line-soft);
   color: var(--tx2);
+  flex: 0 0 auto;
 }
 
 .frac-modal-head.danger {
@@ -906,6 +909,9 @@
 }
 
 .frac-modal-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 20px 22px;
 }
 

@@ -56,7 +56,7 @@ function EcosystemHub() {
 
   const openLands = () => canAccessApp("lands")
     ? navigate("/dashboard")
-    : showToast("Tu usuario no tiene acceso a OwnTerra Lands");
+    : showToast("Tu usuario no tiene acceso a OwnTerra Lands", "warning");
 
   const { data: stats, isLoading } = useQuery({
     queryKey: ["dashboard-stats", period],
@@ -99,8 +99,8 @@ function EcosystemHub() {
             <div className="app-icon ic-neighb"><svg><use href="#eco-g-neighb" /></svg></div>
             <span className="app-status st-soon">Próximamente</span>
           </div>
-          <div className="app-name">OwnTerra Neighborhoods</div>
-          <div className="app-handle">terra.neighborhoods</div>
+          <div className="app-name">OwnTerra Properties</div>
+          <div className="app-handle">terra.properties</div>
           <div className="app-desc">Departamentos y fraccionamientos residenciales: cuotas de mantenimiento y normativa de colonos.</div>
           <div className="app-tags"><span className="atag">Cuotas</span><span className="atag">Amenidades</span><span className="atag">Reglamento</span></div>
           <div className="app-cta">
@@ -139,7 +139,7 @@ function EcosystemHub() {
           </div>
           <button
             className="sh-link"
-            onClick={() => canUseFeature("core.finance") ? navigate("/ecosistema/finanzas") : showToast("Tu usuario no tiene acceso a Finanzas")}
+            onClick={() => canUseFeature("core.finance") ? navigate("/ecosistema/finanzas") : showToast("Tu usuario no tiene acceso a Finanzas", "warning")}
           >
             Ver estados financieros →
           </button>
@@ -229,7 +229,7 @@ function EcosystemHub() {
         title="Ecosistema OwnTerra"
         subtitle="Hub central de todas las aplicaciones verticales del ecosistema."
         steps={[
-          { title: "Lanzador de apps", text: "Las tarjetas muestran las apps disponibles. OwnTerra Lands está activo. Neighborhoods y Homes están en desarrollo (próximamente)." },
+          { title: "Lanzador de apps", text: "Las tarjetas muestran las apps disponibles. OwnTerra Lands está activo. Properties y Homes están en desarrollo (próximamente)." },
           { title: "Ingresar a Lands", text: "Haz clic en la tarjeta de OwnTerra Lands para acceder al módulo de gestión de lotes, clientes y cobranza de fraccionamientos." },
           { title: "KPIs del período", text: "Los indicadores muestran ingresos, ventas, tasa de cobranza y ticket promedio del período seleccionado (mes, trimestre o año)." },
           { title: "Cambiar período", text: "Usa los botones 'Este mes', 'Este trimestre' o 'Este año' para cambiar el período de análisis de los KPIs y gráficas." },

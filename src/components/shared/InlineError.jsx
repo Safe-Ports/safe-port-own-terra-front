@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { errorClipboardText } from "@/errors/parseApiError";
+import useEscapeKey from "@/hooks/useEscapeKey";
 
 const ICON  = { fatal: "✕", error: "⚠", warning: "!" };
 const LABEL = { fatal: "Error crítico", error: "Error", warning: "Advertencia" };
@@ -13,6 +14,8 @@ const CLR  = { fatal: "#5E0A0A", error: "#7F1C10", warning: "#7A4F00" };
  */
 function InlineError({ error, onDismiss, children }) {
   const [copied, setCopied] = useState(false);
+  useEscapeKey(onDismiss, Boolean(error && onDismiss));
+
   if (!error) return null;
 
   const severity = error.severity || "error";

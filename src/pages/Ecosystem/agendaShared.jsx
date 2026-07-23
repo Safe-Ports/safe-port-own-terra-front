@@ -1,7 +1,7 @@
 export const APP_META = {
   core: { name: "Core", color: "#1E3D2B" },
   lands: { name: "Lands", color: "#6FAF6B" },
-  neighb: { name: "Neighborhoods", color: "#355E3B" },
+  neighb: { name: "Properties", color: "#355E3B" },
   homes: { name: "Homes", color: "#A7CBA1" },
 };
 export const CREATABLE_APPS = Object.entries(APP_META).filter(([key]) => key === "core" || key === "lands");

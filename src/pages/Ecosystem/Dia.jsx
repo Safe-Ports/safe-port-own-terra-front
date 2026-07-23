@@ -36,7 +36,7 @@ const TOUR_STEPS = [
   },
   {
     title: "👥 Clientes del core",
-    text: "El directorio maestro de identidades. Cada cliente tiene un perfil único que se comparte entre todas las apps. Aquí puedes vincularlos a Lands, Neighborhoods o Homes.",
+    text: "El directorio maestro de identidades. Cada cliente tiene un perfil único que se comparte entre todas las apps. Aquí puedes vincularlos a Lands, Properties o Homes.",
   },
   {
     title: "🛡️ Equipo",
@@ -59,7 +59,7 @@ const TOUR_STEPS = [
 
 const APP_META = {
   lands: { name: "Lands", color: "#6FAF6B", live: true },
-  neighb: { name: "Neighborhoods", color: "#355E3B", live: false },
+  neighb: { name: "Properties", color: "#355E3B", live: false },
   homes: { name: "Homes", color: "#A7CBA1", live: false },
 };
 
