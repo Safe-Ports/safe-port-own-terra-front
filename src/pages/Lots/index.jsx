@@ -103,7 +103,7 @@ const LOT_MAP_GUIDE = {
     },
     {
       title: "Subir imagen del plano",
-      text: "Selecciona una imagen JPG, PNG, WEBP, HEIC o HEIF. Las fotos de iPhone y iPad se convierten automáticamente a un formato compatible.",
+      text: "Selecciona una imagen JPG, PNG o WEBP. La imagen se mostrará como referencia mientras construyes y revisas la matriz de lotes.",
     },
     {
       title: "Continuar sin plano",
