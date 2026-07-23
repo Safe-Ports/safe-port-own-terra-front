@@ -4,10 +4,12 @@ import { HiChevronLeft, HiChevronRight } from "react-icons/hi2";
 import * as XLSX from "xlsx";
 import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
+import useEscapeKey from "@/hooks/useEscapeKey";
 import { useProjectsQuery } from "@/hooks/queries/useAppQueries";
 import { lotService } from "@/services/lotService";
 import { inmuebleService } from "@/services/inmuebleService";
 import { parseApiError } from "@/errors/parseApiError";
+import { MAP_IMAGE_ACCEPT, isSupportedMapImage, mapFileFromUrl, prepareMapImage } from "@/utils/mapImage";
 import Button from "@/components/Button";
 import GuideModal from "@/components/shared/GuideModal";
 import LotImportFormatModal from "./LotImportFormatModal";
@@ -18,7 +20,6 @@ const LOT_COLORS = {
   reserved:  { bg: "#fef3c7", border: "#fcd34d", text: "#92400e" },
 };
 const STATUS_CYCLE = { available: "sold", sold: "reserved", reserved: "available" };
-const MAP_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const LOT_TEMPLATE_GUIDE = [
   ["GUÍA PARA CARGAR LOTES DESDE EXCEL O CSV"],
   ["Regla", "Detalle"],
@@ -241,108 +242,6 @@ function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot, onDeleteL
   );
 }
 
-function cropPlanImage(dataUrl) {
-  return new Promise((resolve) => {
-    const image = new window.Image();
-
-    image.onload = () => {
-      const canvas = window.document.createElement("canvas");
-      const context = canvas.getContext("2d", { willReadFrequently: true });
-
-      if (!context) {
-        resolve({ dataUrl, cropped: false });
-        return;
-      }
-
-      canvas.width = image.naturalWidth;
-      canvas.height = image.naturalHeight;
-      context.drawImage(image, 0, 0);
-
-      const { data, width, height } = context.getImageData(0, 0, canvas.width, canvas.height);
-
-      const getLightRatioForRow = (row) => {
-        let lightPixels = 0;
-        for (let column = 0; column < width; column += 1) {
-          const index = (row * width + column) * 4;
-          const r = data[index];
-          const g = data[index + 1];
-          const b = data[index + 2];
-          const lightness = (r + g + b) / 3;
-          if (lightness > 208) lightPixels += 1;
-        }
-        return lightPixels / width;
-      };
-
-      const getLightRatioForColumn = (column) => {
-        let lightPixels = 0;
-        for (let row = 0; row < height; row += 1) {
-          const index = (row * width + column) * 4;
-          const r = data[index];
-          const g = data[index + 1];
-          const b = data[index + 2];
-          const lightness = (r + g + b) / 3;
-          if (lightness > 208) lightPixels += 1;
-        }
-        return lightPixels / height;
-      };
-
-      let top = 0;
-      while (top < height && getLightRatioForRow(top) < 0.18) top += 1;
-
-      let bottom = height - 1;
-      while (bottom > top && getLightRatioForRow(bottom) < 0.18) bottom -= 1;
-
-      let left = 0;
-      while (left < width && getLightRatioForColumn(left) < 0.12) left += 1;
-
-      let right = width - 1;
-      while (right > left && getLightRatioForColumn(right) < 0.12) right -= 1;
-
-      const cropWidth = right - left;
-      const cropHeight = bottom - top;
-
-      if (cropWidth < width * 0.35 || cropHeight < height * 0.2) {
-        resolve({ dataUrl, cropped: false });
-        return;
-      }
-
-      const paddingX = Math.round(cropWidth * 0.02);
-      const paddingY = Math.round(cropHeight * 0.02);
-      const safeLeft = Math.max(0, left - paddingX);
-      const safeTop = Math.max(0, top - paddingY);
-      const safeRight = Math.min(width, right + paddingX);
-      const safeBottom = Math.min(height, bottom + paddingY);
-
-      const outputCanvas = window.document.createElement("canvas");
-      const outputContext = outputCanvas.getContext("2d");
-
-      if (!outputContext) {
-        resolve({ dataUrl, cropped: false });
-        return;
-      }
-
-      outputCanvas.width = safeRight - safeLeft;
-      outputCanvas.height = safeBottom - safeTop;
-      outputContext.drawImage(
-        image,
-        safeLeft,
-        safeTop,
-        outputCanvas.width,
-        outputCanvas.height,
-        0,
-        0,
-        outputCanvas.width,
-        outputCanvas.height
-      );
-
-      resolve({ dataUrl: outputCanvas.toDataURL("image/png"), cropped: true });
-    };
-
-    image.onerror = () => resolve({ dataUrl, cropped: false });
-    image.src = dataUrl;
-  });
-}
-
 function LotsPage() {
   const navigate = useNavigate();
   const { data: projects = [] } = useProjectsQuery();
@@ -354,7 +253,9 @@ function LotsPage() {
   }, []);
 
   const [sectionName, setSectionName] = useState("");
-  const [sectionTotal, setSectionTotal] = useState(20);
+  // Se conserva como texto mientras el usuario escribe para permitir borrar
+  // completamente el valor antes de capturar una nueva cantidad.
+  const [sectionTotal, setSectionTotal] = useState("20");
   const [mapFileName, setMapFileName] = useState("");
   const [lotEditDraft, setLotEditDraft] = useState(null);
   const [loadingEditId, setLoadingEditId] = useState(null);
@@ -364,6 +265,10 @@ function LotsPage() {
   const [deletingFrac, setDeletingFrac] = useState(false);
   const [showImportGuide, setShowImportGuide] = useState(false);
   const [showFormatGuide, setShowFormatGuide] = useState(false);
+  useEscapeKey(() => {
+    if (showDeleteFracConfirm) setShowDeleteFracConfirm(false);
+    else if (lotEditDraft) setLotEditDraft(null);
+  }, showDeleteFracConfirm || Boolean(lotEditDraft));
   useLandsGuide(() => setShowImportGuide(true));
   const activeGuide = draftProject.mode === "editor"
     ? LOT_EDITOR_GUIDE
@@ -459,6 +364,7 @@ function LotsPage() {
 
     setImportLoading(true);
     setImportSummary(null);
+    let mapUploadError = null;
 
     try {
       let fracId = draftProject._editingFracId;
@@ -470,10 +376,11 @@ function LotsPage() {
 
         if (draftProject.mapUrl) {
           try {
-            const blob = await fetch(draftProject.mapUrl).then((r) => r.blob());
-            const mapFile = new File([blob], "map.png", { type: blob.type || "image/png" });
+            const mapFile = await mapFileFromUrl(draftProject.mapUrl);
             await inmuebleService.uploadMap(inmueble.id, mapFile);
-          } catch { /* fallo de imagen no es crítico */ }
+          } catch (error) {
+            mapUploadError = error;
+          }
         }
 
         const manualLots = draftProject.sections.flatMap((s) =>
@@ -549,7 +456,11 @@ function LotsPage() {
         warnings: result.warnings || [],
       });
 
-      showToast(`${result.imported} lotes importados${result.failed ? ` · ${result.failed} con errores` : ""}`);
+      if (mapUploadError) {
+        showError(mapUploadError, "Los lotes se importaron, pero el plano no pudo subirse");
+      } else {
+        showToast(`${result.imported} lotes importados${result.failed ? ` · ${result.failed} con errores` : ""}`);
+      }
       if (result.failed > 0) setShowImportGuide(true);
 
     } catch (err) {
@@ -585,20 +496,37 @@ function LotsPage() {
   };
 
   const addSection = () => {
-    if (!sectionName.trim()) return;
+    const cleanName = sectionName.trim();
+    const cleanTotal = String(sectionTotal).trim();
+
+    if (!cleanName) {
+      showToast("Escribe el nombre de la sección o manzana para continuar", "warning");
+      return;
+    }
+    if (!/^\d+$/.test(cleanTotal)) {
+      showToast("Escribe una cantidad válida de lotes", "warning");
+      return;
+    }
+
+    const total = Number(cleanTotal);
+    if (!Number.isSafeInteger(total) || total < 1 || total > 5000) {
+      showToast("Escribe una cantidad de lotes entre 1 y 5,000", "warning");
+      return;
+    }
     setDraftProject((previous) => ({
       ...previous,
       sections: [
         ...previous.sections,
         {
           id: `section_${Date.now()}`,
-          name: sectionName.trim(),
-          lots: createLots(sectionName.trim(), Number(sectionTotal))
+          name: cleanName,
+          lots: createLots(cleanName, total)
         }
       ]
     }));
     setSectionName("");
-    setSectionTotal(20);
+    setSectionTotal("20");
+    showToast(`${cleanName} agregada · ${total} lote${total === 1 ? "" : "s"}`);
   };
 
   const cycleLotStatus = (sectionId, lotId) => {
@@ -670,35 +598,31 @@ function LotsPage() {
     }));
   };
 
-  const isValidMapImage = (file) => {
-    const extension = file.name.split(".").pop()?.toLowerCase();
-    return MAP_IMAGE_TYPES.has(file.type) || ["jpg", "jpeg", "png", "webp"].includes(extension);
-  };
-
-  const updateMap = (file) => {
-    if (!isValidMapImage(file)) {
-      showToast("El plano debe ser una imagen JPG, PNG o WEBP. Excel y CSV solo van en Llenar con Excel o CSV.");
+  const updateMap = async (file) => {
+    if (!isSupportedMapImage(file)) {
+      showToast("El plano debe ser una imagen JPG, PNG, WEBP, HEIC o HEIF. Excel y CSV solo van en Llenar con Excel o CSV.", "warning");
       return false;
     }
-
-    setMapFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const sourceDataUrl = event.target?.result || "";
-      const processed = await cropPlanImage(sourceDataUrl);
-
+    try {
+      const processed = await prepareMapImage(file);
+      setMapFileName(file.name);
       setDraftProject((previous) => ({
         ...previous,
         mapUrl: processed.dataUrl,
         name: previous.name || "Nuevo Fraccionamiento"
       }));
-
-      if (processed.cropped) {
+      if (processed.converted) {
+        showToast("Plano HEIC/HEIF convertido a un formato compatible");
+      } else if (processed.cropped) {
         showToast("Plano ajustado automáticamente para enfocar el lote");
+      } else if (processed.resized) {
+        showToast("Plano optimizado para cargarlo correctamente");
       }
-    };
-    reader.readAsDataURL(file);
-    return true;
+      return true;
+    } catch (error) {
+      showToast(`${error.message}. Intenta exportarla como JPG o PNG.`, "warning");
+      return false;
+    }
   };
 
   const totalDraftLots = draftProject.sections.reduce((sum, section) => sum + section.lots.length, 0);
@@ -815,11 +739,11 @@ function LotsPage() {
             <input
               ref={changeImageRef}
               type="file"
-              accept="image/*"
+              accept={MAP_IMAGE_ACCEPT}
               className="hidden"
-              onChange={(event) => {
+              onChange={async (event) => {
                 const file = event.target.files?.[0];
-                if (file) updateMap(file);
+                if (file) await updateMap(file);
                 event.target.value = "";
               }}
             />
@@ -852,13 +776,14 @@ function LotsPage() {
               <div className="lots-section-form">
                 <div className="lots-section-name">
                   <div className="lots-builder-label">
-                    Nombre de sección
+                    Nombre de sección *
                   </div>
                   <input
                     value={sectionName}
                     onChange={(event) => setSectionName(event.target.value)}
                     onKeyDown={(event) => event.key === "Enter" && addSection()}
                     placeholder="Ej: Manzana A, Frente Norte..."
+                    required
                     className="lots-builder-input"
                   />
                 </div>
@@ -867,13 +792,22 @@ function LotsPage() {
                     N° de lotes
                   </div>
                   <input
-                    type="number"
+                    type="text"
                     value={sectionTotal}
-                    onChange={(event) => setSectionTotal(Number(event.target.value))}
+                    onChange={(event) => {
+                      const digitsOnly = event.target.value.replace(/\D/g, "");
+                      setSectionTotal(digitsOnly);
+                    }}
+                    onKeyDown={(event) => event.key === "Enter" && addSection()}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="off"
+                    aria-label="Número de lotes"
                     className="lots-builder-input center"
                   />
                 </div>
                 <button
+                  type="button"
                   onClick={addSection}
                   className="lots-add-section"
                 >
@@ -1364,21 +1298,21 @@ function LotsPage() {
               <div className="lot-upload-code">IMG</div>
               <div>
                 <div className="lot-upload-drop-title">Seleccionar imagen del plano</div>
-                <div className="lot-upload-drop-sub">JPG, PNG o WEBP</div>
+                <div className="lot-upload-drop-sub">JPG, PNG, WEBP, HEIC o HEIF</div>
               </div>
               <div className="lot-upload-formats">
-                {["JPG", "PNG", "WEBP"].map((ext) => (
+                {["JPG", "PNG", "WEBP", "HEIC", "HEIF"].map((ext) => (
                   <span key={ext}>{ext}</span>
                 ))}
               </div>
               <div className="lot-upload-cta">Buscar archivo</div>
               <input
                 type="file"
-                accept="image/*"
+                accept={MAP_IMAGE_ACCEPT}
                 className="hidden"
-                onChange={(event) => {
+                onChange={async (event) => {
                   const file = event.target.files?.[0];
-                  if (file && updateMap(file)) {
+                  if (file && await updateMap(file)) {
                     setDraftProject((previous) => ({ ...previous, mode: "editor" }));
                   }
                   event.target.value = "";

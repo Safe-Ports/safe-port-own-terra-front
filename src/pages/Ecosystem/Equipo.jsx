@@ -9,6 +9,7 @@ import { userService } from "@/services/userService";
 import { useAppContext } from "@/context/AppContext";
 import { parseApiError } from "@/errors/parseApiError";
 import { GLOBAL_ROLES, VERTICAL_APP_CATALOG } from "@/services/permissions";
+import useEscapeKey from "@/hooks/useEscapeKey";
 
 const ROLE_LABEL = Object.fromEntries(Object.entries(GLOBAL_ROLES).map(([key, value]) => [key, value.label]));
 const APP_LABEL = Object.fromEntries(VERTICAL_APP_CATALOG.map((app) => [app.key, app]));
@@ -37,6 +38,10 @@ function EcosystemEquipo() {
   const [accessDraft, setAccessDraft] = useState(null);
   const [confirmAccessSave, setConfirmAccessSave] = useState(false);
   const [formError, setFormError] = useState(null);
+  useEscapeKey(
+    () => confirmAccessSave ? setConfirmAccessSave(false) : setModal(null),
+    Boolean(modal || confirmAccessSave),
+  );
   const fe = useFieldErrors();
 
   const { data, isLoading } = useQuery({

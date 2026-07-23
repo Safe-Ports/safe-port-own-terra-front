@@ -11,6 +11,7 @@ import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
 import { folderService } from "@/services/folderService";
 import { documentService, filenameForDocument } from "@/services/documentService";
+import useEscapeKey from "@/hooks/useEscapeKey";
 
 
 /* ── helpers ────────────────────────────────────────────────────────────── */
@@ -120,6 +121,7 @@ function FolderNode({ node, folders, activeId, onSelect, onAddChild, onRename, o
 
 /* ── MoveModal ──────────────────────────────────────────────────────────── */
 function MoveModal({ folders, doc, onMove, onClose }) {
+  useEscapeKey(onClose);
   const [expanded, setExpanded] = useState({});
 
   function Tree({ parentId = null, depth = 0 }) {
@@ -221,6 +223,7 @@ export default function DocumentsPage() {
   const [delDoc,      setDelDoc]      = useState(null);
   const [newIn,       setNewIn]       = useState(null);   // parentId | "__root__"
   const [newDraft,    setNewDraft]    = useState("");
+  useEscapeKey(() => setDelDoc(null), Boolean(delDoc));
 
   const handleAddChild = (parentId) => { setNewIn(parentId); setNewDraft(""); };
   const handleCreate   = (parentId) => {

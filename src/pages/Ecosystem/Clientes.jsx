@@ -1,18 +1,17 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
-import * as XLSX from "xlsx";
 import GuideModal from "@/components/shared/GuideModal";
 import { clientService } from "@/services/clientService";
 import { documentService, filenameForDocument } from "@/services/documentService";
 import { userService } from "@/services/userService";
 import { useAppContext } from "@/context/AppContext";
-import { parseApiError } from "@/errors/parseApiError";
+import useEscapeKey from "@/hooks/useEscapeKey";
 
 import EcoLayout from "./EcoLayout";
 
 const APPS = [
   { key: "lands", name: "OwnTerra Lands", handle: "terra.lands", icon: "eco-g-lands", cls: "ic-lands", color: "#6FAF6B", live: true, desc: "Lotificación y venta de terrenos." },
-  { key: "neighb", name: "OwnTerra Neighborhoods", handle: "terra.neighborhoods", icon: "eco-g-neighb", cls: "ic-neighb", color: "#355E3B", live: false, desc: "Departamentos y fraccionamientos." },
+  { key: "neighb", name: "OwnTerra Properties", handle: "terra.properties", icon: "eco-g-neighb", cls: "ic-neighb", color: "#355E3B", live: false, desc: "Propiedades y comunidades." },
   { key: "homes", name: "OwnTerra Homes", handle: "terra.homes", icon: "eco-g-homes", cls: "ic-homes", color: "#A7CBA1", live: false, desc: "Construcción y desarrollos." },
 ];
 const APP_BY_KEY = Object.fromEntries(APPS.map((a) => [a.key, a]));
@@ -25,19 +24,8 @@ const emailOk = (value = "") => !value.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.te
 
 const TYPE_LABEL = { buyer: "Comprador", lead: "Prospecto", tenant: "Arrendatario" };
 const STATUS_LABEL = { active: "Activo", overdue: "Vencido", closed: "Cerrado", pending: "Pendiente" };
+const ACCOUNT_HEALTH_LABEL = { current: "Al corriente", overdue: "Con atraso" };
 const STAGE_LABEL = { new: "Nuevo", contacted: "Contactado", visited: "Visitado", quoted: "Cotizado", reserved: "Apartado", won: "Ganado", lost: "Perdido" };
-const CLIENT_REQUIRED_ALIASES = ["Nombre", "Nombre completo", "Cliente"];
-const CLIENT_TEMPLATE_GUIDE = [
-  ["GUÍA PARA CARGAR CLIENTES"],
-  ["Regla", "Detalle"],
-  ["Campo requerido", "Nombre. Debe existir como columna y tener valor en todas las filas."],
-  ["Campos opcionales", "Correo, Teléfono, Tipo, Etapa y Notas."],
-  ["Tipos aceptados", "prospecto, comprador o arrendatario."],
-  ["Etapas aceptadas", "nuevo, contactado, visitado, cotizado, apartado, ganado o perdido."],
-  ["Archivos aceptados", "XLSX, XLS o CSV de hasta 10 MB."],
-  ["Importante", "Si falta un campo requerido, no se cargará ninguna fila."],
-];
-
 const FileIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"><path d="M6 2h7l5 5v15H6z" /><path d="M13 2v5h5" /></svg>);
 const DownloadIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12" /><path d="M7 11l5 5 5-5" /><path d="M5 21h14" /></svg>);
 
@@ -49,8 +37,8 @@ function EcosystemClientes() {
   const [tab, setTab] = useState("contracts");
   const [appFilter, setAppFilter] = useState("all");
   const [modal, setModal]             = useState(null);
-  const [clientImport, setClientImport] = useState(null);
   const [showGuide, setShowGuide]     = useState(false);
+  useEscapeKey(() => setModal(null), Boolean(modal));
 
   // Client list
   const { data: clientsData, isLoading } = useQuery({
@@ -186,32 +174,6 @@ function EcosystemClientes() {
     onError: (err) => showError(err, "Error al actualizar cliente"),
   });
 
-  const importClientsMutation = useMutation({
-    mutationFn: async (rows) => {
-      const result = { created: 0, failed: [], warnings: [] };
-      for (const row of rows) {
-        try {
-          const created = await clientService.create(row.payload);
-          result.created += 1;
-          try {
-            await clientService.assignApp(created.id, "lands");
-          } catch (err) {
-            result.warnings.push(`${row.name}: creado, pero no se pudo vincular con Lands (${parseApiError(err, "error de acceso").message}).`);
-          }
-        } catch (err) {
-          result.failed.push(`${row.name}: ${parseApiError(err, "No se pudo crear").message}`);
-        }
-      }
-      return result;
-    },
-    onSuccess: (result) => {
-      qc.invalidateQueries({ queryKey: ["clients"] });
-      setClientImport((current) => ({ ...current, rows: [], result }));
-      showToast(`${result.created} clientes creados${result.failed.length ? ` · ${result.failed.length} omitidos` : ""}`);
-    },
-    onError: (err) => showError(err, "Error al cargar clientes"),
-  });
-
   // App assignment mutations (persist to backend)
   const assignAppMutation = useMutation({
     mutationFn: ({ clientId, appKey }) => clientService.assignApp(clientId, appKey),
@@ -338,112 +300,6 @@ function EcosystemClientes() {
     }
   };
 
-  const downloadClientTemplate = () => {
-    const rows = [
-      { Nombre: "Mariana López", Correo: "mariana@example.com", Telefono: "5551234567", Tipo: "prospecto", Etapa: "nuevo", Notas: "Interesada en lotes" },
-      { Nombre: "Carlos Rivera", Correo: "carlos@example.com", Telefono: "5559876543", Tipo: "comprador", Etapa: "contactado", Notas: "" },
-    ];
-    const sheet = XLSX.utils.json_to_sheet(rows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, sheet, "Clientes");
-    const guideSheet = XLSX.utils.aoa_to_sheet(CLIENT_TEMPLATE_GUIDE);
-    guideSheet["!cols"] = [{ wch: 24 }, { wch: 82 }];
-    XLSX.utils.book_append_sheet(workbook, guideSheet, "Guía");
-    XLSX.writeFile(workbook, "plantilla_clientes.xlsx");
-    showToast("Plantilla de clientes descargada");
-  };
-
-  const readClientImport = (file) => {
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      setClientImport({ fileName: file.name, rows: [], errors: ["El archivo no puede superar 10 MB."], result: null });
-      showToast("El archivo no puede superar 10 MB");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const workbook = XLSX.read(new Uint8Array(event.target.result), { type: "array" });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const matrix = sheet ? XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", blankrows: false }) : [];
-        const rawRows = sheet ? XLSX.utils.sheet_to_json(sheet, { defval: "" }) : [];
-        const norm = (value) => String(value || "").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-        const get = (row, aliases) => {
-          const key = Object.keys(row).find((header) => aliases.some((alias) => norm(header) === norm(alias)));
-          return key ? String(row[key]).trim() : "";
-        };
-        if (!rawRows.length) {
-          setClientImport({ fileName: file.name, rows: [], errors: ["El archivo no contiene filas de datos."], result: null });
-          showToast("El archivo no contiene filas de datos");
-          return;
-        }
-        const headers = (matrix[0] || []).map((header) => String(header).trim());
-        const hasNameColumn = headers.some((header) => CLIENT_REQUIRED_ALIASES.some((alias) => norm(header) === norm(alias)));
-        if (!hasNameColumn) {
-          setClientImport({
-            fileName: file.name,
-            rows: [],
-            errors: ["No se cargó ninguna fila: falta la columna obligatoria Nombre."],
-            result: null,
-          });
-          showToast("Falta la columna obligatoria Nombre");
-          return;
-        }
-        const rowsWithoutName = rawRows.flatMap((row, index) => get(row, CLIENT_REQUIRED_ALIASES) ? [] : [index + 2]);
-        if (rowsWithoutName.length) {
-          const visibleRows = rowsWithoutName.slice(0, 8).join(", ");
-          const remaining = rowsWithoutName.length > 8 ? ` y ${rowsWithoutName.length - 8} más` : "";
-          setClientImport({
-            fileName: file.name,
-            rows: [],
-            errors: [
-              "No se cargó ninguna fila porque existen valores requeridos vacíos.",
-              `Nombre vacío en filas: ${visibleRows}${remaining}.`,
-            ],
-            result: null,
-          });
-          showToast("No se cargó el archivo: hay filas sin Nombre");
-          return;
-        }
-        const typeMap = { prospecto: "lead", lead: "lead", comprador: "buyer", buyer: "buyer", arrendatario: "tenant", tenant: "tenant" };
-        const stageMap = { nuevo: "new", new: "new", contactado: "contacted", contacted: "contacted", visitado: "visited", visited: "visited", cotizado: "quoted", quoted: "quoted", apartado: "reserved", reserved: "reserved", ganado: "won", won: "won", perdido: "lost", lost: "lost" };
-        const seenEmails = new Set();
-        const errors = [];
-        const rows = rawRows.flatMap((row, index) => {
-          const name = get(row, CLIENT_REQUIRED_ALIASES);
-          const email = get(row, ["Correo", "Email", "Correo electrónico"]).toLowerCase();
-          if (email && seenEmails.has(email)) {
-            errors.push(`Fila ${index + 2}: correo duplicado (${email}).`);
-            return [];
-          }
-          if (email) seenEmails.add(email);
-          return [{
-            name,
-            payload: {
-              name,
-              email: email || undefined,
-              phone: get(row, ["Telefono", "Teléfono", "Phone"]) || undefined,
-              type: typeMap[norm(get(row, ["Tipo"]))] || "lead",
-              pipeline_stage: stageMap[norm(get(row, ["Etapa", "Stage"]))] || "new",
-              notes: get(row, ["Notas", "Observaciones"]) || undefined,
-            },
-          }];
-        });
-        setClientImport({ fileName: file.name, rows, errors, result: null });
-        showToast(`${rows.length} clientes listos para cargar`);
-      } catch (err) {
-        setClientImport({
-          fileName: file.name,
-          rows: [],
-          errors: ["No fue posible leer el archivo. Descarga la plantilla y verifica el formato."],
-          result: null,
-        });
-        showError(err, "No fue posible leer el archivo");
-      }
-    };
-    reader.readAsArrayBuffer(file);
-  };
-
   if (isLoading) {
     return (
       <EcoLayout active="users" title="Clientes del ecosistema" subtitle="Identidad única · presencia en todas las apps">
@@ -459,7 +315,14 @@ function EcosystemClientes() {
         <h3>Directorio central de clientes</h3>
         <div className="usr-list-bar" style={{ marginBottom: 0 }}>
           <button className="usr-btn-ghost" onClick={() => exportAppData("clients", "xlsx")}>Exportar clientes</button>
-          <button className="usr-btn-ghost" onClick={() => setClientImport({ fileName: "", rows: [], errors: [], result: null })}>Cargar clientes</button>
+          <button
+            type="button"
+            className="usr-btn-ghost"
+            disabled
+            title="Disponible cuando el backend publique el endpoint de importación"
+          >
+            Importar clientes · Próximamente
+          </button>
           <button className="usr-add-btn" onClick={() => openAdd("client")}>Nuevo cliente</button>
         </div>
       </div>
@@ -468,7 +331,7 @@ function EcosystemClientes() {
       <div className="kpi-row" style={{ marginBottom: 22 }}>
         <div className="kpi"><div className="kpi-head"><span className="kpi-label">Clientes en el core</span></div><div className="kpi-val">{clients.length}</div><div className="kpi-foot">Identidad única compartida</div></div>
         <div className="kpi"><div className="kpi-head"><span className="kpi-label">En OwnTerra Lands</span></div><div className="kpi-val">{appAssignmentsLoading ? "—" : appCount("lands")}</div><div className="kpi-foot">Con acceso asignado</div></div>
-        <div className="kpi"><div className="kpi-head"><span className="kpi-label">En Neighborhoods</span></div><div className="kpi-val">{appAssignmentsLoading ? "—" : appCount("neighb")}</div><div className="kpi-foot">Con acceso asignado</div></div>
+        <div className="kpi"><div className="kpi-head"><span className="kpi-label">En Properties</span></div><div className="kpi-val">{appAssignmentsLoading ? "—" : appCount("neighb")}</div><div className="kpi-foot">Con acceso asignado</div></div>
         <div className="kpi"><div className="kpi-head"><span className="kpi-label">Multi-app</span></div><div className="kpi-val">{appAssignmentsLoading ? "—" : multiAppCount}</div><div className="kpi-foot">Asignados en 2+ apps</div></div>
       </div>
 
@@ -489,6 +352,9 @@ function EcosystemClientes() {
                 <span className="usr-info">
                   <span className="usr-name" style={{ display: "block" }}>{c.name}</span>
                   <span className="usr-mail" style={{ display: "block" }}>{c.email || "—"}</span>
+                </span>
+                <span className={`usr-chip ${c.account_health === "overdue" ? "closed" : "active"}`}>
+                  {ACCOUNT_HEALTH_LABEL[c.account_health] || c.account_health || "Sin adeudos"}
                 </span>
                 <span className="usr-dots">
                   {APPS.map((a) => (<span key={a.key} className={`usr-dot ${presentIn(c, a.key) ? `on-${a.key}` : ""}`} title={`${a.name}: ${appAssignmentsLoading ? "consultando acceso" : presentIn(c, a.key) ? "asignado" : "sin acceso"}`} />))}
@@ -514,6 +380,9 @@ function EcosystemClientes() {
                   </div>
                 </div>
                 <div className="usr-list-bar" style={{ margin: 0, marginLeft: "auto" }}>
+                  <span className={`usr-chip ${selected.account_health === "overdue" ? "closed" : "active"}`}>
+                    {ACCOUNT_HEALTH_LABEL[selected.account_health] || selected.account_health || "Sin adeudos"}
+                  </span>
                   <span className="usr-d-type">{TYPE_LABEL[selected.type] || selected.type}</span>
                   <button className="usr-add-btn" onClick={openEditClient}>Editar cliente</button>
                 </div>
@@ -780,80 +649,6 @@ function EcosystemClientes() {
         </div>
       )}
 
-      {clientImport && (
-        <div className="usr-modal-overlay" onClick={(e) => e.target === e.currentTarget && setClientImport(null)}>
-          <div className="usr-modal">
-            <div className="usr-modal-head">
-              <div>
-                <div className="usr-modal-title">Carga de clientes</div>
-                <div className="usr-modal-sub">Importa identidades al Core desde XLSX, XLS o CSV.</div>
-              </div>
-              <button className="usr-modal-close" onClick={() => setClientImport(null)}>×</button>
-            </div>
-            <div className="usr-modal-body">
-              <div className="usr-import-guide">
-                <div className="usr-import-guide-item required">
-                  <b>Columna requerida</b>
-                  <span>Nombre</span>
-                  <small>Debe existir y tener valor en todas las filas.</small>
-                </div>
-                <div className="usr-import-guide-item">
-                  <b>Columnas opcionales</b>
-                  <span>Correo · Teléfono · Tipo · Etapa · Notas</span>
-                  <small>Los campos omitidos usarán valores predeterminados.</small>
-                </div>
-                <div className="usr-import-guide-item">
-                  <b>Regla de validación</b>
-                  <span>Carga completa o rechazo completo</span>
-                  <small>Si falta un campo requerido, no se crea ningún cliente.</small>
-                </div>
-              </div>
-              <div className="usr-list-bar">
-                <button className="usr-btn-ghost" onClick={downloadClientTemplate}>Descargar plantilla</button>
-                <label className="usr-add-btn" style={{ cursor: "pointer" }}>
-                  Seleccionar archivo
-                  <input type="file" accept=".xlsx,.xls,.csv" hidden onChange={(e) => { readClientImport(e.target.files?.[0]); e.target.value = ""; }} />
-                </label>
-              </div>
-              {clientImport.fileName && (
-                <div className="usr-d-intro">
-                  <b>{clientImport.fileName}</b><br />
-                  {clientImport.rows.length} clientes listos · {clientImport.errors.length} observaciones
-                </div>
-              )}
-              {clientImport.rows.length > 0 && (
-                <div className="usr-rows">
-                  {clientImport.rows.slice(0, 8).map((row, index) => (
-                    <div key={`${row.payload.email || row.name}-${index}`} className="usr-row">
-                      <span className="usr-av">{initials(row.name)}</span>
-                      <div className="usr-row-info">
-                        <div className="usr-row-name">{row.name}</div>
-                        <div className="usr-row-meta">{row.payload.email || "Sin correo"} · {TYPE_LABEL[row.payload.type]}</div>
-                      </div>
-                    </div>
-                  ))}
-                  {clientImport.rows.length > 8 && <div className="usr-rows-empty">Y {clientImport.rows.length - 8} clientes más.</div>}
-                </div>
-              )}
-              {(clientImport.errors.length > 0 || clientImport.result?.failed?.length > 0 || clientImport.result?.warnings?.length > 0) && (
-                <div className="usr-error">
-                  {[...clientImport.errors, ...(clientImport.result?.failed || []), ...(clientImport.result?.warnings || [])].slice(0, 8).map((error) => <div key={error}>{error}</div>)}
-                </div>
-              )}
-            </div>
-            <div className="usr-modal-foot">
-              <button className="usr-btn-ghost" onClick={() => setClientImport(null)}>Cerrar</button>
-              <button
-                className="usr-btn-primary"
-                disabled={!clientImport.rows.length || importClientsMutation.isPending}
-                onClick={() => importClientsMutation.mutate(clientImport.rows)}
-              >
-                {importClientsMutation.isPending ? "Cargando…" : `Crear ${clientImport.rows.length} clientes`}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       <GuideModal
         open={showGuide}
         onClose={() => setShowGuide(false)}
@@ -864,7 +659,7 @@ function EcosystemClientes() {
           { title: "Crear cliente", text: "Pulsa 'Nuevo cliente' para registrar una identidad en el core y, si corresponde, asignarle acceso a OwnTerra Lands." },
           { title: "Asignar acceso a apps", text: "Desde la ficha del cliente puedes activar o desactivar su acceso a OwnTerra Lands. Las aplicaciones próximas permanecen bloqueadas." },
           { title: "Editar cliente", text: "El ícono de edición en la ficha permite modificar nombre, correo, teléfono, vendedor asignado y etapa del pipeline." },
-          { title: "Cargar clientes (bulk)", text: "Usa 'Cargar clientes' para importar múltiples clientes desde un archivo XLSX. La plantilla especifica las columnas requeridas." },
+          { title: "Importar clientes", text: "La importación masiva estará disponible cuando el backend publique el endpoint correspondiente." },
           { title: "Exportar directorio", text: "'Exportar clientes' descarga el directorio completo en formato Excel con todos los datos de cada cliente." },
         ]}
       />
