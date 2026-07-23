@@ -4,11 +4,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import EcoLayout from "../EcoLayout";
 import { formService } from "@/services/formService";
 import { useAppContext } from "@/context/AppContext";
+import useEscapeKey from "@/hooks/useEscapeKey";
 
 let _fieldCounter = 0;
 const makeFieldId = () => `f${++_fieldCounter}`;
 
 function FieldModal({ field, onSave, onClose }) {
+  useEscapeKey(onClose);
   const [label, setLabel] = useState(field?.label ?? "");
   const [description, setDescription] = useState(field?.description ?? "");
   const [required, setRequired] = useState(field?.required ?? false);

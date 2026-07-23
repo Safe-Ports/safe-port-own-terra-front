@@ -1,6 +1,26 @@
 import { useState } from "react";
+import {
+  HiCheckCircle,
+  HiExclamationTriangle,
+  HiInformationCircle,
+} from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 import { errorClipboardText } from "@/errors/parseApiError";
+
+const TOAST_VARIANTS = {
+  success: {
+    title: "Listo",
+    Icon: HiCheckCircle,
+  },
+  warning: {
+    title: "Atención",
+    Icon: HiExclamationTriangle,
+  },
+  info: {
+    title: "Información",
+    Icon: HiInformationCircle,
+  },
+};
 
 function ErrorToast({ data }) {
   const [copied, setCopied] = useState(false);
@@ -45,7 +65,27 @@ function Toast() {
     return <ErrorToast data={toast} />;
   }
 
-  return <div className="app-toast app-toast--success">{toast}</div>;
+  const data = typeof toast === "object"
+    ? toast
+    : { kind: "success", message: toast };
+  const variant = TOAST_VARIANTS[data.kind] || TOAST_VARIANTS.info;
+  const { Icon } = variant;
+
+  return (
+    <div
+      className={`app-toast app-toast--${data.kind || "info"}`}
+      role={data.kind === "warning" ? "alert" : "status"}
+      aria-live={data.kind === "warning" ? "assertive" : "polite"}
+    >
+      <span className="app-toast__icon" aria-hidden="true">
+        <Icon />
+      </span>
+      <span className="app-toast__content">
+        <strong className="app-toast__title">{data.title || variant.title}</strong>
+        <span className="app-toast__message">{data.message}</span>
+      </span>
+    </div>
+  );
 }
 
 export default Toast;

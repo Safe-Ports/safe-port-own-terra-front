@@ -5,6 +5,7 @@ import { usePersistentState } from "@/hooks/usePersistentState";
 import api from "@/services/api";
 import { clientService } from "@/services/clientService";
 import { inmuebleService } from "@/services/inmuebleService";
+import { mapFileFromUrl } from "@/utils/mapImage";
 import { lotService } from "@/services/lotService";
 import { contractService } from "@/services/contractService";
 import { paymentService } from "@/services/paymentService";
@@ -227,8 +228,8 @@ export function AppProvider({ children }) {
   const closeModal = (modal) => setUi((p) => ({ ...p, [modal]: false }));
   const toggleSidebar = () => setUi((p) => ({ ...p, sidebarOpen: !p.sidebarOpen }));
   const closeSidebar = () => setUi((p) => ({ ...p, sidebarOpen: false }));
-  const showToast = (message) => {
-    setToast(message);
+  const showToast = (message, kind = "success") => {
+    setToast(typeof message === "object" ? message : { kind, message });
     window.clearTimeout(showToast._timer);
     showToast._timer = window.setTimeout(() => setToast(null), 2600);
   };
@@ -672,10 +673,14 @@ export function AppProvider({ children }) {
   const saveFrac = async ({ name, sections, mapUrl }) => {
     try {
       const inmueble = await inmuebleService.create({ name: name || "Fraccionamiento" });
+      let mapUploadError = null;
       if (mapUrl) {
-        const blob = await fetch(mapUrl).then((r) => r.blob());
-        const file = new File([blob], "map.png", { type: blob.type || "image/png" });
-        await inmuebleService.uploadMap(inmueble.id, file);
+        try {
+          const file = await mapFileFromUrl(mapUrl);
+          await inmuebleService.uploadMap(inmueble.id, file);
+        } catch (error) {
+          mapUploadError = error;
+        }
       }
 
       const draftLots = sections.flatMap((section) =>
@@ -717,7 +722,11 @@ export function AppProvider({ children }) {
       setSelectedFracId(String(inmueble.id));
       setDraftProject(createEmptyDraftProject());
       navigate("/fraccionamientos");
-      showToast(`Fraccionamiento "${name || "Fraccionamiento"}" creado${draftLots.length > 0 ? ` con ${draftLots.length} lote${draftLots.length !== 1 ? "s" : ""}` : ""}`);
+      if (mapUploadError) {
+        showError(mapUploadError, "No se pudo subir el plano");
+      } else {
+        showToast(`Fraccionamiento "${name || "Fraccionamiento"}" creado${draftLots.length > 0 ? ` con ${draftLots.length} lote${draftLots.length !== 1 ? "s" : ""}` : ""}`);
+      }
     } catch (err) {
       showError(err, "Error al crear el fraccionamiento");
     }
@@ -730,11 +739,15 @@ export function AppProvider({ children }) {
         name: name?.trim() || "Fraccionamiento",
       });
       let mapUpdated = false;
+      let mapUploadError = null;
       if (mapUrl && (mapUrl.startsWith("data:") || mapUrl.startsWith("blob:"))) {
-        const blob = await fetch(mapUrl).then((r) => r.blob());
-        const file = new File([blob], "map.png", { type: blob.type || "image/png" });
-        await inmuebleService.uploadMap(_editingFracId, file);
-        mapUpdated = true;
+        try {
+          const file = await mapFileFromUrl(mapUrl);
+          await inmuebleService.uploadMap(_editingFracId, file);
+          mapUpdated = true;
+        } catch (error) {
+          mapUploadError = error;
+        }
       }
 
       const patches = sections.flatMap((section) =>
@@ -797,7 +810,11 @@ export function AppProvider({ children }) {
       setDraftProject(createEmptyDraftProject());
       navigate("/fraccionamientos");
       const lotChanges = patches.length + newLots.length;
-      showToast(`Fraccionamiento actualizado${lotChanges ? ` · ${lotChanges} lote${lotChanges !== 1 ? "s" : ""}` : ""}${mapUpdated ? " · plano actualizado" : ""}`);
+      if (mapUploadError) {
+        showError(mapUploadError, "No se pudo actualizar el plano");
+      } else {
+        showToast(`Fraccionamiento actualizado${lotChanges ? ` · ${lotChanges} lote${lotChanges !== 1 ? "s" : ""}` : ""}${mapUpdated ? " · plano actualizado" : ""}`);
+      }
     } catch (err) {
       showError(err, "Error al guardar los cambios");
     }

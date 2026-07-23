@@ -83,7 +83,14 @@ api.interceptors.response.use(
 
     const original = error.config;
 
-    if (error.response?.status !== 401 || original._retry) {
+    // Un 401 de los endpoints de auth (login/registro/refresh en sí) es una
+    // respuesta normal de credenciales inválidas o token vencido — no hay
+    // sesión que refrescar ni nada que redirigir; debe llegar tal cual al
+    // catch de quien hizo la llamada (p. ej. LoginScreen) para mostrar su
+    // propio error inline, en vez de recargar la app a "/".
+    const isAuthEndpoint = /^\/auth\/(login|register|refresh)/.test(original?.url || "");
+
+    if (error.response?.status !== 401 || original._retry || isAuthEndpoint) {
       return Promise.reject(error);
     }
 

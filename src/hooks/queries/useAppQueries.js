@@ -63,7 +63,7 @@ export function useProjectsQuery() {
         available: inmueble.available_lots ?? 0,
         sold: inmueble.sold_lots ?? 0,
         reserved: inmueble.reserved_lots ?? 0,
-        mapImageUrl: inmueble.map_image_url ?? "",
+        mapImageUrl: inmueble.image_url ?? "",
       })),
   });
 }

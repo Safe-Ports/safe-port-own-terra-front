@@ -398,6 +398,103 @@ a {
   min-width: 0;
 }
 
+.core-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.core-topbar-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 8px 13px;
+  border-radius: 11px;
+  border: 1px solid rgba(67, 69, 63, 0.18);
+  background: var(--surface, var(--sf, #fbfaf6));
+  color: var(--text2, var(--tx2, #43453f));
+  cursor: pointer;
+  font-family: "Outfit", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s;
+}
+
+.core-topbar-action:hover,
+.core-topbar-action.is-active {
+  background: var(--surface2, var(--sf2, #f1eee6));
+  border-color: rgba(111, 175, 107, 0.4);
+  color: var(--deep, #1e3d2b);
+}
+
+.core-topbar-action:hover {
+  transform: translateY(-1px);
+}
+
+.core-topbar-action:focus-visible {
+  outline: 2px solid var(--leaf, #6faf6b);
+  outline-offset: 2px;
+}
+
+.core-topbar-action > svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+.core-topbar-badge {
+  min-width: 20px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: var(--leaf, #6faf6b);
+  color: var(--deep, #1e3d2b);
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.core-profile-action {
+  padding: 4px 10px 4px 5px;
+  text-align: left;
+}
+
+.core-profile-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.core-profile-copy strong {
+  color: var(--deep, #1e3d2b);
+  font-size: 0.73rem;
+  line-height: 1;
+}
+
+.core-profile-copy small {
+  max-width: 92px;
+  overflow: hidden;
+  color: var(--text3, var(--mu, #83867c));
+  font-size: 0.62rem;
+  font-weight: 500;
+  line-height: 1;
+  text-overflow: ellipsis;
+}
+
+.core-profile-fallback {
+  display: none;
+}
+
+.core-logout-action:hover {
+  border-color: rgba(192, 57, 43, 0.28);
+  background: rgba(192, 57, 43, 0.08);
+  color: #c0392b;
+}
+
 .topbar-logout {
   display: inline-flex;
   align-items: center;
@@ -1798,8 +1895,10 @@ textarea.is-invalid {
 
 .modal-box {
   width: min(100%, 720px);
-  max-height: min(88vh, 860px);
-  overflow: auto;
+  max-height: min(88dvh, 860px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   border-radius: 22px;
   border: 1px solid var(--bd);
   background: var(--sf);
@@ -1813,6 +1912,7 @@ textarea.is-invalid {
   padding: 18px 20px;
   border-bottom: 1px solid var(--line-soft);
   background: linear-gradient(140deg, rgba(53, 94, 59, 0.08), rgba(30, 61, 43, 0.02));
+  flex: 0 0 auto;
 }
 
 .modal-ico {
@@ -1866,6 +1966,9 @@ textarea.is-invalid {
 }
 
 .modal-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 20px;
 }
 
@@ -1876,9 +1979,9 @@ textarea.is-invalid {
   padding: 16px 20px calc(env(safe-area-inset-bottom) + 18px);
   border-top: 1px solid var(--line-soft);
   background: var(--sf2);
+  flex: 0 0 auto;
 }
 
-/* ── Toast base (layout + fallback neutral) ─────────────── */
 /* ── Página de planes a pantalla completa (upsell dedicado) ──────────────── */
 .pricing-page {
   position: fixed;
@@ -2116,6 +2219,7 @@ textarea.is-invalid {
   100% { background-position: 0 50%; }
 }
 
+/* ── Toasts: avisos compactos alineados al lenguaje visual OwnTerra ── */
 .app-toast {
   position: fixed;
   left: 50%;
@@ -2124,26 +2228,113 @@ textarea.is-invalid {
      toast de error nunca quede oculto detrás de un formulario abierto. */
   z-index: 10000;
   transform: translateX(-50%);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: max-content;
+  min-width: min(360px, calc(100vw - 32px));
   max-width: calc(100vw - 32px);
-  border-radius: 999px;
-  padding: 13px 24px;
-  font-size: 0.86rem;
-  font-weight: 600;
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.36);
-  background: rgba(22, 18, 15, 0.96);
-  color: #E9E5DB;
+  border: 1px solid rgba(38, 73, 50, 0.16);
+  border-radius: 16px;
+  padding: 14px 16px;
+  font-family: inherit;
+  color: #294332;
+  background: rgba(255, 253, 248, 0.98);
+  box-shadow:
+    0 18px 45px rgba(30, 56, 38, 0.16),
+    0 4px 12px rgba(30, 56, 38, 0.08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: app-toast-in 180ms ease-out both;
 }
 
-/* ── Éxito (showToast) — píldora verde con borde luminoso ── */
+.app-toast__icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  color: #fff;
+  background: #407d4a;
+  box-shadow: 0 5px 12px rgba(64, 125, 74, 0.2);
+}
+
+.app-toast__icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.app-toast__content {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding-top: 1px;
+}
+
+.app-toast__title {
+  color: #23432e;
+  font-size: 0.78rem;
+  font-weight: 750;
+  line-height: 1.25;
+  letter-spacing: 0.015em;
+}
+
+.app-toast__message {
+  color: #5e6d62;
+  font-size: 0.84rem;
+  font-weight: 500;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
 .app-toast--success {
-  background: rgba(28, 90, 48, 0.96);
-  border: 1px solid rgba(111, 175, 107, 0.55);
-  color: #d0f5d8;
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.36), 0 0 0 1px rgba(111, 175, 107, 0.15);
+  border-color: rgba(64, 125, 74, 0.22);
+}
+
+.app-toast--warning {
+  border-color: rgba(180, 127, 34, 0.28);
+  background: rgba(255, 252, 244, 0.98);
+}
+
+.app-toast--warning .app-toast__icon {
+  color: #fffaf0;
+  background: #b17b25;
+  box-shadow: 0 5px 12px rgba(177, 123, 37, 0.2);
+}
+
+.app-toast--warning .app-toast__title {
+  color: #795117;
+}
+
+.app-toast--warning .app-toast__message {
+  color: #74654d;
+}
+
+.app-toast--info {
+  border-color: rgba(66, 105, 119, 0.24);
+}
+
+.app-toast--info .app-toast__icon {
+  background: #486f7a;
+  box-shadow: 0 5px 12px rgba(72, 111, 122, 0.2);
+}
+
+@keyframes app-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
 }
 
 /* ── Error card — tarjeta con código + Ref + severidad ───── */
 .app-toast--error {
+  display: block;
+  width: auto;
   border-radius: 14px;
   padding: 16px 20px;
   font-weight: 500;
@@ -2223,6 +2414,18 @@ textarea.is-invalid {
   .modal-foot {
     flex-direction: column;
   }
+
+  .app-toast {
+    width: calc(100vw - 28px);
+    min-width: 0;
+    padding: 13px 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-toast {
+    animation: none;
+  }
 }
 
 @media (max-width: 1024px) {
@@ -2269,26 +2472,20 @@ textarea.is-invalid {
     display: none;
   }
 
-  .topbar-core-link span,
-  .topbar-logout span {
-    display: none;
-  }
-
-  .topbar-core-link,
-  .topbar-logout {
-    width: 34px;
-    height: 34px;
-    min-height: 34px;
-    padding: 0;
-  }
-
   .topbar-r {
     gap: 7px;
   }
 
   .tb-src {
-    width: auto;
-    min-width: 0;
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .tb-src > span:nth-child(2) {
+    display: none;
   }
 
   .tb-shortcut {
@@ -2307,6 +2504,50 @@ textarea.is-invalid {
   .price-row,
   .fr-row {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 860px) {
+  .topbar {
+    height: auto;
+    min-height: 66px;
+    padding: 10px 14px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .topbar-r {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .topbar-r::-webkit-scrollbar {
+    display: none;
+  }
+
+  .core-topbar-actions {
+    flex: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .core-topbar-action {
+    min-width: 36px;
+    width: 36px;
+    height: 36px;
+    min-height: 36px;
+    padding: 0;
+  }
+
+  .core-topbar-action > span:not(.core-topbar-badge),
+  .core-profile-action .avatar {
+    display: none;
+  }
+
+  .core-profile-fallback {
+    display: block;
   }
 }
 
@@ -3487,10 +3728,13 @@ textarea.is-invalid {
   position: fixed; inset: 0; z-index: 9999;
   display: flex; align-items: center; justify-content: center; padding: 22px;
   background: rgba(20, 30, 22, 0.45); backdrop-filter: blur(6px);
+  overflow: hidden;
 }
 .guide-modal {
   display: flex; flex-direction: column;
-  width: min(500px, 100%); max-height: 88vh; overflow: hidden;
+  width: min(500px, 100%);
+  max-height: min(88dvh, 880px);
+  overflow: hidden;
   border-radius: 22px; background: var(--sf);
   border: 1px solid var(--bd); box-shadow: 0 30px 70px rgba(15, 25, 18, 0.35);
 }
@@ -3519,9 +3763,16 @@ textarea.is-invalid {
 }
 .guide-close-x:hover { background: var(--tan-lt); color: var(--tx); }
 .guide-body {
-  flex: 1; overflow-y: auto; padding: 20px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 20px;
   display: flex; flex-direction: column; gap: 10px;
 }
+.guide-body > * { flex: 0 0 auto; }
 .guide-step {
   display: flex; gap: 12px; align-items: flex-start;
   padding: 12px 14px; border-radius: 12px;
@@ -3544,6 +3795,32 @@ textarea.is-invalid {
   padding: 9px 22px; border-radius: 11px;
   background: #2F6A38; color: #fff; border: none;
   font-size: .85rem; font-weight: 600; cursor: pointer;
+}
+
+@media (max-width: 639px), (max-height: 700px) {
+  .guide-overlay {
+    align-items: stretch;
+    padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+  }
+
+  .guide-modal {
+    width: 100% !important;
+    max-height: none;
+    height: 100%;
+    border-radius: 18px;
+  }
+
+  .guide-head {
+    padding: 14px 15px;
+  }
+
+  .guide-body {
+    padding: 12px 14px;
+  }
+
+  .guide-foot {
+    padding: 11px 14px;
+  }
 }
 
 /* ── Lot edit modal (Carga de Lotes) ──────────────────────────────────────── */

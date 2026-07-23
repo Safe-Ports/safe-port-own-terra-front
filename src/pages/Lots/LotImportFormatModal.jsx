@@ -1,5 +1,6 @@
 import { createPortal } from "react-dom";
 import { useState } from "react";
+import useEscapeKey from "@/hooks/useEscapeKey";
 
 const G = "#355E3B";
 const OK = "#16a34a";
@@ -120,6 +121,7 @@ export default function LotImportFormatModal({ open, onClose }) {
     servicios: false,
     ejemplo: false,
   });
+  useEscapeKey(onClose, open);
 
   if (!open) return null;
 
@@ -129,8 +131,11 @@ export default function LotImportFormatModal({ open, onClose }) {
     <div className="guide-overlay" onClick={onClose}>
       <div
         className="guide-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Campos requeridos y formato del archivo"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: 660, width: "95vw" }}
+        style={{ maxWidth: 720, width: "min(95vw, 720px)" }}
       >
         {/* Header */}
         <div className="guide-head">
@@ -144,13 +149,13 @@ export default function LotImportFormatModal({ open, onClose }) {
             <div className="guide-title">Campos requeridos y formato del archivo</div>
             <div className="guide-sub">Referencia completa para crear tu Excel de lotes sin errores</div>
           </div>
-          <button className="guide-close-x" onClick={onClose}>×</button>
+          <button className="guide-close-x" onClick={onClose} aria-label="Cerrar">×</button>
         </div>
 
         {/* Body */}
         <div
           className="guide-body"
-          style={{ overflowY: "auto", maxHeight: "calc(85vh - 140px)", padding: "4px 0" }}
+          style={{ padding: "12px 16px" }}
         >
           {/* ── 1. ID Lote — OBLIGATORIO ─────────────────────────────────── */}
           <Section id="requerido" title="ID Lote — identificador único" type="required" open={sections.requerido} onToggle={toggle}>

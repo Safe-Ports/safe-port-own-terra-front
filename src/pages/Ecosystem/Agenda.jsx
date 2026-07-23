@@ -6,7 +6,23 @@ import { useAppContext } from "@/context/AppContext";
 
 import FieldError from "@/components/shared/FieldError";
 import { useFieldErrors } from "@/hooks/useFieldErrors";
+import useEscapeKey from "@/hooks/useEscapeKey";
 import EcoLayout from "./EcoLayout";
+import AgendaTimeGrid from "./AgendaTimeGrid";
+import AgendaQuickCreate from "./AgendaQuickCreate";
+import {
+  APP_META,
+  CREATABLE_APPS,
+  TYPES,
+  FILTERS,
+  AGENDA_RULES,
+  toDateKey,
+  buildMonthDays,
+  getVisibleRange,
+  normalizeAppt,
+  buildAppointmentBody,
+  AppTag,
+} from "./agendaShared";
 
 function buildWhatsAppLink(phone, message) {
   const clean = String(phone || "").replace(/\D/g, "");
@@ -14,99 +30,65 @@ function buildWhatsAppLink(phone, message) {
   return `${base}?text=${encodeURIComponent(message)}`;
 }
 
-const APP_META = {
-  core: { name: "Core", color: "#1E3D2B" },
-  lands: { name: "Lands", color: "#6FAF6B" },
-  neighb: { name: "Neighborhoods", color: "#355E3B" },
-  homes: { name: "Homes", color: "#A7CBA1" },
+const VIEW_OPTIONS = [
+  ["day", "Día"],
+  ["week", "Semana"],
+  ["month", "Mes"],
+];
+
+const TOTAL_LABEL = {
+  day: "Eventos del día",
+  week: "Eventos esta semana",
+  month: "Eventos este mes",
 };
-const CREATABLE_APPS = Object.entries(APP_META).filter(([key]) => key === "core" || key === "lands");
-
-const TYPES = {
-  visita: "Visita",
-  llamada: "Llamada",
-  firma: "Firma",
-  seguimiento: "Seguimiento",
-  cobranza: "Cobranza",
-  reunion: "Reunión",
-  recordatorio: "Recordatorio",
-  tarea: "Tarea",
-  personal: "Personal",
-  evento: "Evento",
-};
-
-const FILTERS = ["Todos", "Core", "Lands"];
-
-const AGENDA_RULES = {
-  date: (v) => (!v ? "La fecha es obligatoria." : ""),
-  time: (v) => (!v ? "La hora es obligatoria." : ""),
-};
-
-function toDateKey(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function buildMonthDays(baseDate) {
-  const year = baseDate.getFullYear();
-  const month = baseDate.getMonth();
-  const first = new Date(year, month, 1);
-  const start = new Date(first);
-  start.setDate(first.getDate() - first.getDay());
-  return Array.from({ length: 42 }, (_, i) => {
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
-    return { date: d, key: toDateKey(d), inMonth: d.getMonth() === month, label: d.getDate() };
-  });
-}
-
-function normalizeAppt(a) {
-  const dt = new Date(a.scheduled_at);
-  return {
-    id: a.id,
-    date: toDateKey(dt),
-    time: dt.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false }),
-    title: a.title || a.contact_name || "Sin título",
-    client: a.client_name || a.contact_name || "",
-    clientId: a.client_id || null,
-    clientPhone: a.client_phone || a.contact_phone || null,
-    app: a.app_key || "core",
-    type: a.appt_type || "evento",
-    context: a.notes || "",
-    owner: a.owner || "",
-    status: a.status || "pending",
-  };
-}
-
-function AppTag({ app }) {
-  const meta = APP_META[app] || APP_META.core;
-  return (
-    <span className="ag-app-tag">
-      <span style={{ background: meta.color }} />
-      {meta.name}
-    </span>
-  );
-}
 
 function AgendaPage() {
   const today = new Date();
   const qc = useQueryClient();
   const { showToast, showError, clearCalendarAlerts, clients } = useAppContext();
   const [visibleMonth, setVisibleMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const [selectedDate, setSelectedDate] = useState(toDateKey(today));
   const [showGuide, setShowGuide] = useState(false);
+  const [view, setView] = useState("week");
+  const [quickCreate, setQuickCreate] = useState(null);
 
   useEffect(() => {
     clearCalendarAlerts();
   }, []);
 
-  const monthStart = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1).toISOString();
-  const monthEnd = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 0, 23, 59, 59).toISOString();
+  // Un popover de creación rápida anclado a una celda ya no aplica si el
+  // usuario navega a otra semana/día/mes o cambia de vista.
+  useEffect(() => {
+    setQuickCreate(null);
+  }, [view, visibleMonth, selectedDate]);
+
+  const visibleRange = useMemo(
+    () => getVisibleRange(view, visibleMonth, selectedDate),
+    [view, visibleMonth, selectedDate]
+  );
 
   const { data: rawAppts = [], isLoading } = useQuery({
-    queryKey: ["appointments", "agenda", monthStart],
-    queryFn: () => appointmentService.list({ upcoming_only: false, from_date: monthStart, to_date: monthEnd }),
+    queryKey: ["appointments", "agenda", view, visibleRange.start.toISOString()],
+    queryFn: () => appointmentService.list({
+      upcoming_only: false,
+      from_date: visibleRange.start.toISOString(),
+      to_date: visibleRange.end.toISOString(),
+    }),
+  });
+
+  const todayRange = useMemo(
+    () => getVisibleRange("day", visibleMonth, toDateKey(today)),
+    [visibleMonth]
+  );
+  const visibleRangeIncludesToday = today >= visibleRange.start && today <= visibleRange.end;
+  const { data: rawTodayAppts = [], isLoading: isTodayLoading } = useQuery({
+    queryKey: ["appointments", "agenda", "today", todayRange.start.toISOString()],
+    queryFn: () => appointmentService.list({
+      upcoming_only: false,
+      from_date: todayRange.start.toISOString(),
+      to_date: todayRange.end.toISOString(),
+    }),
+    enabled: !visibleRangeIncludesToday,
   });
 
   const appointments = useMemo(() => rawAppts.map(normalizeAppt), [rawAppts]);
@@ -138,10 +120,13 @@ function AgendaPage() {
     onError: (err) => showError(err, "Error al actualizar el evento"),
   });
 
-  const [selectedDate, setSelectedDate] = useState(toDateKey(today));
   const [filter, setFilter] = useState("Todos");
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  useEscapeKey(() => {
+    setShowModal(false);
+    setEditingId(null);
+  }, showModal);
   const fe = useFieldErrors();
   const [form, setForm] = useState({
     title: "",
@@ -166,11 +151,13 @@ function AgendaPage() {
   const total = appointments.length;
   const pending = appointments.filter((a) => a.status === "pending").length;
   const completed = appointments.filter((a) => a.status === "completed").length;
-  const today_count = appointments.filter((a) => a.date === toDateKey(today)).length;
+  const today_count = visibleRangeIncludesToday
+    ? appointments.filter((a) => a.date === toDateKey(today)).length
+    : rawTodayAppts.length;
 
-  const openCreate = (date = selectedDate) => {
+  const openCreate = (date = selectedDate, time = "10:00") => {
     setEditingId(null);
-    setForm({ title: "", date, time: "10:00", client: "", app: "core", type: "evento", context: "", owner: "" });
+    setForm({ title: "", date, time, client: "", app: "core", type: "evento", context: "", owner: "" });
     setSelectedDate(date);
     setShowModal(true);
   };
@@ -194,17 +181,7 @@ function AgendaPage() {
   const saveAppointment = async (event) => {
     event.preventDefault();
     if (!fe.validate(form, AGENDA_RULES)) return;
-    const [h, m] = form.time.split(":");
-    const dt = new Date(`${form.date}T${h}:${m}:00`);
-    const body = {
-      scheduled_at: dt.toISOString(),
-      title: form.title || `${TYPES[form.type] || form.type}${form.client ? ` con ${form.client}` : ""}`,
-      appt_type: form.type,
-      app_key: form.app,
-      contact_name: form.client || form.title || "",
-      notes: form.context,
-      owner: form.owner,
-    };
+    const body = buildAppointmentBody(form);
     if (editingId) {
       await updateMutation.mutateAsync({ id: editingId, body });
     } else {
@@ -215,12 +192,43 @@ function AgendaPage() {
     setForm({ title: "", date: form.date, time: "10:00", client: "", app: "core", type: "evento", context: "", owner: "" });
   };
 
-  const monthLabel = visibleMonth.toLocaleDateString("es-MX", { month: "long", year: "numeric" });
-  const moveMonth = (offset) => {
-    const next = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + offset, 1);
-    setVisibleMonth(next);
-    setSelectedDate(toDateKey(next));
+  const syncVisibleMonth = (date) => {
+    setVisibleMonth(new Date(date.getFullYear(), date.getMonth(), 1));
   };
+
+  const moveRange = (offset) => {
+    if (view === "month") {
+      const next = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + offset, 1);
+      setVisibleMonth(next);
+      setSelectedDate(toDateKey(next));
+      return;
+    }
+    const step = view === "week" ? offset * 7 : offset;
+    const anchor = new Date(`${selectedDate}T12:00:00`);
+    anchor.setDate(anchor.getDate() + step);
+    setSelectedDate(toDateKey(anchor));
+    syncVisibleMonth(anchor);
+  };
+
+  const goToToday = () => {
+    setSelectedDate(toDateKey(today));
+    syncVisibleMonth(today);
+  };
+
+  const rangeLabel = useMemo(() => {
+    if (view === "month") return visibleMonth.toLocaleDateString("es-MX", { month: "long", year: "numeric" });
+    if (view === "day") {
+      return new Date(`${selectedDate}T12:00:00`).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
+    }
+    const days = visibleRange.days || [];
+    if (!days.length) return "";
+    const start = days[0].date;
+    const end = days[days.length - 1].date;
+    const sameMonth = start.getMonth() === end.getMonth();
+    const startLabel = start.toLocaleDateString("es-MX", { day: "numeric", month: sameMonth ? undefined : "short" });
+    const endLabel = end.toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
+    return `${startLabel} – ${endLabel}`;
+  }, [view, visibleMonth, selectedDate, visibleRange]);
 
   return (
     <EcoLayout active="agenda" title="Agenda" subtitle="Agenda general del ecosistema: eventos, recordatorios, reuniones y citas" onGuide={() => setShowGuide(true)}>
@@ -236,10 +244,10 @@ function AgendaPage() {
       </div>
 
       <div className="ag-kpis">
-        <div className="ag-kpi"><span>Total</span><b>{isLoading ? "—" : total}</b><small>Eventos este mes</small></div>
+        <div className="ag-kpi"><span>Total</span><b>{isLoading ? "—" : total}</b><small>{TOTAL_LABEL[view]}</small></div>
         <div className="ag-kpi"><span>Completados</span><b>{completed}</b><small>Realizados</small></div>
         <div className="ag-kpi"><span>Pendientes</span><b>{pending}</b><small>Por realizar</small></div>
-        <div className="ag-kpi"><span>Hoy</span><b>{today_count}</b><small>Eventos de hoy</small></div>
+        <div className="ag-kpi"><span>Hoy</span><b>{isTodayLoading ? "—" : today_count}</b><small>Eventos de hoy</small></div>
       </div>
 
       <div className="ag-layout">
@@ -247,11 +255,18 @@ function AgendaPage() {
           <div className="ag-card-head">
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <button className="ag-soft" onClick={() => moveMonth(-1)} aria-label="Mes anterior">‹</button>
-                <h3 style={{ textTransform: "capitalize" }}>{monthLabel}</h3>
-                <button className="ag-soft" onClick={() => moveMonth(1)} aria-label="Mes siguiente">›</button>
+                <button className="ag-soft" onClick={() => moveRange(-1)} aria-label="Anterior">‹</button>
+                <h3 style={{ textTransform: "capitalize" }}>{rangeLabel}</h3>
+                <button className="ag-soft" onClick={() => moveRange(1)} aria-label="Siguiente">›</button>
+                <button className="ag-soft" onClick={goToToday}>Hoy</button>
               </div>
-              <p>Vista mensual</p>
+              <div className="ag-seg" style={{ marginTop: 8 }}>
+                {VIEW_OPTIONS.map(([key, label]) => (
+                  <button key={key} className={view === key ? "on" : ""} onClick={() => setView(key)}>
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="ag-seg">
               {FILTERS.map((item) => (
@@ -262,33 +277,45 @@ function AgendaPage() {
             </div>
           </div>
 
-          <div className="ag-weekdays">
-            {["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"].map((day) => <span key={day}>{day}</span>)}
-          </div>
-          <div className="ag-calendar-grid">
-            {monthDays.map((day) => {
-              const dayItems = visibleAppointments.filter((item) => item.date === day.key);
-              const active = selectedDate === day.key;
-              return (
-                <button
-                  key={day.key}
-                  className={`ag-day ${day.inMonth ? "" : "muted"} ${active ? "active" : ""}`}
-                  onClick={() => setSelectedDate(day.key)}
-                  onDoubleClick={() => openCreate(day.key)}
-                >
-                  <span className="ag-day-num">{day.label}</span>
-                  <div className="ag-day-items">
-                    {dayItems.slice(0, 3).map((item) => (
-                      <span key={item.id} style={{ borderLeftColor: APP_META[item.app]?.color }}>
-                        {item.time} · {TYPES[item.type] || item.type}
-                      </span>
-                    ))}
-                    {dayItems.length > 3 ? <em>+{dayItems.length - 3}</em> : null}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+          {view === "month" ? (
+            <>
+              <div className="ag-weekdays">
+                {["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"].map((day) => <span key={day}>{day}</span>)}
+              </div>
+              <div className="ag-calendar-grid">
+                {monthDays.map((day) => {
+                  const dayItems = visibleAppointments.filter((item) => item.date === day.key);
+                  const active = selectedDate === day.key;
+                  return (
+                    <button
+                      key={day.key}
+                      className={`ag-day ${day.inMonth ? "" : "muted"} ${active ? "active" : ""}`}
+                      onClick={() => setSelectedDate(day.key)}
+                      onDoubleClick={() => openCreate(day.key)}
+                    >
+                      <span className="ag-day-num">{day.label}</span>
+                      <div className="ag-day-items">
+                        {dayItems.slice(0, 3).map((item) => (
+                          <span key={item.id} style={{ borderLeftColor: APP_META[item.app]?.color }}>
+                            {item.time} · {TYPES[item.type] || item.type}
+                          </span>
+                        ))}
+                        {dayItems.length > 3 ? <em>+{dayItems.length - 3}</em> : null}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <AgendaTimeGrid
+              view={view}
+              days={visibleRange.days}
+              appointments={visibleAppointments}
+              onSlotClick={(date, time, anchorRect) => setQuickCreate({ date, time, anchorRect })}
+              onEventClick={(item) => openEdit(item)}
+            />
+          )}
         </section>
 
         <aside className="ag-side">
@@ -388,6 +415,17 @@ function AgendaPage() {
         </aside>
       </div>
 
+      {quickCreate ? (
+        <AgendaQuickCreate
+          date={quickCreate.date}
+          time={quickCreate.time}
+          anchorRect={quickCreate.anchorRect}
+          onClose={() => setQuickCreate(null)}
+          onSubmit={(body) => createMutation.mutateAsync(body)}
+          onMore={(date, time) => { setQuickCreate(null); openCreate(date, time); }}
+        />
+      ) : null}
+
       {showModal ? (
         <div className="ag-modal-backdrop" onClick={() => { setShowModal(false); setEditingId(null); }}>
           <form className="ag-modal" onSubmit={saveAppointment} onClick={(e) => e.stopPropagation()}>
@@ -453,13 +491,15 @@ function AgendaPage() {
         title="Agenda General"
         subtitle="Tu agenda centralizada para eventos, reuniones, recordatorios y citas del ecosistema."
         steps={[
-          { title: "Crear un evento", text: "Haz clic en cualquier día del calendario o en 'Nuevo evento' para abrir el formulario. Elige tipo (visita, reunión, recordatorio, tarea, personal, etc.), hora y notas." },
-          { title: "Navegar el calendario", text: "Usa las flechas ‹ › junto al nombre del mes para avanzar o retroceder entre meses." },
-          { title: "Filtrar por app", text: "Las pestañas (Todos, Core y Lands) filtran los eventos por la app que los generó." },
-          { title: "Editar evento", text: "Haz clic en 'Editar' en cualquier evento de la lista para modificar título, fecha, hora, tipo y notas." },
+          { title: "Vistas Día / Semana / Mes", text: "Cambia entre las tres vistas con el selector junto a la fecha. Semana y Día muestran una rejilla por hora, igual que Google Calendar; Mes conserva la vista general de siempre." },
+          { title: "Crear con un clic", text: "En las vistas de Semana o Día, haz clic en cualquier celda de hora para abrir un formulario rápido ya con esa fecha y hora. Usa 'Más opciones' si necesitas cliente, notas o responsable." },
+          { title: "Crear un evento completo", text: "El botón 'Nuevo evento' abre el formulario completo. Elige tipo (visita, reunión, recordatorio, tarea, personal, etc.), hora y notas." },
+          { title: "Navegar el calendario", text: "Usa las flechas ‹ › para avanzar o retroceder (mes, semana o día según la vista activa) y 'Hoy' para volver a la fecha actual." },
+          { title: "Filtrar por app", text: "Las pestañas (Todos, Core y Lands) filtran los eventos por la app que los generó, en cualquier vista." },
+          { title: "Editar evento", text: "Haz clic en cualquier evento de la rejilla, o en 'Editar' en la lista del panel derecho, para modificar título, fecha, hora, tipo y notas." },
           { title: "Completar o eliminar", text: "Marca un evento como completado con el botón 'Completar' o elimínalo con 'Eliminar'." },
-          { title: "Doble clic para crear", text: "Doble clic en cualquier día del calendario abre directamente el formulario con esa fecha seleccionada." },
-          { title: "KPIs de la agenda", text: "Los 4 indicadores muestran total de eventos del mes, completados, pendientes y cuántos hay programados para hoy." },
+          { title: "Doble clic para crear (vista Mes)", text: "Doble clic en cualquier día del calendario mensual abre directamente el formulario con esa fecha seleccionada." },
+          { title: "KPIs de la agenda", text: "Los 4 indicadores muestran el total de eventos del período visible (mes, semana o día), completados, pendientes y cuántos hay programados para hoy." },
         ]}
       />
     </EcoLayout>
