@@ -278,6 +278,20 @@ export function AppProvider({ children }) {
     return parsed;
   };
 
+  // Aviso global de tope de plan (OT-SUB-4001): el interceptor de api.js emite este
+  // evento en cualquier escritura bloqueada por cuota; aquí lo presentamos con el
+  // mensaje homologado ("Alcanzaste el límite… Mejora tu plan para agregar más").
+  useEffect(() => {
+    const onQuota = (e) => {
+      const parsed = parseApiError({ response: { data: e.detail } });
+      setToast({ kind: "error", ...parsed });
+      window.clearTimeout(showToast._timer);
+      showToast._timer = window.setTimeout(() => setToast(null), 9000);
+    };
+    window.addEventListener("ownterra:quota-exceeded", onQuota);
+    return () => window.removeEventListener("ownterra:quota-exceeded", onQuota);
+  }, []);
+
   // ── Auth ──────────────────────────────────────────────────────────────────
   const applyAuthSession = (data, remember = true) => {
     setCurrentUser({

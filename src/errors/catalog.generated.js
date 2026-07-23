@@ -244,14 +244,6 @@ export const ERROR_CATALOG = {
     "name": "LOT_FORBIDDEN_TRANSITION",
     "severity": "warning"
   },
-  "OT-LOT-1002": {
-    "action": "Elige el cliente potencial antes de confirmar el apartado.",
-    "domain": "LOT",
-    "http_status": 400,
-    "message": "Selecciona un cliente para apartar el lote.",
-    "name": "LOT_CLIENT_REQUIRED",
-    "severity": "warning"
-  },
   "OT-LOT-3002": {
     "action": "Elige otro lote disponible.",
     "domain": "LOT",
@@ -402,6 +394,14 @@ export const ERROR_CATALOG = {
     "http_status": 403,
     "message": "La suscripción está cancelada.",
     "name": "SUB_CANCELLED",
+    "severity": "warning"
+  },
+  "OT-SUB-4001": {
+    "action": "Mejora tu plan para agregar más.",
+    "domain": "SUB",
+    "http_status": 403,
+    "message": "Alcanzaste el límite de tu plan.",
+    "name": "SUB_QUOTA_EXCEEDED",
     "severity": "warning"
   },
   "OT-SYS-1000": {
