@@ -9,7 +9,7 @@ import { useProjectsQuery } from "@/hooks/queries/useAppQueries";
 import { lotService } from "@/services/lotService";
 import { inmuebleService } from "@/services/inmuebleService";
 import { parseApiError } from "@/errors/parseApiError";
-import { MAP_IMAGE_ACCEPT, isSupportedMapImage, mapFileFromUrl, prepareMapImage } from "@/utils/mapImage";
+import { MAP_IMAGE_ACCEPT, isSupportedMapImage, mapFileFromUrl, mapUploadErrorMessage, prepareMapImage } from "@/utils/mapImage";
 import Button from "@/components/Button";
 import GuideModal from "@/components/shared/GuideModal";
 import LotImportFormatModal from "./LotImportFormatModal";
@@ -364,6 +364,7 @@ function LotsPage() {
 
     setImportLoading(true);
     setImportSummary(null);
+    let mapUploadError = null;
 
     try {
       let fracId = draftProject._editingFracId;
@@ -377,7 +378,9 @@ function LotsPage() {
           try {
             const mapFile = await mapFileFromUrl(draftProject.mapUrl);
             await inmuebleService.uploadMap(inmueble.id, mapFile);
-          } catch { /* fallo de imagen no es crítico */ }
+          } catch (error) {
+            mapUploadError = error;
+          }
         }
 
         const manualLots = draftProject.sections.flatMap((s) =>
@@ -453,7 +456,13 @@ function LotsPage() {
         warnings: result.warnings || [],
       });
 
-      showToast(`${result.imported} lotes importados${result.failed ? ` · ${result.failed} con errores` : ""}`);
+      if (mapUploadError) {
+        showError(mapUploadError, "Los lotes se importaron, pero el plano no pudo subirse", {
+          message: mapUploadErrorMessage(mapUploadError, true),
+        });
+      } else {
+        showToast(`${result.imported} lotes importados${result.failed ? ` · ${result.failed} con errores` : ""}`);
+      }
       if (result.failed > 0) setShowImportGuide(true);
 
     } catch (err) {
@@ -593,7 +602,7 @@ function LotsPage() {
 
   const updateMap = async (file) => {
     if (!isSupportedMapImage(file)) {
-      showToast("El plano debe ser una imagen JPG, PNG, WEBP, HEIC o HEIF. Excel y CSV solo van en Llenar con Excel o CSV.");
+      showToast("El plano debe ser una imagen JPG, PNG, WEBP, HEIC o HEIF. Excel y CSV solo van en Llenar con Excel o CSV.", "warning");
       return false;
     }
     try {
@@ -613,7 +622,7 @@ function LotsPage() {
       }
       return true;
     } catch (error) {
-      showToast(`${error.message}. Intenta exportarla como JPG o PNG.`);
+      showToast(`${error.message}. Intenta exportarla como JPG o PNG.`, "warning");
       return false;
     }
   };

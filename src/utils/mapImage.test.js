@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { isSupportedMapImage, mapFileFromUrl } from "./mapImage";
+import { isSupportedMapImage, mapFileFromUrl, mapUploadErrorMessage } from "./mapImage";
 
 describe("map images", () => {
   it("accepts iPad HEIC images by MIME type or extension", () => {
@@ -23,5 +23,21 @@ describe("map images", () => {
     expect(file.name).toBe("map.jpg");
     expect(file.type).toBe("image/jpeg");
     vi.unstubAllGlobals();
+  });
+
+  it("explains map upload failures with actionable messages", () => {
+    const tooLarge = {
+      response: { data: { error: { code: "OT-DOC-1010" } } },
+    };
+    const invalid = {
+      response: { data: { error: { code: "OT-DOC-1012" } } },
+    };
+
+    expect(mapUploadErrorMessage(tooLarge)).toContain("10 MB");
+    expect(mapUploadErrorMessage(invalid)).toContain("JPG, PNG o WebP");
+    expect(mapUploadErrorMessage(new Error("Network Error"))).toContain("conexión");
+    expect(mapUploadErrorMessage(invalid, true)).toContain(
+      "El resto de los cambios sí quedó guardado",
+    );
   });
 });

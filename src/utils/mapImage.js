@@ -34,6 +34,26 @@ export function isSupportedMapImage(file) {
   return MAP_IMAGE_MIME_TYPES.has(mimeType) || MAP_IMAGE_EXTENSIONS.has(fileExtension(file.name));
 }
 
+export function mapUploadErrorMessage(error, changesSaved = false) {
+  const code = error?.response?.data?.error?.code;
+  const backendMessage = error?.response?.data?.error?.message;
+
+  let message;
+  if (code === "OT-DOC-1010") {
+    message = "La imagen supera el límite de 10 MB. Selecciona una imagen más pequeña.";
+  } else if (code === "OT-DOC-1011") {
+    message = "La imagen está vacía. Selecciona otro archivo e inténtalo nuevamente.";
+  } else if (code === "OT-DOC-1012") {
+    message = "El archivo no es una imagen JPG, PNG o WebP válida.";
+  } else if (!error?.response) {
+    message = "No pudimos subir el plano por un problema de conexión. Revisa tu internet e inténtalo nuevamente.";
+  } else {
+    message = backendMessage || "No pudimos subir el plano. Inténtalo nuevamente o selecciona otra imagen.";
+  }
+
+  return changesSaved ? `${message} El resto de los cambios sí quedó guardado.` : message;
+}
+
 function readFileAsDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

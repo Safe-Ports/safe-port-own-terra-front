@@ -5,7 +5,7 @@ import { usePersistentState } from "@/hooks/usePersistentState";
 import api from "@/services/api";
 import { clientService } from "@/services/clientService";
 import { inmuebleService } from "@/services/inmuebleService";
-import { mapFileFromUrl } from "@/utils/mapImage";
+import { mapFileFromUrl, mapUploadErrorMessage } from "@/utils/mapImage";
 import { lotService } from "@/services/lotService";
 import { contractService } from "@/services/contractService";
 import { paymentService } from "@/services/paymentService";
@@ -221,9 +221,9 @@ export function AppProvider({ children }) {
 
   // Muestra un error homologado (código + Ref + copiar). El reporte a Sentry lo hace el
   // interceptor de api.js, así que aquí solo presentamos. Dura más para dar tiempo a copiar.
-  const showError = (error, fallbackMessage) => {
+  const showError = (error, fallbackMessage, overrides = {}) => {
     const parsed = parseApiError(error, fallbackMessage);
-    setToast({ kind: "error", ...parsed });
+    setToast({ kind: "error", ...parsed, ...overrides });
     window.clearTimeout(showToast._timer);
     showToast._timer = window.setTimeout(() => setToast(null), 9000);
     return parsed;
@@ -624,9 +624,14 @@ export function AppProvider({ children }) {
   const saveFrac = async ({ name, sections, mapUrl }) => {
     try {
       const inmueble = await inmuebleService.create({ name: name || "Fraccionamiento" });
+      let mapUploadError = null;
       if (mapUrl) {
-        const file = await mapFileFromUrl(mapUrl);
-        await inmuebleService.uploadMap(inmueble.id, file);
+        try {
+          const file = await mapFileFromUrl(mapUrl);
+          await inmuebleService.uploadMap(inmueble.id, file);
+        } catch (error) {
+          mapUploadError = error;
+        }
       }
 
       const draftLots = sections.flatMap((section) =>
@@ -668,7 +673,13 @@ export function AppProvider({ children }) {
       setSelectedFracId(String(inmueble.id));
       setDraftProject(createEmptyDraftProject());
       navigate("/fraccionamientos");
-      showToast(`Fraccionamiento "${name || "Fraccionamiento"}" creado${draftLots.length > 0 ? ` con ${draftLots.length} lote${draftLots.length !== 1 ? "s" : ""}` : ""}`);
+      if (mapUploadError) {
+        showError(mapUploadError, "No se pudo subir el plano", {
+          message: mapUploadErrorMessage(mapUploadError, true),
+        });
+      } else {
+        showToast(`Fraccionamiento "${name || "Fraccionamiento"}" creado${draftLots.length > 0 ? ` con ${draftLots.length} lote${draftLots.length !== 1 ? "s" : ""}` : ""}`);
+      }
     } catch (err) {
       showError(err, "Error al crear el fraccionamiento");
     }
@@ -681,10 +692,15 @@ export function AppProvider({ children }) {
         name: name?.trim() || "Fraccionamiento",
       });
       let mapUpdated = false;
+      let mapUploadError = null;
       if (mapUrl && (mapUrl.startsWith("data:") || mapUrl.startsWith("blob:"))) {
-        const file = await mapFileFromUrl(mapUrl);
-        await inmuebleService.uploadMap(_editingFracId, file);
-        mapUpdated = true;
+        try {
+          const file = await mapFileFromUrl(mapUrl);
+          await inmuebleService.uploadMap(_editingFracId, file);
+          mapUpdated = true;
+        } catch (error) {
+          mapUploadError = error;
+        }
       }
 
       const patches = sections.flatMap((section) =>
@@ -747,7 +763,13 @@ export function AppProvider({ children }) {
       setDraftProject(createEmptyDraftProject());
       navigate("/fraccionamientos");
       const lotChanges = patches.length + newLots.length;
-      showToast(`Fraccionamiento actualizado${lotChanges ? ` · ${lotChanges} lote${lotChanges !== 1 ? "s" : ""}` : ""}${mapUpdated ? " · plano actualizado" : ""}`);
+      if (mapUploadError) {
+        showError(mapUploadError, "No se pudo actualizar el plano", {
+          message: mapUploadErrorMessage(mapUploadError, true),
+        });
+      } else {
+        showToast(`Fraccionamiento actualizado${lotChanges ? ` · ${lotChanges} lote${lotChanges !== 1 ? "s" : ""}` : ""}${mapUpdated ? " · plano actualizado" : ""}`);
+      }
     } catch (err) {
       showError(err, "Error al guardar los cambios");
     }
