@@ -407,7 +407,7 @@ function FracsPage() {
     setDraftProject({
       mode: "editor",
       name: selectedFrac.name,
-      mapUrl: selectedFrac.map_image_url || "",
+      mapUrl: selectedFrac.image_url || "",
       cadProcessing: false,
       sections: Object.values(sectionMap),
       _editingFracId: selectedFrac.id,
@@ -491,7 +491,7 @@ function FracsPage() {
             <h1>{selectedFrac.name}</h1>
             <p>Inventario territorial consolidado con lectura rapida de disponibilidad, plano de referencia, detalle tecnico y cotizador comercial por lote.</p>
             <div className="frac-hero-actions">
-              <Button variant="secondary" onClick={() => selectedFrac.map_image_url && setShowMapViewer(true)} disabled={!selectedFrac.map_image_url}>Ver plano</Button>
+              <Button variant="secondary" onClick={() => selectedFrac.image_url && setShowMapViewer(true)} disabled={!selectedFrac.image_url}>Ver plano</Button>
               <Button variant="secondary" onClick={openEditor}>Editar</Button>
               <Button variant="secondary" onClick={() => exportAppData("lots")}>Exportar</Button>
             </div>
@@ -539,20 +539,20 @@ function FracsPage() {
                 <div className="frac-panel-title">Plano de referencia</div>
                 <div className="frac-panel-sub">Vista del fraccionamiento</div>
               </div>
-              <button className="frac-icon-btn" onClick={() => selectedFrac.map_image_url && setShowMapViewer(true)} disabled={!selectedFrac.map_image_url}>
+              <button className="frac-icon-btn" onClick={() => selectedFrac.image_url && setShowMapViewer(true)} disabled={!selectedFrac.image_url}>
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 5 1 1 5 1"/><polyline points="11 1 15 1 15 5"/><polyline points="15 11 15 15 11 15"/><polyline points="5 15 1 15 1 11"/></svg>
               </button>
             </div>
-            <div className="frac-plan-body" onClick={() => selectedFrac.map_image_url && setShowMapViewer(true)}>
-              {selectedFrac.map_image_url ? (
-                <img src={selectedFrac.map_image_url} alt="Plano" />
+            <div className="frac-plan-body" onClick={() => selectedFrac.image_url && setShowMapViewer(true)}>
+              {selectedFrac.image_url ? (
+                <img src={selectedFrac.image_url} alt="Plano" />
               ) : (
                 <div className="frac-plan-empty">
                   <strong>Sin plano</strong>
                   <span>Sube uno al crear el fraccionamiento</span>
                 </div>
               )}
-              {selectedFrac.map_image_url ? <span className="frac-zoom-badge">Zoom</span> : null}
+              {selectedFrac.image_url ? <span className="frac-zoom-badge">Zoom</span> : null}
             </div>
             <div className="frac-legend">
               <span><i className="available" />Disponible</span>
@@ -801,7 +801,7 @@ function FracsPage() {
 
 
 
-      {showMapViewer && selectedFrac.map_image_url ? <MapViewer src={selectedFrac.map_image_url} onClose={() => setShowMapViewer(false)} /> : null}
+      {showMapViewer && selectedFrac.image_url ? <MapViewer src={selectedFrac.image_url} onClose={() => setShowMapViewer(false)} /> : null}
       <GuideModal
         open={showGuide}
         onClose={() => setShowGuide(false)}
