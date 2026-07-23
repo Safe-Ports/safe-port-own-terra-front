@@ -14,8 +14,4 @@ export const billingService = {
   // Abre el Billing Portal de Stripe (gestionar/cancelar) y devuelve la URL.
   openPortal: () =>
     api.post("/billing/portal").then((r) => r.data.url),
-
-  // Deshace una cancelación programada (cancel_at_period_end) sin ir al portal.
-  reactivate: () =>
-    api.post("/billing/reactivate").then((r) => r.data),
 };

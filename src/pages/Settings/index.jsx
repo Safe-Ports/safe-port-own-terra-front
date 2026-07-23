@@ -150,20 +150,6 @@ function SettingsPage() {
   const handlePortal = () =>
     openStripeInNewTab("portal", () => billingService.openPortal(), "No se pudo abrir el portal de facturación");
 
-  const handleReactivate = async () => {
-    if (!window.confirm("¿Reactivar la suscripción? Se seguirá renovando normalmente y no se cancelará.")) return;
-    setBillingBusy("reactivate");
-    try {
-      await billingService.reactivate();
-      await queryClient.invalidateQueries({ queryKey: ["subscription"] });
-      showToast("Suscripción reactivada. Se seguirá renovando.");
-    } catch (err) {
-      showError(err, "No se pudo reactivar la suscripción");
-    } finally {
-      setBillingBusy(null);
-    }
-  };
-
   const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: "vendor" });
   const [creating, setCreating] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -315,17 +301,15 @@ function SettingsPage() {
                   Solo un administrador puede gestionar la suscripción.
                 </div>
               ) : ["active", "past_due"].includes(subscription.status) ? (
-                // Con acceso pagado: gestión (reactivar + portal) + ver la página de planes.
+                // Con acceso pagado: gestión de facturación + ver la página de planes.
+                // La (re)activación se hace desde nuestro panel de planes, no aquí.
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                  {subscription.cancel_at_period_end && (
-                    <button className="btn-p" disabled={billingBusy !== null} onClick={handleReactivate}>
-                      {billingBusy === "reactivate" ? "Reactivando..." : "Reactivar suscripción"}
-                    </button>
-                  )}
+                  <button className="btn-p" onClick={() => navigate("/planes")}>
+                    {subscription.cancel_at_period_end ? "Ver planes y reactivar" : "Ver planes"}
+                  </button>
                   <button className="btn-s" disabled={billingBusy !== null} onClick={handlePortal}>
                     {billingBusy === "portal" ? "Redirigiendo..." : "Gestionar facturación"}
                   </button>
-                  <button className="btn-s" onClick={() => navigate("/planes")}>Ver planes</button>
                 </div>
               ) : (
                 // Sin acceso pagado (prueba / cancelada / sin pagar): CTA a la página de planes.

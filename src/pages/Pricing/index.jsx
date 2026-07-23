@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
 import { billingService } from "@/services/billingService";
@@ -11,8 +11,7 @@ import PricingPlans from "@/components/shared/PricingPlans";
  */
 function PricingPage() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { showError, showToast } = useAppContext();
+  const { showError } = useAppContext();
   const [busy, setBusy] = useState(null);
 
   const { data: subscription } = useQuery({
@@ -46,20 +45,6 @@ function PricingPage() {
     }
   };
 
-  const reactivate = async () => {
-    if (!window.confirm("¿Reactivar la suscripción? Se seguirá renovando y no se cancelará.")) return;
-    setBusy("reactivate");
-    try {
-      await billingService.reactivate();
-      await queryClient.invalidateQueries({ queryKey: ["subscription"] });
-      showToast("Suscripción reactivada. Se seguirá renovando.");
-    } catch (err) {
-      showError(err, "No se pudo reactivar la suscripción");
-    } finally {
-      setBusy(null);
-    }
-  };
-
   const contactSales = () => {
     window.location.href = "mailto:ventas@own-terra.com?subject=Interesado en OwnTerra Enterprise";
   };
@@ -85,7 +70,6 @@ function PricingPage() {
           currentPlanCancelling={isSubscribed && subscription.cancel_at_period_end}
           ctaLabel={subscription?.status === "trialing" ? "Suscribirme" : isSubscribed ? "Cambiar a este plan" : "Renovar"}
           onSelect={startCheckout}
-          onReactivate={reactivate}
           onContact={contactSales}
         />
         {plans.length === 0 && (

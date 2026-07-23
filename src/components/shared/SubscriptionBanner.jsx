@@ -39,9 +39,9 @@ function SubscriptionBanner() {
     cta = "Actualizar pago";
   } else if (sub.status === "active" && sub.cancel_at_period_end) {
     tone = "warn";
-    msg = "Tu suscripción está programada para cancelarse. Reactívala si quieres continuar.";
-    dest = "/configuracion";
-    cta = "Reactivar";
+    msg = "Tu suscripción está programada para cancelarse. Vuelve a elegir tu plan para continuar.";
+    dest = "/planes";
+    cta = "Ver planes y reactivar";
   } else if (sub.status === "trialing" && sub.trial_end) {
     const d = daysUntil(sub.trial_end);
     if (d <= 0) {

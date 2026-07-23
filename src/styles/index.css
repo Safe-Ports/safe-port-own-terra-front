@@ -1979,6 +1979,102 @@ textarea.is-invalid {
 }
 .pp-check { color: var(--forest-hi); flex-shrink: 0; margin-top: 1px; }
 
+/* ── 4 planes (propuesta Own terraLand) ──────────────────────────────────── */
+.pp-grid--4 { grid-template-columns: repeat(auto-fit, minmax(212px, 1fr)); gap: 16px; }
+.pp-grid--4 .pp-card { padding: 24px 20px; }
+
+.pp-badge {
+  display: inline-block; margin-left: 8px; vertical-align: middle;
+  background: var(--tan-lt); color: var(--forest-hi);
+  font-size: 0.64rem; font-weight: 800; letter-spacing: 0.04em;
+  text-transform: uppercase; padding: 3px 8px; border-radius: 999px;
+  border: 1px solid var(--bd);
+}
+.pp-card--current { border-color: var(--forest-hi); }
+.pp-cur { font-size: 1.3rem; font-weight: 800; color: var(--deep); align-self: flex-start; margin-top: 4px; }
+.pp-grid--4 .pp-amount { font-size: 1.9rem; }
+.pp-grid--4 .pp-tagline { min-height: 40px; font-size: 0.82rem; }
+.pp-grid--4 .pp-feats li { font-size: 0.82rem; gap: 8px; }
+
+/* ── Add-on transversal (paquetes de lotes) ──────────────────────────────── */
+.pp-addon {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  margin-top: 22px; padding: 13px 20px;
+  background: var(--tan-lt); border: 1px solid var(--bd); border-radius: 14px;
+  color: var(--tx2); font-size: 0.88rem;
+}
+.pp-addon-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; flex-shrink: 0; border-radius: 8px;
+  background: var(--forest); color: #fff; font-weight: 800; font-size: 1rem;
+}
+.pp-addon-text b { color: var(--deep); font-weight: 800; }
+
+/* ── Tabla comparativa ───────────────────────────────────────────────────── */
+.pp-compare { margin-top: 34px; }
+.pp-compare-toggle {
+  display: flex; align-items: center; gap: 8px; margin: 0 auto;
+  background: var(--cream); border: 1px solid var(--bd); border-radius: 999px;
+  padding: 9px 18px; font-weight: 700; font-size: 0.85rem; color: var(--forest);
+  cursor: pointer; box-shadow: var(--sh); transition: background 0.15s ease;
+}
+.pp-compare-toggle:hover { background: var(--sf2); }
+.pp-chev { transition: transform 0.2s ease; }
+.pp-chev.up { transform: rotate(180deg); }
+
+.pp-matrix-wrap { margin-top: 20px; overflow-x: auto; }
+.pp-matrix {
+  width: 100%; border-collapse: collapse; min-width: 640px;
+  background: var(--cream); border: 1px solid var(--bd); border-radius: 16px;
+  overflow: hidden; box-shadow: var(--sh);
+}
+.pp-matrix th, .pp-matrix td {
+  padding: 13px 16px; text-align: center; font-size: 0.85rem;
+  border-bottom: 1px solid var(--bd);
+}
+.pp-matrix thead th {
+  color: var(--deep); font-weight: 800; font-size: 0.92rem;
+  background: var(--sf2); vertical-align: bottom;
+}
+.pp-matrix thead th.is-rec { background: #EAF3E6; }
+.pp-matrix td.is-rec { background: rgba(234, 243, 230, 0.45); }
+.pp-matrix tbody tr:last-child th, .pp-matrix tbody tr:last-child td { border-bottom: none; }
+.pp-mx-feature {
+  text-align: left !important; color: var(--tx2); font-weight: 700;
+  background: var(--cream); position: sticky; left: 0;
+}
+.pp-mx-hint, .pp-mx-price {
+  display: block; font-weight: 600; font-size: 0.7rem; color: var(--mu); margin-top: 2px;
+}
+.pp-mx-price { color: var(--forest-hi); font-weight: 800; }
+.pp-mx-val { color: var(--tx2); font-weight: 700; }
+.pp-mx-ilim { color: var(--forest-hi); font-weight: 800; }
+.pp-mx-yes { color: var(--forest-hi); display: inline-flex; }
+.pp-mx-no { color: var(--mu); font-weight: 700; }
+
+/* ── Próximamente / add-ons ──────────────────────────────────────────────── */
+.pp-soon {
+  margin-top: 34px; padding: 22px 24px; text-align: center;
+  background: var(--sf2); border: 1px dashed var(--bd); border-radius: 16px;
+}
+.pp-soon-title {
+  font-weight: 800; color: var(--deep); font-size: 0.9rem;
+  text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 12px;
+}
+.pp-soon-list {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
+}
+.pp-soon-list li {
+  background: var(--cream); border: 1px solid var(--bd); border-radius: 999px;
+  padding: 7px 14px; font-size: 0.82rem; font-weight: 600; color: var(--tx2);
+}
+.pp-soon-cta { margin: 16px 0 0; color: var(--mu); font-size: 0.85rem; }
+.pp-link {
+  background: none; border: none; padding: 0; cursor: pointer;
+  color: var(--forest); font-weight: 800; font-size: inherit; text-decoration: underline;
+}
+
 /* Banner de estado de suscripción (vencida / pago fallido / prueba por vencer) */
 .sub-banner {
   display: flex;
