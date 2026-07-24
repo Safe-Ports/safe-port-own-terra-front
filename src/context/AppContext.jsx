@@ -79,42 +79,42 @@ export function AppProvider({ children }) {
   const { data: clientsData } = useQuery({
     queryKey: ["clients"],
     queryFn: () => clientService.list({ limit: 100 }).then((r) => r.items),
-    enabled: !!currentUser,
+    enabled: !!currentUser && !authHydrating,
   });
   const clients = clientsData || [];
 
   const { data: fracsData } = useQuery({
     queryKey: ["inmuebles"],
     queryFn: () => inmuebleService.list({ limit: 50 }).then((r) => r.items),
-    enabled: !!currentUser,
+    enabled: !!currentUser && !authHydrating,
   });
   const fracs = fracsData || [];
 
   const { data: contractsData } = useQuery({
     queryKey: ["contracts"],
     queryFn: () => contractService.list({ limit: 100 }).then((r) => r.items),
-    enabled: !!currentUser,
+    enabled: !!currentUser && !authHydrating,
   });
   const contracts = contractsData || [];
 
   const { data: paymentsData } = useQuery({
     queryKey: ["payments"],
     queryFn: () => paymentService.list({ limit: 200 }).then((r) => r.items),
-    enabled: !!currentUser,
+    enabled: !!currentUser && !authHydrating,
   });
   const payments = paymentsData || [];
 
   const { data: documentsData } = useQuery({
     queryKey: ["documents"],
     queryFn: () => documentService.list({ limit: 100 }).then((r) => r.items),
-    enabled: !!currentUser,
+    enabled: !!currentUser && !authHydrating,
   });
   const documents = documentsData || [];
 
   const { data: notificationCount = 0, refetch: refetchNotifications } = useQuery({
     queryKey: ["notifications-unread"],
     queryFn: () => notificationService.unreadCount(),
-    enabled: !!currentUser,
+    enabled: !!currentUser && !authHydrating,
     refetchInterval: 60_000,
     retry: 0,
   });
@@ -133,7 +133,7 @@ export function AppProvider({ children }) {
   const { data: todayApptsRaw = [] } = useQuery({
     queryKey: ["appointments", "today-alerts"],
     queryFn: () => appointmentService.list({ upcoming_only: false, from_date: todayIso, to_date: todayEndIso }),
-    enabled: !!currentUser,
+    enabled: !!currentUser && !authHydrating,
     refetchInterval: 60_000,
     retry: 0,
   });
