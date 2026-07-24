@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
@@ -54,7 +53,6 @@ function fmtMoney(amount, currency) {
 
 function SettingsPage() {
   const { currentUser, showToast, showError, canUseFeature } = useAppContext();
-  const navigate = useNavigate();
   const [showGuide, setShowGuide] = useState(false);
   useLandsGuide(() => setShowGuide(true));
   const queryClient = useQueryClient();
@@ -304,7 +302,7 @@ function SettingsPage() {
                 // Con acceso pagado: gestión de facturación + ver la página de planes.
                 // La (re)activación se hace desde nuestro panel de planes, no aquí.
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                  <button className="btn-p" onClick={() => navigate("/planes")}>
+                  <button className="btn-p" onClick={() => window.open("/planes", "_blank", "noopener,noreferrer")}>
                     {subscription.cancel_at_period_end ? "Ver planes y reactivar" : "Ver planes"}
                   </button>
                   <button className="btn-s" disabled={billingBusy !== null} onClick={handlePortal}>
@@ -314,7 +312,7 @@ function SettingsPage() {
               ) : (
                 // Sin acceso pagado (prueba / cancelada / sin pagar): CTA a la página de planes.
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                  <button className="btn-p" onClick={() => navigate("/planes")}>
+                  <button className="btn-p" onClick={() => window.open("/planes", "_blank", "noopener,noreferrer")}>
                     {subscription.status === "trialing" ? "Ver planes y suscribirme" : "Ver planes y renovar"}
                   </button>
                 </div>

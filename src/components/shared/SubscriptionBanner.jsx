@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
 import { billingService } from "@/services/billingService";
 
@@ -13,7 +12,6 @@ const daysUntil = (iso) => Math.ceil((new Date(iso).getTime() - Date.now()) / DA
  */
 function SubscriptionBanner() {
   const { currentUser, canUseFeature } = useAppContext();
-  const navigate = useNavigate();
 
   const { data: sub } = useQuery({
     queryKey: ["subscription"],
@@ -61,7 +59,11 @@ function SubscriptionBanner() {
     <div className={`sub-banner sub-banner--${tone}`} role="status">
       <span className="sub-banner__msg">⚠️ {msg}</span>
       {isAdmin ? (
-        <button type="button" className="sub-banner__btn" onClick={() => navigate(dest)}>
+        <button
+          type="button"
+          className="sub-banner__btn"
+          onClick={() => window.open(dest, "_blank", "noopener,noreferrer")}
+        >
           {cta}
         </button>
       ) : (
