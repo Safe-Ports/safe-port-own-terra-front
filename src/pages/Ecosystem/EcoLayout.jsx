@@ -6,6 +6,7 @@ import EcoSprite from "./EcoSprite";
 import "@/styles/ecosystem.css";
 import CoreTopbarActions from "@/components/layout/CoreTopbarActions";
 import Toast from "@/components/shared/Toast";
+import SubscriptionBanner from "@/components/shared/SubscriptionBanner";
 import useEscapeKey from "@/hooks/useEscapeKey";
 
 /* Layout compartido del hub Aurora: sidebar + topbar + área de scroll.
@@ -81,7 +82,7 @@ function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
 
           <div className="nav-group">
             <div className="nav-label">Sistema</div>
-            {navItem("config", "Configuración", "eco-n-gear", () => {}, true)}
+            {navItem("config", "Configuración", "eco-n-gear", () => navigate("/configuracion"), !canUseFeature("core.config"))}
           </div>
 
           <div style={{ marginTop: "auto" }} />
@@ -117,6 +118,7 @@ function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
           <CoreTopbarActions onGuide={onGuide} className="topbar-right" />
         </div>
 
+        <SubscriptionBanner />
         <div className="scroll-area">{children}</div>
       </div>
       <Toast />

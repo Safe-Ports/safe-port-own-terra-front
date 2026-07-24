@@ -1982,12 +1982,251 @@ textarea.is-invalid {
   flex: 0 0 auto;
 }
 
+/* ── Página de planes a pantalla completa (upsell dedicado) ──────────────── */
+.pricing-page {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  overflow-y: auto;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #EAF3E6 0%, rgba(234,243,230,0) 60%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
+}
+.pricing-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 32px;
+  max-width: 1080px; margin: 0 auto;
+}
+.pricing-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; color: var(--deep); }
+.pricing-brand img { height: 30px; width: auto; }
+.pricing-close {
+  border: 1px solid var(--bd); background: var(--cream);
+  width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
+  font-size: 1rem; color: var(--tx2); box-shadow: var(--sh);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.pricing-close:hover { background: var(--sf2); transform: scale(1.05); }
+.pricing-body { max-width: 1080px; margin: 0 auto; padding: 12px 24px 64px; }
+.pricing-empty { text-align: center; color: var(--mu); margin-top: 20px; }
+
+/* En la página completa, agranda el encabezado de los planes */
+.pricing-body .pp-title { font-size: 2.1rem; }
+.pricing-body .pp-sub { font-size: 1rem; }
+
+/* ── Planes / Pricing (estilo SaaS elegante, paleta OwnTerra) ─────────────── */
+.pp { padding: 8px 0 4px; }
+.pp-head { text-align: center; margin-bottom: 26px; }
+.pp-title {
+  font-size: 1.5rem; font-weight: 800; color: var(--deep);
+  letter-spacing: -0.01em; margin: 0 0 6px;
+}
+.pp-sub { color: var(--mu); font-size: 0.92rem; margin: 0 0 16px; }
+
+.pp-toggle {
+  display: inline-flex; gap: 4px; padding: 4px;
+  background: var(--sf2); border: 1px solid var(--bd); border-radius: 999px;
+}
+.pp-toggle button {
+  border: none; background: transparent; cursor: pointer;
+  padding: 7px 20px; border-radius: 999px; font-weight: 700; font-size: 0.84rem;
+  color: var(--mu); transition: all 0.15s ease;
+}
+.pp-toggle button.active { background: var(--forest); color: #fff; box-shadow: var(--sh); }
+.pp-save { color: var(--forest-hi); font-weight: 700; font-size: 0.82rem; margin-top: 10px; }
+
+.pp-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px; align-items: start;
+}
+
+.pp-card {
+  position: relative; display: flex; flex-direction: column;
+  background: var(--cream); border: 1px solid var(--bd); border-radius: 18px;
+  padding: 26px 24px; box-shadow: var(--sh);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.pp-card:hover { transform: translateY(-3px); box-shadow: var(--sh2); }
+.pp-card--rec {
+  border: 1.5px solid var(--forest-hi);
+  background: linear-gradient(180deg, #F3F8F0 0%, var(--cream) 60%);
+  box-shadow: var(--sh2);
+}
+.pp-ribbon {
+  position: absolute; top: -11px; left: 24px;
+  background: var(--forest); color: #fff; font-size: 0.68rem; font-weight: 800;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 4px 12px; border-radius: 999px; box-shadow: var(--sh);
+}
+.pp-name { font-size: 1.15rem; color: var(--deep); font-weight: 600; }
+.pp-name b { font-weight: 800; }
+.pp-tagline { color: var(--mu); font-size: 0.85rem; margin: 6px 0 16px; min-height: 34px; }
+.pp-price { display: flex; align-items: baseline; gap: 6px; margin-bottom: 18px; }
+.pp-amount { font-size: 2.1rem; font-weight: 800; color: var(--deep); letter-spacing: -0.02em; }
+.pp-amount--sm { font-size: 1.3rem; }
+.pp-per { color: var(--mu); font-weight: 600; font-size: 0.95rem; }
+
+.pp-cta {
+  border: none; border-radius: 12px; padding: 12px 18px;
+  font-weight: 800; font-size: 0.9rem; cursor: pointer; width: 100%;
+  background: var(--forest); color: #fff; transition: background 0.15s ease, opacity 0.15s ease;
+}
+.pp-cta:hover:not(:disabled) { background: var(--deep); }
+.pp-cta:disabled { opacity: 0.55; cursor: default; }
+.pp-cta--ghost { background: transparent; color: var(--forest); border: 1.5px solid var(--bd); }
+.pp-cta--ghost:hover:not(:disabled) { background: var(--tan-lt); border-color: var(--forest-hi); }
+
+.pp-feats { list-style: none; margin: 20px 0 0; padding: 0; display: grid; gap: 11px; }
+.pp-feats li {
+  display: flex; align-items: flex-start; gap: 9px;
+  font-size: 0.86rem; color: var(--tx2); line-height: 1.35;
+}
+.pp-check { color: var(--forest-hi); flex-shrink: 0; margin-top: 1px; }
+
+/* ── 4 planes (propuesta Own terraLand) ──────────────────────────────────── */
+.pp-grid--4 { grid-template-columns: repeat(auto-fit, minmax(212px, 1fr)); gap: 16px; }
+.pp-grid--4 .pp-card { padding: 24px 20px; }
+
+.pp-badge {
+  display: inline-block; margin-left: 8px; vertical-align: middle;
+  background: var(--tan-lt); color: var(--forest-hi);
+  font-size: 0.64rem; font-weight: 800; letter-spacing: 0.04em;
+  text-transform: uppercase; padding: 3px 8px; border-radius: 999px;
+  border: 1px solid var(--bd);
+}
+.pp-card--current { border-color: var(--forest-hi); }
+.pp-cur { font-size: 1.3rem; font-weight: 800; color: var(--deep); align-self: flex-start; margin-top: 4px; }
+.pp-grid--4 .pp-amount { font-size: 1.9rem; }
+.pp-grid--4 .pp-tagline { min-height: 40px; font-size: 0.82rem; }
+.pp-grid--4 .pp-feats li { font-size: 0.82rem; gap: 8px; }
+
+/* ── Add-on transversal (paquetes de lotes) ──────────────────────────────── */
+.pp-addon {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  margin-top: 22px; padding: 13px 20px;
+  background: var(--tan-lt); border: 1px solid var(--bd); border-radius: 14px;
+  color: var(--tx2); font-size: 0.88rem;
+}
+.pp-addon-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; flex-shrink: 0; border-radius: 8px;
+  background: var(--forest); color: #fff; font-weight: 800; font-size: 1rem;
+}
+.pp-addon-text b { color: var(--deep); font-weight: 800; }
+
+/* ── Tabla comparativa ───────────────────────────────────────────────────── */
+.pp-compare { margin-top: 34px; }
+.pp-compare-toggle {
+  display: flex; align-items: center; gap: 8px; margin: 0 auto;
+  background: var(--cream); border: 1px solid var(--bd); border-radius: 999px;
+  padding: 9px 18px; font-weight: 700; font-size: 0.85rem; color: var(--forest);
+  cursor: pointer; box-shadow: var(--sh); transition: background 0.15s ease;
+}
+.pp-compare-toggle:hover { background: var(--sf2); }
+.pp-chev { transition: transform 0.2s ease; }
+.pp-chev.up { transform: rotate(180deg); }
+
+.pp-matrix-wrap { margin-top: 20px; overflow-x: auto; }
+.pp-matrix {
+  width: 100%; border-collapse: collapse; min-width: 640px;
+  background: var(--cream); border: 1px solid var(--bd); border-radius: 16px;
+  overflow: hidden; box-shadow: var(--sh);
+}
+.pp-matrix th, .pp-matrix td {
+  padding: 13px 16px; text-align: center; font-size: 0.85rem;
+  border-bottom: 1px solid var(--bd);
+}
+.pp-matrix thead th {
+  color: var(--deep); font-weight: 800; font-size: 0.92rem;
+  background: var(--sf2); vertical-align: bottom;
+}
+.pp-matrix thead th.is-rec { background: #EAF3E6; }
+.pp-matrix td.is-rec { background: rgba(234, 243, 230, 0.45); }
+.pp-matrix tbody tr:last-child th, .pp-matrix tbody tr:last-child td { border-bottom: none; }
+.pp-mx-feature {
+  text-align: left !important; color: var(--tx2); font-weight: 700;
+  background: var(--cream); position: sticky; left: 0;
+}
+.pp-mx-hint, .pp-mx-price {
+  display: block; font-weight: 600; font-size: 0.7rem; color: var(--mu); margin-top: 2px;
+}
+.pp-mx-price { color: var(--forest-hi); font-weight: 800; }
+.pp-mx-val { color: var(--tx2); font-weight: 700; }
+.pp-mx-ilim { color: var(--forest-hi); font-weight: 800; }
+.pp-mx-yes { color: var(--forest-hi); display: inline-flex; }
+.pp-mx-no { color: var(--mu); font-weight: 700; }
+
+/* ── Próximamente / add-ons ──────────────────────────────────────────────── */
+.pp-soon {
+  margin-top: 34px; padding: 22px 24px; text-align: center;
+  background: var(--sf2); border: 1px dashed var(--bd); border-radius: 16px;
+}
+.pp-soon-title {
+  font-weight: 800; color: var(--deep); font-size: 0.9rem;
+  text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 12px;
+}
+.pp-soon-list {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
+}
+.pp-soon-list li {
+  background: var(--cream); border: 1px solid var(--bd); border-radius: 999px;
+  padding: 7px 14px; font-size: 0.82rem; font-weight: 600; color: var(--tx2);
+}
+.pp-soon-cta { margin: 16px 0 0; color: var(--mu); font-size: 0.85rem; }
+.pp-link {
+  background: none; border: none; padding: 0; cursor: pointer;
+  color: var(--forest); font-weight: 800; font-size: inherit; text-decoration: underline;
+}
+
+/* Banner de estado de suscripción (vencida / pago fallido / prueba por vencer) */
+.sub-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 18px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+.sub-banner--warn { background: #fef3c7; color: #92400e; }
+.sub-banner--error { background: #fee2e2; color: #991b1b; }
+.sub-banner__msg { flex: 1; min-width: 200px; }
+.sub-banner__hint { font-weight: 500; opacity: 0.85; }
+.sub-banner__btn {
+  border: none;
+  border-radius: 999px;
+  padding: 6px 16px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.82);
+  color: #fff;
+}
+.sub-banner__btn:hover { background: #000; }
+
+/* Skeleton de carga (placeholder animado) */
+.skeleton-line {
+  display: inline-block;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, rgba(0,0,0,0.06) 25%, rgba(0,0,0,0.12) 37%, rgba(0,0,0,0.06) 63%);
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+}
+@keyframes skeleton-shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
 /* ── Toasts: avisos compactos alineados al lenguaje visual OwnTerra ── */
 .app-toast {
   position: fixed;
   left: 50%;
   bottom: calc(env(safe-area-inset-bottom) + 108px);
-  z-index: 500;
+  /* Por encima de cualquier modal/overlay (los más altos usan 9999) para que el
+     toast de error nunca quede oculto detrás de un formulario abierto. */
+  z-index: 10000;
   transform: translateX(-50%);
   display: flex;
   align-items: flex-start;

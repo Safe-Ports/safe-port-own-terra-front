@@ -66,6 +66,9 @@ function EcosystemEquipo() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return users.filter((u) => {
+      // "Eliminar" un integrante lo desactiva (is_active=False) para conservar su
+      // historial; NO se borra de la BD. Aquí lo tratamos como eliminado: no se lista.
+      if (!u.is_active) return false;
       const roleOk = roleFilter === "all" || u.role === roleFilter;
       const textOk = !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
       return roleOk && textOk;
@@ -290,7 +293,7 @@ function EcosystemEquipo() {
                   <span className="usr-name" style={{ display: "block" }}>{u.name}</span>
                   <span className="usr-mail" style={{ display: "block" }}>{u.email}</span>
                 </span>
-                <span className={`usr-chip ${u.is_active ? "active" : "closed"}`}>{ROLE_LABEL[u.role] || u.role}</span>
+                <span className="usr-chip active">{ROLE_LABEL[u.role] || u.role}</span>
               </button>
             ))}
             {filtered.length === 0 && <div className="usr-empty">Sin integrantes para este filtro.</div>}
