@@ -1,11 +1,14 @@
 import { useState } from "react";
 import {
   HiCheckCircle,
+  HiExclamationCircle,
   HiExclamationTriangle,
   HiInformationCircle,
+  HiXMark,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 import { errorClipboardText } from "@/errors/parseApiError";
+import useEscapeKey from "@/hooks/useEscapeKey";
 
 const TOAST_VARIANTS = {
   success: {
@@ -24,6 +27,7 @@ const TOAST_VARIANTS = {
 
 function ErrorToast({ data }) {
   const [copied, setCopied] = useState(false);
+  const { dismissToast } = useAppContext();
 
   const copy = async () => {
     try {
@@ -36,27 +40,34 @@ function ErrorToast({ data }) {
   };
 
   const severity = data.severity || "error";
-  const ICON = { fatal: "✕", error: "⚠", warning: "!" };
+  const Icon = severity === "warning" ? HiExclamationTriangle : HiExclamationCircle;
 
   return (
-    <div className="app-toast app-toast--error" data-severity={severity} role="alert">
-      <div className="error-toast__title">{ICON[severity] ?? "⚠"} {data.title}</div>
-      <div className="error-toast__msg">{data.message}</div>
-      {data.action ? <div className="error-toast__action">{data.action}</div> : null}
-      <div className="error-toast__meta">
-        <span className="error-toast__codes">
-          {data.code}{data.requestId ? ` · ${data.requestId}` : ""}
-        </span>
-        <button type="button" className="error-toast__copy" onClick={copy}>
-          {copied ? "¡Copiado!" : "Copiar"}
-        </button>
+    <div className="app-toast app-toast--error" data-severity={severity} role="alert" aria-live="assertive">
+      <span className="app-toast__icon" aria-hidden="true"><Icon /></span>
+      <div className="app-toast__content">
+        <strong className="app-toast__title">{data.title}</strong>
+        <span className="app-toast__message">{data.message}</span>
+        {data.action ? <span className="error-toast__action">{data.action}</span> : null}
+        <div className="error-toast__meta">
+          <span className="error-toast__codes">
+            {data.code}{data.requestId ? ` · ${data.requestId}` : ""}
+          </span>
+          <button type="button" className="error-toast__copy" onClick={copy}>
+            {copied ? "¡Copiado!" : "Copiar"}
+          </button>
+        </div>
       </div>
+      <button type="button" className="app-toast__close" onClick={dismissToast} aria-label="Cerrar mensaje">
+        <HiXMark />
+      </button>
     </div>
   );
 }
 
 function Toast() {
-  const { toast } = useAppContext();
+  const { toast, dismissToast } = useAppContext();
+  useEscapeKey(dismissToast, Boolean(toast));
 
   if (!toast) return null;
 
@@ -84,6 +95,9 @@ function Toast() {
         <strong className="app-toast__title">{data.title || variant.title}</strong>
         <span className="app-toast__message">{data.message}</span>
       </span>
+      <button type="button" className="app-toast__close" onClick={dismissToast} aria-label="Cerrar mensaje">
+        <HiXMark />
+      </button>
     </div>
   );
 }
