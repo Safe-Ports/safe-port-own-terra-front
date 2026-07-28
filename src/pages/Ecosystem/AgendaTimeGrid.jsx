@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { APP_META, DEFAULT_DURATION_MINUTES } from "./agendaShared";
+import { useLocale } from "@/i18n";
 
 // Altura en px de una hora en la rejilla — controla tanto el alto de las filas
 // como la posición/alto de los bloques de evento, para que nunca se desalineen.
@@ -7,7 +8,6 @@ const HOUR_HEIGHT = 56;
 const START_SCROLL_HOUR = 7; // hora inicial visible al entrar (como Google Calendar)
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const HALF_HOURS = HOURS.flatMap((h) => [0, 30].map((m) => ({ h, m })));
-const WEEKDAY_LABELS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
 function todayKey() {
   const d = new Date();
@@ -86,7 +86,7 @@ function EventBlock({ item, onClick }) {
   );
 }
 
-function DayColumn({ day, items, isToday, onSlotClick, onEventClick }) {
+function DayColumn({ day, items, isToday, onSlotClick, onEventClick, t }) {
   const nowTop = useMemo(() => {
     if (!isToday) return null;
     const now = new Date();
@@ -105,7 +105,7 @@ function DayColumn({ day, items, isToday, onSlotClick, onEventClick }) {
               className="ag-slot"
               style={{ height: HOUR_HEIGHT / 2 }}
               onClick={(e) => onSlotClick(day.key, time, e.currentTarget.getBoundingClientRect())}
-              aria-label={`Crear evento ${time}`}
+              aria-label={t("agenda.createAt").replace("{time}", time)}
             />
           );
         })}
@@ -121,6 +121,7 @@ function DayColumn({ day, items, isToday, onSlotClick, onEventClick }) {
 }
 
 function AgendaTimeGrid({ view, days, appointments, onSlotClick, onEventClick }) {
+  const { t, localeTag } = useLocale();
   const bodyRef = useRef(null);
   const tKey = useMemo(todayKey, []);
 
@@ -146,7 +147,7 @@ function AgendaTimeGrid({ view, days, appointments, onSlotClick, onEventClick })
         <div className="ag-timegrid-daylabels">
           {days.map((day) => (
             <div key={day.key} className={`ag-timegrid-daylabel${day.key === tKey ? " today" : ""}`}>
-              <span className="ag-timegrid-daylabel-dow">{WEEKDAY_LABELS[day.date.getDay()]}</span>
+              <span className="ag-timegrid-daylabel-dow">{new Intl.DateTimeFormat(localeTag, { weekday: "short" }).format(day.date)}</span>
               <span className="ag-timegrid-daylabel-num">{day.label}</span>
             </div>
           ))}
@@ -169,6 +170,7 @@ function AgendaTimeGrid({ view, days, appointments, onSlotClick, onEventClick })
               isToday={day.key === tKey}
               onSlotClick={onSlotClick}
               onEventClick={onEventClick}
+              t={t}
             />
           ))}
         </div>

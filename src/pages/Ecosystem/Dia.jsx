@@ -16,59 +16,59 @@ const TOUR_STEPS = [
     text: "Este es tu hub central. Desde aquí controlas todas las aplicaciones, tu agenda, documentos y finanzas en un solo lugar. El menú lateral izquierdo es tu punto de partida para navegar.",
   },
   {
-    title: "☀️ Mi Día",
+    title: "Mi Día",
     text: "La vista que ves ahora. Muestra tu progreso diario: citas agendadas, tareas prioritarias, pagos vencidos y alertas recientes. Es tu resumen ejecutivo cada mañana.",
   },
   {
-    title: "📅 Agenda",
+    title: "Agenda",
     text: "Administra visitas, llamadas y firmas de contratos. Puedes crear citas, asignarles clientes y verlas en vista de semana o lista. Está sincronizada con todas las apps del ecosistema.",
   },
   {
-    title: "⚡ Acciones rápidas",
+    title: "Acciones rápidas",
     text: "Los botones 'Visita', 'Cobro' y 'Documento' en la barra de bienvenida te llevan directamente al módulo correspondiente sin buscar en el menú.",
   },
   {
-    title: "📊 Panel General",
+    title: "Panel General",
     text: "Vista de métricas globales: ingresos, actividad reciente y estadísticas del negocio. Ideal para revisiones semanales o presentaciones de resultados.",
   },
   {
-    title: "🔒 OwnTerra Vault",
+    title: "OwnTerra Vault",
     text: "Bóveda centralizada de documentos. Organiza contratos, identificaciones, escrituras y planos en carpetas jerárquicas. Todos los documentos de tus clientes viven aquí.",
   },
   {
-    title: "👥 Clientes del core",
+    title: "Clientes del core",
     text: "El directorio maestro de identidades. Cada cliente tiene un perfil único que se comparte entre todas las apps. Aquí puedes vincularlos a Lands, Properties o Homes.",
   },
   {
-    title: "🛡️ Equipo",
+    title: "Equipo",
     text: "Gestiona los usuarios de tu organización: roles, permisos y acceso por aplicación. Solo los administradores pueden modificar esta sección.",
   },
   {
-    title: "💹 Estados Financieros",
+    title: "Estados Financieros",
     text: "Resumen de ingresos, gastos y flujo de caja de tu operación. Registra egresos y consulta el estado económico en tiempo real.",
   },
   {
-    title: "🏡 OwnTerra Lands",
+    title: "OwnTerra Lands",
     text: "La app principal de gestión inmobiliaria: fraccionamientos, lotes, contratos de compraventa y cobranza. Accede desde el menú lateral bajo 'Aplicaciones'.",
   },
   {
-    title: "🔔 Alertas y pendientes",
+    title: "Alertas y pendientes",
     text: "Al final de Mi Día ves todas tus notificaciones agrupadas por fecha. Puedes marcarlas como leídas individualmente o todas de una vez con el enlace 'Marcar todas como leídas'.",
   },
 ];
 
 const TOUR_STEPS_EN = [
   { title: "Welcome to the OwnTerra Ecosystem", text: "Your central hub for applications, schedules, documents, and finances. Use the left navigation to move through the ecosystem." },
-  { title: "☀️ My Day", text: "Your daily executive summary with appointments, priority tasks, overdue payments, and recent alerts." },
-  { title: "📅 Calendar", text: "Manage visits, calls, and signings, assign clients, and use day, week, or month views." },
-  { title: "⚡ Quick actions", text: "Visit, Payment, and Document take you directly to the corresponding workflow." },
-  { title: "📊 Overview", text: "Review global metrics, revenue, recent activity, and business statistics." },
-  { title: "🔒 OwnTerra Vault", text: "Organize contracts, identification, deeds, and plans in one central vault." },
-  { title: "👥 Core clients", text: "Manage unique client identities shared across all applications." },
-  { title: "🛡️ Team", text: "Manage users, roles, permissions, and application access." },
-  { title: "💹 Financial statements", text: "Review revenue, overdue collections, and the financial health of your operation." },
-  { title: "🏡 OwnTerra Lands", text: "Open developments, lots, contracts, and collections from Applications." },
-  { title: "🔔 Alerts and pending items", text: "Review notifications grouped by date and mark them as read." },
+  { title: "My Day", text: "Your daily executive summary with appointments, priority tasks, overdue payments, and recent alerts." },
+  { title: "Calendar", text: "Manage visits, calls, and signings, assign clients, and use day, week, or month views." },
+  { title: "Quick actions", text: "Visit, Payment, and Document take you directly to the corresponding workflow." },
+  { title: "Overview", text: "Review global metrics, revenue, recent activity, and business statistics." },
+  { title: "OwnTerra Vault", text: "Organize contracts, identification, deeds, and plans in one central vault." },
+  { title: "Core clients", text: "Manage unique client identities shared across all applications." },
+  { title: "Team", text: "Manage users, roles, permissions, and application access." },
+  { title: "Financial statements", text: "Review revenue, overdue collections, and the financial health of your operation." },
+  { title: "OwnTerra Lands", text: "Open developments, lots, contracts, and collections from Applications." },
+  { title: "Alerts and pending items", text: "Review notifications grouped by date and mark them as read." },
 ];
 
 const APP_META = {
@@ -119,9 +119,9 @@ function EcosystemDia() {
   const [showTour, setShowTour] = useState(false);
 
   const QUICK = [
-    { ico: "📅", label: t("dia.qaVisit"),    key: "visit" },
-    { ico: "💰", label: t("dia.qaPayment"),  key: "payment" },
-    { ico: "📄", label: t("dia.qaDocument"), key: "document" },
+    { label: t("dia.qaVisit"), key: "visit" },
+    { label: t("dia.qaPayment"), key: "payment" },
+    { label: t("dia.qaDocument"), key: "document" },
   ];
 
   const { data: midia } = useQuery({
@@ -162,7 +162,6 @@ function EcosystemDia() {
     const h = new Date().getHours();
     return h < 12 ? t("dia.morning") : h < 19 ? t("dia.afternoon") : t("dia.evening");
   })();
-  const emoji = (() => { const h = new Date().getHours(); return h < 12 ? "👋" : h < 19 ? "🌤️" : "🌙"; })();
 
   const todayAppts = rawAppts.filter((a) => {
     const d = new Date(a.scheduled_at);
@@ -218,7 +217,7 @@ function EcosystemDia() {
       {/* HERO motivador */}
       <div className="md-hero">
         <div style={{ position: "relative", zIndex: 1 }}>
-          <div className="md-greet">{greeting}{firstName ? `, ${firstName}` : ""} {emoji}</div>
+          <div className="md-greet">{greeting}{firstName ? `, ${firstName}` : ""}</div>
           <div className="md-greet-sub">{motiv}</div>
         </div>
         <div className="md-prog">
@@ -245,7 +244,7 @@ function EcosystemDia() {
                   : undefined
                 }
               >
-                <span>{q.ico}</span>{q.label}
+                {q.label}
               </button>
             ))}
           </div>
@@ -255,7 +254,6 @@ function EcosystemDia() {
       {/* KPIs */}
       <div className="md-kpis">
         <div className="md-kpi">
-          <span className="md-kpi-ico">📅</span>
           <div className="md-kpi-body">
             <div className="md-kpi-label">{t("dia.kpiAppts")}</div>
             <div className="md-kpi-val">{totalAppts}</div>
@@ -263,7 +261,6 @@ function EcosystemDia() {
           </div>
         </div>
         <div className="md-kpi">
-          <span className="md-kpi-ico">📊</span>
           <div className="md-kpi-body">
             <div className="md-kpi-label">{t("dia.kpiTasks")}</div>
             <div className="md-kpi-val">{midia?.tasks?.length ?? "—"}</div>
@@ -272,7 +269,6 @@ function EcosystemDia() {
         </div>
         <div className="md-kpi danger">
           {overdueItems.length > 0 && <span className="md-kpi-badge">{t("dia.urgent")}</span>}
-          <span className="md-kpi-ico">⚠️</span>
           <div className="md-kpi-body">
             <div className="md-kpi-label">{t("dia.kpiOverdue")}</div>
             <div className="md-kpi-val">{overdueItems.length}</div>
@@ -281,7 +277,6 @@ function EcosystemDia() {
           </div>
         </div>
         <div className="md-kpi">
-          <span className="md-kpi-ico">🔔</span>
           <div className="md-kpi-body">
             <div className="md-kpi-label">{t("dia.kpiAlerts")}</div>
             <div className="md-kpi-val">{unreadCount}</div>
@@ -350,7 +345,6 @@ function EcosystemDia() {
             {midia?.tasks?.slice(0, 4).map((rawTask) => {
               const task = localizeTask(rawTask, t);
               return <div key={task.id || task.title} className="md-row">
-                <span className="md-row-ico" style={{ background: "var(--bg2)" }}>{task.icon}</span>
                 <div className="md-row-info">
                   <div className="md-row-name">{task.title}</div>
                   {task.subtitle && <div className="md-row-meta">{task.subtitle}</div>}
@@ -372,7 +366,6 @@ function EcosystemDia() {
             </div>
             {overdueItems.slice(0, 4).map((o) => (
               <div key={o.id} className="md-row">
-                <span className="md-row-ico" style={{ background: "#FDECEA" }}>💳</span>
                 <div className="md-row-info">
                   <div className="md-row-name">{o.client?.name || "—"}</div>
                   <div className="md-row-meta">
@@ -417,7 +410,6 @@ function EcosystemDia() {
               <div className="md-ngroup-label">{g.label}</div>
               {g.items.map((n) => (
                 <div key={n.id} className="md-row" style={{ opacity: n.is_read ? 0.6 : 1 }}>
-                  <span className="md-row-ico" style={{ background: "var(--bg2)" }}>🔔</span>
                   <div className="md-row-info">
                     <div className="md-row-name" style={{ whiteSpace: "normal" }}>{n.message || n.title || t("dia.notification")}</div>
                     <div className="md-row-meta">{fmtRelative(n.created_at, t)}</div>

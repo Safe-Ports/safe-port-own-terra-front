@@ -7,8 +7,9 @@ const DICTS = { es, en };
 
 const LocaleContext = createContext(null);
 
-export function LocaleProvider({ children }) {
+export function LocaleProvider({ children, defaultLocale }) {
   const [locale, setLocale] = useState(() => {
+    if (defaultLocale === "en" || defaultLocale === "es") return defaultLocale;
     let stored = null;
     try {
       stored = typeof localStorage?.getItem === "function" ? localStorage.getItem(LOCALE_KEY) : null;

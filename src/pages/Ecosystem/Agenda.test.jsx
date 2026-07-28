@@ -49,7 +49,7 @@ function renderAgenda() {
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter>
-        <LocaleProvider>
+        <LocaleProvider defaultLocale="es">
           <AgendaPage />
         </LocaleProvider>
       </MemoryRouter>
@@ -104,7 +104,7 @@ describe("AgendaPage", () => {
     await waitFor(() => expect(screen.getByText("Sin eventos para este día")).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole("button", { name: "Nuevo evento" }));
-    fireEvent.change(screen.getByPlaceholderText("Ej: Junta con equipo, Recordatorio pago..."), {
+    fireEvent.change(screen.getByPlaceholderText("Ej: Junta con equipo, recordatorio de pago…"), {
       target: { value: "Junta de seguimiento" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Guardar evento" }));

@@ -1,8 +1,13 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AgendaQuickCreate from "./AgendaQuickCreate.jsx";
+import { LocaleProvider } from "@/i18n";
 
 const anchorRect = { top: 100, left: 100, right: 140, bottom: 120, width: 40, height: 20 };
+
+function renderQuick(component) {
+  return render(<LocaleProvider defaultLocale="es">{component}</LocaleProvider>);
+}
 
 describe("AgendaQuickCreate", () => {
   beforeEach(() => {
@@ -15,7 +20,7 @@ describe("AgendaQuickCreate", () => {
   });
 
   it("shows the clicked slot's date and time", () => {
-    render(
+    renderQuick(
       <AgendaQuickCreate
         date="2026-07-14"
         time="10:30"
@@ -31,7 +36,7 @@ describe("AgendaQuickCreate", () => {
   it("submits the fixed date/time and title without requiring extra fields", async () => {
     const onSubmit = vi.fn().mockResolvedValue();
     const onClose = vi.fn();
-    render(
+    renderQuick(
       <AgendaQuickCreate
         date="2026-07-14"
         time="10:30"
@@ -55,7 +60,7 @@ describe("AgendaQuickCreate", () => {
   it("hands off to the full form via 'Más opciones' without submitting", () => {
     const onMore = vi.fn();
     const onSubmit = vi.fn();
-    render(
+    renderQuick(
       <AgendaQuickCreate
         date="2026-07-14"
         time="10:30"
@@ -72,7 +77,7 @@ describe("AgendaQuickCreate", () => {
 
   it("closes on Escape without submitting", () => {
     const onClose = vi.fn();
-    render(
+    renderQuick(
       <AgendaQuickCreate
         date="2026-07-14"
         time="10:30"
@@ -88,7 +93,7 @@ describe("AgendaQuickCreate", () => {
 
   it("closes when clicking outside the popover", () => {
     const onClose = vi.fn();
-    render(
+    renderQuick(
       <div>
         <div data-testid="outside">outside</div>
         <AgendaQuickCreate

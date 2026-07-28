@@ -6,25 +6,12 @@ export const APP_META = {
 };
 export const CREATABLE_APPS = Object.entries(APP_META).filter(([key]) => key === "core" || key === "lands");
 
-export const TYPES = {
-  visita: "Visita",
-  llamada: "Llamada",
-  firma: "Firma",
-  seguimiento: "Seguimiento",
-  cobranza: "Cobranza",
-  reunion: "Reunión",
-  recordatorio: "Recordatorio",
-  tarea: "Tarea",
-  personal: "Personal",
-  evento: "Evento",
-};
+export const TYPE_KEYS = ["visita", "llamada", "firma", "seguimiento", "cobranza", "reunion", "recordatorio", "tarea", "personal", "evento"];
 
-export const FILTERS = ["Todos", "Core", "Lands"];
-
-export const AGENDA_RULES = {
-  date: (v) => (!v ? "La fecha es obligatoria." : ""),
-  time: (v) => (!v ? "La hora es obligatoria." : ""),
-};
+export const buildAgendaRules = (t) => ({
+  date: (v) => (!v ? t("agenda.dateRequired") : ""),
+  time: (v) => (!v ? t("agenda.timeRequired") : ""),
+});
 
 // Duración fija usada solo para dibujar el bloque del evento en las vistas de
 // semana/día — el backend no guarda hora de fin (solo scheduled_at), así que
@@ -90,13 +77,13 @@ export function getVisibleRange(view, visibleMonth, selectedDate) {
   return { start, end, days: null };
 }
 
-export function normalizeAppt(a) {
+export function normalizeAppt(a, localeTag = "es-MX", t = (_, fallback) => fallback) {
   const dt = new Date(a.scheduled_at);
   return {
     id: a.id,
     date: toDateKey(dt),
-    time: dt.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false }),
-    title: a.title || a.contact_name || "Sin título",
+    time: dt.toLocaleTimeString(localeTag, { hour: "2-digit", minute: "2-digit", hour12: false }),
+    title: a.title || a.contact_name || t("agenda.untitled", "Sin título"),
     client: a.client_name || a.contact_name || "",
     clientId: a.client_id || null,
     clientPhone: a.client_phone || a.contact_phone || null,
@@ -110,12 +97,12 @@ export function normalizeAppt(a) {
 
 // Cuerpo del PATCH/POST /appointments a partir del form del modal o del popover
 // de creación rápida — un solo lugar para que ambos flujos produzcan el mismo payload.
-export function buildAppointmentBody(form) {
+export function buildAppointmentBody(form, t = (_, fallback) => fallback) {
   const [h, m] = form.time.split(":");
   const dt = new Date(`${form.date}T${h}:${m}:00`);
   return {
     scheduled_at: dt.toISOString(),
-    title: form.title || `${TYPES[form.type] || form.type}${form.client ? ` con ${form.client}` : ""}`,
+    title: form.title || `${t(`agenda.types.${form.type}`, form.type)}${form.client ? ` ${t("agenda.withClient", "con")} ${form.client}` : ""}`,
     appt_type: form.type,
     app_key: form.app,
     contact_name: form.client || form.title || "",

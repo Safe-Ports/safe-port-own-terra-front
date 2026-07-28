@@ -1,13 +1,18 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import AgendaTimeGrid, { layoutDayEvents } from "./AgendaTimeGrid.jsx";
+import { LocaleProvider } from "@/i18n";
 
 const day = { date: new Date(2026, 6, 14), key: "2026-07-14", label: 14 };
+
+function renderGrid(component) {
+  return render(<LocaleProvider defaultLocale="es">{component}</LocaleProvider>);
+}
 
 describe("AgendaTimeGrid", () => {
   it("creates an event from the selected half-hour slot", () => {
     const onSlotClick = vi.fn();
-    render(<AgendaTimeGrid view="day" days={[day]} appointments={[]} onSlotClick={onSlotClick} onEventClick={vi.fn()} />);
+    renderGrid(<AgendaTimeGrid view="day" days={[day]} appointments={[]} onSlotClick={onSlotClick} onEventClick={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Crear evento 10:30" }));
     expect(onSlotClick).toHaveBeenCalledWith(
       "2026-07-14",
@@ -20,7 +25,7 @@ describe("AgendaTimeGrid", () => {
     const onSlotClick = vi.fn();
     const onEventClick = vi.fn();
     const appointment = { id: "a1", date: day.key, time: "10:00", title: "Visita", app: "lands" };
-    render(<AgendaTimeGrid view="day" days={[day]} appointments={[appointment]} onSlotClick={onSlotClick} onEventClick={onEventClick} />);
+    renderGrid(<AgendaTimeGrid view="day" days={[day]} appointments={[appointment]} onSlotClick={onSlotClick} onEventClick={onEventClick} />);
     fireEvent.click(screen.getByRole("button", { name: /10:00.*Visita/i }));
     expect(onEventClick).toHaveBeenCalledWith(expect.objectContaining({ id: "a1" }));
     expect(onSlotClick).not.toHaveBeenCalled();

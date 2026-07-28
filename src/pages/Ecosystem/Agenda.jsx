@@ -3,6 +3,7 @@ import GuideModal from "@/components/shared/GuideModal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { appointmentService } from "@/services/appointmentService";
 import { useAppContext } from "@/context/AppContext";
+import { useLocale } from "@/i18n";
 
 import FieldError from "@/components/shared/FieldError";
 import { useFieldErrors } from "@/hooks/useFieldErrors";
@@ -13,9 +14,8 @@ import AgendaQuickCreate from "./AgendaQuickCreate";
 import {
   APP_META,
   CREATABLE_APPS,
-  TYPES,
-  FILTERS,
-  AGENDA_RULES,
+  TYPE_KEYS,
+  buildAgendaRules,
   toDateKey,
   buildMonthDays,
   getVisibleRange,
@@ -30,19 +30,8 @@ function buildWhatsAppLink(phone, message) {
   return `${base}?text=${encodeURIComponent(message)}`;
 }
 
-const VIEW_OPTIONS = [
-  ["day", "Día"],
-  ["week", "Semana"],
-  ["month", "Mes"],
-];
-
-const TOTAL_LABEL = {
-  day: "Eventos del día",
-  week: "Eventos esta semana",
-  month: "Eventos este mes",
-};
-
 function AgendaPage() {
+  const { t, locale, localeTag } = useLocale();
   const today = new Date();
   const qc = useQueryClient();
   const { showToast, showError, clearCalendarAlerts, clients } = useAppContext();
@@ -91,36 +80,36 @@ function AgendaPage() {
     enabled: !visibleRangeIncludesToday,
   });
 
-  const appointments = useMemo(() => rawAppts.map(normalizeAppt), [rawAppts]);
+  const appointments = useMemo(() => rawAppts.map((item) => normalizeAppt(item, localeTag, t)), [rawAppts, localeTag, t]);
 
   const createMutation = useMutation({
     mutationFn: (body) => appointmentService.create(body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["appointments"] });
-      showToast("Evento guardado");
+      showToast(t("agenda.eventSaved"));
     },
-    onError: (err) => showError(err, "Error al guardar el evento"),
+    onError: (err) => showError(err, t("agenda.saveError")),
   });
 
   const cancelMutation = useMutation({
     mutationFn: (id) => appointmentService.cancel(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["appointments"] });
-      showToast("Evento eliminado");
+      showToast(t("agenda.eventDeleted"));
     },
-    onError: (err) => showError(err, "Error al eliminar el evento"),
+    onError: (err) => showError(err, t("agenda.deleteError")),
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, body }) => appointmentService.update(id, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["appointments"] });
-      showToast("Evento actualizado");
+      showToast(t("agenda.eventUpdated"));
     },
-    onError: (err) => showError(err, "Error al actualizar el evento"),
+    onError: (err) => showError(err, t("agenda.updateError")),
   });
 
-  const [filter, setFilter] = useState("Todos");
+  const [filter, setFilter] = useState("all");
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   useEscapeKey(() => {
@@ -142,7 +131,7 @@ function AgendaPage() {
   const monthDays = useMemo(() => buildMonthDays(visibleMonth), [visibleMonth]);
 
   const visibleAppointments = appointments.filter((item) => (
-    filter === "Todos" || APP_META[item.app]?.name === filter
+    filter === "all" || item.app === filter
   ));
   const selectedAppointments = visibleAppointments
     .filter((item) => item.date === selectedDate)
@@ -180,8 +169,8 @@ function AgendaPage() {
 
   const saveAppointment = async (event) => {
     event.preventDefault();
-    if (!fe.validate(form, AGENDA_RULES)) return;
-    const body = buildAppointmentBody(form);
+    if (!fe.validate(form, buildAgendaRules(t))) return;
+    const body = buildAppointmentBody(form, t);
     if (editingId) {
       await updateMutation.mutateAsync({ id: editingId, body });
     } else {
@@ -216,38 +205,43 @@ function AgendaPage() {
   };
 
   const rangeLabel = useMemo(() => {
-    if (view === "month") return visibleMonth.toLocaleDateString("es-MX", { month: "long", year: "numeric" });
+    if (view === "month") return visibleMonth.toLocaleDateString(localeTag, { month: "long", year: "numeric" });
     if (view === "day") {
-      return new Date(`${selectedDate}T12:00:00`).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
+      return new Date(`${selectedDate}T12:00:00`).toLocaleDateString(localeTag, { day: "numeric", month: "long", year: "numeric" });
     }
     const days = visibleRange.days || [];
     if (!days.length) return "";
     const start = days[0].date;
     const end = days[days.length - 1].date;
     const sameMonth = start.getMonth() === end.getMonth();
-    const startLabel = start.toLocaleDateString("es-MX", { day: "numeric", month: sameMonth ? undefined : "short" });
-    const endLabel = end.toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
+    const startLabel = start.toLocaleDateString(localeTag, { day: "numeric", month: sameMonth ? undefined : "short" });
+    const endLabel = end.toLocaleDateString(localeTag, { day: "numeric", month: "short", year: "numeric" });
     return `${startLabel} – ${endLabel}`;
-  }, [view, visibleMonth, selectedDate, visibleRange]);
+  }, [view, visibleMonth, selectedDate, visibleRange, localeTag]);
+
+  const viewOptions = [["day", t("agenda.day")], ["week", t("agenda.week")], ["month", t("agenda.month")]];
+  const totalLabel = { day: t("agenda.totalDay"), week: t("agenda.totalWeek"), month: t("agenda.totalMonth") };
+  const filters = [["all", t("agenda.all")], ["core", "Core"], ["lands", "Lands"]];
+  const weekdayLabels = Array.from({ length: 7 }, (_, day) => new Intl.DateTimeFormat(localeTag, { weekday: "short" }).format(new Date(2024, 0, 7 + day)));
 
   return (
-    <EcoLayout active="agenda" title="Agenda" subtitle="Agenda general del ecosistema: eventos, recordatorios, reuniones y citas" onGuide={() => setShowGuide(true)}>
+    <EcoLayout active="agenda" title={t("agenda.title")} subtitle={t("agenda.subtitle")} onGuide={() => setShowGuide(true)}>
       <div className="ag-hero">
         <div>
-          <div className="ag-kicker">Agenda General</div>
-          <h2>Tu agenda centralizada</h2>
-          <p>Registra visitas, reuniones, recordatorios, tareas, llamadas y cualquier evento personal o de negocio.</p>
+          <div className="ag-kicker">{t("agenda.kicker")}</div>
+          <h2>{t("agenda.heading")}</h2>
+          <p>{t("agenda.description")}</p>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button className="ag-primary" onClick={() => openCreate()}>Nuevo evento</button>
+          <button className="ag-primary" onClick={() => openCreate()}>{t("agenda.newEvent")}</button>
         </div>
       </div>
 
       <div className="ag-kpis">
-        <div className="ag-kpi"><span>Total</span><b>{isLoading ? "—" : total}</b><small>{TOTAL_LABEL[view]}</small></div>
-        <div className="ag-kpi"><span>Completados</span><b>{completed}</b><small>Realizados</small></div>
-        <div className="ag-kpi"><span>Pendientes</span><b>{pending}</b><small>Por realizar</small></div>
-        <div className="ag-kpi"><span>Hoy</span><b>{isTodayLoading ? "—" : today_count}</b><small>Eventos de hoy</small></div>
+        <div className="ag-kpi"><span>{t("agenda.total")}</span><b>{isLoading ? "—" : total}</b><small>{totalLabel[view]}</small></div>
+        <div className="ag-kpi"><span>{t("agenda.completed")}</span><b>{completed}</b><small>{t("agenda.done")}</small></div>
+        <div className="ag-kpi"><span>{t("agenda.pending")}</span><b>{pending}</b><small>{t("agenda.toDo")}</small></div>
+        <div className="ag-kpi"><span>{t("agenda.today")}</span><b>{isTodayLoading ? "—" : today_count}</b><small>{t("agenda.todayEvents")}</small></div>
       </div>
 
       <div className="ag-layout">
@@ -255,13 +249,13 @@ function AgendaPage() {
           <div className="ag-card-head">
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <button className="ag-soft" onClick={() => moveRange(-1)} aria-label="Anterior">‹</button>
+                <button className="ag-soft" onClick={() => moveRange(-1)} aria-label={t("agenda.previous")}>‹</button>
                 <h3 style={{ textTransform: "capitalize" }}>{rangeLabel}</h3>
-                <button className="ag-soft" onClick={() => moveRange(1)} aria-label="Siguiente">›</button>
-                <button className="ag-soft" onClick={goToToday}>Hoy</button>
+                <button className="ag-soft" onClick={() => moveRange(1)} aria-label={t("agenda.next")}>›</button>
+                <button className="ag-soft" onClick={goToToday}>{t("agenda.today")}</button>
               </div>
               <div className="ag-seg" style={{ marginTop: 8 }}>
-                {VIEW_OPTIONS.map(([key, label]) => (
+                {viewOptions.map(([key, label]) => (
                   <button key={key} className={view === key ? "on" : ""} onClick={() => setView(key)}>
                     {label}
                   </button>
@@ -269,9 +263,9 @@ function AgendaPage() {
               </div>
             </div>
             <div className="ag-seg">
-              {FILTERS.map((item) => (
-                <button key={item} className={filter === item ? "on" : ""} onClick={() => setFilter(item)}>
-                  {item}
+              {filters.map(([key, label]) => (
+                <button key={key} className={filter === key ? "on" : ""} onClick={() => setFilter(key)}>
+                  {label}
                 </button>
               ))}
             </div>
@@ -280,7 +274,7 @@ function AgendaPage() {
           {view === "month" ? (
             <>
               <div className="ag-weekdays">
-                {["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"].map((day) => <span key={day}>{day}</span>)}
+                {weekdayLabels.map((day) => <span key={day}>{day}</span>)}
               </div>
               <div className="ag-calendar-grid">
                 {monthDays.map((day) => {
@@ -297,7 +291,7 @@ function AgendaPage() {
                       <div className="ag-day-items">
                         {dayItems.slice(0, 3).map((item) => (
                           <span key={item.id} style={{ borderLeftColor: APP_META[item.app]?.color }}>
-                            {item.time} · {TYPES[item.type] || item.type}
+                            {item.time} · {t(`agenda.types.${item.type}`, item.type)}
                           </span>
                         ))}
                         {dayItems.length > 3 ? <em>+{dayItems.length - 3}</em> : null}
@@ -322,10 +316,10 @@ function AgendaPage() {
           <div className="ag-side-card">
             <div className="ag-card-head compact">
               <div>
-                <h3>{new Date(`${selectedDate}T12:00:00`).toLocaleDateString("es-MX", { day: "numeric", month: "long" })}</h3>
-                <p>{selectedAppointments.length} eventos programados</p>
+                <h3>{new Date(`${selectedDate}T12:00:00`).toLocaleDateString(localeTag, { day: "numeric", month: "long" })}</h3>
+                <p>{t("agenda.scheduledCount").replace("{n}", selectedAppointments.length)}</p>
               </div>
-              <button className="ag-soft" onClick={() => openCreate(selectedDate)}>Agregar</button>
+              <button className="ag-soft" onClick={() => openCreate(selectedDate)}>{t("agenda.add")}</button>
             </div>
             <div className="ag-list">
               {selectedAppointments.length ? selectedAppointments.map((item) => {
@@ -335,7 +329,10 @@ function AgendaPage() {
                     || (item.client && c.name?.toLowerCase() === item.client.toLowerCase())
                 );
                 const phone = item.clientPhone || matchedClient?.phone || null;
-                const waMessage = `Hola ${item.client || "cliente"}, te recordamos que tienes agendado: *${item.title}* el ${new Date(`${item.date}T12:00:00`).toLocaleDateString("es-MX", { day: "numeric", month: "long" })} a las ${item.time} hrs.${item.context ? ` (${item.context})` : ""} ¡Te esperamos!`;
+                const eventDate = new Date(`${item.date}T12:00:00`).toLocaleDateString(localeTag, { day: "numeric", month: "long" });
+                const waMessage = locale === "en"
+                  ? `Hello ${item.client || "client"}, this is a reminder for *${item.title}* on ${eventDate} at ${item.time}.${item.context ? ` (${item.context})` : ""} We look forward to seeing you!`
+                  : `Hola ${item.client || "cliente"}, te recordamos que tienes agendado: *${item.title}* el ${eventDate} a las ${item.time} hrs.${item.context ? ` (${item.context})` : ""} ¡Te esperamos!`;
                 const waLink = buildWhatsAppLink(phone, waMessage);
                 return (
                 <div key={item.id} className="ag-item">
@@ -345,13 +342,13 @@ function AgendaPage() {
                     <div className="ag-meta">{item.client ? `${item.client} · ` : ""}{item.context}</div>
                     <div className="ag-row">
                       <AppTag app={item.app} />
-                      <span className={`ag-status ${item.status}`}>{item.status}</span>
+                      <span className={`ag-status ${item.status}`}>{t(`agenda.status.${item.status}`, item.status)}</span>
                       <button
                         className="ag-soft"
                         style={{ marginLeft: "auto", fontSize: ".7rem", padding: "2px 8px" }}
                         onClick={() => openEdit(item)}
                       >
-                        Editar
+                        {t("agenda.edit")}
                       </button>
                       {item.status !== "completed" && (
                         <button
@@ -359,7 +356,7 @@ function AgendaPage() {
                           style={{ fontSize: ".7rem", padding: "2px 8px" }}
                           onClick={() => updateMutation.mutate({ id: item.id, body: { status: "completed" } })}
                         >
-                          Completar
+                          {t("agenda.complete")}
                         </button>
                       )}
                       {/* TODO: habilitar cuando se implemente notificación al cliente
@@ -375,7 +372,7 @@ function AgendaPage() {
                         style={{ fontSize: ".7rem", padding: "2px 8px" }}
                         onClick={() => cancelMutation.mutate(item.id)}
                       >
-                        Eliminar
+                        {t("agenda.delete")}
                       </button>
                     </div>
                   </div>
@@ -383,8 +380,8 @@ function AgendaPage() {
                 );
               }) : (
                 <div className="ag-empty">
-                  <b>Sin eventos para este día</b>
-                  <span>Doble clic en el día o usa "Agregar" para crear un evento.</span>
+                  <b>{t("agenda.noEvents")}</b>
+                  <span>{t("agenda.noEventsHint")}</span>
                 </div>
               )}
             </div>
@@ -393,18 +390,24 @@ function AgendaPage() {
           <div className="ag-side-card">
             <div className="ag-card-head compact">
               <div>
-                <h3>Tipos de evento</h3>
-                <p>Categorías disponibles</p>
+                <h3>{t("agenda.eventTypes")}</h3>
+                <p>{t("agenda.availableCategories")}</p>
               </div>
             </div>
             <div className="ag-flow">
-              {[
+              {(locale === "en" ? [
+                ["Visit / Call / Signing", "Business activities with clients."],
+                ["Meeting / Follow-up", "Internal or project follow-up meetings."],
+                ["Reminder / Task", "Personal or operational reminders and tasks."],
+                ["Collections", "Payment and outstanding balance management."],
+                ["Personal / Event", "Any general calendar activity."],
+              ] : [
                 ["Visita / Llamada / Firma", "Actividades comerciales con clientes."],
                 ["Reunión / Seguimiento", "Juntas internas o de seguimiento de proyecto."],
                 ["Recordatorio / Tarea", "Avisos y pendientes personales u operativos."],
                 ["Cobranza", "Gestión de pagos y cobros pendientes."],
                 ["Personal / Evento", "Cualquier actividad de agenda libre."],
-              ].map(([label, text]) => (
+              ]).map(([label, text]) => (
                 <div key={label}>
                   <span>{label}</span>
                   <p>{text}</p>
@@ -431,55 +434,55 @@ function AgendaPage() {
           <form className="ag-modal" onSubmit={saveAppointment} onClick={(e) => e.stopPropagation()}>
             <div className="ag-modal-head">
               <div>
-                <h3>{editingId ? "Editar evento" : "Nuevo evento"}</h3>
-                <p>{editingId ? "Actualiza la actividad seleccionada." : "Agrégalo a la agenda del ecosistema."}</p>
+                <h3>{editingId ? t("agenda.editEvent") : t("agenda.newEvent")}</h3>
+                <p>{editingId ? t("agenda.editSubtitle") : t("agenda.createSubtitle")}</p>
               </div>
-              <button type="button" onClick={() => { setShowModal(false); setEditingId(null); }}>Cerrar</button>
+              <button type="button" onClick={() => { setShowModal(false); setEditingId(null); }}>{t("agenda.close")}</button>
             </div>
             <div className="ag-form-grid">
               <label>
-                Título
-                <input value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} placeholder="Ej: Junta con equipo, Recordatorio pago..." />
+                {t("agenda.titleLabel")}
+                <input value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} placeholder={t("agenda.titlePlaceholder")} />
               </label>
               <label>
-                Participante / Cliente
-                <input value={form.client} onChange={(e) => setForm((p) => ({ ...p, client: e.target.value }))} placeholder="Opcional" />
+                {t("agenda.participant")}
+                <input value={form.client} onChange={(e) => setForm((p) => ({ ...p, client: e.target.value }))} placeholder={t("agenda.optional")} />
               </label>
               <label>
-                Fecha
+                {t("agenda.date")}
                 <input type="date" className={fe.errors.date ? "is-invalid" : undefined} value={form.date} onChange={(e) => { setForm((p) => ({ ...p, date: e.target.value })); fe.clear("date"); }} />
                 <FieldError msg={fe.errors.date} />
               </label>
               <label>
-                Hora
+                {t("agenda.time")}
                 <input type="time" className={fe.errors.time ? "is-invalid" : undefined} value={form.time} onChange={(e) => { setForm((p) => ({ ...p, time: e.target.value })); fe.clear("time"); }} />
                 <FieldError msg={fe.errors.time} />
               </label>
               <label>
-                App / Área
+                {t("agenda.appArea")}
                 <select value={form.app} onChange={(e) => setForm((p) => ({ ...p, app: e.target.value }))}>
                   {CREATABLE_APPS.map(([key, item]) => <option key={key} value={key}>{item.name}</option>)}
                 </select>
               </label>
               <label>
-                Tipo
+                {t("agenda.type")}
                 <select value={form.type} onChange={(e) => setForm((p) => ({ ...p, type: e.target.value }))}>
-                  {Object.entries(TYPES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                  {TYPE_KEYS.map((key) => <option key={key} value={key}>{t(`agenda.types.${key}`)}</option>)}
                 </select>
               </label>
               <label className="wide">
-                Notas / Contexto
-                <input value={form.context} onChange={(e) => setForm((p) => ({ ...p, context: e.target.value }))} placeholder="Descripción, lote, contrato, documento relacionado..." />
+                {t("agenda.notes")}
+                <input value={form.context} onChange={(e) => setForm((p) => ({ ...p, context: e.target.value }))} placeholder={t("agenda.notesPlaceholder")} />
               </label>
               <label className="wide">
-                Responsable
-                <input value={form.owner} onChange={(e) => setForm((p) => ({ ...p, owner: e.target.value }))} placeholder="Nombre del responsable (opcional)" />
+                {t("agenda.owner")}
+                <input value={form.owner} onChange={(e) => setForm((p) => ({ ...p, owner: e.target.value }))} placeholder={t("agenda.ownerPlaceholder")} />
               </label>
             </div>
             <div className="ag-modal-foot">
-              <button type="button" className="ag-soft" onClick={() => { setShowModal(false); setEditingId(null); }}>Cancelar</button>
+              <button type="button" className="ag-soft" onClick={() => { setShowModal(false); setEditingId(null); }}>{t("agenda.cancel")}</button>
               <button className="ag-primary" type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-                {createMutation.isPending || updateMutation.isPending ? "Guardando…" : editingId ? "Guardar cambios" : "Guardar evento"}
+                {createMutation.isPending || updateMutation.isPending ? t("agenda.saving") : editingId ? t("agenda.saveChanges") : t("agenda.saveEvent")}
               </button>
             </div>
           </form>
@@ -488,9 +491,17 @@ function AgendaPage() {
       <GuideModal
         open={showGuide}
         onClose={() => setShowGuide(false)}
-        title="Agenda General"
-        subtitle="Tu agenda centralizada para eventos, reuniones, recordatorios y citas del ecosistema."
-        steps={[
+        title={t("agenda.kicker")}
+        subtitle={t("agenda.subtitle")}
+        steps={locale === "en" ? [
+          { title: "Day / Week / Month views", text: "Switch views with the selector by the date. Week and Day show an hourly grid; Month provides the complete overview." },
+          { title: "Create with one click", text: "In Week or Day view, click any time slot to open quick creation with the date and time already selected." },
+          { title: "Create a full event", text: "Use New event to add the client, event type, time, notes, and owner." },
+          { title: "Navigate the calendar", text: "Use the arrows to move through the active range and Today to return to the current date." },
+          { title: "Filter by app", text: "All, Core, and Lands filter events by the app that created them." },
+          { title: "Edit events", text: "Select an event in the grid or use Edit in the side panel to update its details." },
+          { title: "Complete or delete", text: "Mark an event as completed or remove it from the calendar." },
+        ] : [
           { title: "Vistas Día / Semana / Mes", text: "Cambia entre las tres vistas con el selector junto a la fecha. Semana y Día muestran una rejilla por hora, igual que Google Calendar; Mes conserva la vista general de siempre." },
           { title: "Crear con un clic", text: "En las vistas de Semana o Día, haz clic en cualquier celda de hora para abrir un formulario rápido ya con esa fecha y hora. Usa 'Más opciones' si necesitas cliente, notas o responsable." },
           { title: "Crear un evento completo", text: "El botón 'Nuevo evento' abre el formulario completo. Elige tipo (visita, reunión, recordatorio, tarea, personal, etc.), hora y notas." },
