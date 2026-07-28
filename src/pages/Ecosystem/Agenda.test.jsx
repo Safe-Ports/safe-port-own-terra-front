@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HttpResponse, http } from "msw";
 import { server } from "@/test/mocks/server";
 import AgendaPage from "./Agenda.jsx";
+import { LocaleProvider } from "@/i18n";
 
 const API = "http://127.0.0.1:8000/api/v1";
 
@@ -48,7 +49,9 @@ function renderAgenda() {
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter>
-        <AgendaPage />
+        <LocaleProvider>
+          <AgendaPage />
+        </LocaleProvider>
       </MemoryRouter>
     </QueryClientProvider>
   );

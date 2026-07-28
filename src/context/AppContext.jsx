@@ -262,7 +262,7 @@ export function AppProvider({ children }) {
         const label = events.length === 1
           ? `⏰ ${events[0].title || "Evento"} — es ahora`
           : `⏰ ${events.length} eventos de agenda ahora`;
-        showToastRef.current(label);
+        showToastRef.current(label, "info");
       }
     }
     prevAlertCountRef.current = calendarAlertCount;
@@ -536,7 +536,7 @@ export function AppProvider({ children }) {
           p.status !== "paid"
       );
       if (!match) {
-        showToast("No se encontró la cuota indicada o ya está pagada");
+        showToast("No se encontró la cuota indicada o ya está pagada", "warning");
         return false;
       }
       saved = await quickPay(match.id, Number(data.amount || match.amount || 0));
@@ -588,7 +588,7 @@ export function AppProvider({ children }) {
   const sendReminder = async (paymentOrName) => {
     const name = typeof paymentOrName === "string" ? paymentOrName : (paymentOrName?.client?.name || "cliente");
     if (!paymentOrName?.id) {
-      showToast("Selecciona un pago para enviar el recordatorio");
+      showToast("Selecciona un pago para enviar el recordatorio", "warning");
       return false;
     }
     try {
@@ -604,7 +604,7 @@ export function AppProvider({ children }) {
   // ── Documents ─────────────────────────────────────────────────────────────
   const saveDocument = async (payload, file) => {
     if (!file) {
-      showToast("Selecciona un archivo para subir");
+      showToast("Selecciona un archivo para subir", "warning");
       return;
     }
     try {

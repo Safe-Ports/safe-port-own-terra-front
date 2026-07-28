@@ -23,6 +23,7 @@
   --earth:    #355E3B;   /* secondary (alineado a la paleta verde) */
   --cream:    #FBFAF6;
   --danger:   #C0392B;
+  --warning:  #91600D;
   --sf:       #FBFAF6;   /* surface */
   --sf2:      #F1EEE6;   /* surface muted */
   --bd:       #DCDAD2;
@@ -495,6 +496,18 @@ a {
   color: #c0392b;
 }
 
+.core-lang-action {
+  padding: 8px 11px;
+  min-width: 62px;
+  justify-content: center;
+}
+
+.core-lang-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
 .topbar-logout {
   display: inline-flex;
   align-items: center;
@@ -932,17 +945,17 @@ a {
   color: #9A9C90;
 }
 
-/* Marca de validación por campo (capa de "llenado"): borde rojo en cualquier input. */
+/* Validación recuperable: ámbar indica que falta o debe corregirse información. */
 .is-invalid,
 input.is-invalid,
 select.is-invalid,
 textarea.is-invalid {
-  border-color: var(--danger, #c0392b);
-  background: #fff;
+  border-color: var(--warning, #91600d);
+  background: #fffaf0;
 }
 .is-invalid:focus {
-  border-color: var(--danger, #c0392b);
-  box-shadow: 0 0 0 4px rgba(192, 57, 43, 0.12);
+  border-color: var(--warning, #91600d);
+  box-shadow: 0 0 0 4px rgba(145, 96, 13, 0.14);
 }
 
 .tb-btn {

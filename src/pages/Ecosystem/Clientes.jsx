@@ -19,7 +19,11 @@ const APP_BY_KEY = Object.fromEntries(APPS.map((a) => [a.key, a]));
 const IDENTITY_CATEGORIES = ["Identificación (INE/IFE)", "Comprobante de domicilio", "RFC", "CURP", "Acta de nacimiento", "Pasaporte"];
 
 const initials = (name = "") => name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
-const fmtMoney = (n) => n != null ? "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 0 }) : "—";
+const fmtMoney = (n) => n != null ? new Intl.NumberFormat("es-MX", {
+  style: "currency",
+  currency: "MXN",
+  maximumFractionDigits: 0,
+}).format(Number(n)) : "—";
 const emailOk = (value = "") => !value.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
 const TYPE_LABEL = { buyer: "Comprador", lead: "Prospecto", tenant: "Arrendatario" };
@@ -281,7 +285,7 @@ function EcosystemClientes() {
       const fullName = `${draft.first_name || ""} ${draft.last_name || ""}`.trim();
       if (!fullName) return;
       if (!emailOk(draft.email)) {
-        showToast("Ingresa un correo válido");
+        showToast("Ingresa un correo válido", "warning");
         return;
       }
       if (modal.mode === "edit") {
@@ -291,7 +295,7 @@ function EcosystemClientes() {
       }
     } else if (type === "document") {
       if (!draft.file) {
-        showToast("Selecciona un archivo para subir");
+        showToast("Selecciona un archivo para subir", "warning");
         return;
       }
       uploadDocMutation.mutate({ file: draft.file, name: draft.name || draft.file.name, category: draft.category });

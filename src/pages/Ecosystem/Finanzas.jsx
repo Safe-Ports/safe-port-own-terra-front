@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { dashboardService } from "@/services/dashboardService";
 import { paymentService } from "@/services/paymentService";
 import EcoLayout from "./EcoLayout";
+import { useLocale } from "@/i18n";
 
 const APP_META = {
   lands: { name: "OwnTerra Lands", short: "Lands", handle: "terra.lands", icon: "eco-g-lands", cls: "ic-lands", color: "#6FAF6B", live: true },
@@ -12,11 +13,12 @@ const APP_META = {
   homes: { name: "OwnTerra Homes", short: "Homes", handle: "terra.homes", icon: "eco-g-homes", cls: "ic-homes", color: "#A7CBA1", live: false },
 };
 
-function fmtK(n) {
+function fmtK(n, format) {
   if (!n && n !== 0) return "—";
-  if (Math.abs(n) >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-  if (Math.abs(n) >= 1_000) return `$${(n / 1_000).toFixed(0)}k`;
-  return `$${Number(n).toLocaleString("en-US", { minimumFractionDigits: 0 })}`;
+  return format.currency(n, "MXN", {
+    notation: Math.abs(n) >= 1_000 ? "compact" : "standard",
+    maximumFractionDigits: Math.abs(n) >= 1_000_000 ? 2 : 0,
+  });
 }
 
 function AppTag({ app }) {
@@ -61,6 +63,7 @@ function EcosystemFinanzas() {
   const navigate = useNavigate();
   const [period, setPeriod]       = useState("month");
   const [showGuide, setShowGuide] = useState(false);
+  const { format } = useLocale();
 
   const { data: stats } = useQuery({
     queryKey: ["dashboard-stats", period],
@@ -93,7 +96,7 @@ function EcosystemFinanzas() {
       <div className="kpi-row" style={{ marginBottom: 22 }}>
         <div className="kpi">
           <div className="kpi-head"><span className="kpi-label">Ingresos del periodo</span></div>
-          <div className="kpi-val">{stats ? fmtK(stats.revenue) : "—"}</div>
+          <div className="kpi-val">{stats ? fmtK(stats.revenue, format) : "—"}</div>
           <div className="kpi-foot">{periodLabel[period]} · OwnTerra Lands</div>
         </div>
         <div className="kpi">
@@ -104,7 +107,7 @@ function EcosystemFinanzas() {
         <div className="kpi">
           <div className="kpi-head"><span className="kpi-label">Pagos vencidos</span>{overdueItems.length > 0 && <span className="kpi-trend tr-down">▲ urgente</span>}</div>
           <div className="kpi-val" style={{ color: overdueItems.length > 0 ? "#C0392B" : undefined }}>
-            {fmtK(overdueItems.reduce((s, o) => s + Number(o.amount || 0), 0))}
+            {fmtK(overdueItems.reduce((s, o) => s + Number(o.amount || 0), 0), format)}
           </div>
           <div className="kpi-foot">{overdueItems.length} operaciones en mora</div>
         </div>
@@ -146,7 +149,7 @@ function EcosystemFinanzas() {
           {stats ? (
             <div style={{ padding: "12px 0", display: "flex", flexDirection: "column", gap: 14 }}>
               {[
-                ["Ingresos totales", fmtK(stats.revenue)],
+                ["Ingresos totales", fmtK(stats.revenue, format)],
                 ["Nuevos clientes", stats.new_clients],
                 ["Nuevos prospectos", stats.new_leads],
                 ["Tasa de cobranza", `${(stats.collection_rate * 100).toFixed(1)}%`],
@@ -184,7 +187,7 @@ function EcosystemFinanzas() {
             </div>
             <AppTag app="lands" />
             <span className="md-late">{o.days_late} días vencido</span>
-            <span className="md-amount">${Number(o.amount || 0).toLocaleString("en-US")}</span>
+            <span className="md-amount">{format.currency(o.amount || 0, "MXN", { maximumFractionDigits: 0 })}</span>
             <span className="md-open" onClick={() => cobrar("lands")} style={{ cursor: "pointer" }}>Cobrar →</span>
           </div>
         )) : (

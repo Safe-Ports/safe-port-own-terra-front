@@ -156,11 +156,11 @@ function EcosystemVault() {
 
   const saveDoc = () => {
     if (!uploadFile) {
-      showToast("Selecciona un archivo para subir");
+      showToast("Selecciona un archivo para subir", "warning");
       return;
     }
     if (uploadFile.size > 50 * 1024 * 1024) {
-      showToast("El archivo no puede superar 50 MB");
+      showToast("El archivo no puede superar 50 MB", "warning");
       return;
     }
     uploadMutation.mutate({ file: uploadFile, name: modal.name || uploadFile.name, category: modal.category });

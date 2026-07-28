@@ -16,22 +16,23 @@ import {
   HiWallet,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
+import { useLocale } from "@/i18n";
 import useEscapeKey from "@/hooks/useEscapeKey";
 
-const items = [
-  { label: "Ecosistema", to: "/ecosistema", icon: HiRectangleGroup, section: "General" },
-  { label: "Mi Día", to: "/ecosistema/mi-dia", icon: HiSun, section: "General" },
-  { label: "Calendario", to: "/ecosistema/agenda", icon: HiCalendarDays, section: "General" },
-  { label: "Dashboard", to: "/dashboard", icon: HiHome, section: "General" },
-  { label: "Carga de Lotes", to: "/lotes", icon: HiOutlineSquares2X2, section: "Propiedades" },
-  { label: "Fraccionamientos", to: "/fraccionamientos", icon: HiMap, section: "Propiedades" },
-  { label: "Clientes & CRM", to: "/clientes", icon: HiOutlineUserGroup, section: "Gestion" },
-  { label: "Contratos", to: "/contratos", icon: HiWallet, section: "Gestion" },
-  { label: "Pagos", to: "/pagos", icon: HiBellAlert, section: "Gestion" },
-  { label: "Documentos", to: "/documentos", icon: HiDocumentDuplicate, section: "Gestion" },
-  { label: "Calculadora", to: "/calculadora", icon: HiCalculator, section: "Gestion" },
-  { label: "Reportes", to: "/reportes", icon: HiChartBarSquare, section: "Sistema" },
-  { label: "Configuracion", to: "/configuracion", icon: HiCog6Tooth, section: "Sistema" },
+const NAV_ITEMS = [
+  { path: "/ecosistema",        icon: HiRectangleGroup,     section: "General" },
+  { path: "/ecosistema/mi-dia", icon: HiSun,                section: "General" },
+  { path: "/ecosistema/agenda", icon: HiCalendarDays,       section: "General" },
+  { path: "/dashboard",         icon: HiHome,               section: "General" },
+  { path: "/lotes",             icon: HiOutlineSquares2X2,  section: "Propiedades" },
+  { path: "/fraccionamientos",  icon: HiMap,                section: "Propiedades" },
+  { path: "/clientes",          icon: HiOutlineUserGroup,   section: "Gestion" },
+  { path: "/contratos",         icon: HiWallet,             section: "Gestion" },
+  { path: "/pagos",             icon: HiBellAlert,          section: "Gestion" },
+  { path: "/documentos",        icon: HiDocumentDuplicate,  section: "Gestion" },
+  { path: "/calculadora",       icon: HiCalculator,         section: "Gestion" },
+  { path: "/reportes",          icon: HiChartBarSquare,     section: "Gestion" },
+  { path: "/configuracion",     icon: HiCog6Tooth,          section: "Sistema" },
 ];
 
 function Logo() {
@@ -45,11 +46,16 @@ function Logo() {
 }
 
 function Sidebar() {
-  const { ui, closeSidebar, fracs, clients, payments, documents, notificationCount, logout, currentUser, canAccessApp, canUseFeature, resetFracsView, setDraftProject } = useAppContext();
+  const {
+    ui, closeSidebar, fracs, clients, payments, documents,
+    notificationCount, logout, currentUser,
+    canAccessApp, canUseFeature, resetFracsView, setDraftProject,
+  } = useAppContext();
+  const { t } = useLocale();
   useEscapeKey(closeSidebar, ui.sidebarOpen);
 
   const handleLogout = () => {
-    if (window.confirm("¿Cerrar sesión?")) logout();
+    if (window.confirm(t("nav.logoutConfirm"))) logout();
   };
 
   let lastSection = "";
@@ -60,69 +66,55 @@ function Sidebar() {
       <aside className={`sb app-sidebar ${ui.sidebarOpen ? "open" : ""}`}>
         <Logo />
         <div className="sb-nav">
-          {items.filter((item) => {
-            if (item.to.startsWith("/ecosistema")) return true;
-            if (item.to === "/configuracion") return canUseFeature("core.config");
-            if (item.to === "/clientes") return canUseFeature("lands.clients");
-            if (item.to === "/ventas" || item.to === "/contratos") return canUseFeature("lands.sales");
-            if (item.to === "/documentos") return canUseFeature("lands.documents");
-            if (item.to === "/pagos") return canUseFeature("lands.payments");
-            if (item.to === "/reportes") return canUseFeature("lands.reports");
+          {NAV_ITEMS.filter((item) => {
+            if (item.path.startsWith("/ecosistema")) return true;
+            if (item.path === "/configuracion") return canUseFeature("core.config");
+            if (item.path === "/clientes") return canUseFeature("lands.clients");
+            if (item.path === "/contratos") return canUseFeature("lands.sales");
+            if (item.path === "/documentos") return canUseFeature("lands.documents");
+            if (item.path === "/pagos") return canUseFeature("lands.payments");
+            if (item.path === "/reportes") return canUseFeature("lands.reports");
             return canAccessApp("lands");
           }).map((item) => {
             const Icon = item.icon;
+            const label = t(`routes.${item.path}`, item.path);
+            const section = t(`sidebar.sections.${item.section}`, item.section);
             const shouldRenderSection = item.section !== lastSection;
             lastSection = item.section;
 
             let badge = null;
-            if (item.to === "/fraccionamientos" && fracs.length) badge = fracs.length;
-            if (item.to === "/clientes" && clients.length) badge = clients.length;
-            if (item.to === "/pagos") badge = payments.filter((p) => p.status === "overdue").length;
-            if (item.to === "/documentos" && documents.length) badge = documents.length;
+            if (item.path === "/fraccionamientos" && fracs.length) badge = fracs.length;
+            if (item.path === "/clientes" && clients.length) badge = clients.length;
+            if (item.path === "/pagos") badge = payments.filter((p) => p.status === "overdue").length;
+            if (item.path === "/documentos" && documents.length) badge = documents.length;
 
             return (
-              <div key={item.to}>
-                {shouldRenderSection ? <div className="sb-sec">{item.section}</div> : null}
+              <div key={item.path}>
+                {shouldRenderSection ? <div className="sb-sec">{section}</div> : null}
                 <NavLink
-                  to={item.to}
+                  to={item.path}
                   onClick={() => {
                     closeSidebar();
-                    if (item.to === "/fraccionamientos") resetFracsView();
-                    if (item.to === "/lotes") setDraftProject({ mode: "selector", name: "Nuevo Fraccionamiento", mapUrl: "", sections: [], cadProcessing: false });
+                    if (item.path === "/fraccionamientos") resetFracsView();
+                    if (item.path === "/lotes") setDraftProject({ mode: "selector", name: "Nuevo Fraccionamiento", mapUrl: "", sections: [], cadProcessing: false });
                   }}
                   className={({ isActive }) => `sb-btn ${isActive ? "active" : ""}`}
                 >
-                  <span className="sb-ico">
-                    <Icon />
-                  </span>
-                  <span>{item.label}</span>
-                  {badge ? <span className={`sb-bdg ${item.to === "/pagos" ? "sb-bdg-red" : ""}`}>{badge}</span> : null}
+                  <span className="sb-ico"><Icon /></span>
+                  <span>{label}</span>
+                  {badge ? <span className={`sb-bdg ${item.path === "/pagos" ? "sb-bdg-red" : ""}`}>{badge}</span> : null}
                 </NavLink>
               </div>
             );
           })}
         </div>
         <div className="sb-foot">
-          <NavLink to="/perfil" onClick={closeSidebar} className="sb-foot-item" style={{ textDecoration: "none" }}>
-            <span style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--forest)",
-              color: "#fff", fontWeight: 800, fontSize: ".68rem",
-              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              {(currentUser?.name || "U").charAt(0).toUpperCase()}
-            </span>
-            <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
-              <div style={{ fontSize: ".78rem", color: "rgba(255,255,255,.85)", fontWeight: 600,
-                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {currentUser?.name || "Perfil"}
-              </div>
-              <div style={{ fontSize: ".64rem", color: "rgba(255,255,255,.4)" }}>Ver perfil</div>
-            </div>
-          </NavLink>
           <button onClick={handleLogout} className="sb-foot-item" style={{
             border: "none", background: "transparent", width: "100%", textAlign: "left",
-            fontFamily: "inherit", cursor: "pointer", marginTop: 4,
+            fontFamily: "inherit", cursor: "pointer",
           }}>
             <span className="sb-foot-ico"><HiArrowLeftOnRectangle /></span>
-            <span>Cerrar sesión</span>
+            <span>{t("nav.logout")}</span>
           </button>
         </div>
       </aside>

@@ -407,7 +407,7 @@ function LotsPage() {
       if (result.imported === 0 && result.failed > 0) {
         setImportSummary({ fileName: file.name, imported: 0, failed: result.failed, errors: result.errors, warnings: result.warnings });
         setShowImportGuide(true);
-        showToast(result.errors[0]?.message || "No se importaron lotes: revisa los errores");
+        showToast(result.errors[0]?.message || "No se importaron lotes: revisa los errores", "warning");
         return;
       }
 
@@ -459,7 +459,10 @@ function LotsPage() {
       if (mapUploadError) {
         showError(mapUploadError, "Los lotes se importaron, pero el plano no pudo subirse");
       } else {
-        showToast(`${result.imported} lotes importados${result.failed ? ` · ${result.failed} con errores` : ""}`);
+        showToast(
+          `${result.imported} lotes importados${result.failed ? ` · ${result.failed} con errores` : ""}`,
+          result.failed ? "warning" : "success",
+        );
       }
       if (result.failed > 0) setShowImportGuide(true);
 

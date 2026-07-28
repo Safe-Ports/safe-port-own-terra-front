@@ -25,7 +25,7 @@ function SalesPage() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch {
-      showToast("Error al descargar el contrato PDF");
+      showToast("Error al descargar el contrato PDF", "error");
     }
   };
 

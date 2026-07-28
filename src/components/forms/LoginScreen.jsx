@@ -3,16 +3,9 @@ import { useAppContext } from "@/context/AppContext";
 import InlineError from "@/components/shared/InlineError";
 import FieldError from "@/components/shared/FieldError";
 import { useFieldErrors } from "@/hooks/useFieldErrors";
+import { useLocale } from "@/i18n";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const REGISTER_RULES = {
-  organization_name: (v) => (!v || v.trim().length < 3 ? "El nombre de la empresa debe tener al menos 3 caracteres." : ""),
-  name: (v) => (!v || v.trim().length < 2 ? "Tu nombre debe tener al menos 2 caracteres." : ""),
-  email: (v) => (!EMAIL_RE.test((v || "").trim()) ? "Escribe un correo electrónico válido." : ""),
-  password: (v) => ((v || "").length < 8 ? "La contraseña debe tener al menos 8 caracteres." : ""),
-  confirm: (v, form) => (v !== form.password ? "Las contraseñas no coinciden." : ""),
-};
-
 const MAP_SVG = (
   <svg className="ll-map-deco" width="340" height="320" viewBox="0 0 340 320" fill="none">
     <rect x="20" y="20" width="90" height="70" rx="4" stroke="white" strokeWidth="2" />
@@ -40,6 +33,7 @@ const MAP_SVG = (
 );
 
 function LeftPanel() {
+  const { t } = useLocale();
   return (
     <div className="ll-panel">
       <div className="ll-logo">
@@ -48,10 +42,10 @@ function LeftPanel() {
       {MAP_SVG}
       <div className="ll-hero">
         <div className="ll-tagline">
-          Gestiona hoy.<br />Construye mañana.<br /><em>Vive mejor.</em>
+          {t("auth.tagline")}
         </div>
         <div className="ll-desc">
-          Administra lotes, clientes, contratos y amortizaciones desde un solo lugar. El ecosistema completo para desarrolladores inmobiliarios.
+          {t("auth.description")}
         </div>
       </div>
     </div>
@@ -67,6 +61,7 @@ function LoginView({ onForgot, onRegister }) {
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [showPass, setShowPass] = useState(false);
+  const { t } = useLocale();
 
   const submit = async () => {
     if (!form.identifier || !form.password) return;
@@ -86,24 +81,27 @@ function LoginView({ onForgot, onRegister }) {
     setResending(true);
     const result = await resendVerification(unverifiedEmail);
     setResending(false);
-    showToast(result.ok ? "Correo de verificación reenviado" : (result.msg || "No se pudo reenviar el correo"));
+    showToast(
+      result.ok ? "Correo de verificación reenviado" : (result.msg || "No se pudo reenviar el correo"),
+      result.ok ? "success" : "error",
+    );
   };
 
   return (
     <div className="lf-wrap">
-      <div className="lf-title">Bienvenido</div>
-      <div className="lf-sub">Accede a tu sistema de gestión inmobiliaria</div>
+      <div className="lf-title">{t("auth.welcome")}</div>
+      <div className="lf-sub">{t("auth.loginSubtitle")}</div>
 
       <InlineError error={error}>
         {unverifiedEmail ? (
           <button type="button" className="lf-error-action" onClick={resend} disabled={resending}>
-            {resending ? "Reenviando..." : "Reenviar correo de verificación"}
+            {resending ? t("auth.resending") : t("auth.resendEmail")}
           </button>
         ) : null}
       </InlineError>
 
       <div className="lf-field">
-        <label className="lf-label">Usuario / Correo</label>
+        <label className="lf-label">{t("auth.userEmail")}</label>
         <div className="lf-input-wrap">
           <span className="lf-ico">ID</span>
           <input
@@ -119,7 +117,7 @@ function LoginView({ onForgot, onRegister }) {
       </div>
 
       <div className="lf-field">
-        <label className="lf-label">Contraseña</label>
+        <label className="lf-label">{t("auth.password")}</label>
         <div className="lf-input-wrap">
           <span className="lf-ico">PW</span>
           <input
@@ -132,7 +130,7 @@ function LoginView({ onForgot, onRegister }) {
             autoComplete="current-password"
           />
           <button className="lf-eye" type="button" onClick={() => setShowPass((v) => !v)} tabIndex={-1}>
-            {showPass ? "Ocultar" : "Ver"}
+            {showPass ? t("auth.hide") : t("auth.show")}
           </button>
         </div>
       </div>
@@ -144,7 +142,7 @@ function LoginView({ onForgot, onRegister }) {
             checked={form.remember}
             onChange={(e) => setForm((p) => ({ ...p, remember: e.target.checked }))}
           />
-          Recordarme
+          {t("auth.remember")}
         </label>
         <button
           className="lf-forgot"
@@ -152,23 +150,23 @@ function LoginView({ onForgot, onRegister }) {
           onClick={onForgot}
           style={{ background: "none", border: "none", cursor: "pointer", padding: 0, font: "inherit" }}
         >
-          ¿Olvidaste tu contraseña?
+          {t("auth.forgotQuestion")}
         </button>
       </div>
 
       <button className={`lf-btn${loading ? " loading" : ""}`} onClick={submit} disabled={loading}>
         {loading ? <span className="btn-spinner" /> : null}
-        {loading ? "Ingresando..." : "Iniciar sesión"}
+        {loading ? t("auth.signingIn") : t("auth.signIn")}
       </button>
 
       <div style={{ textAlign: "center", marginTop: 16, fontSize: ".82rem", color: "#83867C" }}>
-        ¿No tienes cuenta?{" "}
+        {t("auth.noAccount")} {" "}
         <button
           type="button"
           onClick={onRegister}
           style={{ background: "none", border: "none", cursor: "pointer", color: "var(--forest, #355E3B)", fontWeight: 700, fontSize: "inherit", padding: 0 }}
         >
-          Crear cuenta nueva
+          {t("auth.createAccount")}
         </button>
       </div>
 
@@ -186,6 +184,7 @@ function ForgotView({ onBack }) {
   const [loading, setLoading] = useState(false);
   const [sent, setSent]     = useState(false);
   const [error, setError]   = useState(null);
+  const { t } = useLocale();
 
   const submit = async () => {
     if (!email.trim()) return;
@@ -196,7 +195,7 @@ function ForgotView({ onBack }) {
     if (result.ok) {
       setSent(true);
     } else {
-      setError({ message: "Ocurrió un error al enviar el correo.", action: "Verifica tu dirección e intenta de nuevo.", severity: "warning" });
+      setError({ message: t("auth.recoveryError"), action: t("auth.recoveryAction"), severity: "warning" });
     }
   };
 
@@ -205,11 +204,11 @@ function ForgotView({ onBack }) {
       <div className="lf-wrap">
         <div style={{ textAlign: "center", padding: "32px 0" }}>
           <div style={{ fontSize: "3rem", marginBottom: 12 }}>📬</div>
-          <div className="lf-title" style={{ fontSize: "1.3rem" }}>Revisa tu correo</div>
+          <div className="lf-title" style={{ fontSize: "1.3rem" }}>{t("auth.checkEmail")}</div>
           <div className="lf-sub" style={{ marginBottom: 24 }}>
-            Si la cuenta existe, recibirás un enlace para restablecer tu contraseña en los próximos minutos.
+            {t("auth.recoverySent")}
           </div>
-          <button className="lf-btn" onClick={onBack}>← Volver al inicio de sesión</button>
+          <button className="lf-btn" onClick={onBack}>← {t("auth.backToLogin")}</button>
         </div>
       </div>
     );
@@ -222,15 +221,15 @@ function ForgotView({ onBack }) {
         onClick={onBack}
         style={{ background: "none", border: "none", cursor: "pointer", color: "#83867C", fontSize: ".82rem", padding: 0, marginBottom: 12, display: "flex", alignItems: "center", gap: 4 }}
       >
-        ← Volver
+        ← {t("auth.back")}
       </button>
-      <div className="lf-title">Recuperar contraseña</div>
-      <div className="lf-sub">Ingresa tu correo y te enviaremos instrucciones para recuperar el acceso.</div>
+      <div className="lf-title">{t("auth.recoverTitle")}</div>
+      <div className="lf-sub">{t("auth.recoverSubtitle")}</div>
 
       <InlineError error={error} />
 
       <div className="lf-field">
-        <label className="lf-label">Correo electrónico</label>
+        <label className="lf-label">{t("auth.email")}</label>
         <div className="lf-input-wrap">
           <span className="lf-ico">✉️</span>
           <input
@@ -248,7 +247,7 @@ function ForgotView({ onBack }) {
 
       <button className={`lf-btn${loading ? " loading" : ""}`} onClick={submit} disabled={loading || !email.trim()}>
         {loading ? <span className="btn-spinner" /> : null}
-        {loading ? "Enviando..." : "Enviar instrucciones"}
+        {loading ? t("auth.sending") : t("auth.sendInstructions")}
       </button>
 
       <div className="lf-footer" style={{ marginTop: 24 }}>
@@ -274,12 +273,20 @@ function RegisterView({ onBack }) {
   const [showPass, setShowPass] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
   const fe = useFieldErrors();
+  const { t } = useLocale();
+  const registerRules = {
+    organization_name: (v) => (!v || v.trim().length < 3 ? t("auth.companyMin") : ""),
+    name: (v) => (!v || v.trim().length < 2 ? t("auth.nameMin") : ""),
+    email: (v) => (!EMAIL_RE.test((v || "").trim()) ? t("auth.emailInvalid") : ""),
+    password: (v) => ((v || "").length < 8 ? t("auth.passwordMin") : ""),
+    confirm: (v, values) => (v !== values.password ? t("auth.passwordMismatch") : ""),
+  };
 
   const set = (key) => (e) => { const v = e.target.value; setForm((p) => ({ ...p, [key]: v })); fe.clear(key); };
 
   const submit = async () => {
     // Validación de llenado: por campo (rojo bajo el input), no en la caja general.
-    if (!fe.validate(form, REGISTER_RULES)) return;
+    if (!fe.validate(form, registerRules)) return;
     setLoading(true);
     setError(null);
     const result = await register({
@@ -300,10 +307,9 @@ function RegisterView({ onBack }) {
     return (
       <div className="lf-wrap" style={{ textAlign: "center" }}>
         <div style={{ fontSize: 40, marginBottom: 8 }}>✉️</div>
-        <div className="lf-title">Confirma tu correo</div>
+        <div className="lf-title">{t("auth.confirmEmail")}</div>
         <div className="lf-sub">
-          Enviamos un enlace de confirmación a <strong>{registeredEmail}</strong>.
-          Haz clic en él para activar tu cuenta e iniciar sesión.
+          {t("auth.confirmationSent")} <strong>{registeredEmail}</strong>. {t("auth.confirmationAction")}
         </div>
         <button
           type="button"
@@ -311,26 +317,29 @@ function RegisterView({ onBack }) {
           style={{ marginTop: 18 }}
           onClick={async () => {
             const r = await resendVerification(registeredEmail);
-            showToast(r.ok ? "Correo reenviado" : (r.msg || "No se pudo reenviar"));
+            showToast(
+              r.ok ? "Correo reenviado" : (r.msg || "No se pudo reenviar"),
+              r.ok ? "success" : "error",
+            );
           }}
         >
-          Reenviar correo
+          {t("auth.resendEmail")}
         </button>
         <button
           type="button"
           onClick={onBack}
           style={{ background: "none", border: "none", cursor: "pointer", color: "#83867C", fontSize: ".82rem", padding: 0, marginTop: 16 }}
         >
-          ← Volver al inicio de sesión
+          ← {t("auth.backToLogin")}
         </button>
       </div>
     );
   }
 
   const fields = [
-    { key: "organization_name", label: "Nombre de la empresa / proyecto", ico: "🏢", placeholder: "Inmobiliaria Ejemplo S.A.", type: "text", auto: "organization" },
-    { key: "name",              label: "Tu nombre completo",               ico: "👤", placeholder: "Juan Pérez",               type: "text", auto: "name" },
-    { key: "email",             label: "Correo electrónico",               ico: "✉️", placeholder: "juan@empresa.mx",          type: "email", auto: "email" },
+    { key: "organization_name", label: t("auth.companyName"), ico: "🏢", placeholder: "Example Real Estate Inc.", type: "text", auto: "organization" },
+    { key: "name", label: t("auth.fullName"), ico: "👤", placeholder: "Jane Smith", type: "text", auto: "name" },
+    { key: "email", label: t("auth.email"), ico: "✉️", placeholder: "jane@company.com", type: "email", auto: "email" },
   ];
 
   return (
@@ -340,10 +349,10 @@ function RegisterView({ onBack }) {
         onClick={onBack}
         style={{ background: "none", border: "none", cursor: "pointer", color: "#83867C", fontSize: ".82rem", padding: 0, marginBottom: 12, display: "flex", alignItems: "center", gap: 4 }}
       >
-        ← Volver al inicio de sesión
+        ← {t("auth.backToLogin")}
       </button>
-      <div className="lf-title">Crear cuenta nueva</div>
-      <div className="lf-sub">Registra tu empresa y comienza a gestionar tu fraccionamiento.</div>
+      <div className="lf-title">{t("auth.createAccount")}</div>
+      <div className="lf-sub">{t("auth.registerSubtitle")}</div>
 
       <InlineError error={error} />
 
@@ -367,13 +376,13 @@ function RegisterView({ onBack }) {
       ))}
 
       <div className="lf-field">
-        <label className="lf-label">Contraseña</label>
+        <label className="lf-label">{t("auth.password")}</label>
         <div className="lf-input-wrap">
           <span className="lf-ico">🔒</span>
           <input
             className={fe.errors.password ? "lf-input is-invalid" : "lf-input"}
             type={showPass ? "text" : "password"}
-            placeholder="Mínimo 8 caracteres"
+            placeholder={t("auth.minPassword")}
             value={form.password}
             onChange={set("password")}
             onKeyDown={(e) => e.key === "Enter" && submit()}
@@ -387,13 +396,13 @@ function RegisterView({ onBack }) {
       </div>
 
       <div className="lf-field">
-        <label className="lf-label">Confirmar contraseña</label>
+        <label className="lf-label">{t("auth.confirmPassword")}</label>
         <div className="lf-input-wrap">
           <span className="lf-ico">🔒</span>
           <input
             className={fe.errors.confirm ? "lf-input is-invalid" : "lf-input"}
             type={showPass ? "text" : "password"}
-            placeholder="Repite la contraseña"
+            placeholder={t("auth.repeatPassword")}
             value={form.confirm}
             onChange={set("confirm")}
             onKeyDown={(e) => e.key === "Enter" && submit()}
@@ -409,7 +418,7 @@ function RegisterView({ onBack }) {
         disabled={loading || !form.organization_name.trim() || !form.name.trim() || !form.email.trim() || !form.password || !form.confirm}
       >
         {loading ? <span className="btn-spinner" /> : null}
-        {loading ? "Creando cuenta..." : "🚀 Crear cuenta"}
+        {loading ? t("auth.creating") : `🚀 ${t("auth.createAccount")}`}
       </button>
 
       <div className="lf-footer" style={{ marginTop: 16 }}>OwnTerra v1.0 &nbsp;·&nbsp; © 2026</div>

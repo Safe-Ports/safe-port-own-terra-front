@@ -344,7 +344,7 @@ function ClientReport({ clientId }) {
       URL.revokeObjectURL(url);
       showToast("Estado de cuenta descargado");
     } catch {
-      showToast("No se pudo descargar el estado de cuenta");
+      showToast("No se pudo descargar el estado de cuenta", "error");
     } finally {
       setDownloadingPdf(false);
     }
@@ -355,7 +355,7 @@ function ClientReport({ clientId }) {
       await clientService.sendStatement(clientId);
       showToast("Estado de cuenta enviado por correo");
     } catch {
-      showToast("No se pudo enviar el estado de cuenta");
+      showToast("No se pudo enviar el estado de cuenta", "error");
     } finally {
       setSendingEmail(false);
     }

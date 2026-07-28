@@ -111,8 +111,8 @@ function CalculatorPage() {
 
   /* ── Guardar (crear o actualizar) ── */
   const save = async () => {
-    if (!editor.name.trim())   return showToast("Ponle un nombre a la calculadora");
-    if (!editor.formula.trim()) return showToast("La fórmula no puede estar vacía");
+    if (!editor.name.trim())   return showToast("Ponle un nombre a la calculadora", "warning");
+    if (!editor.formula.trim()) return showToast("La fórmula no puede estar vacía", "warning");
     setSaving(true);
     try {
       const body = {

@@ -4,13 +4,15 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
 import { dashboardService } from "@/services/dashboardService";
+import { useLocale } from "@/i18n";
 import EcoLayout from "./EcoLayout";
 
-function fmtK(n) {
+function fmtK(n, format) {
   if (!n && n !== 0) return "—";
-  if (Math.abs(n) >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-  if (Math.abs(n) >= 1_000) return `$${(n / 1_000).toFixed(0)}k`;
-  return `$${Number(n).toLocaleString("en-US", { minimumFractionDigits: 0 })}`;
+  return format.currency(n, "MXN", {
+    notation: Math.abs(n) >= 1_000 ? "compact" : "standard",
+    maximumFractionDigits: Math.abs(n) >= 1_000_000 ? 2 : 0,
+  });
 }
 
 function RevenueChart({ labels, revenue }) {
@@ -51,30 +53,36 @@ function RevenueChart({ labels, revenue }) {
 function EcosystemHub() {
   const navigate = useNavigate();
   const { canAccessApp, canUseFeature, showToast } = useAppContext();
+  const { locale, format, t } = useLocale();
   const [period, setPeriod]   = useState("month");
   const [showGuide, setShowGuide] = useState(false);
 
   const openLands = () => canAccessApp("lands")
     ? navigate("/dashboard")
-    : showToast("Tu usuario no tiene acceso a OwnTerra Lands", "warning");
+    : showToast(t("eco.noAccessToast"), "warning");
 
   const { data: stats, isLoading } = useQuery({
     queryKey: ["dashboard-stats", period],
     queryFn: () => dashboardService.stats(period),
   });
 
-  const periodLabel = { month: "Este mes", quarter: "Este trimestre", year: "Este año" };
+  const periodLabel = {
+    month: t("eco.period.month"),
+    quarter: t("eco.period.quarter"),
+    year: t("eco.period.year"),
+  };
+
   const ticket = stats?.sales_count > 0 ? stats.revenue / stats.sales_count : null;
 
   const salesBars = stats?.chart_data?.sales ?? [];
   const maxSales = Math.max(...salesBars, 1);
 
   return (
-    <EcoLayout active="panel" title="Ecosistema Inmobiliario" onGuide={() => setShowGuide(true)}>
+    <EcoLayout active="panel" title={t("eco.title")} onGuide={() => setShowGuide(true)}>
 
       {/* APP LAUNCHER */}
       <div className="section-head">
-        <h3>Tus aplicaciones</h3>
+        <h3>{t("eco.appsSection")}</h3>
       </div>
       <div className="app-launcher">
 
@@ -82,14 +90,20 @@ function EcosystemHub() {
           onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && openLands()}>
           <div className="app-top">
             <div className="app-icon ic-lands"><svg><use href="#eco-g-lands" /></svg></div>
-            <span className="app-status st-active">Activo</span>
+            <span className="app-status st-active">{t("eco.statusActive")}</span>
           </div>
           <div className="app-name">OwnTerra Lands</div>
           <div className="app-handle">terra.lands</div>
-          <div className="app-desc">Lotificación, trazo y subdivisión de terrenos con planos topográficos y control de preventas.</div>
-          <div className="app-tags"><span className="atag">Planos DWG/PDF</span><span className="atag">Compraventa</span><span className="atag">Enganches</span></div>
+          <div className="app-desc">{t("eco.lands.desc")}</div>
+          <div className="app-tags">
+            <span className="atag">{t("eco.lands.tag1")}</span>
+            <span className="atag">{t("eco.lands.tag2")}</span>
+            <span className="atag">{t("eco.lands.tag3")}</span>
+          </div>
           <div className="app-cta">
-            <span className={`app-open ${!canAccessApp("lands") ? "disabled" : ""}`}>{canAccessApp("lands") ? "Ingresar al módulo" : "Sin acceso asignado"}</span>
+            <span className={`app-open ${!canAccessApp("lands") ? "disabled" : ""}`}>
+              {canAccessApp("lands") ? t("eco.enterModule") : t("eco.noAccess")}
+            </span>
             <span className={`app-arrow ${!canAccessApp("lands") ? "disabled" : ""}`}>→</span>
           </div>
         </div>
@@ -97,14 +111,18 @@ function EcosystemHub() {
         <div className="app-card is-disabled" style={{ "--glow": "rgba(53,94,59,.1)", pointerEvents: "none", userSelect: "none" }} aria-disabled="true" tabIndex={-1}>
           <div className="app-top">
             <div className="app-icon ic-neighb"><svg><use href="#eco-g-neighb" /></svg></div>
-            <span className="app-status st-soon">Próximamente</span>
+            <span className="app-status st-soon">{t("eco.statusSoon")}</span>
           </div>
           <div className="app-name">OwnTerra Properties</div>
           <div className="app-handle">terra.properties</div>
-          <div className="app-desc">Departamentos y fraccionamientos residenciales: cuotas de mantenimiento y normativa de colonos.</div>
-          <div className="app-tags"><span className="atag">Cuotas</span><span className="atag">Amenidades</span><span className="atag">Reglamento</span></div>
+          <div className="app-desc">{t("eco.properties.desc")}</div>
+          <div className="app-tags">
+            <span className="atag">{t("eco.properties.tag1")}</span>
+            <span className="atag">{t("eco.properties.tag2")}</span>
+            <span className="atag">{t("eco.properties.tag3")}</span>
+          </div>
           <div className="app-cta">
-            <span className="app-open disabled">En desarrollo</span>
+            <span className="app-open disabled">{t("eco.inDevelopment")}</span>
             <span className="app-arrow disabled">→</span>
           </div>
         </div>
@@ -112,14 +130,18 @@ function EcosystemHub() {
         <div className="app-card is-disabled" style={{ "--glow": "rgba(167,203,161,.14)", pointerEvents: "none", userSelect: "none" }} aria-disabled="true" tabIndex={-1}>
           <div className="app-top">
             <div className="app-icon ic-homes"><svg><use href="#eco-g-homes" /></svg></div>
-            <span className="app-status st-soon">Próximamente</span>
+            <span className="app-status st-soon">{t("eco.statusSoon")}</span>
           </div>
           <div className="app-name">OwnTerra Homes</div>
           <div className="app-handle">terra.homes</div>
-          <div className="app-desc">Construcción y desarrollos habitacionales: avance de obra, acabados, garantías y postventa.</div>
-          <div className="app-tags"><span className="atag">Avance de obra</span><span className="atag">Acabados</span><span className="atag">Postventa</span></div>
+          <div className="app-desc">{t("eco.homes.desc")}</div>
+          <div className="app-tags">
+            <span className="atag">{t("eco.homes.tag1")}</span>
+            <span className="atag">{t("eco.homes.tag2")}</span>
+            <span className="atag">{t("eco.homes.tag3")}</span>
+          </div>
           <div className="app-cta">
-            <span className="app-open disabled">En desarrollo</span>
+            <span className="app-open disabled">{t("eco.inDevelopment")}</span>
             <span className="app-arrow disabled">→</span>
           </div>
         </div>
@@ -128,7 +150,7 @@ function EcosystemHub() {
 
       {/* PANEL FINANCIERO */}
       <div className="section-head">
-        <h3>Finanzas del ecosistema</h3>
+        <h3>{t("eco.financeSection")}</h3>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <div className="seg">
             {["month", "quarter", "year"].map((p) => (
@@ -139,33 +161,33 @@ function EcosystemHub() {
           </div>
           <button
             className="sh-link"
-            onClick={() => canUseFeature("core.finance") ? navigate("/ecosistema/finanzas") : showToast("Tu usuario no tiene acceso a Finanzas", "warning")}
+            onClick={() => canUseFeature("core.finance") ? navigate("/ecosistema/finanzas") : showToast(t("eco.noFinanceToast"), "warning")}
           >
-            Ver estados financieros →
+            {t("eco.viewStatements")}
           </button>
         </div>
       </div>
 
       <div className="kpi-row">
         <div className="kpi">
-          <div className="kpi-head"><span className="kpi-label">Ingresos del periodo</span></div>
-          <div className="kpi-val">{isLoading ? "—" : fmtK(stats?.revenue)}</div>
-          <div className="kpi-foot">{periodLabel[period]} · OwnTerra Lands</div>
+          <div className="kpi-head"><span className="kpi-label">{t("eco.kpi.revenue")}</span></div>
+          <div className="kpi-val">{isLoading ? "—" : fmtK(stats?.revenue, format)}</div>
+          <div className="kpi-foot">{periodLabel[period]} · {t("eco.kpi.revenueFooter")}</div>
         </div>
         <div className="kpi">
-          <div className="kpi-head"><span className="kpi-label">Ventas cerradas</span></div>
+          <div className="kpi-head"><span className="kpi-label">{t("eco.kpi.sales")}</span></div>
           <div className="kpi-val">{isLoading ? "—" : (stats?.sales_count ?? "—")}</div>
-          <div className="kpi-foot">Contratos del periodo</div>
+          <div className="kpi-foot">{t("eco.kpi.salesFooter")}</div>
         </div>
         <div className="kpi">
-          <div className="kpi-head"><span className="kpi-label">Ticket promedio</span></div>
-          <div className="kpi-val">{isLoading ? "—" : (ticket ? fmtK(ticket) : "—")}</div>
-          <div className="kpi-foot">Por contrato</div>
+          <div className="kpi-head"><span className="kpi-label">{t("eco.kpi.ticket")}</span></div>
+          <div className="kpi-val">{isLoading ? "—" : (ticket ? fmtK(ticket, format) : "—")}</div>
+          <div className="kpi-foot">{t("eco.kpi.ticketFooter")}</div>
         </div>
         <div className="kpi">
-          <div className="kpi-head"><span className="kpi-label">Tasa de cobranza</span></div>
+          <div className="kpi-head"><span className="kpi-label">{t("eco.kpi.collection")}</span></div>
           <div className="kpi-val">{isLoading ? "—" : (stats ? `${(stats.collection_rate * 100).toFixed(0)}%` : "—")}</div>
-          <div className="kpi-foot">Cobrado / facturado</div>
+          <div className="kpi-foot">{t("eco.kpi.collectionFooter")}</div>
         </div>
       </div>
 
@@ -173,18 +195,18 @@ function EcosystemHub() {
         <div className="chart-card">
           <div className="chart-head">
             <div>
-              <div className="chart-title">Ingresos del periodo</div>
-              <div className="chart-sub">OwnTerra Lands · {periodLabel[period]}</div>
+              <div className="chart-title">{t("eco.chart.revenueTitle")}</div>
+              <div className="chart-sub">{t("eco.kpi.revenueFooter")} · {periodLabel[period]}</div>
             </div>
             <div className="legend">
-              <div className="lg"><span className="lg-dot" style={{ background: "#6FAF6B" }} />Ingresos</div>
+              <div className="lg"><span className="lg-dot" style={{ background: "#6FAF6B" }} />{t("eco.chart.revenueLegend")}</div>
             </div>
           </div>
           {stats?.chart_data ? (
             <RevenueChart labels={stats.chart_data.labels} revenue={stats.chart_data.revenue} />
           ) : (
             <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text3)", fontSize: 13 }}>
-              {isLoading ? "Cargando datos…" : "Sin datos para el periodo"}
+              {isLoading ? t("eco.loading") : t("eco.noData")}
             </div>
           )}
         </div>
@@ -192,11 +214,11 @@ function EcosystemHub() {
         <div className="chart-card">
           <div className="chart-head">
             <div>
-              <div className="chart-title">Ventas cerradas por periodo</div>
-              <div className="chart-sub">Contratos · {periodLabel[period]}</div>
+              <div className="chart-title">{t("eco.chart.salesTitle")}</div>
+              <div className="chart-sub">{t("eco.chart.salesSub")} · {periodLabel[period]}</div>
             </div>
             <div className="legend">
-              <div className="lg"><span className="lg-dot" style={{ background: "linear-gradient(180deg,#6FAF6B,#355E3B)" }} />Cerradas</div>
+              <div className="lg"><span className="lg-dot" style={{ background: "linear-gradient(180deg,#6FAF6B,#355E3B)" }} />{t("eco.chart.salesLegend")}</div>
             </div>
           </div>
           {salesBars.length > 0 ? (
@@ -217,7 +239,7 @@ function EcosystemHub() {
             </div>
           ) : (
             <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text3)", fontSize: 13 }}>
-              {isLoading ? "Cargando datos…" : "Sin datos para el periodo"}
+              {isLoading ? t("eco.loading") : t("eco.noData")}
             </div>
           )}
         </div>
@@ -226,9 +248,15 @@ function EcosystemHub() {
       <GuideModal
         open={showGuide}
         onClose={() => setShowGuide(false)}
-        title="Ecosistema OwnTerra"
-        subtitle="Hub central de todas las aplicaciones verticales del ecosistema."
-        steps={[
+        title={locale === "en" ? "OwnTerra Ecosystem" : "Ecosistema OwnTerra"}
+        subtitle={locale === "en" ? "The central hub for every vertical application in the ecosystem." : "Hub central de todas las aplicaciones verticales del ecosistema."}
+        steps={locale === "en" ? [
+          { title: "App launcher", text: "The cards show available applications. OwnTerra Lands is active; Properties and Homes are coming soon." },
+          { title: "Open Lands", text: "Select OwnTerra Lands to manage developments, lots, clients, and collections." },
+          { title: "Period KPIs", text: "Review revenue, sales, collection rate, and average transaction value for the selected period." },
+          { title: "Change period", text: "Switch between this month, quarter, or year to update every KPI and chart." },
+          { title: "Revenue charts", text: "Track revenue and closed contracts to identify peaks and changes in sales performance." },
+        ] : [
           { title: "Lanzador de apps", text: "Las tarjetas muestran las apps disponibles. OwnTerra Lands está activo. Properties y Homes están en desarrollo (próximamente)." },
           { title: "Ingresar a Lands", text: "Haz clic en la tarjeta de OwnTerra Lands para acceder al módulo de gestión de lotes, clientes y cobranza de fraccionamientos." },
           { title: "KPIs del período", text: "Los indicadores muestran ingresos, ventas, tasa de cobranza y ticket promedio del período seleccionado (mes, trimestre o año)." },

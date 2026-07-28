@@ -10,7 +10,7 @@ function FieldError({ msg }) {
         alignItems: "center",
         gap: 4,
         fontSize: ".72rem",
-        color: "var(--danger, #c0392b)",
+        color: "var(--warning, #91600d)",
         marginTop: 4,
         fontWeight: 500,
       }}

@@ -8,6 +8,7 @@ import CoreTopbarActions from "@/components/layout/CoreTopbarActions";
 import Toast from "@/components/shared/Toast";
 import SubscriptionBanner from "@/components/shared/SubscriptionBanner";
 import useEscapeKey from "@/hooks/useEscapeKey";
+import { useLocale } from "@/i18n";
 
 /* Layout compartido del hub Aurora: sidebar + topbar + área de scroll.
    `active` marca el item activo del menú. */
@@ -15,9 +16,10 @@ function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
   const navigate = useNavigate();
   const { currentUser, canAccessApp, canUseFeature, showToast } = useAppContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { t, format } = useLocale();
   useEscapeKey(() => setSidebarOpen(false), sidebarOpen);
 
-  const today = new Date().toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
+  const today = format.date(new Date(), { day: "numeric", month: "long", year: "numeric" });
   const goTo = (path) => {
     setSidebarOpen(false);
     navigate(path);
@@ -26,9 +28,9 @@ function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
   const navItem = (key, label, icon, onClick, disabled) => (
     <button
       className={`nav-item ${active === key ? "active" : ""}`}
-      onClick={disabled ? () => showToast("Tu usuario no tiene acceso a esta sección", "warning") : onClick}
+      onClick={disabled ? () => showToast(t("ecosystem.noAccess"), "warning") : onClick}
       style={disabled ? { opacity: 0.5, cursor: "default" } : undefined}
-      title={disabled ? "Sin acceso para tu rol actual" : undefined}
+      title={disabled ? t("ecosystem.noRoleAccess") : undefined}
     >
       <span className="ni-ico"><svg><use href={`#${icon}`} /></svg></span> {label}
     </button>
@@ -43,7 +45,7 @@ function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
         type="button"
         className={`eco-sidebar-backdrop ${sidebarOpen ? "show" : ""}`}
         onClick={() => setSidebarOpen(false)}
-        aria-label="Cerrar menú"
+        aria-label={t("ecosystem.closeMenu")}
       />
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <div className="sidebar-inner">
@@ -52,19 +54,19 @@ function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
           </div>
 
           <div className="nav-group">
-            <div className="nav-label">Núcleo central</div>
-            {navItem("miday", "Mi Día", "eco-n-sun", () => goTo("/ecosistema/mi-dia"))}
-            {navItem("agenda", "Agenda", "eco-n-calendar", () => goTo("/ecosistema/agenda"))}
-            {navItem("panel", "Panel General", "eco-n-grid", () => goTo("/ecosistema"))}
+            <div className="nav-label">{t("ecosystem.core")}</div>
+            {navItem("miday", t("nav.myDay"), "eco-n-sun", () => goTo("/ecosistema/mi-dia"))}
+            {navItem("agenda", t("ecosystem.agenda"), "eco-n-calendar", () => goTo("/ecosistema/agenda"))}
+            {navItem("panel", t("ecosystem.overview"), "eco-n-grid", () => goTo("/ecosistema"))}
             {navItem("vault", "OwnTerra Vault", "eco-n-vault", () => goTo("/ecosistema/documentos"), !canUseFeature("core.vault"))}
-            {navItem("formularios", "Formularios", "eco-n-forms", () => goTo("/ecosistema/formularios"))}
-            {navItem("users", "Clientes del core", "eco-n-users", () => goTo("/ecosistema/clientes"), !canUseFeature("core.clients"))}
-            {navItem("team", "Equipo", "eco-n-shield", () => goTo("/ecosistema/equipo"), !canUseFeature("core.team"))}
-            {navItem("fin", "Estados Financieros", "eco-n-chart", () => goTo("/ecosistema/finanzas"), !canUseFeature("core.finance"))}
+            {navItem("formularios", t("ecosystem.forms"), "eco-n-forms", () => goTo("/ecosistema/formularios"))}
+            {navItem("users", t("ecosystem.coreClients"), "eco-n-users", () => goTo("/ecosistema/clientes"), !canUseFeature("core.clients"))}
+            {navItem("team", t("ecosystem.team"), "eco-n-shield", () => goTo("/ecosistema/equipo"), !canUseFeature("core.team"))}
+            {navItem("fin", t("ecosystem.financials"), "eco-n-chart", () => goTo("/ecosistema/finanzas"), !canUseFeature("core.finance"))}
           </div>
 
           <div className="nav-group">
-            <div className="nav-label">Aplicaciones</div>
+            <div className="nav-label">{t("ecosystem.applications")}</div>
             <button
               className="nav-item"
               onClick={() => canAccessApp("lands") ? goTo("/dashboard") : showToast("Tu usuario no tiene acceso a OwnTerra Lands", "warning")}
@@ -81,18 +83,18 @@ function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
           </div>
 
           <div className="nav-group">
-            <div className="nav-label">Sistema</div>
-            {navItem("config", "Configuración", "eco-n-gear", () => navigate("/configuracion"), !canUseFeature("core.config"))}
+            <div className="nav-label">{t("ecosystem.system")}</div>
+            {navItem("config", t("ecosystem.settings"), "eco-n-gear", () => navigate("/configuracion"), !canUseFeature("core.config"))}
           </div>
 
           <div style={{ marginTop: "auto" }} />
           <div className="tenant-selector">
-            <div className="ts-label">Organización activa</div>
+            <div className="ts-label">{t("ecosystem.activeOrg")}</div>
             <div className="ts-name" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {currentUser?.organization?.name || currentUser?.organization || "Mi organización"}
+              {currentUser?.organization?.name || currentUser?.organization || t("ecosystem.myOrg")}
             </div>
             <div className="ts-schema">
-              {currentUser?.name ? `Hola, ${currentUser.name.split(" ")[0]} 👋` : "OwnTerra Platform"}
+              {currentUser?.name ? `${t("ecosystem.hello")}, ${currentUser.name.split(" ")[0]} 👋` : "OwnTerra Platform"}
             </div>
           </div>
         </div>
@@ -106,13 +108,13 @@ function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
               type="button"
               className="eco-menu-btn"
               onClick={() => setSidebarOpen(true)}
-              aria-label="Abrir menú"
+              aria-label={t("ecosystem.openMenu")}
             >
               <HiBars3 aria-hidden="true" />
             </button>
             <div>
               <div className="topbar-title">{title}</div>
-              <div className="topbar-sub">{subtitle || `Bienvenido · Hoy, ${today}`}</div>
+              <div className="topbar-sub">{subtitle || t("ecosystem.welcomeToday").replace("{date}", today)}</div>
             </div>
           </div>
           <CoreTopbarActions onGuide={onGuide} className="topbar-right" />

@@ -135,7 +135,7 @@ function EcosystemFormEditor() {
   const handleLogoFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { showToast("La imagen no debe superar 2 MB"); return; }
+    if (file.size > 2 * 1024 * 1024) { showToast("La imagen no debe superar 2 MB", "warning"); return; }
     const reader = new FileReader();
     reader.onload = (ev) => setLogoUrl(ev.target.result);
     reader.readAsDataURL(file);
@@ -197,7 +197,7 @@ function EcosystemFormEditor() {
   const getPayload = () => ({ name: name.trim(), description: description.trim(), fields, logo_url: logoUrl });
 
   const validate = () => {
-    if (!name.trim()) { showToast("El nombre del formulario es obligatorio"); return false; }
+    if (!name.trim()) { showToast("El nombre del formulario es obligatorio", "warning"); return false; }
     return true;
   };
 

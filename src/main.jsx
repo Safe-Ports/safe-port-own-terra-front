@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/pwa/queryClient";
 import { AppProvider } from "@/context/AppContext";
+import { LocaleProvider } from "@/i18n";
 import App from "@/App";
 import { initSentry } from "@/observability/sentry";
 import ErrorBoundary from "@/components/shared/ErrorBoundary";
@@ -29,9 +30,11 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          <AppProvider>
-            <App />
-          </AppProvider>
+          <LocaleProvider>
+            <AppProvider>
+              <App />
+            </AppProvider>
+          </LocaleProvider>
         </BrowserRouter>
       </QueryClientProvider>
     </ErrorBoundary>

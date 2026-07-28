@@ -8,14 +8,16 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import Avatar from "@/components/Avatar";
 import { useAppContext } from "@/context/AppContext";
+import { useLocale } from "@/i18n";
 
 function CoreTopbarActions({ onGuide, className = "" }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser, logout, notificationCount } = useAppContext();
+  const { t } = useLocale();
 
   const handleLogout = () => {
-    if (window.confirm("¿Cerrar sesión?")) logout();
+    if (window.confirm(t("nav.logoutConfirm"))) logout();
   };
 
   const isActive = (path) => location.pathname === path;
@@ -27,12 +29,12 @@ function CoreTopbarActions({ onGuide, className = "" }) {
           type="button"
           className="core-topbar-action"
           onClick={onGuide}
-          aria-label="Abrir guías de esta sección"
+          aria-label={t("nav.guides")}
           aria-haspopup="dialog"
-          title="Abrir guías"
+          title={t("nav.guides")}
         >
           <HiOutlineQuestionMarkCircle aria-hidden="true" />
-          <span>Guías</span>
+          <span>{t("nav.guides")}</span>
         </button>
       )}
 
@@ -42,7 +44,7 @@ function CoreTopbarActions({ onGuide, className = "" }) {
         onClick={() => navigate("/ecosistema/mi-dia")}
       >
         <HiSun aria-hidden="true" />
-        <span>Mi Día</span>
+        <span>{t("nav.myDay")}</span>
         {notificationCount > 0 && (
           <span className="core-topbar-badge">{notificationCount > 99 ? "99+" : notificationCount}</span>
         )}
@@ -54,18 +56,18 @@ function CoreTopbarActions({ onGuide, className = "" }) {
         onClick={() => navigate("/ecosistema/agenda")}
       >
         <HiCalendarDays aria-hidden="true" />
-        <span>Calendario</span>
+        <span>{t("nav.calendar")}</span>
       </button>
 
       <button
         type="button"
         className={`core-topbar-action core-profile-action ${isActive("/perfil") ? "is-active" : ""}`}
         onClick={() => navigate("/perfil")}
-        aria-label={`Ver perfil de ${currentUser?.name || "usuario"}`}
+        aria-label={`${t("nav.profile")} — ${currentUser?.name || ""}`}
       >
         <Avatar name={currentUser?.name || "Usuario"} size={28} />
         <span className="core-profile-copy">
-          <strong>Perfil</strong>
+          <strong>{t("nav.profile")}</strong>
           <small>{currentUser?.name?.split(" ")[0] || "Usuario"}</small>
         </span>
         <HiUserCircle className="core-profile-fallback" aria-hidden="true" />
@@ -75,10 +77,10 @@ function CoreTopbarActions({ onGuide, className = "" }) {
         type="button"
         className="core-topbar-action core-logout-action"
         onClick={handleLogout}
-        title="Cerrar sesión"
+        title={t("nav.logout")}
       >
         <HiArrowLeftOnRectangle aria-hidden="true" />
-        <span className="core-logout-label">Cerrar sesión</span>
+        <span className="core-logout-label">{t("nav.logout")}</span>
       </button>
     </nav>
   );
