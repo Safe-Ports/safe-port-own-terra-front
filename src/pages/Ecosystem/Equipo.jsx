@@ -10,6 +10,7 @@ import { useAppContext } from "@/context/AppContext";
 import { parseApiError } from "@/errors/parseApiError";
 import { GLOBAL_ROLES, VERTICAL_APP_CATALOG } from "@/services/permissions";
 import useEscapeKey from "@/hooks/useEscapeKey";
+import { useLocale } from "@/i18n";
 
 const ROLE_LABEL = Object.fromEntries(Object.entries(GLOBAL_ROLES).map(([key, value]) => [key, value.label]));
 const APP_LABEL = Object.fromEntries(VERTICAL_APP_CATALOG.map((app) => [app.key, app]));
@@ -28,6 +29,7 @@ const initials = (name = "") => name.split(" ").map((p) => p[0]).slice(0, 2).joi
 const emailOk = (value = "") => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
 function EcosystemEquipo() {
+  const { t } = useLocale();
   const qc = useQueryClient();
   const { showToast, showError } = useAppContext();
   const [query, setQuery] = useState("");
@@ -111,9 +113,9 @@ function EcosystemEquipo() {
       setSelectedId(String(created.id));
       setModal(null);
       setFormError(null);
-      showToast("Integrante creado");
+      showToast(t("team.created"));
     },
-    onError: (err) => setFormError(parseApiError(err, "Error al crear el integrante")),
+    onError: (err) => setFormError(parseApiError(err, t("team.createError"))),
   });
 
   const updateMutation = useMutation({
@@ -123,9 +125,9 @@ function EcosystemEquipo() {
       setSelectedId(String(updated.id));
       setModal(null);
       setFormError(null);
-      showToast("Integrante actualizado");
+      showToast(t("team.updated"));
     },
-    onError: (err) => setFormError(parseApiError(err, "Error al actualizar el integrante")),
+    onError: (err) => setFormError(parseApiError(err, t("team.updateError"))),
   });
 
   const accessMutation = useMutation({
@@ -153,15 +155,15 @@ function EcosystemEquipo() {
       qc.invalidateQueries({ queryKey: ["user-apps", selectedUserId] });
       setAccessDraft(null);
       setConfirmAccessSave(false);
-      showToast("Accesos actualizados");
+      showToast(t("team.accessUpdated"));
     },
-    onError: (err) => showError(err, "Error al actualizar accesos"),
+    onError: (err) => showError(err, t("team.accessError")),
   });
 
   const resetPasswordMutation = useMutation({
     mutationFn: (id) => userService.resetPassword(id),
-    onSuccess: () => showToast("Contraseña restablecida"),
-    onError: (err) => showError(err, "Error al restablecer contraseña"),
+    onSuccess: () => showToast(t("team.passwordReset")),
+    onError: (err) => showError(err, t("team.passwordError")),
   });
 
   const openCreate = () => {
@@ -192,9 +194,9 @@ function EcosystemEquipo() {
     setFormError(null);
     fe.clearAll();
     const fieldErrs = {};
-    if (!draft.name.trim()) fieldErrs.name = "El nombre es obligatorio.";
-    if (modal.mode !== "edit" && !emailOk(draft.email)) fieldErrs.email = "Ingresa un correo electrónico válido.";
-    if (modal.mode === "create" && draft.password.trim().length < 8) fieldErrs.password = "La contraseña temporal debe tener al menos 8 caracteres.";
+    if (!draft.name.trim()) fieldErrs.name = t("team.nameRequired");
+    if (modal.mode !== "edit" && !emailOk(draft.email)) fieldErrs.email = t("team.emailInvalid");
+    if (modal.mode === "create" && draft.password.trim().length < 8) fieldErrs.password = t("team.passwordMin");
     if (Object.keys(fieldErrs).length) { fe.setErrors(fieldErrs); return; }
     if (modal.mode === "create") {
       createMutation.mutate(draft);
@@ -241,45 +243,45 @@ function EcosystemEquipo() {
 
   if (isLoading) {
     return (
-      <EcoLayout active="team" title="Equipo del core" subtitle="Usuarios, vendedores y permisos por app">
-        <div className="usr-empty" style={{ padding: 40 }}>Cargando equipo...</div>
+      <EcoLayout active="team" title={t("team.title")} subtitle={t("team.loadingSubtitle")}>
+        <div className="usr-empty" style={{ padding: 40 }}>{t("team.loading")}</div>
       </EcoLayout>
     );
   }
 
   return (
-    <EcoLayout active="team" title="Equipo del core" subtitle="Usuarios internos · acceso a OwnTerra Lands" onGuide={() => setShowGuide(true)}>
+    <EcoLayout active="team" title={t("team.title")} subtitle={t("team.subtitle")} onGuide={() => setShowGuide(true)}>
       <div className="ag-hero">
         <div>
-          <div className="ag-kicker">Ecosistema Core</div>
-          <h2>Equipo y vendedores</h2>
-          <p>Administra usuarios internos desde el Core. Los vendedores con acceso a Lands se usan como responsables de clientes, lotes, contratos y cobranza.</p>
+          <div className="ag-kicker">{t("team.kicker")}</div>
+          <h2>{t("team.heading")}</h2>
+          <p>{t("team.description")}</p>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button className="ag-primary" onClick={openCreate}>Nuevo integrante</button>
+          <button className="ag-primary" onClick={openCreate}>{t("team.newMember")}</button>
         </div>
       </div>
 
       <div className="kpi-row" style={{ marginBottom: 22 }}>
-        <div className="kpi"><div className="kpi-head"><span className="kpi-label">Usuarios del core</span></div><div className="kpi-val">{users.length}</div><div className="kpi-foot">Identidades internas</div></div>
-        <div className="kpi"><div className="kpi-head"><span className="kpi-label">Vendedores Lands</span></div><div className="kpi-val">{vendors.length}</div><div className="kpi-foot">Rol vendor</div></div>
-        <div className="kpi"><div className="kpi-head"><span className="kpi-label">Activos</span></div><div className="kpi-val">{activeUsers}</div><div className="kpi-foot">Con acceso habilitado</div></div>
-        <div className="kpi"><div className="kpi-head"><span className="kpi-label">Por revisar</span></div><div className="kpi-val">{inactiveVendors}</div><div className="kpi-foot">Vendedores inactivos</div></div>
+        <div className="kpi"><div className="kpi-head"><span className="kpi-label">{t("team.coreUsers")}</span></div><div className="kpi-val">{users.length}</div><div className="kpi-foot">{t("team.internalIdentities")}</div></div>
+        <div className="kpi"><div className="kpi-head"><span className="kpi-label">{t("team.landsSellers")}</span></div><div className="kpi-val">{vendors.length}</div><div className="kpi-foot">{t("team.vendorRole")}</div></div>
+        <div className="kpi"><div className="kpi-head"><span className="kpi-label">{t("team.active")}</span></div><div className="kpi-val">{activeUsers}</div><div className="kpi-foot">{t("team.accessEnabled")}</div></div>
+        <div className="kpi"><div className="kpi-head"><span className="kpi-label">{t("team.review")}</span></div><div className="kpi-val">{inactiveVendors}</div><div className="kpi-foot">{t("team.inactiveSellers")}</div></div>
       </div>
 
       <div className="usr-layout">
         <div className="usr-card">
           <div className="usr-list-head">
-            <div className="usr-list-title">Integrantes ({filtered.length})</div>
+            <div className="usr-list-title">{t("team.membersCount").replace("{count}", filtered.length)}</div>
             <label className="usr-search">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-              <input placeholder="Buscar integrante..." value={query} onChange={(e) => setQuery(e.target.value)} />
+              <input placeholder={t("team.search")} value={query} onChange={(e) => setQuery(e.target.value)} />
             </label>
             <div className="usr-fil-row" style={{ marginTop: 12, marginBottom: 0 }}>
               {[
-                ["all", "Todos"],
-                ["admin", "Admins"],
-                ["vendor", "Vendedores"],
+                ["all", t("team.all")],
+                ["admin", t("team.admins")],
+                ["vendor", t("team.sellers")],
               ].map(([value, label]) => (
                 <button key={value} className={`usr-fil ${roleFilter === value ? "on" : ""}`} onClick={() => setRoleFilter(value)}>{label}</button>
               ))}
@@ -293,50 +295,50 @@ function EcosystemEquipo() {
                   <span className="usr-name" style={{ display: "block" }}>{u.name}</span>
                   <span className="usr-mail" style={{ display: "block" }}>{u.email}</span>
                 </span>
-                <span className="usr-chip active">{ROLE_LABEL[u.role] || u.role}</span>
+                <span className="usr-chip active">{t(`team.role.${u.role}`, ROLE_LABEL[u.role] || u.role)}</span>
               </button>
             ))}
-            {filtered.length === 0 && <div className="usr-empty">Sin integrantes para este filtro.</div>}
+            {filtered.length === 0 && <div className="usr-empty">{t("team.noMembers")}</div>}
           </div>
         </div>
 
         <div className="usr-card">
           {!selected ? (
-            <div className="usr-empty">Crea un integrante para empezar a asignar operación.</div>
+            <div className="usr-empty">{t("team.createFirst")}</div>
           ) : (
             <>
               <div className="usr-d-head">
                 <span className="usr-d-av">{selected.initials || initials(selected.name)}</span>
                 <div style={{ minWidth: 0 }}>
                   <div className="usr-d-name">{selected.name}</div>
-                  <div className="usr-d-meta">{selected.email} · {selected.phone || "sin teléfono"}</div>
+                  <div className="usr-d-meta">{selected.email} · {selected.phone || t("team.noPhone")}</div>
                 </div>
-                <span className="usr-d-type">{ROLE_LABEL[selected.role] || selected.role}</span>
+                <span className="usr-d-type">{t(`team.role.${selected.role}`, ROLE_LABEL[selected.role] || selected.role)}</span>
               </div>
               <div className="usr-d-body">
                 <div className="usr-d-intro">
-                  Este usuario vive en el <b>Core</b>. Si es vendedor, OwnTerra Lands lo usa como responsable comercial para clientes, contratos, lotes y seguimiento de cobranza.
+                  {t("team.intro")}
                 </div>
                 <div className="usr-stats">
-                  <div className="usr-stat ok"><div className="usr-stat-val">{selected.is_active ? "Sí" : "No"}</div><div className="usr-stat-lbl">Acceso activo</div></div>
-                  <div className="usr-stat ok"><div className="usr-stat-val">{selectedIsAdmin ? "Todo" : verticalAppRows.length}</div><div className="usr-stat-lbl">Apps verticales</div></div>
+                  <div className="usr-stat ok"><div className="usr-stat-val">{selected.is_active ? t("team.yes") : t("team.no")}</div><div className="usr-stat-lbl">{t("team.activeAccess")}</div></div>
+                  <div className="usr-stat ok"><div className="usr-stat-val">{selectedIsAdmin ? t("team.allApps") : verticalAppRows.length}</div><div className="usr-stat-lbl">{t("team.verticalApps")}</div></div>
                 </div>
                 <div className="usr-access-head">
-                  <div className="usr-sec-label">Apps verticales</div>
+                  <div className="usr-sec-label">{t("team.verticalApps")}</div>
                   {!editingAccess ? (
-                    <button className="usr-add-btn" onClick={startAccessEdit}>Editar accesos</button>
+                    <button className="usr-add-btn" onClick={startAccessEdit}>{t("team.editAccess")}</button>
                   ) : (
                     <div className="usr-access-actions">
-                      <button className="usr-btn-ghost" onClick={() => setAccessDraft(null)} disabled={accessMutation.isPending}>Cancelar</button>
+                      <button className="usr-btn-ghost" onClick={() => setAccessDraft(null)} disabled={accessMutation.isPending}>{t("team.cancel")}</button>
                       <button className="usr-btn-primary" onClick={() => setConfirmAccessSave(true)} disabled={accessMutation.isPending || accessChangesCount === 0}>
-                        Guardar cambios{accessChangesCount > 0 ? ` (${accessChangesCount})` : ""}
+                        {t("team.saveChanges")}{accessChangesCount > 0 ? ` (${accessChangesCount})` : ""}
                       </button>
                     </div>
                   )}
                 </div>
                 {selectedIsAdmin && (
                   <div className="usr-access-note">
-                    Los administradores tienen acceso total por su rol global. Puedes marcar apps verticales solo para dejar explícita su asignación operativa.
+                    {t("team.adminNote")}
                   </div>
                 )}
                 {VERTICAL_APP_CATALOG.map((app) => {
@@ -349,7 +351,7 @@ function EcosystemEquipo() {
                       <span className={`usr-app-ico app-icon ${app.cls}`}><svg><use href={`#${app.icon}`} /></svg></span>
                       <div style={{ minWidth: 0 }}>
                         <div className="usr-app-name">{app.name}</div>
-                        <div className="usr-app-handle">{app.desc}</div>
+                        <div className="usr-app-handle">{t(`coreClients.apps.${app.key}`, app.desc)}</div>
                       </div>
                       {editingAccess ? (
                         <button
@@ -361,19 +363,19 @@ function EcosystemEquipo() {
                           }}
                         >
                           <span className="chk">{isOn ? "✓" : ""}</span>
-                          {isOn ? "Seleccionada" : "Seleccionar"}
+                          {isOn ? t("team.selected") : t("team.select")}
                         </button>
                       ) : (
-                        <span className={`usr-chip ${isOn ? "active" : "closed"}`}>{isOn ? "Activo" : "Sin acceso"}</span>
+                        <span className={`usr-chip ${isOn ? "active" : "closed"}`}>{isOn ? t("team.active") : t("team.noAccess")}</span>
                       )}
                     </div>
                   </div>
                   );
                 })}
                 <div className="usr-list-bar" style={{ marginTop: 18 }}>
-                  <button className="usr-add-btn" onClick={() => openEdit(selected)}>Editar integrante</button>
+                  <button className="usr-add-btn" onClick={() => openEdit(selected)}>{t("team.editMember")}</button>
                   <button className="usr-btn-ghost" disabled={resetPasswordMutation.isPending} onClick={() => resetPasswordMutation.mutate(selected.id)}>
-                    {resetPasswordMutation.isPending ? "Restableciendo..." : "Restablecer contraseña"}
+                    {resetPasswordMutation.isPending ? t("team.resetting") : t("team.resetPassword")}
                   </button>
                 </div>
               </div>
@@ -387,8 +389,8 @@ function EcosystemEquipo() {
           <div className="usr-modal">
             <div className="usr-modal-head">
               <div>
-                <div className="usr-modal-title">{modal.mode === "create" ? "Nuevo integrante" : "Editar integrante"}</div>
-                <div className="usr-modal-sub">El usuario queda registrado en el Core y se refleja en OwnTerra Lands.</div>
+                <div className="usr-modal-title">{modal.mode === "create" ? t("team.newMember") : t("team.editMember")}</div>
+                <div className="usr-modal-sub">{t("team.modalSubtitle")}</div>
               </div>
               <button className="usr-modal-close" onClick={() => setModal(null)}>x</button>
             </div>
@@ -396,37 +398,37 @@ function EcosystemEquipo() {
               <InlineError error={formError} onDismiss={() => setFormError(null)} />
               <div className="usr-field-row">
                 <div className="usr-field">
-                  <label className="usr-field-lbl">Nombre</label>
+                  <label className="usr-field-lbl">{t("team.name")}</label>
                   <input {...fe.fieldProps("name", "usr-input")} value={modal.draft.name} onChange={(e) => { setDraft({ name: e.target.value }); fe.clear("name"); }} />
                   <FieldError msg={fe.errors.name} />
                 </div>
                 <div className="usr-field">
-                  <label className="usr-field-lbl">Rol</label>
+                  <label className="usr-field-lbl">{t("team.roleLabel")}</label>
                   <select className="usr-select" value={modal.draft.role} onChange={(e) => setDraft({ role: e.target.value })}>
-                    <option value="vendor">Vendedor Lands</option>
-                    <option value="admin">Administrador Core</option>
+                    <option value="vendor">{t("team.landsSeller")}</option>
+                    <option value="admin">{t("team.coreAdmin")}</option>
                   </select>
                 </div>
               </div>
               <div className="usr-field">
-                <label className="usr-field-lbl">Correo</label>
+                <label className="usr-field-lbl">{t("team.email")}</label>
                 <input {...fe.fieldProps("email", "usr-input")} type="email" disabled={modal.mode === "edit"} value={modal.draft.email} onChange={(e) => { setDraft({ email: e.target.value }); fe.clear("email"); }} />
                 <FieldError msg={fe.errors.email} />
               </div>
               <div className="usr-field">
-                <label className="usr-field-lbl">Teléfono</label>
+                <label className="usr-field-lbl">{t("team.phone")}</label>
                 <input className="usr-input" value={modal.draft.phone} onChange={(e) => setDraft({ phone: e.target.value })} />
               </div>
               {modal.mode === "create" && (
                 <div className="usr-field">
-                  <label className="usr-field-lbl">Contraseña temporal</label>
+                  <label className="usr-field-lbl">{t("team.tempPassword")}</label>
                   <input {...fe.fieldProps("password", "usr-input")} value={modal.draft.password} onChange={(e) => { setDraft({ password: e.target.value }); fe.clear("password"); }} />
                   <FieldError msg={fe.errors.password} />
                 </div>
               )}
               {modal.mode === "create" && modal.draft.role === "vendor" && (
                 <div className="usr-field">
-                  <label className="usr-field-lbl">Apps verticales</label>
+                  <label className="usr-field-lbl">{t("team.verticalApps")}</label>
                   <div className="usr-app-picks">
                     {VERTICAL_APP_CATALOG.map((app) => {
                       const isPicked = !!modal.draft.apps?.[app.key];
@@ -440,7 +442,7 @@ function EcosystemEquipo() {
                           <span className={`usr-app-pick-ico app-icon ${app.cls}`}><svg><use href={`#${app.icon}`} /></svg></span>
                           <span>
                             <b>{app.name}</b>
-                            <small>{app.desc}</small>
+                            <small>{t(`coreClients.apps.${app.key}`, app.desc)}</small>
                           </span>
                           <span className="chk">{isPicked ? "✓" : ""}</span>
                         </button>
@@ -452,14 +454,14 @@ function EcosystemEquipo() {
               {modal.mode === "edit" && (
                 <label className="usr-check">
                   <input type="checkbox" checked={modal.draft.is_active} onChange={(e) => setDraft({ is_active: e.target.checked })} />
-                  <span>Acceso activo</span>
+                  <span>{t("team.activeAccess")}</span>
                 </label>
               )}
             </div>
             <div className="usr-modal-foot">
-              <button className="usr-btn-ghost" onClick={() => setModal(null)}>Cancelar</button>
+              <button className="usr-btn-ghost" onClick={() => setModal(null)}>{t("team.cancel")}</button>
               <button className="usr-btn-primary" onClick={saveDraft} disabled={createMutation.isPending || updateMutation.isPending}>
-                {createMutation.isPending || updateMutation.isPending ? "Guardando..." : "Guardar"}
+                {createMutation.isPending || updateMutation.isPending ? t("team.saving") : t("team.save")}
               </button>
             </div>
           </div>
@@ -471,8 +473,8 @@ function EcosystemEquipo() {
           <div className="usr-modal usr-confirm-modal">
             <div className="usr-modal-head">
               <div>
-                <div className="usr-modal-title">Confirmar accesos</div>
-                <div className="usr-modal-sub">Este cambio se aplica al instante en el ecosistema.</div>
+                <div className="usr-modal-title">{t("team.confirmTitle")}</div>
+                <div className="usr-modal-sub">{t("team.confirmSubtitle")}</div>
               </div>
               <button className="usr-modal-close" onClick={() => setConfirmAccessSave(false)}>x</button>
             </div>
@@ -483,16 +485,16 @@ function EcosystemEquipo() {
                 </span>
               </div>
               <p className="usr-confirm-copy">
-                ¿Quieres guardar los accesos de <b>{selected.name}</b>?
+                {t("team.confirmQuestion").replace("{name}", selected.name)}
               </p>
               <p className="usr-confirm-note">
-                Se aplicarán {accessChangesCount} cambio{accessChangesCount === 1 ? "" : "s"} de acceso a apps verticales. Internamente OwnTerra decidirá qué vistas puede usar según su rol.
+                {t("team.confirmNote").replace("{count}", accessChangesCount)}
               </p>
             </div>
             <div className="usr-modal-foot">
-              <button className="usr-btn-ghost" onClick={() => setConfirmAccessSave(false)} disabled={accessMutation.isPending}>Volver a editar</button>
+              <button className="usr-btn-ghost" onClick={() => setConfirmAccessSave(false)} disabled={accessMutation.isPending}>{t("team.backEdit")}</button>
               <button className="usr-btn-primary" onClick={() => accessMutation.mutate(accessDraft)} disabled={accessMutation.isPending || accessChangesCount === 0}>
-                {accessMutation.isPending ? "Guardando..." : "Confirmar cambios"}
+                {accessMutation.isPending ? t("team.saving") : t("team.confirmChanges")}
               </button>
             </div>
           </div>
@@ -501,15 +503,15 @@ function EcosystemEquipo() {
       <GuideModal
         open={showGuide}
         onClose={() => setShowGuide(false)}
-        title="Equipo y vendedores"
-        subtitle="Gestión de usuarios internos con acceso al ecosistema OwnTerra."
+        title={t("team.guideTitle")}
+        subtitle={t("team.guideSubtitle")}
         steps={[
-          { title: "Roles disponibles", text: "Admin: acceso completo incluyendo configuración y gestión de usuarios. Vendor: acceso a operaciones comerciales sin configuración administrativa." },
-          { title: "Crear nuevo integrante", text: "Pulsa 'Nuevo integrante', ingresa nombre, correo, rol y una contraseña temporal de al menos 8 caracteres." },
-          { title: "Asignar apps", text: "Desde la ficha de cada usuario puedes activar o desactivar su acceso a OwnTerra Lands." },
-          { title: "Restablecer contraseña", text: "Si un usuario olvidó su contraseña, usa el botón de restablecer en su ficha para generar una nueva contraseña temporal." },
-          { title: "Filtrar por rol", text: "Las pestañas superiores permiten ver todos los usuarios, solo admins, o solo vendedores de Lands." },
-          { title: "Vendedores en Lands", text: "Los usuarios con rol Vendor aparecen en los selectores de vendedor al crear contratos, lotes y clientes en OwnTerra Lands." },
+          { title: t("team.guide.rolesTitle"), text: t("team.guide.rolesText") },
+          { title: t("team.guide.createTitle"), text: t("team.guide.createText") },
+          { title: t("team.guide.appsTitle"), text: t("team.guide.appsText") },
+          { title: t("team.guide.passwordTitle"), text: t("team.guide.passwordText") },
+          { title: t("team.guide.filterTitle"), text: t("team.guide.filterText") },
+          { title: t("team.guide.sellersTitle"), text: t("team.guide.sellersText") },
         ]}
       />
     </EcoLayout>

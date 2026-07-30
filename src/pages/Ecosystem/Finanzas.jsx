@@ -63,7 +63,7 @@ function EcosystemFinanzas() {
   const navigate = useNavigate();
   const [period, setPeriod]       = useState("month");
   const [showGuide, setShowGuide] = useState(false);
-  const { format } = useLocale();
+  const { format, t, localeTag } = useLocale();
 
   const { data: stats } = useQuery({
     queryKey: ["dashboard-stats", period],
@@ -78,13 +78,13 @@ function EcosystemFinanzas() {
 
   const cobrar = (app) => APP_META[app]?.live && navigate("/pagos");
 
-  const periodLabel = { month: "Este mes", quarter: "Este trimestre", year: "Este año" };
+  const periodLabel = { month: t("financials.periods.month"), quarter: t("financials.periods.quarter"), year: t("financials.periods.year") };
 
   return (
-    <EcoLayout active="fin" title="Estados Financieros" subtitle="Tesorería y cobranza de OwnTerra Lands" onGuide={() => setShowGuide(true)}>
+    <EcoLayout active="fin" title={t("financials.title")} subtitle={t("financials.subtitle")} onGuide={() => setShowGuide(true)}>
 
       <div className="section-head">
-        <h3>Tesorería de OwnTerra Lands</h3>
+        <h3>{t("financials.heading")}</h3>
         <div className="seg" style={{ marginLeft: "auto" }}>
           {["month", "quarter", "year"].map((p) => (
             <span key={p} className={period === p ? "on" : ""} onClick={() => setPeriod(p)}>{periodLabel[p]}</span>
@@ -95,26 +95,26 @@ function EcosystemFinanzas() {
       {/* KPIs */}
       <div className="kpi-row" style={{ marginBottom: 22 }}>
         <div className="kpi">
-          <div className="kpi-head"><span className="kpi-label">Ingresos del periodo</span></div>
+          <div className="kpi-head"><span className="kpi-label">{t("financials.revenuePeriod")}</span></div>
           <div className="kpi-val">{stats ? fmtK(stats.revenue, format) : "—"}</div>
           <div className="kpi-foot">{periodLabel[period]} · OwnTerra Lands</div>
         </div>
         <div className="kpi">
-          <div className="kpi-head"><span className="kpi-label">Tasa de cobranza</span></div>
+          <div className="kpi-head"><span className="kpi-label">{t("financials.collectionRate")}</span></div>
           <div className="kpi-val">{stats ? `${(stats.collection_rate * 100).toFixed(0)}%` : "—"}</div>
-          <div className="kpi-foot">Cobrado / facturado</div>
+          <div className="kpi-foot">{t("financials.collectedBilled")}</div>
         </div>
         <div className="kpi">
-          <div className="kpi-head"><span className="kpi-label">Pagos vencidos</span>{overdueItems.length > 0 && <span className="kpi-trend tr-down">▲ urgente</span>}</div>
+          <div className="kpi-head"><span className="kpi-label">{t("financials.overduePayments")}</span>{overdueItems.length > 0 && <span className="kpi-trend tr-down">▲ {t("financials.urgent")}</span>}</div>
           <div className="kpi-val" style={{ color: overdueItems.length > 0 ? "#C0392B" : undefined }}>
             {fmtK(overdueItems.reduce((s, o) => s + Number(o.amount || 0), 0), format)}
           </div>
-          <div className="kpi-foot">{overdueItems.length} operaciones en mora</div>
+          <div className="kpi-foot">{t("financials.overdueOperations").replace("{count}", overdueItems.length)}</div>
         </div>
         <div className="kpi">
-          <div className="kpi-head"><span className="kpi-label">Ventas del periodo</span></div>
+          <div className="kpi-head"><span className="kpi-label">{t("financials.periodSales")}</span></div>
           <div className="kpi-val">{stats?.sales_count ?? "—"}</div>
-          <div className="kpi-foot">Contratos cerrados</div>
+          <div className="kpi-foot">{t("financials.closedContracts")}</div>
         </div>
       </div>
 
@@ -123,18 +123,18 @@ function EcosystemFinanzas() {
         <div className="chart-card">
           <div className="chart-head">
             <div>
-              <div className="chart-title">Ingresos del periodo</div>
+              <div className="chart-title">{t("financials.revenuePeriod")}</div>
               <div className="chart-sub">OwnTerra Lands · {periodLabel[period]}</div>
             </div>
           </div>
           <div className="legend" style={{ marginBottom: 14 }}>
-            <div className="lg"><span className="lg-dot" style={{ background: "#6FAF6B" }} />Ingresos</div>
+            <div className="lg"><span className="lg-dot" style={{ background: "#6FAF6B" }} />{t("financials.revenue")}</div>
           </div>
           {stats?.chart_data ? (
             <BarChart labels={stats.chart_data.labels} revenue={stats.chart_data.revenue} />
           ) : (
             <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text3)" }}>
-              Cargando datos…
+              {t("financials.loadingData")}
             </div>
           )}
         </div>
@@ -142,17 +142,17 @@ function EcosystemFinanzas() {
         <div className="chart-card">
           <div className="chart-head">
             <div>
-              <div className="chart-title">Resumen del periodo</div>
+              <div className="chart-title">{t("financials.periodSummary")}</div>
               <div className="chart-sub">{periodLabel[period]} · OwnTerra Lands</div>
             </div>
           </div>
           {stats ? (
             <div style={{ padding: "12px 0", display: "flex", flexDirection: "column", gap: 14 }}>
               {[
-                ["Ingresos totales", fmtK(stats.revenue, format)],
-                ["Nuevos clientes", stats.new_clients],
-                ["Nuevos prospectos", stats.new_leads],
-                ["Tasa de cobranza", `${(stats.collection_rate * 100).toFixed(1)}%`],
+                [t("financials.totalRevenue"), fmtK(stats.revenue, format)],
+                [t("financials.newClients"), stats.new_clients],
+                [t("financials.newLeads"), stats.new_leads],
+                [t("financials.collectionRate"), `${(stats.collection_rate * 100).toFixed(1)}%`],
               ].map(([label, val]) => (
                 <div key={label} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, borderBottom: "1px solid var(--border)", paddingBottom: 10 }}>
                   <span style={{ color: "var(--text2)" }}>{label}</span>
@@ -161,7 +161,7 @@ function EcosystemFinanzas() {
               ))}
             </div>
           ) : (
-            <div style={{ padding: "40px 0", textAlign: "center", color: "var(--text3)" }}>Cargando…</div>
+            <div style={{ padding: "40px 0", textAlign: "center", color: "var(--text3)" }}>{t("financials.loading")}</div>
           )}
         </div>
       </div>
@@ -170,10 +170,10 @@ function EcosystemFinanzas() {
       <div className="md-card" style={{ marginBottom: 30, marginTop: 16 }}>
         <div className="md-card-head" style={{ marginBottom: 14 }}>
           <div>
-            <div className="md-card-title">Cobranza vencida · OwnTerra Lands</div>
-            <div className="md-card-sub">Prioriza los pagos en mora</div>
+            <div className="md-card-title">{t("financials.overdueCollections")}</div>
+            <div className="md-card-sub">{t("financials.prioritize")}</div>
           </div>
-          <span className="sh-link" style={{ cursor: "pointer" }} onClick={() => navigate("/pagos")}>Ver toda la cartera →</span>
+          <span className="sh-link" style={{ cursor: "pointer" }} onClick={() => navigate("/pagos")}>{t("financials.viewPortfolio")}</span>
         </div>
 
         {overdueItems.length ? overdueItems.map((o) => (
@@ -182,28 +182,28 @@ function EcosystemFinanzas() {
             <div className="md-row-info">
               <div className="md-row-name">{o.client?.name || "—"}</div>
               <div className="md-row-meta">
-                {o.lot?.code ? `${o.lot.code} · ` : ""}Pago {o.installment_n} · Vence {o.due_date ? new Date(o.due_date).toLocaleDateString("es-MX") : "—"}
+                {o.lot?.code ? `${o.lot.code} · ` : ""}{t("financials.payment").replace("{number}", o.installment_n)} · {t("financials.due").replace("{date}", o.due_date ? new Date(o.due_date).toLocaleDateString(localeTag) : "—")}
               </div>
             </div>
             <AppTag app="lands" />
-            <span className="md-late">{o.days_late} días vencido</span>
+            <span className="md-late">{t("financials.daysOverdue").replace("{days}", o.days_late)}</span>
             <span className="md-amount">{format.currency(o.amount || 0, "MXN", { maximumFractionDigits: 0 })}</span>
-            <span className="md-open" onClick={() => cobrar("lands")} style={{ cursor: "pointer" }}>Cobrar →</span>
+            <span className="md-open" onClick={() => cobrar("lands")} style={{ cursor: "pointer" }}>{t("financials.collect")}</span>
           </div>
         )) : (
-          <div className="md-empty">Sin pagos vencidos. 🎉</div>
+          <div className="md-empty">{t("financials.noOverdue")}</div>
         )}
       </div>
       <GuideModal
         open={showGuide}
         onClose={() => setShowGuide(false)}
-        title="Estados financieros"
-        subtitle="Tesorería y cobranza respaldada por la operación de OwnTerra Lands."
+        title={t("financials.title")}
+        subtitle={t("financials.guideSubtitle")}
         steps={[
-          { title: "KPIs del período", text: "Muestra ingresos totales, tasa de cobranza, pagos vencidos y ventas del período seleccionado en OwnTerra Lands." },
-          { title: "Cambiar período", text: "Selecciona 'Este mes', 'Este trimestre' o 'Este año' para ajustar el período de análisis de todos los indicadores y tablas." },
-          { title: "Cartera vencida", text: "La tabla de cobranza vencida muestra todos los pagos con más de 1 día de mora, ordenados por urgencia y días vencidos." },
-          { title: "Cobrar desde aquí", text: "El botón 'Cobrar' junto a cada pago vencido abre la pantalla de pagos para registrar el cobro." },
+          { title: t("financials.guide.kpiTitle"), text: t("financials.guide.kpiText") },
+          { title: t("financials.guide.periodTitle"), text: t("financials.guide.periodText") },
+          { title: t("financials.guide.overdueTitle"), text: t("financials.guide.overdueText") },
+          { title: t("financials.guide.collectTitle"), text: t("financials.guide.collectText") },
         ]}
       />
     </EcoLayout>
