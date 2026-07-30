@@ -80,13 +80,6 @@ api.interceptors.response.use(
         },
       });
 
-      // Tope de plan alcanzado (OT-SUB-4001): emite un evento global para que la app
-      // muestre SIEMPRE el aviso "mejora tu plan", aunque el call site no lo capture.
-      if (code === "OT-SUB-4001") {
-        window.dispatchEvent(
-          new CustomEvent("ownterra:quota-exceeded", { detail: error.response?.data })
-        );
-      }
     }
 
     const original = error.config;
