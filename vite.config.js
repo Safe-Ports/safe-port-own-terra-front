@@ -79,7 +79,16 @@ export default defineConfig(({ mode }) => {
             url: "/alertas"
           }
         ]
-      }
+      },
+      workbox: {
+        // La versión nueva toma control de inmediato (no espera a cerrar pestañas)
+        // y limpia los precachés viejos, para minimizar el hueco de "chunk viejo"
+        // tras un deploy. Combinado con el handler de vite:preloadError (main.jsx),
+        // un deploy nunca deja al usuario con la app rota.
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
+      },
     }),
     // Sube los source maps a Sentry para tener stack traces legibles.
     // Solo se activa si hay SENTRY_AUTH_TOKEN (en los builds de deploy).
