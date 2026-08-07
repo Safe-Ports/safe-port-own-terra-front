@@ -24,12 +24,15 @@ export default defineConfig(({ mode }) => {
   plugins: [
     react(),
     VitePWA({
-      // Service worker DESACTIVADO. Generamos un SW "auto-destructivo": los navegadores
-      // que ya tenían el SW viejo reciben este, que se desregistra solo y limpia las
-      // cachés. Los usuarios nuevos no registran ningún SW. Resultado: cada carga trae
-      // los archivos actuales de Cloudflare → los deploys nunca sirven versión vieja
-      // (adiós al "Failed to fetch module" / MIME text/html). Se pierde offline/instalar.
+      // Service worker DESACTIVADO. Generamos un SW "auto-destructivo" para limpiar el
+      // SW viejo de quien ya lo tenía (el navegador revisa /sw.js solo y lo reemplaza,
+      // que se desregistra + limpia cachés). PERO NO reinyectamos el registro en la app
+      // (injectRegister: false): si lo dejáramos, la app volvería a registrar el SW,
+      // que al auto-destruirse recarga la página, y se re-registra → BUCLE de recargas.
+      // Con esto: visitantes nuevos = sin SW (siempre fresco); usuarios viejos = se
+      // auto-limpian una vez, sin bucle. Se pierde offline/instalar (no crítico).
       selfDestroying: true,
+      injectRegister: false,
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "pwa-icon.svg", "apple-touch-icon.png", "mask-icon.svg"],
       manifest: {
