@@ -3459,24 +3459,17 @@ textarea.is-invalid {
   box-shadow: 0 8px 18px rgba(30, 61, 43, 0.16);
 }
 
-/* Botón "+ Agregar lote": alternativa a crear sección cuando ya se importó por archivo */
-.lots-add-single {
-  align-self: flex-start;
+/* Aviso cuando los lotes vienen de archivo: el builder manual queda deshabilitado */
+.lots-import-hint {
   margin-top: 10px;
-  min-height: 34px;
-  border: 1.5px dashed #355E3B;
-  border-radius: 11px;
-  background: transparent;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(53, 94, 59, 0.07);
+  border: 1px solid rgba(53, 94, 59, 0.18);
   color: #355E3B;
-  padding: 0 14px;
-  font-size: 0.74rem;
-  font-weight: 800;
-  cursor: pointer;
-  transition: background 0.16s, transform 0.16s;
-}
-.lots-add-single:hover {
-  background: rgba(53, 94, 59, 0.08);
-  transform: translateY(-1px);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.4;
 }
 .lots-add-section:disabled,
 .lots-builder-input:disabled {

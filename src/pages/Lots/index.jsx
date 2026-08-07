@@ -163,8 +163,8 @@ function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot, onDeleteL
         </div>
         <div className="h-px flex-1 bg-[#DCDAD2]" />
         <button
-          onClick={() => onAddLots(section.id, 10)}
-          title="Añadir 10 lotes"
+          onClick={() => onAddLots(section.id, 1)}
+          title="Añadir un lote a esta sección"
           className="flex h-[22px] w-[22px] items-center justify-center rounded-[5px] border border-[#DCDAD2] bg-[#F1EEE6] text-[0.8rem] font-black text-[#355E3B]"
         >
           +
@@ -598,32 +598,9 @@ function LotsPage() {
     }));
   };
 
-  // Agrega UN lote (para un lote olvidado tras importar por archivo). Lo suma a la
-  // última sección; si no hay, crea una sección "Adicionales".
-  const addSingleLot = () => {
-    setDraftProject((previous) => {
-      const secs = previous.sections;
-      if (secs.length === 0) {
-        return { ...previous, sections: [{ id: `section_${Date.now()}`, name: "Adicionales", lots: createLots("Adicionales", 1) }] };
-      }
-      const last = secs[secs.length - 1];
-      const start = last.lots.length;
-      const prefix = last.name.slice(0, 1).toUpperCase();
-      const newLot = {
-        id: `${last.id}_ext_${Date.now()}`,
-        code: `${prefix}-${String(start + 1).padStart(2, "0")}`,
-        status: "available", area: "", price: "",
-      };
-      return {
-        ...previous,
-        sections: secs.map((sec) => sec.id === last.id ? { ...sec, lots: [...sec.lots, newLot] } : sec),
-      };
-    });
-    showToast("Lote agregado — edítalo con clic");
-  };
-
   // El usuario ya importó por archivo: el flujo elegido fue Excel/CSV, así que el
-  // builder manual de secciones se deshabilita y se ofrece un "+" para lotes sueltos.
+  // builder manual de secciones se deshabilita. Para agregar un lote olvidado se usa
+  // el "+" de cada sección (que ahora agrega 1).
   const importedByFile = (importSummary?.imported ?? 0) > 0;
 
   const updateMap = async (file) => {
@@ -848,14 +825,9 @@ function LotsPage() {
                 </button>
               </div>
               {importedByFile && (
-                <button
-                  type="button"
-                  onClick={addSingleLot}
-                  className="lots-add-single"
-                  title="Agregar un lote suelto (por si olvidaste alguno en el archivo)"
-                >
-                  + Agregar lote
-                </button>
+                <div className="lots-import-hint">
+                  Lotes importados por archivo. Para agregar uno olvidado, usa el <b>+</b> de la sección abajo.
+                </div>
               )}
               <div className="lots-excel-row">
                 <div>
