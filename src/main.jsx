@@ -22,6 +22,19 @@ if (import.meta.env.DEV && "serviceWorker" in navigator) {
   }
 }
 
+// Tras un deploy, los nombres de los chunks cambian. Un shell viejo (cacheado por
+// la PWA) puede fallar al importar un chunk que ya no existe con ese nombre:
+// "Failed to fetch dynamically imported module". Vite dispara `vite:preloadError`
+// en ese caso; recargamos una vez para tomar la versión nueva (con guardia anti-bucle).
+window.addEventListener("vite:preloadError", () => {
+  const KEY = "vite_preload_reload_at";
+  const last = Number(sessionStorage.getItem(KEY) || 0);
+  if (Date.now() - last > 10000) {
+    sessionStorage.setItem(KEY, String(Date.now()));
+    window.location.reload();
+  }
+});
+
 initSentry();
 
 ReactDOM.createRoot(document.getElementById("root")).render(
