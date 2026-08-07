@@ -598,6 +598,34 @@ function LotsPage() {
     }));
   };
 
+  // Agrega UN lote (para un lote olvidado tras importar por archivo). Lo suma a la
+  // última sección; si no hay, crea una sección "Adicionales".
+  const addSingleLot = () => {
+    setDraftProject((previous) => {
+      const secs = previous.sections;
+      if (secs.length === 0) {
+        return { ...previous, sections: [{ id: `section_${Date.now()}`, name: "Adicionales", lots: createLots("Adicionales", 1) }] };
+      }
+      const last = secs[secs.length - 1];
+      const start = last.lots.length;
+      const prefix = last.name.slice(0, 1).toUpperCase();
+      const newLot = {
+        id: `${last.id}_ext_${Date.now()}`,
+        code: `${prefix}-${String(start + 1).padStart(2, "0")}`,
+        status: "available", area: "", price: "",
+      };
+      return {
+        ...previous,
+        sections: secs.map((sec) => sec.id === last.id ? { ...sec, lots: [...sec.lots, newLot] } : sec),
+      };
+    });
+    showToast("Lote agregado — edítalo con clic");
+  };
+
+  // El usuario ya importó por archivo: el flujo elegido fue Excel/CSV, así que el
+  // builder manual de secciones se deshabilita y se ofrece un "+" para lotes sueltos.
+  const importedByFile = (importSummary?.imported ?? 0) > 0;
+
   const updateMap = async (file) => {
     if (!isSupportedMapImage(file)) {
       showToast("El plano debe ser una imagen JPG, PNG, WEBP, HEIC o HEIF. Excel y CSV solo van en Llenar con Excel o CSV.", "warning");
@@ -773,7 +801,7 @@ function LotsPage() {
                   />
                 </div>
               </div>
-              <div className="lots-section-form">
+              <div className="lots-section-form" style={importedByFile ? { opacity: 0.5 } : undefined}>
                 <div className="lots-section-name">
                   <div className="lots-builder-label">
                     Nombre de sección *
@@ -784,6 +812,8 @@ function LotsPage() {
                     onKeyDown={(event) => event.key === "Enter" && addSection()}
                     placeholder="Ej: Manzana A, Frente Norte..."
                     required
+                    disabled={importedByFile}
+                    title={importedByFile ? "Deshabilitado: ya importaste los lotes por archivo" : undefined}
                     className="lots-builder-input"
                   />
                 </div>
@@ -803,17 +833,30 @@ function LotsPage() {
                     pattern="[0-9]*"
                     autoComplete="off"
                     aria-label="Número de lotes"
+                    disabled={importedByFile}
                     className="lots-builder-input center"
                   />
                 </div>
                 <button
                   type="button"
                   onClick={addSection}
+                  disabled={importedByFile}
                   className="lots-add-section"
+                  style={importedByFile ? { cursor: "not-allowed" } : undefined}
                 >
                   Agregar
                 </button>
               </div>
+              {importedByFile && (
+                <button
+                  type="button"
+                  onClick={addSingleLot}
+                  className="lots-add-single"
+                  title="Agregar un lote suelto (por si olvidaste alguno en el archivo)"
+                >
+                  + Agregar lote
+                </button>
+              )}
               <div className="lots-excel-row">
                 <div>
                   <span className="lots-excel-title">Llenar con Excel o CSV</span>
