@@ -38,11 +38,16 @@ export function LocaleProvider({ children, defaultLocale }) {
 
   // Dot-notation path lookup: t("topbar.defaultTitle")
   // The path may contain slashes (e.g. "routes./lotes") — only dots are separators.
-  const t = useCallback((path, fallback) => {
+  // A second argument may be a fallback string (used when the key is missing)
+  // or a params object, whose entries interpolate into "{placeholder}" tokens.
+  const t = useCallback((path, fallbackOrParams) => {
     const dict = DICTS[locale] || DICTS.es;
     const value = path.split(".").reduce((obj, key) => obj?.[key], dict);
-    if (value != null && typeof value !== "object") return value;
-    return fallback ?? path;
+    const fallback = typeof fallbackOrParams === "string" ? fallbackOrParams : undefined;
+    const resolved = value != null && typeof value !== "object" ? value : (fallback ?? path);
+    const params = fallbackOrParams && typeof fallbackOrParams === "object" ? fallbackOrParams : null;
+    if (!params) return resolved;
+    return String(resolved).replace(/\{(\w+)\}/g, (match, key) => (params[key] != null ? params[key] : match));
   }, [locale]);
 
   const format = useMemo(() => ({

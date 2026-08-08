@@ -9,23 +9,23 @@ import InlineDocumentsPanel from "@/components/shared/InlineDocumentsPanel";
 import Button from "@/components/Button";
 import { lotService } from "@/services/lotService";
 import { appointmentService } from "@/services/appointmentService";
-import { currency } from "@/services/formatters";
 import useEscapeKey from "@/hooks/useEscapeKey";
+import { useLocale } from "@/i18n";
 import "./fracs.css";
 
 const LOT_COLORS = {
-  available: { label: "Disponible", className: "available", color: "#6FAF6B" },
-  reserved: { label: "Apartado", className: "reserved", color: "#B98C58" },
-  sold: { label: "Vendido", className: "sold", color: "#C0392B" },
+  available: { labelKey: "fracs.statusAvailable", className: "available", color: "#6FAF6B" },
+  reserved: { labelKey: "fracs.statusReserved", className: "reserved", color: "#B98C58" },
+  sold: { labelKey: "fracs.statusSold", className: "sold", color: "#C0392B" },
 };
 
 const SERVICES = [
-  { k: "agua", lbl: "Agua potable" },
-  { k: "luz", lbl: "Energia electrica" },
-  { k: "drenaje", lbl: "Drenaje" },
-  { k: "gas", lbl: "Gas natural" },
-  { k: "internet", lbl: "Internet/Fibra" },
-  { k: "pavimento", lbl: "Pavimento" },
+  { k: "agua", labelKey: "lotInventory.water" },
+  { k: "luz", labelKey: "lotInventory.electricity" },
+  { k: "drenaje", labelKey: "lotInventory.drainage" },
+  { k: "gas", labelKey: "lotInventory.gas" },
+  { k: "internet", labelKey: "lotInventory.internet" },
+  { k: "pavimento", labelKey: "lotInventory.pavement" },
 ];
 
 const LOT_CODE_COLLATOR = new Intl.Collator("es-MX", { numeric: true, sensitivity: "base" });
@@ -79,16 +79,18 @@ async function fetchAllFracLots(inmuebleId) {
 }
 
 function StatusBadge({ status }) {
+  const { t } = useLocale();
   const meta = LOT_COLORS[status] || LOT_COLORS.available;
   return (
     <span className={`frac-status-badge ${meta.className}`}>
       <i />
-      {meta.label}
+      {t(meta.labelKey)}
     </span>
   );
 }
 
 function MapViewer({ src, onClose }) {
+  const { t } = useLocale();
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const dragging = useRef(false);
@@ -118,7 +120,7 @@ function MapViewer({ src, onClose }) {
   return (
     <div className="frac-map-viewer" onClick={(event) => event.target === event.currentTarget && onClose()}>
       <div className="frac-map-toolbar">
-        <span>Plano de referencia</span>
+        <span>{t("fracs.planTitle")}</span>
         <div>
           <button onClick={() => setScale((s) => Math.min(8, s + 0.25))}>+</button>
           <button onClick={() => setScale((s) => Math.max(0.5, s - 0.25))}>-</button>
@@ -143,7 +145,7 @@ function MapViewer({ src, onClose }) {
       >
         <img
           src={src}
-          alt="Plano"
+          alt={t("fracs.mapAlt")}
           draggable={false}
           style={{ transform: `translate(${offset.x}px,${offset.y}px) scale(${scale})` }}
         />
@@ -165,6 +167,8 @@ function FracsPage() {
   } = useAppContext();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { t, localeTag, format } = useLocale();
+  const sectionLabel = (section) => (!section || section === "General" ? t("fracs.generalSection") : section);
 
   const [homeMode, setHomeMode]   = useState(true);
   const [showGuide, setShowGuide] = useState(false);
@@ -279,9 +283,9 @@ function FracsPage() {
     return (
       <EmptyState
         icon="▦"
-        title="Sin fraccionamientos creados"
-        description="Carga un plano, arma la matriz de lotes y crea tu primer proyecto desde la seccion Carga de Lotes."
-        action={<Link className="mobile-primary-button" to="/lotes">Ir a Carga de Lotes</Link>}
+        title={t("fracs.emptyTitle")}
+        description={t("fracs.emptyText")}
+        action={<Link className="mobile-primary-button" to="/lotes">{t("fracs.emptyAction")}</Link>}
       />
     );
   }
@@ -292,8 +296,8 @@ function FracsPage() {
         <aside className="frac-projects frac-panel">
           <div className="frac-panel-head">
             <div>
-              <div className="frac-panel-title">Proyectos</div>
-              <div className="frac-panel-sub">Fraccionamientos activos</div>
+              <div className="frac-panel-title">{t("fracs.projects")}</div>
+              <div className="frac-panel-sub">{t("fracs.activeProjects")}</div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span className="frac-project-count">{fracs.length}</span>
@@ -311,8 +315,8 @@ function FracsPage() {
                   <span className="frac-project-copy">
                     <span className="frac-project-name">{frac.name}</span>
                     <span className="frac-project-meta">
-                      {frac.total_lots ?? 0} lotes
-                      {frac.created_at ? ` / ${new Date(frac.created_at).toLocaleDateString("es-MX")}` : ""}
+                      {t("fracs.lotsCount", { count: frac.total_lots ?? 0 })}
+                      {frac.created_at ? ` / ${new Date(frac.created_at).toLocaleDateString(localeTag)}` : ""}
                     </span>
                   </span>
                 </button>
@@ -333,13 +337,13 @@ function FracsPage() {
               🗺️
             </div>
             <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.3rem", color: "#1E3D2B", marginBottom: 10, fontWeight: 600 }}>
-              Bienvenido a OwnTerra Lands
+              {t("fracs.welcomeTitle")}
             </div>
             <div style={{ fontSize: "0.84rem", color: "#83867C", lineHeight: 1.6, marginBottom: 20 }}>
-              Selecciona un fraccionamiento del panel izquierdo para explorar su inventario de lotes, plano de referencia y cotizador.
+              {t("fracs.welcomeText")}
             </div>
             <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
-              {[["🏡","Inventario de lotes"],["📐","Plano interactivo"],["💰","Cotizador"]].map(([icon, label]) => (
+              {[["🏡", t("fracs.tagInventory")], ["📐", t("fracs.tagPlan")], ["💰", t("fracs.tagQuote")]].map(([icon, label]) => (
                 <span key={label} style={{
                   display: "flex", alignItems: "center", gap: 5,
                   background: "#F1EEE6", borderRadius: 20, padding: "5px 12px",
@@ -355,15 +359,15 @@ function FracsPage() {
       <GuideModal
         open={showGuide}
         onClose={() => setShowGuide(false)}
-        title="Fraccionamientos"
-        subtitle="Gestión táctil de tu inventario de lotes con plano interactivo."
+        title={t("fracs.guideTitle")}
+        subtitle={t("fracs.guideSubtitle")}
         steps={[
-          { title: "Seleccionar proyecto", text: "La lista izquierda muestra todos tus fraccionamientos. Haz clic en uno para ver su plano interactivo y la matriz de lotes." },
-          { title: "Plano interactivo", text: "Usa el scroll o pinch para hacer zoom. Haz clic en el plano para ver los lotes superpuestos con su estado (disponible, apartado, vendido)." },
-          { title: "Filtrar lotes", text: "Los botones de estado en la barra superior filtran los lotes visibles en el plano. Combínalos con la búsqueda por sección o código." },
-          { title: "Ficha de lote", text: "Selecciona un lote para ver su ficha completa: medidas, servicios disponibles, precio de contado y financiado, y vendedor asignado." },
-          { title: "Cotizador integrado", text: "Desde la ficha del lote puedes abrir el cotizador para simular el plan de pagos con amortización francesa o alemana." },
-          { title: "Agendar visita", text: "El botón 'Agendar' en la ficha del lote crea una cita en la agenda central vinculada al lote y al contacto del prospecto." },
+          { title: t("fracs.guideStep1Title"), text: t("fracs.guideStep1Text") },
+          { title: t("fracs.guideStep2Title"), text: t("fracs.guideStep2Text") },
+          { title: t("fracs.guideStep3Title"), text: t("fracs.guideStep3Text") },
+          { title: t("fracs.guideStep4Title"), text: t("fracs.guideStep4Text") },
+          { title: t("fracs.guideStep5Title"), text: t("fracs.guideStep5Text") },
+          { title: t("fracs.guideStep6Title"), text: t("fracs.guideStep6Text") },
         ]}
       />
     </div>
@@ -430,9 +434,9 @@ function FracsPage() {
       await refetchAppts();
       setApptDraft({ contact_name: "", contact_phone: "", scheduled_at: "", notes: "" });
       setShowApptForm(false);
-      showToast("Cita agendada");
+      showToast(t("fracs.toastApptCreated"));
     } catch (err) {
-      showError(err, "Error al agendar la cita");
+      showError(err, t("fracs.toastApptError"));
     } finally {
       setApptSaving(false);
     }
@@ -442,9 +446,9 @@ function FracsPage() {
     try {
       await appointmentService.cancel(id);
       await refetchAppts();
-      showToast("Cita cancelada");
+      showToast(t("fracs.toastApptCancelled"));
     } catch (err) {
-      showError(err, "Error al cancelar");
+      showError(err, t("fracs.toastApptCancelError"));
     }
   };
 
@@ -453,15 +457,15 @@ function FracsPage() {
       <aside className="frac-projects frac-panel">
         <div className="frac-panel-head">
           <div>
-            <div className="frac-panel-title">Proyectos</div>
-            <div className="frac-panel-sub">Fraccionamientos activos</div>
+            <div className="frac-panel-title">{t("fracs.projects")}</div>
+            <div className="frac-panel-sub">{t("fracs.activeProjects")}</div>
           </div>
           <span className="frac-project-count">{filteredProjects.length}</span>
         </div>
         <div className="frac-panel-body">
           <label className="frac-search">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="7" cy="7" r="5"/><line x1="10.8" y1="10.8" x2="14.5" y2="14.5"/></svg>
-            <input value={projectSearch} onChange={(event) => setProjectSearch(event.target.value)} placeholder="Buscar proyecto" />
+            <input value={projectSearch} onChange={(event) => setProjectSearch(event.target.value)} placeholder={t("fracs.searchProject")} />
           </label>
           <div className="frac-project-list">
             {filteredProjects.map((frac) => (
@@ -474,8 +478,8 @@ function FracsPage() {
                 <span className="frac-project-copy">
                   <span className="frac-project-name">{frac.name}</span>
                   <span className="frac-project-meta">
-                    {frac.total_lots ?? 0} lotes
-                    {frac.created_at ? ` / ${new Date(frac.created_at).toLocaleDateString("es-MX")}` : ""}
+                    {t("fracs.lotsCount", { count: frac.total_lots ?? 0 })}
+                    {frac.created_at ? ` / ${new Date(frac.created_at).toLocaleDateString(localeTag)}` : ""}
                   </span>
                 </span>
               </button>
@@ -489,29 +493,29 @@ function FracsPage() {
           <article className="frac-hero">
             <div className="frac-eyebrow">OwnTerra Lands</div>
             <h1>{selectedFrac.name}</h1>
-            <p>Inventario territorial consolidado con lectura rapida de disponibilidad, plano de referencia, detalle tecnico y cotizador comercial por lote.</p>
+            <p>{t("fracs.heroSubtitle")}</p>
             <div className="frac-hero-actions">
-              <Button variant="secondary" onClick={() => selectedFrac.image_url && setShowMapViewer(true)} disabled={!selectedFrac.image_url}>Ver plano</Button>
-              <Button variant="secondary" onClick={openEditor}>Editar</Button>
-              <Button variant="secondary" onClick={() => exportAppData("lots")}>Exportar</Button>
+              <Button variant="secondary" onClick={() => selectedFrac.image_url && setShowMapViewer(true)} disabled={!selectedFrac.image_url}>{t("fracs.viewPlan")}</Button>
+              <Button variant="secondary" onClick={openEditor}>{t("fracs.edit")}</Button>
+              <Button variant="secondary" onClick={() => exportAppData("lots")}>{t("fracs.export")}</Button>
             </div>
           </article>
 
           <div className="frac-kpis">
-            <article className="frac-kpi deep"><span>Total lotes</span><strong>{stats.total}</strong><small>{sections.length} secciones</small></article>
-            <article className="frac-kpi available"><span>Disponibles</span><strong>{stats.available}</strong><small>{stats.total ? Math.round((stats.available / stats.total) * 100) : 0}% inventario</small></article>
-            <article className="frac-kpi reserved"><span>Apartados</span><strong>{stats.reserved}</strong><small>seguimiento activo</small></article>
-            <article className="frac-kpi sold"><span>Vendidos</span><strong>{stats.sold}</strong><small>cerrados</small></article>
+            <article className="frac-kpi deep"><span>{t("fracs.totalLots")}</span><strong>{stats.total}</strong><small>{t("fracs.sectionsCount", { count: sections.length })}</small></article>
+            <article className="frac-kpi available"><span>{t("fracs.kpiAvailable")}</span><strong>{stats.available}</strong><small>{t("fracs.availablePct", { pct: stats.total ? Math.round((stats.available / stats.total) * 100) : 0 })}</small></article>
+            <article className="frac-kpi reserved"><span>{t("fracs.kpiReserved")}</span><strong>{stats.reserved}</strong><small>{t("fracs.reservedTracking")}</small></article>
+            <article className="frac-kpi sold"><span>{t("fracs.kpiSold")}</span><strong>{stats.sold}</strong><small>{t("fracs.soldClosed")}</small></article>
           </div>
         </div>
 
         <div className="frac-filters">
           <div className="frac-segment">
             {[
-              ["all", "Todos"],
-              ["available", "Disponible"],
-              ["reserved", "Apartado"],
-              ["sold", "Vendido"],
+              ["all", t("fracs.filterAll")],
+              ["available", t("fracs.statusAvailable")],
+              ["reserved", t("fracs.statusReserved")],
+              ["sold", t("fracs.statusSold")],
             ].map(([value, label]) => (
               <button key={value} className={statusFilter === value ? "on" : ""} onClick={() => setStatusFilter(value)}>
                 {value !== "all" ? <i className={`frac-dot ${LOT_COLORS[value].className}`} /> : null}
@@ -520,15 +524,15 @@ function FracsPage() {
             ))}
           </div>
           <select className="frac-field" value={sectionFilter} onChange={(event) => setSectionFilter(event.target.value)}>
-            <option value="">Todas las secciones</option>
-            {sections.map((section) => <option key={section} value={section}>{section}</option>)}
+            <option value="">{t("fracs.allSections")}</option>
+            {sections.map((section) => <option key={section} value={section}>{sectionLabel(section)}</option>)}
           </select>
           <label className="frac-search grow">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="7" cy="7" r="5"/><line x1="10.8" y1="10.8" x2="14.5" y2="14.5"/></svg>
-            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar lote o manzana" />
+            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t("fracs.searchLot")} />
           </label>
           {(statusFilter !== "all" || sectionFilter || search) && (
-            <button className="frac-clear" onClick={() => { setStatusFilter("all"); setSectionFilter(""); setSearch(""); }}>Limpiar</button>
+            <button className="frac-clear" onClick={() => { setStatusFilter("all"); setSectionFilter(""); setSearch(""); }}>{t("fracs.clear")}</button>
           )}
         </div>
 
@@ -536,8 +540,8 @@ function FracsPage() {
           <article className="frac-panel frac-plan-panel">
             <div className="frac-panel-head">
               <div>
-                <div className="frac-panel-title">Plano de referencia</div>
-                <div className="frac-panel-sub">Vista del fraccionamiento</div>
+                <div className="frac-panel-title">{t("fracs.planTitle")}</div>
+                <div className="frac-panel-sub">{t("fracs.planSubtitle")}</div>
               </div>
               <button className="frac-icon-btn" onClick={() => selectedFrac.image_url && setShowMapViewer(true)} disabled={!selectedFrac.image_url}>
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 5 1 1 5 1"/><polyline points="11 1 15 1 15 5"/><polyline points="15 11 15 15 11 15"/><polyline points="5 15 1 15 1 11"/></svg>
@@ -545,33 +549,33 @@ function FracsPage() {
             </div>
             <div className="frac-plan-body" onClick={() => selectedFrac.image_url && setShowMapViewer(true)}>
               {selectedFrac.image_url ? (
-                <img src={selectedFrac.image_url} alt="Plano" />
+                <img src={selectedFrac.image_url} alt={t("fracs.mapAlt")} />
               ) : (
                 <div className="frac-plan-empty">
-                  <strong>Sin plano</strong>
-                  <span>Sube uno al crear el fraccionamiento</span>
+                  <strong>{t("fracs.noPlan")}</strong>
+                  <span>{t("fracs.noPlanText")}</span>
                 </div>
               )}
-              {selectedFrac.image_url ? <span className="frac-zoom-badge">Zoom</span> : null}
+              {selectedFrac.image_url ? <span className="frac-zoom-badge">{t("fracs.zoom")}</span> : null}
             </div>
             <div className="frac-legend">
-              <span><i className="available" />Disponible</span>
-              <span><i className="reserved" />Apartado</span>
-              <span><i className="sold" />Vendido</span>
+              <span><i className="available" />{t("fracs.statusAvailable")}</span>
+              <span><i className="reserved" />{t("fracs.statusReserved")}</span>
+              <span><i className="sold" />{t("fracs.statusSold")}</span>
             </div>
           </article>
 
           <article className="frac-panel frac-lots-panel">
             <div className="frac-panel-head">
               <div>
-                <div className="frac-panel-title">Matriz de lotes</div>
-                <div className="frac-panel-sub">Selecciona un lote para revisar ficha, gestion y cotizacion</div>
+                <div className="frac-panel-title">{t("fracs.matrixTitle")}</div>
+                <div className="frac-panel-sub">{t("fracs.matrixSubtitle")}</div>
               </div>
               <StatusBadge status="available" />
             </div>
             <div className="frac-lots-scroll">
               {lotsLoading ? (
-                <div className="frac-empty">Cargando lotes...</div>
+                <div className="frac-empty">{t("fracs.loadingLots")}</div>
               ) : (
                 <>
                   {sections.filter((section) => !sectionFilter || section === sectionFilter).map((section) => {
@@ -580,8 +584,8 @@ function FracsPage() {
                     return (
                       <section className="frac-section" key={section}>
                         <div className="frac-section-head">
-                          <span>{section}</span>
-                          <small>{sectionLots.length} lotes</small>
+                          <span>{sectionLabel(section)}</span>
+                          <small>{t("fracs.lotsCount", { count: sectionLots.length })}</small>
                         </div>
                         <div className="frac-lot-grid">
                           {sectionLots.map((lot) => {
@@ -595,8 +599,8 @@ function FracsPage() {
                               >
                                 <i />
                                 <strong>{lot.code}</strong>
-                                <span>{lot.area_m2 ? `${lot.area_m2} m2` : "Sin area"}</span>
-                                {precio ? <em className="frac-lot-price">{currency(precio)}</em> : null}
+                                <span>{lot.area_m2 ? t("fracs.areaUnit", { area: lot.area_m2 }) : t("fracs.noArea")}</span>
+                                {precio ? <em className="frac-lot-price">{format.currency(precio, "MXN", { maximumFractionDigits: 0 })}</em> : null}
                               </button>
                             );
                           })}
@@ -604,7 +608,7 @@ function FracsPage() {
                       </section>
                     );
                   })}
-                  {!filteredLots.length ? <div className="frac-empty">Sin lotes que coincidan</div> : null}
+                  {!filteredLots.length ? <div className="frac-empty">{t("fracs.noMatch")}</div> : null}
                 </>
               )}
             </div>
@@ -616,24 +620,24 @@ function FracsPage() {
         <button className="frac-quote-head" onClick={() => setQuoteOpen((value) => !value)}>
           <span className="frac-quote-icon">$</span>
           <span>
-            <strong>Cotizador rapido</strong>
-            <small>{selectedLot ? `Lote ${selectedLot.code}` : "Selecciona un lote"}</small>
+            <strong>{t("fracs.quoteTitle")}</strong>
+            <small>{selectedLot ? t("fracs.quoteLot", { code: selectedLot.code }) : t("fracs.quoteSelectLot")}</small>
           </span>
           <svg className="frac-quote-chevron" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 6 8 10 12 6"/></svg>
         </button>
         <div className="frac-quote-body">
           <div className="frac-quote-result">
-            <span>Mensualidad estimada</span>
-            <strong>{monthly > 0 ? currency(Math.round(monthly)) : "--"}</strong>
-            <small>{cotPlazo} meses / {cotTasa}% anual</small>
+            <span>{t("fracs.estimatedMonthly")}</span>
+            <strong>{monthly > 0 ? format.currency(Math.round(monthly), "MXN", { maximumFractionDigits: 0 }) : "--"}</strong>
+            <small>{t("fracs.termMonths", { term: cotPlazo, rate: cotTasa })}</small>
           </div>
           <div className="frac-quote-rows">
-            <span>Precio financiado <strong>{currency(Number(cotPrecioF || 0))}</strong></span>
-            <span>Enganche <strong>{currency(Number(cotEnganche || 0))}</strong></span>
-            <span>A financiar <strong>{currency(Math.round(financed))}</strong></span>
-            <span>Total estimado <strong>{currency(Math.round(quoteTotal || 0))}</strong></span>
+            <span>{t("fracs.financedPrice")} <strong>{format.currency(Number(cotPrecioF || 0), "MXN", { maximumFractionDigits: 0 })}</strong></span>
+            <span>{t("fracs.downPayment")} <strong>{format.currency(Number(cotEnganche || 0), "MXN", { maximumFractionDigits: 0 })}</strong></span>
+            <span>{t("fracs.toFinance")} <strong>{format.currency(Math.round(financed), "MXN", { maximumFractionDigits: 0 })}</strong></span>
+            <span>{t("fracs.estimatedTotal")} <strong>{format.currency(Math.round(quoteTotal || 0), "MXN", { maximumFractionDigits: 0 })}</strong></span>
           </div>
-          <button className="frac-quote-full" onClick={() => setShowCotizador(true)} disabled={!selectedLot}>Abrir cotizador completo</button>
+          <button className="frac-quote-full" onClick={() => setShowCotizador(true)} disabled={!selectedLot}>{t("fracs.openFullQuote")}</button>
         </div>
       </article>
 
@@ -643,17 +647,21 @@ function FracsPage() {
             <div className="frac-modal-head">
               <div className="frac-modal-id">{selectedLot.code}</div>
               <div>
-                <h2>Detalle del lote</h2>
-                <p>{selectedFrac.name} / {selectedLot.section || "General"} / {selectedLot.area_m2 || 0} m2</p>
+                <h2>{t("fracs.lotDetailTitle")}</h2>
+                <p>{t("fracs.lotLocation", { frac: selectedFrac.name, section: sectionLabel(selectedLot.section), area: selectedLot.area_m2 || 0 })}</p>
               </div>
               <StatusBadge status={selectedLot.status} />
               <button className="frac-modal-close" onClick={() => setShowLotModal(false)}>×</button>
             </div>
             <div className="frac-modal-body">
               <div className="frac-tabs">
-                {["ficha", "gestion", "documentos"].map((tab) => (
+                {[
+                  ["ficha", t("fracs.tabFicha")],
+                  ["gestion", t("fracs.tabGestion")],
+                  ["documentos", t("fracs.tabDocumentos")],
+                ].map(([tab, label]) => (
                   <button key={tab} className={activeTab === tab ? "on" : ""} onClick={() => setActiveTab(tab)}>
-                    {tab[0].toUpperCase() + tab.slice(1)}
+                    {label}
                   </button>
                 ))}
               </div>
@@ -661,14 +669,14 @@ function FracsPage() {
               {activeTab === "ficha" ? (
                 <>
                   <div className="frac-detail-grid">
-                    <div><strong>{selectedLot.frente_ml || "--"}</strong><span>Frente ML</span></div>
-                    <div><strong>{selectedLot.fondo_ml || "--"}</strong><span>Fondo ML</span></div>
-                    <div><strong>{selectedLot.area_m2 || "--"}</strong><span>Superficie m2</span></div>
+                    <div><strong>{selectedLot.frente_ml || "--"}</strong><span>{t("fracs.frontMl")}</span></div>
+                    <div><strong>{selectedLot.fondo_ml || "--"}</strong><span>{t("fracs.depthMl")}</span></div>
+                    <div><strong>{selectedLot.area_m2 || "--"}</strong><span>{t("fracs.surfaceM2")}</span></div>
                     {selectedLot.price_contado
-                      ? <div className="frac-detail-price"><strong>{currency(selectedLot.price_contado)}</strong><span>Precio Contado</span></div>
+                      ? <div className="frac-detail-price"><strong>{format.currency(selectedLot.price_contado, "MXN", { maximumFractionDigits: 0 })}</strong><span>{t("fracs.cashPrice")}</span></div>
                       : null}
                     {selectedLot.price_financiado
-                      ? <div className="frac-detail-price"><strong>{currency(selectedLot.price_financiado)}</strong><span>Precio Financiado</span></div>
+                      ? <div className="frac-detail-price"><strong>{format.currency(selectedLot.price_financiado, "MXN", { maximumFractionDigits: 0 })}</strong><span>{t("fracs.financedPriceLabel")}</span></div>
                       : null}
                   </div>
 
@@ -677,7 +685,7 @@ function FracsPage() {
                       const on = !!(selectedLot.services?.[service.k]);
                       return (
                         <label key={service.k} className="frac-service">
-                          <span>{service.lbl}</span>
+                          <span>{t(service.labelKey)}</span>
                           <input type="checkbox" checked={on} readOnly disabled />
                           <i className={on ? "on" : ""} />
                         </label>
@@ -689,35 +697,35 @@ function FracsPage() {
 
               {activeTab === "gestion" ? (
                 <div className="frac-management">
-                  <div className="frac-section-label">Estado actual</div>
+                  <div className="frac-section-label">{t("fracs.currentStatus")}</div>
                   <div style={{ marginBottom: 14 }}>
                     <StatusBadge status={selectedLot.status} />
                   </div>
                   <div className="frac-actions-list">
-                    {selectedLot.status !== "sold" ? <button onClick={() => navigate("/contratos")}>Registrar venta</button> : null}
-                    <button onClick={() => setShowApptForm((value) => !value)}>Agendar cita</button>
-                    <button onClick={openEditor}>Editar en Carga de Lotes</button>
+                    {selectedLot.status !== "sold" ? <button onClick={() => navigate("/contratos")}>{t("fracs.registerSale")}</button> : null}
+                    <button onClick={() => setShowApptForm((value) => !value)}>{t("fracs.scheduleVisit")}</button>
+                    <button onClick={openEditor}>{t("fracs.editInLots")}</button>
                   </div>
                   {showApptForm ? (
                     <div className="frac-appointment-form">
                       <div className="frac-appt-field">
-                        <label className="frac-appt-lbl">Contacto</label>
-                        <input value={apptDraft.contact_name} onChange={(event) => setApptDraft((p) => ({ ...p, contact_name: event.target.value }))} placeholder="Nombre del contacto" />
+                        <label className="frac-appt-lbl">{t("fracs.contact")}</label>
+                        <input value={apptDraft.contact_name} onChange={(event) => setApptDraft((p) => ({ ...p, contact_name: event.target.value }))} placeholder={t("fracs.contactPlaceholder")} />
                       </div>
                       <div className="frac-appt-field">
-                        <label className="frac-appt-lbl">Telefono</label>
-                        <input value={apptDraft.contact_phone} onChange={(event) => setApptDraft((p) => ({ ...p, contact_phone: event.target.value }))} placeholder="Opcional" />
+                        <label className="frac-appt-lbl">{t("fracs.phone")}</label>
+                        <input value={apptDraft.contact_phone} onChange={(event) => setApptDraft((p) => ({ ...p, contact_phone: event.target.value }))} placeholder={t("fracs.phonePlaceholder")} />
                       </div>
                       <div className="frac-appt-field">
-                        <label className="frac-appt-lbl">Fecha y hora</label>
+                        <label className="frac-appt-lbl">{t("fracs.dateTime")}</label>
                         <input type="datetime-local" value={apptDraft.scheduled_at} onChange={(event) => setApptDraft((p) => ({ ...p, scheduled_at: event.target.value }))} />
                       </div>
                       <div className="frac-appt-field">
-                        <label className="frac-appt-lbl">Notas</label>
-                        <textarea rows="2" value={apptDraft.notes} onChange={(event) => setApptDraft((p) => ({ ...p, notes: event.target.value }))} placeholder="Contexto de la visita" />
+                        <label className="frac-appt-lbl">{t("fracs.notes")}</label>
+                        <textarea rows="2" value={apptDraft.notes} onChange={(event) => setApptDraft((p) => ({ ...p, notes: event.target.value }))} placeholder={t("fracs.notesPlaceholder")} />
                       </div>
                       <Button variant="primary" onClick={saveAppointment} disabled={apptSaving || !apptDraft.contact_name.trim() || !apptDraft.scheduled_at}>
-                        {apptSaving ? "Guardando..." : "Guardar cita"}
+                        {apptSaving ? t("fracs.saving") : t("fracs.saveAppt")}
                       </Button>
                     </div>
                   ) : null}
@@ -726,8 +734,8 @@ function FracsPage() {
                       {apptData.map((appt) => (
                         <div key={appt.id}>
                           <strong>{appt.contact_name}</strong>
-                          <span>{new Date(appt.scheduled_at).toLocaleString("es-MX")}</span>
-                          <button onClick={() => cancelAppointment(appt.id)}>Cancelar</button>
+                          <span>{new Date(appt.scheduled_at).toLocaleString(localeTag)}</span>
+                          <button onClick={() => cancelAppointment(appt.id)}>{t("fracs.cancelAppt")}</button>
                         </div>
                       ))}
                     </div>
@@ -749,18 +757,18 @@ function FracsPage() {
             <div className="frac-modal-head">
               <div className="frac-modal-id">$</div>
               <div>
-                <h2>Cotizador</h2>
-                <p>{selectedFrac.name} / {selectedLot.code}</p>
+                <h2>{t("fracs.calcTitle")}</h2>
+                <p>{t("fracs.calcSubtitle", { frac: selectedFrac.name, code: selectedLot.code })}</p>
               </div>
               <button className="frac-modal-close" onClick={() => setShowCotizador(false)}>×</button>
             </div>
             <div className="frac-calculator-body">
               <aside className="frac-calculator-controls">
                 {[
-                  ["Precio financiado", cotPrecioF, setCotPrecioF, 1000],
-                  ["Enganche", cotEnganche, setCotEnganche, 1000],
-                  ["Tasa anual (%)", cotTasa, setCotTasa, 0.5],
-                  ["Plazo (meses)", cotPlazo, setCotPlazo, 12],
+                  [t("fracs.financedPrice"), cotPrecioF, setCotPrecioF, 1000],
+                  [t("fracs.downPayment"), cotEnganche, setCotEnganche, 1000],
+                  [t("fracs.annualRate"), cotTasa, setCotTasa, 0.5],
+                  [t("fracs.termMonthsLabel"), cotPlazo, setCotPlazo, 12],
                 ].map(([label, value, setter, step]) => (
                   <label key={label}>
                     <span>{label}</span>
@@ -768,27 +776,34 @@ function FracsPage() {
                   </label>
                 ))}
                 <div className="frac-quote-result">
-                  <span>Mensualidad</span>
-                  <strong>{monthly > 0 ? currency(Math.round(monthly)) : "--"}</strong>
-                  <small>A financiar {currency(Math.round(financed))}</small>
+                  <span>{t("fracs.monthlyPayment")}</span>
+                  <strong>{monthly > 0 ? format.currency(Math.round(monthly), "MXN", { maximumFractionDigits: 0 }) : "--"}</strong>
+                  <small>{t("fracs.toFinanceInline", { amount: format.currency(Math.round(financed), "MXN", { maximumFractionDigits: 0 }) })}</small>
                 </div>
               </aside>
               <div className="frac-amort-table">
                 <table>
                   <thead>
                     <tr>
-                      {["#", "Saldo inicial", "Capital", "Interes", "Cuota", "Saldo final"].map((head) => <th key={head}>{head}</th>)}
+                      {[
+                        t("fracs.amortNum"),
+                        t("fracs.amortInitialBalance"),
+                        t("fracs.amortCapital"),
+                        t("fracs.amortInterest"),
+                        t("fracs.amortPayment"),
+                        t("fracs.amortFinalBalance"),
+                      ].map((head) => <th key={head}>{head}</th>)}
                     </tr>
                   </thead>
                   <tbody>
                     {generateAmort(cotPrecioF, cotEnganche, cotTasa, cotPlazo).map((row) => (
                       <tr key={row.n}>
                         <td>{row.n}</td>
-                        <td>{currency(Math.round(row.saldoInicial))}</td>
-                        <td>{currency(Math.round(row.capital))}</td>
-                        <td>{currency(Math.round(row.interes))}</td>
-                        <td>{currency(Math.round(row.cuota))}</td>
-                        <td>{currency(Math.round(row.saldoFinal))}</td>
+                        <td>{format.currency(Math.round(row.saldoInicial), "MXN", { maximumFractionDigits: 0 })}</td>
+                        <td>{format.currency(Math.round(row.capital), "MXN", { maximumFractionDigits: 0 })}</td>
+                        <td>{format.currency(Math.round(row.interes), "MXN", { maximumFractionDigits: 0 })}</td>
+                        <td>{format.currency(Math.round(row.cuota), "MXN", { maximumFractionDigits: 0 })}</td>
+                        <td>{format.currency(Math.round(row.saldoFinal), "MXN", { maximumFractionDigits: 0 })}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -805,15 +820,15 @@ function FracsPage() {
       <GuideModal
         open={showGuide}
         onClose={() => setShowGuide(false)}
-        title="Fraccionamientos"
-        subtitle="Gestión táctil de tu inventario de lotes con plano interactivo."
+        title={t("fracs.guideTitle")}
+        subtitle={t("fracs.guideSubtitle")}
         steps={[
-          { title: "Seleccionar proyecto", text: "La lista izquierda muestra todos tus fraccionamientos. Haz clic en uno para ver su plano interactivo y la matriz de lotes." },
-          { title: "Plano interactivo", text: "Usa el scroll o pinch para hacer zoom. Haz clic en el plano para ver los lotes superpuestos con su estado (disponible, apartado, vendido)." },
-          { title: "Filtrar lotes", text: "Los botones de estado en la barra superior filtran los lotes visibles en el plano. Combínalos con la búsqueda por sección o código." },
-          { title: "Ficha de lote", text: "Selecciona un lote para ver su ficha completa: medidas, servicios disponibles, precio de contado y financiado, y vendedor asignado." },
-          { title: "Cotizador integrado", text: "Desde la ficha del lote puedes abrir el cotizador para simular el plan de pagos con amortización francesa o alemana." },
-          { title: "Agendar visita", text: "El botón 'Agendar' en la ficha del lote crea una cita en la agenda central vinculada al lote y al contacto del prospecto." },
+          { title: t("fracs.guideStep1Title"), text: t("fracs.guideStep1Text") },
+          { title: t("fracs.guideStep2Title"), text: t("fracs.guideStep2Text") },
+          { title: t("fracs.guideStep3Title"), text: t("fracs.guideStep3Text") },
+          { title: t("fracs.guideStep4Title"), text: t("fracs.guideStep4Text") },
+          { title: t("fracs.guideStep5Title"), text: t("fracs.guideStep5Text") },
+          { title: t("fracs.guideStep6Title"), text: t("fracs.guideStep6Text") },
         ]}
       />
     </div>
