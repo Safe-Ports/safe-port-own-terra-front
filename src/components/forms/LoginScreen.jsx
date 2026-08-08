@@ -39,7 +39,7 @@ const MAP_SVG = (
   </svg>
 );
 
-function LeftPanel() {
+export function LeftPanel() {
   return (
     <div className="ll-panel">
       <div className="ll-logo">

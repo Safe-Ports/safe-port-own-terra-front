@@ -1253,12 +1253,15 @@ function LotsPage() {
               {/* ── Carga CAD ── */}
               <div
                 className="relative flex cursor-pointer flex-col overflow-hidden rounded-[16px] border-2 border-[#DCDAD2] bg-[#FBFAF6] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#4A6FA5] hover:shadow-[0_8px_24px_rgba(74,111,165,.15)]"
-                onClick={() => {
-                  setDraftProject((previous) => ({
-                    ...previous,
-                    mode: "map-upload",
-                    cadProcessing: true,
-                  }));
+                role="button"
+                tabIndex={0}
+                aria-label="Importar CAD, próximamente"
+                onClick={() => showToast("La importación de archivos CAD estará disponible próximamente.", "info")}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    showToast("La importación de archivos CAD estará disponible próximamente.", "info");
+                  }
                 }}
               >
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#4A6FA5]" />
@@ -1270,7 +1273,7 @@ function LotsPage() {
                   Sube un archivo DWG o DXF del plano técnico y el sistema extrae automáticamente la estructura de lotes.
                 </div>
                 <button className="pointer-events-none w-full rounded-[9px] bg-[#4A6FA5] px-4 py-2.5 text-[0.8rem] font-bold text-white">
-                  Subir archivo CAD →
+                  Próximamente
                 </button>
               </div>
 

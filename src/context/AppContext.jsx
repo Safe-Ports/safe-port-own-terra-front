@@ -365,6 +365,16 @@ export function AppProvider({ children }) {
     }
   };
 
+  const resetPassword = async (token, newPassword) => {
+    try {
+      await api.post("/auth/reset-password", { token, new_password: newPassword });
+      return { ok: true };
+    } catch (err) {
+      const parsed = parseApiError(err, "El enlace es inválido o expiró. Solicita uno nuevo.");
+      return { ok: false, msg: parsed.message, error: parsed };
+    }
+  };
+
   const logout = async () => {
     try { await api.post("/auth/logout"); } catch (_) {}
     setCurrentUser(null);
@@ -948,6 +958,7 @@ export function AppProvider({ children }) {
     verifyEmail,
     resendVerification,
     forgotPassword,
+    resetPassword,
     logout,
     saveClient,
     deleteClient,
