@@ -6,11 +6,11 @@ import { documentService, filenameForDocument } from "@/services/documentService
 import { folderService } from "@/services/folderService";
 import { useAppContext } from "@/context/AppContext";
 import useEscapeKey from "@/hooks/useEscapeKey";
+import { useLocale } from "@/i18n";
 
 import EcoLayout from "./EcoLayout";
 
 const CATEGORIES = ["otro", "contrato", "identificacion", "comprobante", "escritura", "plano"];
-const CAT_LABEL = { otro: "Otro", contrato: "Contrato", identificacion: "Identificación", comprobante: "Comprobante", escritura: "Escritura", plano: "Plano" };
 
 function fmtSize(bytes) {
   if (!bytes) return "—";
@@ -19,9 +19,9 @@ function fmtSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function fmtDate(iso) {
+function fmtDate(iso, localeTag) {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(iso).toLocaleDateString(localeTag, { day: "2-digit", month: "short", year: "numeric" });
 }
 
 const FileIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"><path d="M6 2h7l5 5v15H6z" /><path d="M13 2v5h5" /></svg>);
@@ -29,6 +29,7 @@ const DownloadIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="current
 const SearchIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>);
 
 function EcosystemVault() {
+  const { t, localeTag } = useLocale();
   const qc = useQueryClient();
   const { downloadDocument, showToast, showError } = useAppContext();
   const [activeId, setActiveId] = useState(null);
@@ -80,15 +81,15 @@ function EcosystemVault() {
     onSuccess: (created) => {
       qc.invalidateQueries({ queryKey: ["folders"] });
       setActiveId(String(created.id));
-      showToast("Carpeta creada");
+      showToast(t("vault.folderCreated"));
     },
-    onError: (err) => showError(err, "Error al crear la carpeta"),
+    onError: (err) => showError(err, t("vault.folderCreateError")),
   });
 
   const renameFolderMutation = useMutation({
     mutationFn: ({ id, name }) => folderService.update(id, { name }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["folders"] }); showToast("Carpeta renombrada"); },
-    onError: (err) => showError(err, "Error al renombrar la carpeta"),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["folders"] }); showToast(t("vault.folderRenamed")); },
+    onError: (err) => showError(err, t("vault.folderRenameError")),
   });
 
   const deleteFolderMutation = useMutation({
@@ -97,9 +98,9 @@ function EcosystemVault() {
       qc.invalidateQueries({ queryKey: ["folders"] });
       const roots = folders.filter((f) => !f.parent_id);
       setActiveId(roots[0] ? String(roots[0].id) : null);
-      showToast("Carpeta eliminada");
+      showToast(t("vault.folderDeleted"));
     },
-    onError: (err) => showError(err, "Error al eliminar la carpeta"),
+    onError: (err) => showError(err, t("vault.folderDeleteError")),
   });
 
   const uploadMutation = useMutation({
@@ -110,15 +111,15 @@ function EcosystemVault() {
       qc.invalidateQueries({ queryKey: ["folders"] });
       setModal(null);
       setUploadFile(null);
-      showToast("Documento subido");
+      showToast(t("vault.documentUploaded"));
     },
-    onError: (err) => showError(err, "Error al subir el documento"),
+    onError: (err) => showError(err, t("vault.documentUploadError")),
   });
 
   const deleteDocMutation = useMutation({
     mutationFn: (id) => documentService.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["docs", "folder", activeId] }); showToast("Documento eliminado"); },
-    onError: (err) => showError(err, "Error al eliminar el documento"),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["docs", "folder", activeId] }); showToast(t("vault.documentDeleted")); },
+    onError: (err) => showError(err, t("vault.documentDeleteError")),
   });
 
   const active = folders.find((f) => String(f.id) === activeId) || null;
@@ -150,17 +151,17 @@ function EcosystemVault() {
 
   const deleteFolder = (id) => {
     setMenuFor(null);
-    if (!window.confirm("¿Eliminar esta carpeta? Los documentos dentro se conservarán sin carpeta.")) return;
+    if (!window.confirm(t("vault.deleteFolderConfirm"))) return;
     deleteFolderMutation.mutate(id);
   };
 
   const saveDoc = () => {
     if (!uploadFile) {
-      showToast("Selecciona un archivo para subir");
+      showToast(t("vault.selectFile"), "warning");
       return;
     }
     if (uploadFile.size > 50 * 1024 * 1024) {
-      showToast("El archivo no puede superar 50 MB");
+      showToast(t("vault.maxSize"), "warning");
       return;
     }
     uploadMutation.mutate({ file: uploadFile, name: modal.name || uploadFile.name, category: modal.category });
@@ -192,21 +193,21 @@ function EcosystemVault() {
             </span>
           )}
           <span className="vlt-fcnt">{f.document_count || 0}</span>
-          <button className="vlt-menu-btn" title="Opciones" onClick={(e) => { e.stopPropagation(); setMenuFor(menuFor === fid ? null : fid); }}>
+          <button className="vlt-menu-btn" title={t("vault.options")} onClick={(e) => { e.stopPropagation(); setMenuFor(menuFor === fid ? null : fid); }}>
             <HiOutlineEllipsisVertical />
           </button>
           {menuFor === fid && (
             <div ref={menuRef} className="vlt-menu" onClick={(e) => e.stopPropagation()}>
-              <button onClick={() => startCreate(fid)}><HiOutlineFolderPlus /> Nueva subcarpeta</button>
-              <button onClick={() => startRename(f)}><HiOutlinePencil /> Renombrar</button>
-              <button className="danger" onClick={() => deleteFolder(fid)}><HiOutlineTrash /> Eliminar</button>
+              <button onClick={() => startCreate(fid)}><HiOutlineFolderPlus /> {t("vault.newSubfolder")}</button>
+              <button onClick={() => startRename(f)}><HiOutlinePencil /> {t("vault.rename")}</button>
+              <button className="danger" onClick={() => deleteFolder(fid)}><HiOutlineTrash /> {t("vault.delete")}</button>
             </div>
           )}
         </div>
 
         {newIn === fid && (
           <div className="vlt-newrow" style={{ paddingLeft: 12 + (depth + 1) * 18, paddingRight: 12, paddingBottom: 6 }}>
-            <input autoFocus className="usr-input" placeholder="Nombre de la subcarpeta…" value={newName}
+            <input autoFocus className="usr-input" placeholder={t("vault.subfolderName")} value={newName}
               onChange={(e) => setNewName(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") commitCreate(); if (e.key === "Escape") setNewIn(null); }} />
             <button className="vlt-ok" onClick={commitCreate}>✓</button>
@@ -219,12 +220,12 @@ function EcosystemVault() {
   };
 
   return (
-    <EcoLayout active="vault" title="OwnTerra Vault" subtitle="Bóveda de documentos del ecosistema" onGuide={() => setShowGuide(true)}>
+    <EcoLayout active="vault" title={t("vault.title")} subtitle={t("vault.subtitle")} onGuide={() => setShowGuide(true)}>
 
       <div className="section-head">
-        <h3>Bóveda de documentos</h3>
+        <h3>{t("vault.heading")}</h3>
         <span style={{ fontSize: 12, color: "var(--text3)", fontFamily: "'JetBrains Mono',monospace" }}>
-          {folders.length} carpetas · {totalDocs} documentos
+          {t("vault.foldersCount").replace("{folders}", folders.length).replace("{documents}", totalDocs)}
         </span>
       </div>
 
@@ -232,14 +233,14 @@ function EcosystemVault() {
         {/* ÁRBOL DE CARPETAS */}
         <div className="usr-card">
           <div className="usr-list-head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div className="usr-list-title">Carpetas</div>
+            <div className="usr-list-title">{t("vault.folders")}</div>
           </div>
           <div className="usr-list">
             {childrenOf(null).map((f) => FolderRow(f, 0))}
 
             {newIn === "__root__" && (
               <div className="vlt-newrow" style={{ padding: "8px 12px" }}>
-                <input autoFocus className="usr-input" placeholder="Nombre de la carpeta…" value={newName}
+                <input autoFocus className="usr-input" placeholder={t("vault.folderName")} value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") commitCreate(); if (e.key === "Escape") setNewIn(null); }} />
                 <button className="vlt-ok" onClick={commitCreate}>✓</button>
@@ -251,7 +252,7 @@ function EcosystemVault() {
               style={{ margin: "8px 12px", width: "calc(100% - 24px)", justifyContent: "center" }}
               onClick={() => startCreate("__root__")}
             >
-              <HiOutlineFolderPlus /> Nueva carpeta
+              <HiOutlineFolderPlus /> {t("vault.newFolder")}
             </button>
           </div>
         </div>
@@ -259,18 +260,18 @@ function EcosystemVault() {
         {/* DOCUMENTOS DE LA CARPETA */}
         <div className="usr-card">
           {!active ? (
-            <div className="usr-empty">Selecciona una carpeta o crea una nueva.</div>
+            <div className="usr-empty">{t("vault.selectFolder")}</div>
           ) : (
             <>
               <div className="vlt-d-head">
                 <span className="vlt-fico" style={{ width: 44, height: 44, fontSize: 19 }}>📁</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div className="vlt-d-name">{active.name}</div>
-                  <div className="vlt-d-desc">{active.document_count || 0} documento(s)</div>
+                  <div className="vlt-d-desc">{t("vault.documentsCount").replace("{count}", active.document_count || 0)}</div>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button className="usr-folder-new" onClick={() => startCreate(activeId)}>+ Subcarpeta</button>
-                  <button className="usr-add-btn" onClick={() => setModal({ name: "", category: "otro" })}>+ Subir documento</button>
+                  <button className="usr-folder-new" onClick={() => startCreate(activeId)}>{t("vault.subfolder")}</button>
+                  <button className="usr-add-btn" onClick={() => setModal({ name: "", category: "otro" })}>{t("vault.uploadDocument")}</button>
                 </div>
               </div>
 
@@ -283,7 +284,7 @@ function EcosystemVault() {
 
                 <label className="vlt-search">
                   <SearchIcon />
-                  <input placeholder="Buscar documento en esta carpeta…" value={search} onChange={(e) => setSearch(e.target.value)} />
+                  <input placeholder={t("vault.search")} value={search} onChange={(e) => setSearch(e.target.value)} />
                 </label>
 
                 {shownDocs.length ? (
@@ -294,17 +295,17 @@ function EcosystemVault() {
                         <div className="usr-row-info">
                           <div className="usr-row-name">{d.name}</div>
                           <div className="usr-row-meta">
-                            {CAT_LABEL[d.category] || d.category} · {fmtDate(d.created_at)} · {fmtSize(d.file_size)}
+                            {t(`vault.categories.${d.category}`, d.category)} · {fmtDate(d.created_at, localeTag)} · {fmtSize(d.file_size)}
                           </div>
                         </div>
-                        <button className="usr-dl" onClick={() => downloadDocument(d.id, d.download_url, filenameForDocument(d))} title="Descargar">
+                        <button className="usr-dl" onClick={() => downloadDocument(d.id, d.download_url, filenameForDocument(d))} title={t("vault.download")}>
                           <DownloadIcon />
                         </button>
                         <button
                           className="usr-dl"
                           style={{ color: "var(--danger)", marginLeft: 4 }}
-                          title="Eliminar"
-                          onClick={() => window.confirm(`¿Eliminar "${d.name}"?`) && deleteDocMutation.mutate(d.id)}
+                          title={t("vault.delete")}
+                          onClick={() => window.confirm(t("vault.deleteDocumentConfirm").replace("{name}", d.name)) && deleteDocMutation.mutate(d.id)}
                         >
                           <HiOutlineTrash />
                         </button>
@@ -313,7 +314,7 @@ function EcosystemVault() {
                   </div>
                 ) : (
                   <div className="usr-rows-empty">
-                    {search ? "Sin resultados para esa búsqueda." : 'Carpeta vacía. Usa "+ Subir documento" o crea una subcarpeta.'}
+                    {search ? t("vault.noResults") : t("vault.emptyFolder")}
                   </div>
                 )}
               </div>
@@ -333,34 +334,34 @@ function EcosystemVault() {
           <div className="usr-modal">
             <div className="usr-modal-head">
               <div>
-                <div className="usr-modal-title">Subir documento</div>
-                <div className="usr-modal-sub">{ancestors(activeId).map((a) => a.name).join(" › ")} · bóveda del ecosistema</div>
+                <div className="usr-modal-title">{t("vault.uploadTitle")}</div>
+                <div className="usr-modal-sub">{ancestors(activeId).map((a) => a.name).join(" › ")} · {t("vault.ecosystemVault")}</div>
               </div>
               <button className="usr-modal-close" onClick={() => { setModal(null); setUploadFile(null); }}>×</button>
             </div>
             <div className="usr-modal-body">
               <div className="usr-field">
-                <label className="usr-field-lbl">Archivo</label>
+                <label className="usr-field-lbl">{t("vault.file")}</label>
                 <input className="usr-input" type="file" onChange={(e) => {
                   const f = e.target.files?.[0];
                   if (f) { setUploadFile(f); setModal((m) => ({ ...m, name: m.name || f.name })); }
                 }} />
               </div>
               <div className="usr-field">
-                <label className="usr-field-lbl">Nombre del documento</label>
-                <input className="usr-input" placeholder="Ej. Plantilla_pagare.docx" value={modal.name} onChange={(e) => setModal((m) => ({ ...m, name: e.target.value }))} />
+                <label className="usr-field-lbl">{t("vault.documentName")}</label>
+                <input className="usr-input" placeholder={t("vault.nameExample")} value={modal.name} onChange={(e) => setModal((m) => ({ ...m, name: e.target.value }))} />
               </div>
               <div className="usr-field">
-                <label className="usr-field-lbl">Categoría</label>
+                <label className="usr-field-lbl">{t("vault.category")}</label>
                 <select className="usr-select" value={modal.category} onChange={(e) => setModal((m) => ({ ...m, category: e.target.value }))}>
-                  {CATEGORIES.map((c) => <option key={c} value={c}>{CAT_LABEL[c]}</option>)}
+                  {CATEGORIES.map((c) => <option key={c} value={c}>{t(`vault.categories.${c}`)}</option>)}
                 </select>
               </div>
             </div>
             <div className="usr-modal-foot">
-              <button className="usr-btn-ghost" onClick={() => { setModal(null); setUploadFile(null); }}>Cancelar</button>
+              <button className="usr-btn-ghost" onClick={() => { setModal(null); setUploadFile(null); }}>{t("vault.cancel")}</button>
               <button className="usr-btn-primary" onClick={saveDoc} disabled={uploadMutation.isPending || !uploadFile}>
-                {uploadMutation.isPending ? "Subiendo…" : "✓ Guardar"}
+                {uploadMutation.isPending ? t("vault.uploading") : t("vault.save")}
               </button>
             </div>
           </div>
@@ -369,14 +370,14 @@ function EcosystemVault() {
       <GuideModal
         open={showGuide}
         onClose={() => setShowGuide(false)}
-        title="OwnTerra Vault"
-        subtitle="Bóveda centralizada de documentos compartida entre todas las apps."
+        title={t("vault.title")}
+        subtitle={t("vault.guideSubtitle")}
         steps={[
-          { title: "Árbol de carpetas", text: "La barra izquierda muestra el árbol de carpetas. Haz clic para expandir subcarpetas. El ícono '+' crea una subcarpeta dentro de la seleccionada." },
-          { title: "Subir documentos", text: "Selecciona la carpeta destino, luego pulsa 'Subir documento'. Elige el archivo (máx. 50 MB) y asígnale una categoría (contrato, identificación, escritura, etc.)." },
-          { title: "Buscar documentos", text: "La barra de búsqueda filtra por nombre dentro de la carpeta activa. Los resultados se muestran en tiempo real." },
-          { title: "Descargar y eliminar", text: "El ícono de descarga descarga el archivo original. El de papelera lo elimina de la bóveda (acción irreversible)." },
-          { title: "Renombrar carpetas", text: "El menú de opciones (⋮) junto al nombre de la carpeta permite renombrarla o eliminarla. Si la eliminas, los documentos se conservan sin carpeta." },
+          { title: t("vault.guide.treeTitle"), text: t("vault.guide.treeText") },
+          { title: t("vault.guide.uploadTitle"), text: t("vault.guide.uploadText") },
+          { title: t("vault.guide.searchTitle"), text: t("vault.guide.searchText") },
+          { title: t("vault.guide.actionsTitle"), text: t("vault.guide.actionsText") },
+          { title: t("vault.guide.renameTitle"), text: t("vault.guide.renameText") },
         ]}
       />
     </EcoLayout>

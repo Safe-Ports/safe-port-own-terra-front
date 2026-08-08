@@ -28,6 +28,13 @@ const DOC_CATEGORIES = [
   { value: "otro",           label: "Otro"          },
 ];
 
+const formatMxn = (value, options = {}) => new Intl.NumberFormat("es-MX", {
+  style: "currency",
+  currency: "MXN",
+  maximumFractionDigits: 0,
+  ...options,
+}).format(Number(value || 0));
+
 /* ── Pre-relleno de variables de la calculadora desde los campos del contrato ──
    Las variables son abiertas; esto es solo una conveniencia: si el nombre se parece
    a un campo conocido, sugerimos su valor (editable). El resto queda vacío. */
@@ -685,7 +692,7 @@ function ContractModal() {
                     >
                       <strong style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".78rem" }}>{l.code}</strong>
                       {l.area_m2 && <span style={{ color: "var(--mu)", fontSize: ".74rem" }}>{l.area_m2} m²</span>}
-                      {l.price_contado && <span style={{ color: "var(--mu)", fontSize: ".74rem", marginLeft: "auto" }}>${Number(l.price_contado).toLocaleString("en-US")}</span>}
+                      {l.price_contado && <span style={{ color: "var(--mu)", fontSize: ".74rem", marginLeft: "auto" }}>{formatMxn(l.price_contado)}</span>}
                     </div>
                   ))}
                 </div>
@@ -849,7 +856,7 @@ function ContractModal() {
         }}>
           <span style={{ color: "var(--mu)" }}>Cuota mensual estimada</span>
           <b style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".92rem" }}>
-            ${Math.round((Number(form.amount) - Number(form.down_payment || 0)) / Number(form.totalM)).toLocaleString("en-US")} / mes
+            {formatMxn(Math.round((Number(form.amount) - Number(form.down_payment || 0)) / Number(form.totalM)))} / mes
           </b>
         </div>
       )}
@@ -912,7 +919,7 @@ function ContractModal() {
             <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: ".78rem", color: "var(--mu)" }}>Mensualidad (se congela en la venta)</span>
               <b style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".95rem", color: "var(--forest,#355E3B)" }}>
-                ${calcResult.value.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                {formatMxn(calcResult.value, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </b>
             </div>
           )}

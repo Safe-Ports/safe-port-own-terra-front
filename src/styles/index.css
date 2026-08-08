@@ -23,6 +23,7 @@
   --earth:    #355E3B;   /* secondary (alineado a la paleta verde) */
   --cream:    #FBFAF6;
   --danger:   #C0392B;
+  --warning:  #91600D;
   --sf:       #FBFAF6;   /* surface */
   --sf2:      #F1EEE6;   /* surface muted */
   --bd:       #DCDAD2;
@@ -495,6 +496,18 @@ a {
   color: #c0392b;
 }
 
+.core-lang-action {
+  padding: 8px 11px;
+  min-width: 62px;
+  justify-content: center;
+}
+
+.core-lang-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
 .topbar-logout {
   display: inline-flex;
   align-items: center;
@@ -932,17 +945,17 @@ a {
   color: #9A9C90;
 }
 
-/* Marca de validación por campo (capa de "llenado"): borde rojo en cualquier input. */
+/* Validación recuperable: ámbar indica que falta o debe corregirse información. */
 .is-invalid,
 input.is-invalid,
 select.is-invalid,
 textarea.is-invalid {
-  border-color: var(--danger, #c0392b);
-  background: #fff;
+  border-color: var(--warning, #91600d);
+  background: #fffaf0;
 }
 .is-invalid:focus {
-  border-color: var(--danger, #c0392b);
-  box-shadow: 0 0 0 4px rgba(192, 57, 43, 0.12);
+  border-color: var(--warning, #91600d);
+  box-shadow: 0 0 0 4px rgba(145, 96, 13, 0.14);
 }
 
 .tb-btn {
@@ -2222,29 +2235,25 @@ textarea.is-invalid {
 /* ── Toasts: avisos compactos alineados al lenguaje visual OwnTerra ── */
 .app-toast {
   position: fixed;
-  left: 50%;
-  bottom: calc(env(safe-area-inset-bottom) + 108px);
-  /* Por encima de cualquier modal/overlay (los más altos usan 9999) para que el
-     toast de error nunca quede oculto detrás de un formulario abierto. */
+  right: 24px;
+  top: calc(env(safe-area-inset-top) + 88px);
   z-index: 10000;
-  transform: translateX(-50%);
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  width: max-content;
-  min-width: min(360px, calc(100vw - 32px));
-  max-width: calc(100vw - 32px);
-  border: 1px solid rgba(38, 73, 50, 0.16);
-  border-radius: 16px;
-  padding: 14px 16px;
+  gap: 14px;
+  width: min(420px, calc(100vw - 32px));
+  border: 1px solid #d7e4d8;
+  border-left: 4px solid #407d4a;
+  border-radius: 12px;
+  padding: 16px;
   font-family: inherit;
-  color: #294332;
-  background: rgba(255, 253, 248, 0.98);
+  color: #203e2a;
+  background: rgba(249, 252, 248, 0.98);
   box-shadow:
-    0 18px 45px rgba(30, 56, 38, 0.16),
-    0 4px 12px rgba(30, 56, 38, 0.08);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+    0 16px 38px rgba(27, 51, 34, 0.14),
+    0 3px 10px rgba(27, 51, 34, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   animation: app-toast-in 180ms ease-out both;
 }
 
@@ -2252,149 +2261,172 @@ textarea.is-invalid {
   display: grid;
   place-items: center;
   flex: 0 0 auto;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  color: #fff;
-  background: #407d4a;
-  box-shadow: 0 5px 12px rgba(64, 125, 74, 0.2);
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: #316b3c;
+  background: #e4f2e5;
 }
 
 .app-toast__icon svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 .app-toast__content {
   display: grid;
-  gap: 2px;
+  flex: 1;
+  gap: 5px;
   min-width: 0;
-  padding-top: 1px;
 }
 
 .app-toast__title {
-  color: #23432e;
-  font-size: 0.78rem;
-  font-weight: 750;
-  line-height: 1.25;
-  letter-spacing: 0.015em;
+  color: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .app-toast__message {
-  color: #5e6d62;
-  font-size: 0.84rem;
-  font-weight: 500;
-  line-height: 1.45;
+  color: #526457;
+  font-size: 0.86rem;
+  font-weight: 400;
+  line-height: 1.4;
   text-wrap: pretty;
 }
 
-.app-toast--success {
-  border-color: rgba(64, 125, 74, 0.22);
+.app-toast__close {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  margin: -4px -4px 0 0;
+  border: 0;
+  border-radius: 8px;
+  color: #6a786d;
+  background: transparent;
+  cursor: pointer;
+}
+
+.app-toast__close:hover,
+.app-toast__close:focus-visible {
+  color: #203e2a;
+  background: rgba(32, 62, 42, 0.07);
 }
 
 .app-toast--warning {
-  border-color: rgba(180, 127, 34, 0.28);
-  background: rgba(255, 252, 244, 0.98);
+  color: #654400;
+  border-color: #ead9af;
+  border-left-color: #b7791f;
+  background: rgba(255, 250, 238, 0.98);
 }
 
 .app-toast--warning .app-toast__icon {
-  color: #fffaf0;
-  background: #b17b25;
-  box-shadow: 0 5px 12px rgba(177, 123, 37, 0.2);
-}
-
-.app-toast--warning .app-toast__title {
-  color: #795117;
+  color: #91600d;
+  background: #f9e9bc;
 }
 
 .app-toast--warning .app-toast__message {
-  color: #74654d;
+  color: #725c31;
 }
 
 .app-toast--info {
-  border-color: rgba(66, 105, 119, 0.24);
+  color: #244e5b;
+  border-color: #cbdde2;
+  border-left-color: #4b7f8d;
+  background: rgba(246, 251, 252, 0.98);
 }
 
 .app-toast--info .app-toast__icon {
-  background: #486f7a;
-  box-shadow: 0 5px 12px rgba(72, 111, 122, 0.2);
+  color: #3f7180;
+  background: #dfedf1;
 }
 
 @keyframes app-toast-in {
   from {
     opacity: 0;
-    transform: translate(-50%, 10px) scale(0.98);
+    transform: translateY(-8px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, 0) scale(1);
+    transform: translateY(0) scale(1);
   }
 }
 
-/* ── Error card — tarjeta con código + Ref + severidad ───── */
 .app-toast--error {
-  display: block;
-  width: auto;
-  border-radius: 14px;
-  padding: 16px 20px;
-  font-weight: 500;
-  max-width: min(420px, calc(100vw - 32px));
-  text-align: left;
-  /* default: severity="error" */
-  background: rgba(110, 28, 14, 0.94);
-  border: 1px solid rgba(215, 85, 58, 0.50);
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.40);
+  color: #70271f;
+  border-color: #edcbc6;
+  border-left-color: #c84b3d;
+  background: rgba(255, 247, 245, 0.98);
 }
 
-/* severity="fatal" — rojo intenso */
 .app-toast--error[data-severity="fatal"] {
-  background: rgba(90, 8, 8, 0.96);
-  border-color: rgba(230, 45, 45, 0.60);
+  color: #631b1b;
+  border-color: #e9bcbc;
+  border-left-color: #a92828;
+  background: rgba(255, 243, 243, 0.99);
 }
 
-/* severity="warning" — ámbar */
 .app-toast--error[data-severity="warning"] {
-  background: rgba(96, 66, 6, 0.94);
-  border-color: rgba(212, 158, 28, 0.55);
+  color: #654400;
+  border-color: #ead9af;
+  border-left-color: #b7791f;
+  background: rgba(255, 250, 238, 0.98);
 }
 
-/* Título del error card */
-.error-toast__title {
-  font-weight: 700;
-  font-size: 0.92rem;
-  margin-bottom: 4px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #ffb8a0;
+.app-toast--error .app-toast__icon {
+  color: #b43b30;
+  background: #f7deda;
 }
-.app-toast--error[data-severity="fatal"] .error-toast__title { color: #ff9898; }
-.app-toast--error[data-severity="warning"] .error-toast__title { color: #fde68a; }
 
-.error-toast__msg { font-size: 0.86rem; line-height: 1.35; color: #E9E5DB; }
-.error-toast__action { font-size: 0.8rem; color: #C9C2B4; margin-top: 6px; }
+.app-toast--error[data-severity="warning"] .app-toast__icon {
+  color: #91600d;
+  background: #f9e9bc;
+}
+
+.app-toast--error .app-toast__message { color: #75463f; }
+.app-toast--error[data-severity="warning"] .app-toast__message { color: #725c31; }
+.error-toast__action {
+  margin-top: 3px;
+  color: currentColor;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
 .error-toast__meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 10px;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid rgba(233, 229, 219, 0.12);
+  margin-top: 9px;
+  padding-top: 11px;
+  border-top: 1px solid currentColor;
+  border-top-color: color-mix(in srgb, currentColor 16%, transparent);
 }
-.error-toast__codes { font-size: 0.72rem; font-family: ui-monospace, monospace; color: #B7AE9E; }
+
+.error-toast__codes {
+  flex: 1 1 240px;
+  overflow-wrap: anywhere;
+  color: currentColor;
+  font-family: ui-monospace, monospace;
+  font-size: 0.7rem;
+  opacity: 0.72;
+}
+
 .error-toast__copy {
   flex-shrink: 0;
-  border: 1px solid rgba(233, 229, 219, 0.24);
-  background: rgba(255, 255, 255, 0.07);
-  color: #E9E5DB;
+  border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+  background: rgba(255, 255, 255, 0.55);
+  color: currentColor;
   border-radius: 8px;
   padding: 5px 10px;
   font-size: 0.74rem;
   font-weight: 600;
   cursor: pointer;
 }
-.error-toast__copy:hover { background: rgba(233, 229, 219, 0.12); }
+.error-toast__copy:hover { background: rgba(255, 255, 255, 0.9); }
 
 @media (min-width: 768px) {
   .modal-overlay {
@@ -2405,9 +2437,6 @@ textarea.is-invalid {
     padding-bottom: 18px;
   }
 
-  .app-toast {
-    bottom: 26px;
-  }
 }
 
 @media (max-width: 639px) {
@@ -2416,8 +2445,10 @@ textarea.is-invalid {
   }
 
   .app-toast {
+    top: auto;
+    right: 14px;
+    bottom: calc(env(safe-area-inset-bottom) + 88px);
     width: calc(100vw - 28px);
-    min-width: 0;
     padding: 13px 14px;
   }
 }
@@ -2703,59 +2734,84 @@ textarea.is-invalid {
   margin-bottom: 24px;
 }
 
-/* ── InlineError — popup flotante centrado ───────────────── */
-.ie-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.16);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
+/* ── Mensaje contextual: permanece dentro del formulario ── */
+.ie-card {
+  width: 100%;
+  margin-bottom: 20px;
+  padding: 17px 17px 0;
+  color: #70271f;
+  background: #fff7f5;
+  border: 1px solid #edcbc6;
+  border-left: 4px solid #c84b3d;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(95, 43, 34, 0.06);
 }
 
-.ie-card {
-  border-radius: 18px;
-  padding: 32px 36px 0;
-  width: min(420px, calc(100vw - 48px));
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.20);
+.ie-card[data-severity="fatal"] {
+  color: #631b1b;
+  background: #fff3f3;
+  border-color: #e9bcbc;
+  border-left-color: #a92828;
+}
+
+.ie-card[data-severity="warning"] {
+  color: #654400;
+  background: #fffaee;
+  border-color: #ead9af;
+  border-left-color: #b7791f;
 }
 
 .ie-head {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
+  gap: 13px;
 }
 
 .ie-icon {
-  font-size: 1.15rem;
+  display: grid;
+  place-items: center;
   flex-shrink: 0;
-  margin-top: 2px;
-  opacity: 0.70;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: #b43b30;
+  background: #f7deda;
+}
+
+.ie-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.ie-card[data-severity="warning"] .ie-icon {
+  color: #91600d;
+  background: #f9e9bc;
 }
 
 .ie-body { flex: 1; min-width: 0; }
 
 .ie-title {
-  font-size: 0.78rem;
+  color: currentColor;
+  font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.055em;
   text-transform: uppercase;
-  opacity: 0.55;
+  opacity: 0.72;
   margin-bottom: 5px;
 }
 
 .ie-msg {
-  font-size: 0.95rem;
-  font-weight: 600;
-  line-height: 1.5;
+  color: currentColor;
+  font-size: 0.93rem;
+  font-weight: 700;
+  line-height: 1.45;
+  text-wrap: pretty;
 }
 
 .ie-action {
+  color: currentColor;
   font-size: 0.84rem;
-  opacity: 0.75;
+  opacity: 0.82;
   margin-top: 6px;
   font-weight: 400;
   line-height: 1.45;
@@ -2763,106 +2819,96 @@ textarea.is-invalid {
 
 .ie-close {
   flex-shrink: 0;
-  background: rgba(0, 0, 0, 0.06);
+  background: transparent;
   border: none;
-  border-radius: 50%;
+  border-radius: 8px;
   width: 28px;
   height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 1.1rem;
-  line-height: 1;
-  opacity: 0.55;
+  opacity: 0.62;
   color: inherit;
   transition: opacity 0.15s, background 0.15s;
 }
-.ie-close:hover { opacity: 1; background: rgba(0, 0, 0, 0.10); }
+.ie-close svg { width: 18px; height: 18px; }
+.ie-close:hover,
+.ie-close:focus-visible { opacity: 1; background: rgba(0, 0, 0, 0.06); }
 
 .ie-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 24px;
-  padding: 16px 0 28px;
-  border-top-width: 1px;
-  border-top-style: solid;
-}
-
-.ie-meta-left {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
+  margin-top: 16px;
+  margin-right: -17px;
+  margin-left: -17px;
+  padding: 13px 17px 15px;
+  border-top: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  border-radius: 0 0 10px 8px;
+  background: color-mix(in srgb, currentColor 4%, transparent);
 }
 
 .ie-support {
-  font-size: 0.75rem;
+  font-size: 0.74rem;
   font-weight: 400;
-  opacity: 0.60;
-  line-height: 1.35;
+  opacity: 0.68;
+  line-height: 1.45;
+}
+
+.ie-reference-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 9px;
 }
 
 .ie-codes {
+  flex: 1 1 240px;
+  min-width: 0;
   font-family: ui-monospace, monospace;
-  font-size: 0.72rem;
-  font-weight: 700;
-  opacity: 0.75;
+  font-size: 0.73rem;
+  font-weight: 600;
+  opacity: 0.8;
   letter-spacing: 0.01em;
+  overflow-wrap: anywhere;
 }
 
 .ie-copy {
   flex-shrink: 0;
   border-radius: 8px;
-  border-width: 1px;
-  border-style: solid;
-  background: rgba(255, 255, 255, 0.70);
+  border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+  background: rgba(255, 255, 255, 0.58);
+  color: currentColor;
   cursor: pointer;
   font-size: 0.74rem;
   font-weight: 700;
-  padding: 5px 12px;
+  min-height: 30px;
+  padding: 6px 12px;
   transition: background 0.15s;
 }
 .ie-copy:hover { background: rgba(255, 255, 255, 0.90); }
 
-/* ── InlineError inline (sin onDismiss, ej. LoginScreen) ─── */
-.lf-error {
-  background: #fdecea;
-  border: 1.5px solid #c0392b;
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 0.8rem;
-  color: #7F1C10;
-  margin-bottom: 16px;
-  font-weight: 500;
-  display: grid;
-  gap: 10px;
-}
+@media (max-width: 560px) {
+  .ie-card {
+    padding: 15px 15px 0;
+  }
 
-/* severity="fatal" — rojo más intenso */
-.lf-error[data-severity="fatal"] {
-  background: #fce4e0;
-  border-color: #9b1212;
-  color: #5E0A0A;
-}
+  .ie-meta {
+    margin-right: -15px;
+    margin-left: -15px;
+    padding-right: 15px;
+    padding-left: 15px;
+  }
 
-/* severity="warning" — ámbar */
-.lf-error[data-severity="warning"] {
-  background: #fefbeb;
-  border: 1.5px solid #b2760e;
-  color: #7A4F00;
-}
+  .ie-reference-row {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
 
-.lf-error[data-severity="warning"] .lf-error__meta {
-  border-top-color: rgba(178, 118, 14, 0.22);
-}
-
-.lf-error[data-severity="warning"] .lf-error__copy {
-  border-color: rgba(178, 118, 14, 0.32);
-  background: rgba(255, 255, 255, 0.72);
-  color: #7A4F00;
+  .ie-copy {
+    align-self: flex-start;
+  }
 }
 
 .lf-error-action {

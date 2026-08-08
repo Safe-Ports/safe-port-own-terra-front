@@ -1,6 +1,7 @@
 import { createPortal } from "react-dom";
 import { useState } from "react";
 import useEscapeKey from "@/hooks/useEscapeKey";
+import { useLocale } from "@/i18n";
 
 const G = "#355E3B";
 const OK = "#16a34a";
@@ -15,10 +16,10 @@ const Cross = () => (
   <span style={{ color: ERR, fontWeight: 800, fontSize: "0.8rem" }}>✕</span>
 );
 
-function Badge({ type }) {
+function Badge({ type, english }) {
   const cfg = {
-    required: { label: "Obligatorio", bg: "#FEF2F2", color: ERR },
-    optional: { label: "Opcional", bg: "#F0FDF4", color: OK },
+    required: { label: english ? "Required" : "Obligatorio", bg: "#FEF2F2", color: ERR },
+    optional: { label: english ? "Optional" : "Opcional", bg: "#F0FDF4", color: OK },
   }[type];
   return (
     <span style={{
@@ -31,7 +32,7 @@ function Badge({ type }) {
   );
 }
 
-function Section({ id, title, type, open, onToggle, children }) {
+function Section({ id, title, type, open, onToggle, children, english }) {
   return (
     <div style={{ border: `1px solid ${BD}`, borderRadius: 14, marginBottom: 8, overflow: "hidden" }}>
       <button
@@ -43,7 +44,7 @@ function Section({ id, title, type, open, onToggle, children }) {
         }}
       >
         <span style={{ flex: 1, fontWeight: 700, fontSize: "0.84rem", color: "#1E3D2B" }}>{title}</span>
-        <Badge type={type} />
+        <Badge type={type} english={english} />
         <span style={{ fontSize: "0.65rem", color: "#83867C", marginLeft: 4 }}>{open ? "▲" : "▼"}</span>
       </button>
       {open && (
@@ -112,6 +113,9 @@ function Note({ children }) {
 }
 
 export default function LotImportFormatModal({ open, onClose }) {
+  const { locale } = useLocale();
+  const english = locale === "en";
+  const c = (spanish, englishText) => english ? englishText : spanish;
   const [sections, setSections] = useState({
     requerido: true,
     agrupacion: false,
@@ -133,7 +137,7 @@ export default function LotImportFormatModal({ open, onClose }) {
         className="guide-modal"
         role="dialog"
         aria-modal="true"
-        aria-label="Campos requeridos y formato del archivo"
+        aria-label={c("Campos requeridos y formato del archivo", "Required fields and file format")}
         onClick={(e) => e.stopPropagation()}
         style={{ maxWidth: 720, width: "min(95vw, 720px)" }}
       >
@@ -146,10 +150,10 @@ export default function LotImportFormatModal({ open, onClose }) {
             📋
           </div>
           <div className="guide-head-text">
-            <div className="guide-title">Campos requeridos y formato del archivo</div>
-            <div className="guide-sub">Referencia completa para crear tu Excel de lotes sin errores</div>
+            <div className="guide-title">{c("Campos requeridos y formato del archivo", "Required fields and file format")}</div>
+            <div className="guide-sub">{c("Referencia completa para crear tu Excel de lotes sin errores", "Complete reference for creating an error-free lot spreadsheet")}</div>
           </div>
-          <button className="guide-close-x" onClick={onClose} aria-label="Cerrar">×</button>
+          <button className="guide-close-x" onClick={onClose} aria-label={c("Cerrar", "Close")}>×</button>
         </div>
 
         {/* Body */}
@@ -158,12 +162,12 @@ export default function LotImportFormatModal({ open, onClose }) {
           style={{ padding: "12px 16px" }}
         >
           {/* ── 1. ID Lote — OBLIGATORIO ─────────────────────────────────── */}
-          <Section id="requerido" title="ID Lote — identificador único" type="required" open={sections.requerido} onToggle={toggle}>
+          <Section english={english} id="requerido" title={c("ID Lote — identificador único", "Lot ID — unique identifier")} type="required" open={sections.requerido} onToggle={toggle}>
             <p style={{ fontSize: "0.8rem", color: "#43453F", marginBottom: 10 }}>
-              Cada fila debe tener un valor único en esta columna. Es el único campo obligatorio del archivo.
+              {c("Cada fila debe tener un valor único en esta columna. Es el único campo obligatorio del archivo.", "Every row must have a unique value in this column. It is the file’s only required field.")}
             </p>
             <MiniTable
-              headers={["Encabezado aceptado", "Ejemplo válido", "Inválido"]}
+              headers={english ? ["Accepted header", "Valid example", "Invalid"] : ["Encabezado aceptado", "Ejemplo válido", "Inválido"]}
               rows={[
                 ["ID Lote", "A-01", <Cross />],
                 ["id lote", "L001", <Cross />],
@@ -177,19 +181,19 @@ export default function LotImportFormatModal({ open, onClose }) {
               <Pill ok label="L001" />
               <Pill ok label="MZ-A-10" />
               <Pill ok label="P-05" />
-              <Pill ok={false} label="(vacío)" />
-              <Pill ok={false} label="duplicado" />
+              <Pill ok={false} label={c("(vacío)", "(empty)")} />
+              <Pill ok={false} label={c("duplicado", "duplicate")} />
             </div>
-            <Note>No uses celdas combinadas ni dejes filas sin ID Lote.</Note>
+            <Note>{c("No uses celdas combinadas ni dejes filas sin ID Lote.", "Do not use merged cells or leave rows without a Lot ID.")}</Note>
           </Section>
 
           {/* ── 2. Agrupación ───────────────────────────────────────────── */}
-          <Section id="agrupacion" title="Agrupación por sección o manzana" type="optional" open={sections.agrupacion} onToggle={toggle}>
+          <Section english={english} id="agrupacion" title={c("Agrupación por sección o manzana", "Group by section or block")} type="optional" open={sections.agrupacion} onToggle={toggle}>
             <p style={{ fontSize: "0.8rem", color: "#43453F", marginBottom: 10 }}>
-              Agrupa los lotes en secciones dentro del fraccionamiento. Si se omite, todos quedan en "Importados".
+              {c('Agrupa los lotes en secciones dentro del fraccionamiento. Si se omite, todos quedan en "Importados".', 'Groups lots into sections within the development. When omitted, all lots are placed under "Imported".')}
             </p>
             <MiniTable
-              headers={["Encabezado aceptado", "Ejemplo"]}
+              headers={english ? ["Accepted header", "Example"] : ["Encabezado aceptado", "Ejemplo"]}
               rows={[
                 ["Fraccionamiento", "Residencial Las Palmas"],
                 ["Sección", "Etapa 1"],
@@ -207,28 +211,28 @@ export default function LotImportFormatModal({ open, onClose }) {
           </Section>
 
           {/* ── 3. Medidas ──────────────────────────────────────────────── */}
-          <Section id="medidas" title="Medidas del lote" type="optional" open={sections.medidas} onToggle={toggle}>
+          <Section english={english} id="medidas" title={c("Medidas del lote", "Lot measurements")} type="optional" open={sections.medidas} onToggle={toggle}>
             <p style={{ fontSize: "0.8rem", color: "#43453F", marginBottom: 10 }}>
-              Usa números positivos. No incluyas unidades en la celda, solo el valor numérico.
+              {c("Usa números positivos. No incluyas unidades en la celda, solo el valor numérico.", "Use positive numbers. Enter only the numeric value, without units.")}
             </p>
             <MiniTable
-              headers={["Encabezado", "Unidad", "Válido", "Inválido"]}
+              headers={english ? ["Header", "Unit", "Valid", "Invalid"] : ["Encabezado", "Unidad", "Válido", "Inválido"]}
               rows={[
                 ["Superficie (m2)", "m²", <><Check /> 120 / 120.5</>, <><Cross /> "120 m2"</>],
                 ["Frente (ML)", "metros lineales", <><Check /> 8 / 8.5</>, <><Cross /> "8ml"</>],
                 ["Fondo (ML)", "metros lineales", <><Check /> 15</>, <><Cross /> "quince"</>],
               ]}
             />
-            <Note>Deja la celda vacía si no tienes el dato. No pongas cero (0) a menos que sea el valor real.</Note>
+            <Note>{c("Deja la celda vacía si no tienes el dato. No pongas cero (0) a menos que sea el valor real.", "Leave the cell empty when the value is unknown. Do not enter zero unless it is the actual value.")}</Note>
           </Section>
 
           {/* ── 4. Precios ──────────────────────────────────────────────── */}
-          <Section id="precios" title="Precios del lote" type="optional" open={sections.precios} onToggle={toggle}>
+          <Section english={english} id="precios" title={c("Precios del lote", "Lot prices")} type="optional" open={sections.precios} onToggle={toggle}>
             <p style={{ fontSize: "0.8rem", color: "#43453F", marginBottom: 10 }}>
-              Puedes usar el signo $ y separadores de miles; el sistema los elimina automáticamente.
+              {c("Puedes usar el signo $ y separadores de miles; el sistema los elimina automáticamente.", "You may use the $ sign and thousands separators; the system removes them automatically.")}
             </p>
             <MiniTable
-              headers={["Encabezado", "Formatos válidos", "Resultado"]}
+              headers={english ? ["Header", "Valid formats", "Result"] : ["Encabezado", "Formatos válidos", "Resultado"]}
               rows={[
                 ["Precio Contado", "450000  /  $450,000  /  450,000", "$450,000"],
                 ["Precio Financiado", "520000  /  $520,000.00", "$520,000"],
@@ -244,9 +248,9 @@ export default function LotImportFormatModal({ open, onClose }) {
           </Section>
 
           {/* ── 5. Estados ──────────────────────────────────────────────── */}
-          <Section id="estados" title="Estado del lote" type="optional" open={sections.estados} onToggle={toggle}>
+          <Section english={english} id="estados" title={c("Estado del lote", "Lot status")} type="optional" open={sections.estados} onToggle={toggle}>
             <p style={{ fontSize: "0.8rem", color: "#43453F", marginBottom: 10 }}>
-              Usa el encabezado <strong>Estado</strong>, <strong>Estatus</strong> o <strong>Status</strong>. Si se omite, se usa <em>disponible</em>.
+              {c("Use el encabezado Estado, Estatus o Status. Si se omite, se usa disponible.", "Use the Estado, Estatus, or Status header. When omitted, the lot defaults to available.")}
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
               <Pill ok label="disponible" />
@@ -256,18 +260,17 @@ export default function LotImportFormatModal({ open, onClose }) {
               <Pill ok={false} label="sold" />
             </div>
             <Note>
-              <strong>Vendido</strong> requiere un contrato y no se puede asignar directamente en esta carga.
-              Usa <em>disponible</em> y después registra la venta desde la sección Contratos.
+              {c("Vendido requiere un contrato y no se puede asignar directamente en esta carga. Usa disponible y después registra la venta desde Contratos.", "Sold requires a contract and cannot be assigned directly during this upload. Use available, then record the sale from Contracts.")}
             </Note>
           </Section>
 
           {/* ── 6. Servicios ────────────────────────────────────────────── */}
-          <Section id="servicios" title="Servicios disponibles" type="optional" open={sections.servicios} onToggle={toggle}>
+          <Section english={english} id="servicios" title={c("Servicios disponibles", "Available utilities")} type="optional" open={sections.servicios} onToggle={toggle}>
             <p style={{ fontSize: "0.8rem", color: "#43453F", marginBottom: 10 }}>
-              Agrega una columna por cada servicio. Para indicar que el lote <em>sí</em> tiene el servicio usa alguno de los valores válidos.
+              {c("Agrega una columna por cada servicio. Para indicar que el lote sí tiene el servicio usa alguno de los valores válidos.", "Add one column per utility. Use any accepted true value to indicate that the lot has that utility.")}
             </p>
             <MiniTable
-              headers={["Columna (encabezado)", "Valores → ✓ (sí tiene)", "Valores → ✕ (no tiene)"]}
+              headers={english ? ["Column (header)", "Values → ✓ (available)", "Values → ✕ (not available)"] : ["Columna (encabezado)", "Valores → ✓ (sí tiene)", "Valores → ✕ (no tiene)"]}
               rows={[
                 ["Agua Potable", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
                 ["Energía Eléctrica", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
@@ -280,9 +283,9 @@ export default function LotImportFormatModal({ open, onClose }) {
           </Section>
 
           {/* ── 7. Ejemplo real ─────────────────────────────────────────── */}
-          <Section id="ejemplo" title="Ejemplo real — archivo completo" type="optional" open={sections.ejemplo} onToggle={toggle}>
+          <Section english={english} id="ejemplo" title={c("Ejemplo real — archivo completo", "Complete file example")} type="optional" open={sections.ejemplo} onToggle={toggle}>
             <p style={{ fontSize: "0.8rem", color: "#43453F", marginBottom: 10 }}>
-              Así se ve un archivo correcto con todos los campos. Usa la plantilla oficial como punto de partida.
+              {c("Así se ve un archivo correcto con todos los campos. Usa la plantilla oficial como punto de partida.", "This is what a valid file with every field looks like. Use the official template as your starting point.")}
             </p>
             <MiniTable
               headers={["ID Lote", "Manzana", "Superficie (m2)", "Precio Contado", "Estado", "Agua Potable", "Pavimento"]}
@@ -298,10 +301,10 @@ export default function LotImportFormatModal({ open, onClose }) {
               border: "1px solid #86efac", borderRadius: 10,
             }}>
               <div style={{ fontSize: "0.74rem", fontWeight: 700, color: G, marginBottom: 6 }}>
-                ✓ Descarga la plantilla oficial desde el tablero para tener el formato exacto
+                ✓ {c("Descarga la plantilla oficial desde el tablero para tener el formato exacto", "Download the official template from the board to use the exact format")}
               </div>
               <div style={{ fontSize: "0.72rem", color: "#43453F" }}>
-                La primera fila debe tener los encabezados. Una fila por lote. Sin celdas combinadas. Archivos aceptados: <strong>XLSX, XLS, CSV</strong> (máx. 10 MB).
+                {c("La primera fila debe tener los encabezados. Una fila por lote. Sin celdas combinadas. Archivos aceptados: XLSX, XLS, CSV (máx. 10 MB).", "The first row must contain headers. Use one row per lot and no merged cells. Accepted files: XLSX, XLS, CSV (max. 10 MB).")}
               </div>
             </div>
           </Section>
@@ -309,7 +312,7 @@ export default function LotImportFormatModal({ open, onClose }) {
 
         {/* Footer */}
         <div className="guide-foot">
-          <button className="guide-ok" onClick={onClose}>Entendido</button>
+          <button className="guide-ok" onClick={onClose}>{c("Entendido", "Got it")}</button>
         </div>
       </div>
     </div>,

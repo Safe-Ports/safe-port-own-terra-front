@@ -9,6 +9,7 @@ import { useProjectsQuery } from "@/hooks/queries/useAppQueries";
 import { lotService } from "@/services/lotService";
 import { inmuebleService } from "@/services/inmuebleService";
 import { parseApiError } from "@/errors/parseApiError";
+import { useLocale } from "@/i18n";
 import { MAP_IMAGE_ACCEPT, isSupportedMapImage, mapFileFromUrl, prepareMapImage } from "@/utils/mapImage";
 import Button from "@/components/Button";
 import GuideModal from "@/components/shared/GuideModal";
@@ -32,6 +33,19 @@ const LOT_TEMPLATE_GUIDE = [
   ["Vendedor Asignado", "Opcional. Se busca por nombre exacto o parcial entre usuarios activos. Si hay ambigüedad queda sin asignar (advertencia)."],
   ["Archivos aceptados", "XLSX, XLS, CSV o TXT de hasta 10 MB."],
   ["Importante", "El archivo se valida en el servidor. Los lotes se guardan en cuanto el archivo pasa la validación. No combines celdas ni dejes filas sin ID Lote."],
+];
+const LOT_TEMPLATE_GUIDE_EN = [
+  ["GUIDE FOR UPLOADING LOTS FROM EXCEL OR CSV"],
+  ["Rule", "Details"],
+  ["Structure", "The first row contains headers and every following row represents one lot. Maximum 5,000 rows per file."],
+  ["Required field", "Lot ID must be unique per row. Rows with missing or duplicate IDs are rejected."],
+  ["Optional grouping", "Use Development, Section, Block, or Project. If omitted, lots are grouped under Imported."],
+  ["Optional numeric fields", "Area (m²), Frontage, Depth, Cash Price, and Financed Price. Currency formats such as $400,000.50 are accepted."],
+  ["Valid statuses", "Available and reserved values in English or Spanish are normalized. Empty means Available."],
+  ["Optional utilities", "Potable Water, Electricity, Sewer, Natural Gas, Internet/Fiber, and Pavement. Enable with yes, 1, true, x, or ✓."],
+  ["Assigned seller", "Optional. Active users are matched by exact or partial name; ambiguous matches remain unassigned with a warning."],
+  ["Accepted files", "XLSX, XLS, CSV, or TXT up to 10 MB."],
+  ["Important", "The server validates the file and saves valid lots immediately. Do not merge cells or leave rows without a Lot ID."],
 ];
 const LOT_IMPORT_GUIDE_STEPS = [
   {
@@ -127,6 +141,41 @@ const LOT_EDITOR_GUIDE = {
   ],
 };
 
+const LOT_GUIDES_EN = {
+  selector: {
+    title: "Lot upload guide", subtitle: "Choose the right method to start or continue a development.",
+    steps: [
+      { title: "Review your portfolio", text: "Existing developments appear at the top. Use View to open one or Edit lots to update its inventory." },
+      { title: "Manual setup", text: "Create a development from scratch, optionally upload a site plan, and build its sections manually." },
+      { title: "Import CAD", text: "Use DWG or DXF when your technical plan already contains the structure you want to process." },
+      { title: "Excel and CSV", text: "Open Manual setup, continue with or without a plan, then use Template and Upload from the lot board." },
+    ],
+  },
+  map: {
+    title: "Prepare the site plan", subtitle: "The optional image provides a visual reference for the development.",
+    steps: [
+      { title: "Development name", text: "Enter a clear name before continuing. This is the name shown in your portfolio." },
+      { title: "Upload the plan", text: "Select a JPG, PNG, or WEBP image to use as a reference while reviewing the lot matrix." },
+      { title: "Continue without a plan", text: "The image is optional. Continue to create sections manually or import lots from Excel or CSV." },
+      { title: "Change method", text: "Return to the main view to select a different upload method." },
+    ],
+  },
+  editor: {
+    title: "Lot board and Excel/CSV upload", subtitle: "Create sections manually or upload every lot from a file.",
+    steps: [
+      { title: "Create lots manually", text: "Enter a section or block name, choose the number of lots, and select Add. Open each lot to edit its code, status, dimensions, prices, and utilities." },
+      { title: "Upload the file", text: "Download the template, complete it, and upload it. The server validates and saves the lots when there are no blocking errors." },
+      { title: "Excel and CSV format", text: "XLSX, XLS, CSV, and TXT files up to 10 MB and 5,000 data rows are accepted. Use headers in the first row and one row per lot." },
+      { title: "Required Lot ID", text: "Every row needs a unique identifier such as A-01 or L001. Missing or duplicate IDs are rejected." },
+      { title: "Sections and blocks", text: "Use Development, Section, Block, or Project to group lots. Without this column, lots are grouped under Imported." },
+      { title: "Measurements and prices", text: "Area, frontage, depth, cash price, and financed price are optional. Prices may include a dollar sign, commas, and decimals." },
+      { title: "Lot status", text: "Available, reserved, and their accepted Spanish equivalents are normalized automatically. An empty status defaults to Available." },
+      { title: "Utilities and assigned seller", text: "Utility columns accept yes, 1, true, x, or ✓. The assigned seller is matched against active users." },
+      { title: "Server validation", text: "Row errors include their row number so you can correct them. Unknown columns are ignored with a warning." },
+    ],
+  },
+};
+
 function createLots(sectionName, total) {
   return Array.from({ length: total }, (_, index) => ({
     id: `${sectionName}_${Date.now()}_${index}`,
@@ -147,6 +196,7 @@ function sortLotsByCode(lots) {
 }
 
 function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot, onDeleteLot }) {
+  const { t, localeTag } = useLocale();
   const [page, setPage] = useState(0);
   const sortedLots = useMemo(() => sortLotsByCode(section.lots), [section.lots]);
   const totalPages = Math.max(1, Math.ceil(sortedLots.length / LOTS_PER_PAGE));
@@ -159,19 +209,19 @@ function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot, onDeleteL
       <div className="mb-2.5 flex items-center gap-2">
         <div className="text-[0.7rem] font-extrabold uppercase tracking-[0.5px] text-[#43453F]">
           {section.name}
-          <span className="ml-1 font-normal opacity-55 text-[0.62rem]">{section.lots.length} lotes</span>
+          <span className="ml-1 font-normal opacity-55 text-[0.62rem]">{t("lotInventory.sectionLots", { count: section.lots.length })}</span>
         </div>
         <div className="h-px flex-1 bg-[#DCDAD2]" />
         <button
           onClick={() => onAddLots(section.id, 10)}
-          title="Añadir 10 lotes"
+          title={t("lotInventory.addTen")}
           className="flex h-[22px] w-[22px] items-center justify-center rounded-[5px] border border-[#DCDAD2] bg-[#F1EEE6] text-[0.8rem] font-black text-[#355E3B]"
         >
           +
         </button>
         <button
           onClick={() => onRemoveSection(section.id)}
-          title="Eliminar sección"
+          title={t("lotInventory.deleteSection")}
           className="flex h-[22px] w-[22px] items-center justify-center rounded-[5px] border border-[#DCDAD2] bg-[#F1EEE6] text-[0.8rem] font-black text-[#C0392B]"
         >
           ✕
@@ -188,7 +238,7 @@ function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot, onDeleteL
               style={{ background: c.bg, borderColor: c.border }}
             >
               <div
-                title={`${lot.code} — click para editar`}
+                title={`${lot.code} — ${t("lotInventory.clickEdit")}`}
                 className="cursor-pointer px-1 py-2 text-center"
                 onClick={() => onEditLot(section.id, lot.id)}
                 role="button"
@@ -204,11 +254,11 @@ function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot, onDeleteL
                   {lot.code}
                 </div>
                 <div className="mt-0.5 text-[0.56rem] opacity-70" style={{ color: c.text }}>
-                  {lot.area ? `${lot.area}m²` : lot.status === "available" ? "Libre" : lot.status === "sold" ? "Vendido" : "Apartado"}
+                  {lot.area ? `${lot.area}m²` : t(`lotInventory.${lot.status === "available" ? "freeStatus" : lot.status}`)}
                 </div>
                 {lot.price ? (
                   <div className="mt-0.5 text-[0.5rem] font-extrabold leading-none" style={{ color: c.text }}>
-                    ${Number(lot.price).toLocaleString("es-MX", { maximumFractionDigits: 0 })}
+                    {new Intl.NumberFormat(localeTag, { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(Number(lot.price))}
                   </div>
                 ) : null}
               </div>
@@ -227,7 +277,7 @@ function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot, onDeleteL
             <HiChevronLeft />
           </button>
           <span className="text-[0.66rem] font-semibold text-[#43453F]">
-            Página {safePage + 1} de {totalPages}
+            {t("lotInventory.pageOf", { page: safePage + 1, pages: totalPages })}
           </span>
           <button
             onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
@@ -243,6 +293,7 @@ function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot, onDeleteL
 }
 
 function LotsPage() {
+  const { t, locale } = useLocale();
   const navigate = useNavigate();
   const { data: projects = [] } = useProjectsQuery();
   const { draftProject, setDraftProject, saveFrac, saveEditedFrac, deleteFrac, setSelectedFracId, showToast, showError } = useAppContext();
@@ -270,11 +321,9 @@ function LotsPage() {
     else if (lotEditDraft) setLotEditDraft(null);
   }, showDeleteFracConfirm || Boolean(lotEditDraft));
   useLandsGuide(() => setShowImportGuide(true));
-  const activeGuide = draftProject.mode === "editor"
-    ? LOT_EDITOR_GUIDE
-    : draftProject.mode === "map-upload"
-      ? LOT_MAP_GUIDE
-      : LOT_SELECTOR_GUIDE;
+  const activeGuide = locale === "en"
+    ? (draftProject.mode === "editor" ? LOT_GUIDES_EN.editor : draftProject.mode === "map-upload" ? LOT_GUIDES_EN.map : LOT_GUIDES_EN.selector)
+    : (draftProject.mode === "editor" ? LOT_EDITOR_GUIDE : draftProject.mode === "map-upload" ? LOT_MAP_GUIDE : LOT_SELECTOR_GUIDE);
   const [importSummary, setImportSummary] = useState(null);
   const [importLoading, setImportLoading] = useState(false);
   const [downloadingTemplate, setDownloadingTemplate] = useState(false);
@@ -331,7 +380,7 @@ function LotsPage() {
         _editingFracId: project.id,
       });
     } catch (err) {
-      showError(err, "Error al cargar los lotes para editar");
+      showError(err, t("lotInventory.loadError"));
     } finally {
       setLoadingEditId(null);
     }
@@ -343,15 +392,16 @@ function LotsPage() {
     try {
       const blob = await lotService.importTemplate("xlsx");
       const workbook = XLSX.read(await blob.arrayBuffer(), { type: "array" });
-      if (!workbook.SheetNames.includes("Guía")) {
-        const guideSheet = XLSX.utils.aoa_to_sheet(LOT_TEMPLATE_GUIDE);
+      const guideSheetName = locale === "en" ? "Guide" : "Guía";
+      if (!workbook.SheetNames.includes(guideSheetName)) {
+        const guideSheet = XLSX.utils.aoa_to_sheet(locale === "en" ? LOT_TEMPLATE_GUIDE_EN : LOT_TEMPLATE_GUIDE);
         guideSheet["!cols"] = [{ wch: 24 }, { wch: 82 }];
-        XLSX.utils.book_append_sheet(workbook, guideSheet, "Guía");
+        XLSX.utils.book_append_sheet(workbook, guideSheet, guideSheetName);
       }
-      XLSX.writeFile(workbook, "plantilla_lotes.xlsx");
-      showToast("Plantilla de lotes descargada");
+      XLSX.writeFile(workbook, locale === "en" ? "lot_template.xlsx" : "plantilla_lotes.xlsx");
+      showToast(t("lotInventory.templateDownloaded"));
     } catch (err) {
-      showError(err, "No se pudo descargar la plantilla");
+      showError(err, t("lotInventory.templateError"));
     } finally {
       setDownloadingTemplate(false);
     }
@@ -407,7 +457,7 @@ function LotsPage() {
       if (result.imported === 0 && result.failed > 0) {
         setImportSummary({ fileName: file.name, imported: 0, failed: result.failed, errors: result.errors, warnings: result.warnings });
         setShowImportGuide(true);
-        showToast(result.errors[0]?.message || "No se importaron lotes: revisa los errores");
+        showToast(result.errors[0]?.message || t("lotInventory.noneImported"), "warning");
         return;
       }
 
@@ -457,17 +507,20 @@ function LotsPage() {
       });
 
       if (mapUploadError) {
-        showError(mapUploadError, "Los lotes se importaron, pero el plano no pudo subirse");
+        showError(mapUploadError, t("lotInventory.mapPartialError"));
       } else {
-        showToast(`${result.imported} lotes importados${result.failed ? ` · ${result.failed} con errores` : ""}`);
+        showToast(
+          `${t("lotInventory.imported", { count: result.imported })}${result.failed ? ` · ${t("lotInventory.failed", { count: result.failed })}` : ""}`,
+          result.failed ? "warning" : "success",
+        );
       }
       if (result.failed > 0) setShowImportGuide(true);
 
     } catch (err) {
-      const msg = parseApiError(err, "Error al importar el archivo. Descarga la plantilla y verifica el formato.").message;
+      const msg = parseApiError(err, t("lotInventory.importError")).message;
       setImportSummary({ fileName: file?.name ?? null, imported: 0, failed: 0, errors: [{ message: msg }], warnings: [] });
       setShowImportGuide(true);
-      showError(err, "Error al importar el archivo. Descarga la plantilla y verifica el formato.");
+      showError(err, t("lotInventory.importError"));
     } finally {
       setImportLoading(false);
     }
@@ -500,17 +553,17 @@ function LotsPage() {
     const cleanTotal = String(sectionTotal).trim();
 
     if (!cleanName) {
-      showToast("Escribe el nombre de la sección o manzana para continuar", "warning");
+      showToast(t("lotInventory.sectionRequired"), "warning");
       return;
     }
     if (!/^\d+$/.test(cleanTotal)) {
-      showToast("Escribe una cantidad válida de lotes", "warning");
+      showToast(t("lotInventory.validQuantity"), "warning");
       return;
     }
 
     const total = Number(cleanTotal);
     if (!Number.isSafeInteger(total) || total < 1 || total > 5000) {
-      showToast("Escribe una cantidad de lotes entre 1 y 5,000", "warning");
+      showToast(t("lotInventory.quantityRange"), "warning");
       return;
     }
     setDraftProject((previous) => ({
@@ -526,7 +579,7 @@ function LotsPage() {
     }));
     setSectionName("");
     setSectionTotal("20");
-    showToast(`${cleanName} agregada · ${total} lote${total === 1 ? "" : "s"}`);
+    showToast(t("lotInventory.sectionAdded", { name: cleanName, count: total }));
   };
 
   const cycleLotStatus = (sectionId, lotId) => {
@@ -628,7 +681,7 @@ function LotsPage() {
 
   const updateMap = async (file) => {
     if (!isSupportedMapImage(file)) {
-      showToast("El plano debe ser una imagen JPG, PNG, WEBP, HEIC o HEIF. Excel y CSV solo van en Llenar con Excel o CSV.", "warning");
+      showToast(t("lotInventory.invalidImage"), "warning");
       return false;
     }
     try {
@@ -640,15 +693,15 @@ function LotsPage() {
         name: previous.name || "Nuevo Fraccionamiento"
       }));
       if (processed.converted) {
-        showToast("Plano HEIC/HEIF convertido a un formato compatible");
+        showToast(t("lotInventory.convertedImage"));
       } else if (processed.cropped) {
-        showToast("Plano ajustado automáticamente para enfocar el lote");
+        showToast(t("lotInventory.croppedImage"));
       } else if (processed.resized) {
-        showToast("Plano optimizado para cargarlo correctamente");
+        showToast(t("lotInventory.optimizedImage"));
       }
       return true;
     } catch (error) {
-      showToast(`${error.message}. Intenta exportarla como JPG o PNG.`, "warning");
+      showToast(`${error.message}. ${t("lotInventory.imageRetry")}`, "warning");
       return false;
     }
   };
@@ -670,11 +723,11 @@ function LotsPage() {
                 className="lots-editor-btn"
                 onClick={() => { setDraftProject((p) => ({ ...p, _editingFracId: null })); navigate("/fraccionamientos"); }}
               >
-                Cancelar
+                {t("lotInventory.cancel")}
               </button>
               <span className="lots-editor-state">
                 <span className="lots-editor-dot warn" />
-                Editando: {draftProject.name}
+                {t("lotInventory.editing", { name: draftProject.name })}
               </span>
             </div>
           ) : (
@@ -683,7 +736,7 @@ function LotsPage() {
                 className="lots-editor-btn"
                 onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
               >
-                Cambiar mapa
+                {t("lotInventory.changeMap")}
               </button>
               <div className="lots-editor-separator" />
               {mapFileName && (
@@ -695,15 +748,15 @@ function LotsPage() {
           <div className="lots-editor-legend">
             <span>
               <span className="lots-legend-mark available" />
-              Disponible
+              {t("lotInventory.available")}
             </span>
             <span>
               <span className="lots-legend-mark sold" />
-              Vendido
+              {t("lotInventory.sold")}
             </span>
             <span>
               <span className="lots-legend-mark reserved" />
-              Apartado
+              {t("lotInventory.reserved")}
             </span>
           </div>
           {isEditing && (
@@ -712,7 +765,7 @@ function LotsPage() {
               style={{ color: "#C0392B", borderColor: "#fca5a5" }}
               onClick={() => setShowDeleteFracConfirm(true)}
             >
-              Eliminar
+              {t("lotInventory.delete")}
             </button>
           )}
           <button
@@ -733,7 +786,7 @@ function LotsPage() {
             }}
             disabled={!draftProject.name?.trim() || saving}
           >
-            {saving ? "Guardando..." : isEditing ? "Guardar cambios" : "Crear fraccionamiento"}
+            {saving ? t("lotInventory.saving") : isEditing ? t("lotInventory.saveChanges") : t("lotInventory.createDevelopment")}
           </button>
         </div>
 
@@ -744,15 +797,15 @@ function LotsPage() {
             {draftProject.mapUrl ? (
               <img
                 src={draftProject.mapUrl}
-                alt="Plano"
+                alt={t("lotInventory.planImage")}
                 className="max-h-full max-w-full object-contain"
               />
             ) : (
               <div className="lots-map-empty">
                 <div className="lots-map-empty-code">PL</div>
-                <div className="lots-map-empty-title">Sin imagen de plano</div>
+                <div className="lots-map-empty-title">{t("lotInventory.noPlanImage")}</div>
                 <div className="lots-map-empty-sub">
-                  Sube o cambia el archivo para visualizar el mapa del fraccionamiento.
+                  {t("lotInventory.noPlanImageText")}
                 </div>
               </div>
             )}
@@ -761,7 +814,7 @@ function LotsPage() {
                 className="lots-map-action"
                 onClick={() => changeImageRef.current?.click()}
               >
-                {draftProject.mapUrl ? "Cambiar imagen" : "Subir imagen"}
+                {draftProject.mapUrl ? t("lotInventory.changeImage") : t("lotInventory.uploadImage")}
               </button>
             </div>
             <input
@@ -785,18 +838,18 @@ function LotsPage() {
             {/* Panel header */}
             <div className="lots-builder-head">
               <div className="lots-builder-title-row">
-                <div className="lots-builder-title">Tablero de lotes</div>
+                <div className="lots-builder-title">{t("lotInventory.board")}</div>
                 <div className="lots-builder-count">
-                  {totalDraftLots} lotes · {draftProject.sections.length} sec
+                  {t("lotInventory.boardCount", { lots: totalDraftLots, sections: draftProject.sections.length })}
                 </div>
               </div>
               <div className="lots-section-form">
                 <div className="lots-section-name" style={{ flex: 1 }}>
-                  <div className="lots-builder-label">Nombre del fraccionamiento</div>
+                  <div className="lots-builder-label">{t("lotInventory.developmentName")}</div>
                   <input
                     value={draftProject.name}
                     onChange={(event) => setDraftProject((previous) => ({ ...previous, name: event.target.value }))}
-                    placeholder="Nombre del fraccionamiento"
+                    placeholder={t("lotInventory.developmentName")}
                     className="lots-builder-input"
                   />
                 </div>
@@ -804,13 +857,13 @@ function LotsPage() {
               <div className="lots-section-form" style={importedByFile ? { opacity: 0.5 } : undefined}>
                 <div className="lots-section-name">
                   <div className="lots-builder-label">
-                    Nombre de sección *
+                    {t("lotInventory.sectionName")}
                   </div>
                   <input
                     value={sectionName}
                     onChange={(event) => setSectionName(event.target.value)}
                     onKeyDown={(event) => event.key === "Enter" && addSection()}
-                    placeholder="Ej: Manzana A, Frente Norte..."
+                    placeholder={t("lotInventory.sectionExample")}
                     required
                     disabled={importedByFile}
                     title={importedByFile ? "Deshabilitado: ya importaste los lotes por archivo" : undefined}
@@ -819,7 +872,7 @@ function LotsPage() {
                 </div>
                 <div className="lots-section-total">
                   <div className="lots-builder-label">
-                    N° de lotes
+                    {t("lotInventory.numberLots")}
                   </div>
                   <input
                     type="text"
@@ -832,7 +885,7 @@ function LotsPage() {
                     inputMode="numeric"
                     pattern="[0-9]*"
                     autoComplete="off"
-                    aria-label="Número de lotes"
+                    aria-label={t("lotInventory.numberLots")}
                     disabled={importedByFile}
                     className="lots-builder-input center"
                   />
@@ -844,7 +897,7 @@ function LotsPage() {
                   className="lots-add-section"
                   style={importedByFile ? { cursor: "not-allowed" } : undefined}
                 >
-                  Agregar
+                  {t("lotInventory.add")}
                 </button>
               </div>
               {importedByFile && (
@@ -859,31 +912,31 @@ function LotsPage() {
               )}
               <div className="lots-excel-row">
                 <div>
-                  <span className="lots-excel-title">Llenar con Excel o CSV</span>
+                  <span className="lots-excel-title">{t("lotInventory.fillExcel")}</span>
                   <span className="lots-excel-sub">
                     {importLoading
-                      ? "Validando e importando..."
+                      ? t("lotInventory.validating")
                       : importSummary
-                        ? `${importSummary.imported} importados${importSummary.failed ? ` · ${importSummary.failed} con errores` : ""}${importSummary.warnings?.length ? ` · ${importSummary.warnings.length} advertencias` : ""}`
-                        : "Importa lotes desde XLSX, XLS o CSV"}
+                        ? `${t("lotInventory.imported", { count: importSummary.imported })}${importSummary.failed ? ` · ${t("lotInventory.failed", { count: importSummary.failed })}` : ""}${importSummary.warnings?.length ? ` · ${t("lotInventory.warnings", { count: importSummary.warnings.length })}` : ""}`
+                        : t("lotInventory.importText")}
                   </span>
                 </div>
                 <button className="lots-excel-upload" onClick={downloadImportTemplate} disabled={downloadingTemplate}>
-                  {downloadingTemplate ? "Descargando..." : "Plantilla"}
+                  {downloadingTemplate ? t("lotInventory.downloading") : t("lotInventory.template")}
                 </button>
                 <button
                   className="lots-excel-upload"
                   onClick={() => setShowFormatGuide(true)}
-                  title="Ver campos y formato del archivo"
+                  title={t("lotInventory.formatHint")}
                 >
-                  Ver formato
+                  {t("lotInventory.viewFormat")}
                 </button>
                 <button
                   className="lots-excel-upload"
                   onClick={() => excelInputRef.current?.click()}
                   disabled={importLoading}
                 >
-                  {importLoading ? "Importando..." : "Subir"}
+                  {importLoading ? t("lotInventory.importing") : t("lotInventory.upload")}
                 </button>
                 <input
                   ref={excelInputRef}
@@ -900,9 +953,9 @@ function LotsPage() {
               {draftProject.sections.length === 0 ? (
                 <div className="lots-empty-state">
                   <div className="lots-empty-code">LT</div>
-                  <div className="lots-empty-title">Añade una sección para empezar</div>
+                  <div className="lots-empty-title">{t("lotInventory.emptyTitle")}</div>
                   <div className="lots-empty-sub">
-                    Construye la matriz de lotes por manzana, frente o etapa.
+                    {t("lotInventory.emptyText")}
                   </div>
                 </div>
               ) : (
@@ -931,12 +984,12 @@ function LotsPage() {
         const setField = (key, val) => setLotEditDraft((prev) => ({ ...prev, [key]: val }));
         const setService = (key, val) => setLotEditDraft((prev) => ({ ...prev, servicios: { ...prev.servicios, [key]: val } }));
         const SERVICES = [
-          { key: "agua",      label: "Agua potable"      },
-          { key: "luz",       label: "Energia electrica" },
-          { key: "drenaje",   label: "Drenaje"           },
-          { key: "gas",       label: "Gas natural"       },
-          { key: "internet",  label: "Internet / Fibra"  },
-          { key: "pavimento", label: "Pavimento"         },
+          { key: "agua",      label: t("lotInventory.water") },
+          { key: "luz",       label: t("lotInventory.electricity") },
+          { key: "drenaje",   label: t("lotInventory.drainage") },
+          { key: "gas",       label: t("lotInventory.gas") },
+          { key: "internet",  label: t("lotInventory.internet") },
+          { key: "pavimento", label: t("lotInventory.pavement") },
         ];
         return (
           <div className="lot-edit-overlay" onClick={() => setLotEditDraft(null)}>
@@ -946,7 +999,7 @@ function LotsPage() {
               <div className="lot-edit-head">
                 <div className="lot-edit-badge">{d.code}</div>
                 <div>
-                  <div className="lot-edit-title">Editar lote</div>
+                  <div className="lot-edit-title">{t("lotInventory.editLot")}</div>
                   <div className="lot-edit-sub">{draftProject.name}</div>
                 </div>
                 <button className="lot-edit-close" onClick={() => setLotEditDraft(null)}>×</button>
@@ -956,53 +1009,53 @@ function LotsPage() {
               <div className="lot-edit-body">
 
                 {/* Imagen del plano */}
-                <div className="lot-edit-sec">Imagen del plano</div>
+                <div className="lot-edit-sec">{t("lotInventory.planImage")}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
                   {draftProject.mapUrl ? (
                     <img
                       src={draftProject.mapUrl}
-                      alt="Plano"
+                      alt={t("lotInventory.planImage")}
                       style={{ width: 90, height: 64, objectFit: "cover", borderRadius: 8, border: "1.5px solid #DCDAD2", flexShrink: 0 }}
                     />
                   ) : (
                     <div style={{ width: 90, height: 64, borderRadius: 8, border: "1.5px dashed #DCDAD2", background: "#F1EEE6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <span style={{ fontSize: "0.6rem", color: "#83867C", textAlign: "center", lineHeight: 1.3 }}>Sin imagen</span>
+                      <span style={{ fontSize: "0.6rem", color: "#83867C", textAlign: "center", lineHeight: 1.3 }}>{t("lotInventory.noImage")}</span>
                     </div>
                   )}
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: "0.72rem", color: "#83867C", marginBottom: 6 }}>
-                      {draftProject.mapUrl ? "Imagen del plano cargada" : "No hay imagen de plano"}
+                      {draftProject.mapUrl ? t("lotInventory.imageLoaded") : t("lotInventory.noImageLoaded")}
                     </div>
                     <button
                       className="lot-edit-ghost"
                       style={{ fontSize: "0.72rem", padding: "4px 10px" }}
                       onClick={() => changeImageRef.current?.click()}
                     >
-                      {draftProject.mapUrl ? "Cambiar imagen" : "Subir imagen"}
+                      {draftProject.mapUrl ? t("lotInventory.changeImage") : t("lotInventory.uploadImage")}
                     </button>
                   </div>
                 </div>
 
                 {/* Identificación */}
-                <div className="lot-edit-sec">Identificación</div>
+                <div className="lot-edit-sec">{t("lotInventory.identification")}</div>
                 <div className="lot-edit-row">
                   <div className="lot-edit-field">
-                    <label className="lot-edit-lbl">Codigo / ID Lote</label>
+                    <label className="lot-edit-lbl">{t("lotInventory.lotCode")}</label>
                     <input className="lot-edit-input" value={d.code} onChange={(e) => setField("code", e.target.value)} />
                   </div>
                   <div className="lot-edit-field">
-                    <label className="lot-edit-lbl">Fraccionamiento</label>
-                    <input className="lot-edit-input" value={draftProject.name} onChange={(e) => setDraftProject((prev) => ({ ...prev, name: e.target.value }))} placeholder="Nombre del fraccionamiento" />
+                    <label className="lot-edit-lbl">{t("lotInventory.developmentName")}</label>
+                    <input className="lot-edit-input" value={draftProject.name} onChange={(e) => setDraftProject((prev) => ({ ...prev, name: e.target.value }))} placeholder={t("lotInventory.developmentName")} />
                   </div>
                 </div>
 
                 {/* Estado */}
-                <div className="lot-edit-sec">Estado</div>
+                <div className="lot-edit-sec">{t("lotInventory.status")}</div>
                 <div className="lot-edit-status">
                   {[
-                    { value: "available", label: "Disponible", dot: "#6FAF6B" },
-                    { value: "reserved",  label: "Apartado",   dot: "#B98C58" },
-                    { value: "sold",      label: "Vendido",    dot: "#C0392B" },
+                    { value: "available", label: t("lotInventory.available"), dot: "#6FAF6B" },
+                    { value: "reserved",  label: t("lotInventory.reserved"), dot: "#B98C58" },
+                    { value: "sold",      label: t("lotInventory.sold"), dot: "#C0392B" },
                   ].map(({ value, label, dot }) => {
                     const c = LOT_COLORS[value];
                     const active = d.status === value;
@@ -1021,9 +1074,9 @@ function LotsPage() {
                 </div>
 
                 {/* Medidas */}
-                <div className="lot-edit-sec">Medidas</div>
+                <div className="lot-edit-sec">{t("lotInventory.measurements")}</div>
                 <div className="lot-edit-row cols-3">
-                  {[{ key: "frente", label: "Frente (ML)" }, { key: "fondo", label: "Fondo (ML)" }, { key: "area", label: "Superficie (m²)" }].map(({ key, label }) => (
+                  {[{ key: "frente", label: t("lotInventory.front") }, { key: "fondo", label: t("lotInventory.depth") }, { key: "area", label: t("lotInventory.area") }].map(({ key, label }) => (
                     <div className="lot-edit-field" key={key}>
                       <label className="lot-edit-lbl">{label}</label>
                       <input type="number" className="lot-edit-input" value={d[key]} onChange={(e) => setField(key, Number(e.target.value))} />
@@ -1032,27 +1085,27 @@ function LotsPage() {
                 </div>
 
                 {/* Financiero */}
-                <div className="lot-edit-sec">Financiero</div>
+                <div className="lot-edit-sec">{t("lotInventory.financial")}</div>
                 <div className="lot-edit-row">
                   <div className="lot-edit-field">
-                    <label className="lot-edit-lbl">Precio Contado ($)</label>
+                    <label className="lot-edit-lbl">{t("lotInventory.cashPrice")}</label>
                     <input type="number" className="lot-edit-input" value={d.price} onChange={(e) => setField("price", Number(e.target.value))} />
                   </div>
                   <div className="lot-edit-field">
-                    <label className="lot-edit-lbl">Precio Financiado ($)</label>
+                    <label className="lot-edit-lbl">{t("lotInventory.financedPrice")}</label>
                     <input type="number" className="lot-edit-input" value={d.priceFinanciado} onChange={(e) => setField("priceFinanciado", Number(e.target.value))} />
                   </div>
                 </div>
 
                 {/* Gestion */}
-                <div className="lot-edit-sec">Gestion</div>
+                <div className="lot-edit-sec">{t("lotInventory.management")}</div>
                 <div className="lot-edit-field">
-                  <label className="lot-edit-lbl">Vendedor Asignado</label>
-                  <input className="lot-edit-input" placeholder="Nombre del vendedor" value={d.vendedor} onChange={(e) => setField("vendedor", e.target.value)} />
+                  <label className="lot-edit-lbl">{t("lotInventory.assignedSeller")}</label>
+                  <input className="lot-edit-input" placeholder={t("lotInventory.sellerName")} value={d.vendedor} onChange={(e) => setField("vendedor", e.target.value)} />
                 </div>
 
                 {/* Servicios */}
-                <div className="lot-edit-sec">Servicios disponibles</div>
+                <div className="lot-edit-sec">{t("lotInventory.services")}</div>
                 <div className="lot-edit-services">
                   {SERVICES.map(({ key, label }) => {
                     const on = !!d.servicios[key];
@@ -1077,10 +1130,10 @@ function LotsPage() {
                     setLotEditDraft(null);
                   }}
                 >
-                  Eliminar lote
+                  {t("lotInventory.deleteLot")}
                 </button>
-                <button className="lot-edit-primary" onClick={saveLotEdit}>Guardar</button>
-                <button className="lot-edit-ghost" onClick={() => setLotEditDraft(null)}>Cancelar</button>
+                <button className="lot-edit-primary" onClick={saveLotEdit}>{t("lotInventory.save")}</button>
+                <button className="lot-edit-ghost" onClick={() => setLotEditDraft(null)}>{t("lotInventory.cancel")}</button>
               </div>
             </div>
           </div>
@@ -1102,17 +1155,17 @@ function LotsPage() {
             <div className="lot-edit-head">
               <div className="lot-edit-badge" style={{ background: "#fee2e2", color: "#991b1b", borderColor: "#fca5a5" }}>!</div>
               <div>
-                <div className="lot-edit-title">Eliminar fraccionamiento</div>
+                <div className="lot-edit-title">{t("lotInventory.deleteDevelopment")}</div>
                 <div className="lot-edit-sub">{draftProject.name}</div>
               </div>
               <button className="lot-edit-close" onClick={() => setShowDeleteFracConfirm(false)}>×</button>
             </div>
             <div className="lot-edit-body" style={{ gap: 12 }}>
               <p style={{ fontSize: "0.84rem", color: "#43453F", lineHeight: 1.6 }}>
-                Esta acción eliminará el fraccionamiento <strong>{draftProject.name}</strong> y todos sus lotes de forma permanente. No se puede deshacer.
+                {t("lotInventory.deleteWarning", { name: draftProject.name })}
               </p>
               <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8 }}>
-                <button className="lot-edit-ghost" onClick={() => setShowDeleteFracConfirm(false)}>Cancelar</button>
+                <button className="lot-edit-ghost" onClick={() => setShowDeleteFracConfirm(false)}>{t("lotInventory.cancel")}</button>
                 <button
                   className="lot-edit-primary"
                   style={{ background: "#C0392B", borderColor: "#991b1b" }}
@@ -1128,7 +1181,7 @@ function LotsPage() {
                     }
                   }}
                 >
-                  {deletingFrac ? "Eliminando..." : "Sí, eliminar"}
+                  {deletingFrac ? t("lotInventory.deleting") : t("lotInventory.confirmDelete")}
                 </button>
               </div>
             </div>
@@ -1145,11 +1198,11 @@ function LotsPage() {
       <section className="rounded-[30px] border border-[#DCDAD2] bg-[linear-gradient(150deg,#1A3428,#101511)] p-5 text-[#E9E5DB] shadow-[0_28px_60px_rgba(13,15,12,.28)]">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <div className="text-[0.7rem] font-bold uppercase tracking-[0.24em] text-[#6FAF6B]">Inventario táctil</div>
-            <h1 className="mt-2 font-['Playfair_Display'] text-[1.9rem] leading-none">Lotes y proyectos</h1>
+            <div className="text-[0.7rem] font-bold uppercase tracking-[0.24em] text-[#6FAF6B]">{t("lotInventory.tactile")}</div>
+            <h1 className="mt-2 font-['Playfair_Display'] text-[1.9rem] leading-none">{t("lotInventory.title")}</h1>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/8 px-3 py-2 text-right">
-            <div className="text-[0.64rem] uppercase tracking-[0.18em] text-white/45">Activos</div>
+            <div className="text-[0.64rem] uppercase tracking-[0.18em] text-white/45">{t("lotInventory.active")}</div>
             <div className="mt-1 text-sm font-bold">{projects.length}</div>
           </div>
         </div>
@@ -1159,7 +1212,7 @@ function LotsPage() {
               className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white transition-colors hover:border-white/30 hover:bg-white/20"
               onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
             >
-              Nuevo proyecto
+              {t("lotInventory.newProject")}
             </button>
           )}
         </div>
@@ -1168,20 +1221,20 @@ function LotsPage() {
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-bold uppercase tracking-[0.22em] text-[#83867C]">Portafolio</h2>
+            <h2 className="text-sm font-bold uppercase tracking-[0.22em] text-[#83867C]">{t("lotInventory.portfolio")}</h2>
             <div className="mt-1 text-xs font-medium text-[#83867C]">
-              {projects.length} fraccionamientos · usa las flechas o arrastra la lista
+              {t("lotInventory.portfolioSummary", { projects: projects.length })}
             </div>
           </div>
           <div className="flex items-center gap-2">
             <span className="mr-1 text-sm font-semibold text-[#1E3D2B]">
-              {projects.reduce((sum, item) => sum + item.totalLots, 0)} lotes
+              {t("lotInventory.lotsCount", { count: projects.reduce((sum, item) => sum + item.totalLots, 0) })}
             </span>
             <button
               className="flex h-10 w-10 items-center justify-center rounded-full border border-[#DCDAD2] bg-white/90 text-[#1E3D2B] shadow-[0_8px_18px_rgba(24,18,14,.08)] transition hover:border-[#355E3B] hover:bg-[#FBFAF6]"
               type="button"
               onClick={() => scrollPortfolio(-1)}
-              aria-label="Ver fraccionamientos anteriores"
+              aria-label={t("lotInventory.previous")}
             >
               <HiChevronLeft className="text-lg" />
             </button>
@@ -1189,7 +1242,7 @@ function LotsPage() {
               className="flex h-10 w-10 items-center justify-center rounded-full border border-[#DCDAD2] bg-white/90 text-[#1E3D2B] shadow-[0_8px_18px_rgba(24,18,14,.08)] transition hover:border-[#355E3B] hover:bg-[#FBFAF6]"
               type="button"
               onClick={() => scrollPortfolio(1)}
-              aria-label="Ver mas fraccionamientos"
+              aria-label={t("lotInventory.next")}
             >
               <HiChevronRight className="text-lg" />
             </button>
@@ -1208,24 +1261,24 @@ function LotsPage() {
                 <div>
                   <div className="font-['Playfair_Display'] text-xl text-[#1E3D2B]">{project.name}</div>
                   <div className="mt-1 text-xs uppercase tracking-[0.18em] text-[#83867C]">
-                    {project.totalLots} propiedades
+                    {t("lotInventory.properties", { count: project.totalLots })}
                   </div>
                 </div>
                 <div className="rounded-full bg-[#EDE3D3] px-3 py-1 text-[0.68rem] font-bold text-[#1E3D2B]">
-                  {project.available} libres
+                  {t("lotInventory.free", { count: project.available })}
                 </div>
               </div>
               <div className="mt-4 grid grid-cols-3 gap-2">
                 <div className="rounded-2xl bg-[#FBFAF6] p-3">
-                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Vendido</div>
+                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">{t("lotInventory.sold")}</div>
                   <div className="mt-2 text-lg font-bold text-[#1E3D2B]">{project.sold}</div>
                 </div>
                 <div className="rounded-2xl bg-[#FBFAF6] p-3">
-                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Reserva</div>
+                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">{t("lotInventory.reserve")}</div>
                   <div className="mt-2 text-lg font-bold text-[#1E3D2B]">{project.reserved}</div>
                 </div>
                 <div className="rounded-2xl bg-[#FBFAF6] p-3">
-                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Disponible</div>
+                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">{t("lotInventory.available")}</div>
                   <div className="mt-2 text-lg font-bold text-[#1E3D2B]">{project.available}</div>
                 </div>
               </div>
@@ -1237,14 +1290,14 @@ function LotsPage() {
                     navigate("/fraccionamientos");
                   }}
                 >
-                  Ver
+                  {t("lotInventory.view")}
                 </button>
                 <button
                   className="flex-1 whitespace-nowrap rounded-[10px] border-[1.5px] border-[#355E3B] bg-[#355E3B] px-3 py-[7px] text-[0.76rem] font-bold text-white transition-colors hover:bg-[#21643F] disabled:opacity-60"
                   onClick={() => openProjectEditor(project)}
                   disabled={loadingEditId === project.id}
                 >
-                  {loadingEditId === project.id ? "Cargando..." : "✏ Editar lotes"}
+                  {loadingEditId === project.id ? t("lotInventory.loading") : `✏ ${t("lotInventory.editLots")}`}
                 </button>
               </div>
             </article>
@@ -1255,9 +1308,9 @@ function LotsPage() {
       {draftProject.mode === "selector" ? (
         <section className="rounded-[28px] border border-[#DCDAD2] bg-white/88 p-8 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
           <div className="mx-auto max-w-[660px] text-center">
-            <h2 className="font-['Playfair_Display'] text-[1.65rem] text-[#1E3D2B]">Carga de Lotes</h2>
+            <h2 className="font-['Playfair_Display'] text-[1.65rem] text-[#1E3D2B]">{t("lotInventory.loadTitle")}</h2>
             <p className="mx-auto mt-2 max-w-[420px] text-[0.84rem] leading-relaxed text-[#83867C]">
-              Elige el método que mejor se adapte a tu flujo de trabajo
+              {t("lotInventory.loadSubtitle")}
             </p>
             <div className="mt-8 grid gap-5 sm:grid-cols-2">
               {/* ── Carga Manual ── */}
@@ -1269,12 +1322,12 @@ function LotsPage() {
                 <div className="mx-auto mb-3 flex h-[62px] w-[62px] items-center justify-center rounded-[15px] bg-[#D4EAE0] text-[1.8rem]">
                   🗺️
                 </div>
-                <div className="mb-2 font-['Playfair_Display'] text-[1.05rem] text-[#1E3D2B]">Carga Manual</div>
+                <div className="mb-2 font-['Playfair_Display'] text-[1.05rem] text-[#1E3D2B]">{t("lotInventory.manual")}</div>
                 <div className="mb-5 text-[0.76rem] leading-relaxed text-[#83867C]">
-                  Sube la imagen del plano y construye la matriz de lotes manualmente. Define secciones, columnas y estado de cada unidad.
+                  {t("lotInventory.manualText")}
                 </div>
                 <button className="pointer-events-none mb-3 w-full rounded-[9px] bg-[#355E3B] px-4 py-2.5 text-[0.8rem] font-bold text-white">
-                  Abrir editor →
+                  {t("lotInventory.openEditor")}
                 </button>
               </div>
 
@@ -1293,12 +1346,12 @@ function LotsPage() {
                 <div className="mx-auto mb-3 flex h-[62px] w-[62px] items-center justify-center rounded-[15px] bg-[#E8EEF7] text-[1.8rem]">
                   📐
                 </div>
-                <div className="mb-2 font-['Playfair_Display'] text-[1.05rem] text-[#1E3D2B]">Importar CAD</div>
+                <div className="mb-2 font-['Playfair_Display'] text-[1.05rem] text-[#1E3D2B]">{t("lotInventory.cad")}</div>
                 <div className="mb-5 flex-1 text-[0.76rem] leading-relaxed text-[#83867C]">
-                  Sube un archivo DWG o DXF del plano técnico y el sistema extrae automáticamente la estructura de lotes.
+                  {t("lotInventory.cadText")}
                 </div>
                 <button className="pointer-events-none w-full rounded-[9px] bg-[#4A6FA5] px-4 py-2.5 text-[0.8rem] font-bold text-white">
-                  Subir archivo CAD →
+                  {t("lotInventory.uploadCad")}
                 </button>
               </div>
 
@@ -1310,10 +1363,10 @@ function LotsPage() {
         <section className="lot-upload-shell">
           <div className="lot-upload-head">
             <div>
-              <span className="lot-upload-kicker">Plano base</span>
-              <h2 className="lot-upload-title">Sube el plano del fraccionamiento</h2>
+              <span className="lot-upload-kicker">{t("lotInventory.basePlan")}</span>
+              <h2 className="lot-upload-title">{t("lotInventory.uploadPlan")}</h2>
               <p className="lot-upload-copy">
-                Usa una imagen del plano para trabajar la matriz de lotes sobre el tablero.
+                {t("lotInventory.uploadPlanText")}
               </p>
             </div>
             <div className="lot-upload-actions">
@@ -1321,18 +1374,18 @@ function LotsPage() {
                 className="lot-upload-secondary"
                 onClick={() => setDraftProject((previous) => ({ ...previous, mode: "selector" }))}
               >
-                Cambiar modo
+                {t("lotInventory.changeMode")}
               </button>
             </div>
           </div>
 
           <div className="lot-upload-body">
             <div style={{ marginBottom: 16 }}>
-              <div className="mb-1 text-[0.62rem] font-bold uppercase tracking-[0.5px] text-[#83867C]" style={{ marginBottom: 6, fontSize: ".7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#83867C" }}>Nombre del fraccionamiento</div>
+              <div className="mb-1 text-[0.62rem] font-bold uppercase tracking-[0.5px] text-[#83867C]" style={{ marginBottom: 6, fontSize: ".7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#83867C" }}>{t("lotInventory.developmentName")}</div>
               <input
                 className="w-full rounded-[8px] border-[1.5px] border-[#DCDAD2] bg-white px-3 py-2 text-[0.84rem] text-[#1E3D2B] outline-none"
                 style={{ width: "100%", borderRadius: 8, border: "1.5px solid #DCDAD2", background: "white", padding: "8px 12px", fontSize: ".84rem", color: "#1E3D2B", outline: "none", fontFamily: "inherit" }}
-                placeholder="Ej. Residencial Las Palmas"
+                placeholder={t("lotInventory.developmentExample")}
                 value={draftProject.name === "Nuevo Fraccionamiento" ? "" : draftProject.name}
                 onChange={(e) => setDraftProject((prev) => ({ ...prev, name: e.target.value || "Nuevo Fraccionamiento" }))}
               />
@@ -1340,7 +1393,7 @@ function LotsPage() {
             <label className="lot-upload-drop">
               <div className="lot-upload-code">IMG</div>
               <div>
-                <div className="lot-upload-drop-title">Seleccionar imagen del plano</div>
+                <div className="lot-upload-drop-title">{t("lotInventory.selectPlan")}</div>
                 <div className="lot-upload-drop-sub">JPG, PNG, WEBP, HEIC o HEIF</div>
               </div>
               <div className="lot-upload-formats">
@@ -1348,7 +1401,7 @@ function LotsPage() {
                   <span key={ext}>{ext}</span>
                 ))}
               </div>
-              <div className="lot-upload-cta">Buscar archivo</div>
+              <div className="lot-upload-cta">{t("lotInventory.browse")}</div>
               <input
                 type="file"
                 accept={MAP_IMAGE_ACCEPT}
@@ -1364,14 +1417,14 @@ function LotsPage() {
             </label>
             <div className="lot-upload-foot">
               <div>
-                <span>Sin plano</span>
-                <p>También puedes crear secciones y lotes manualmente.</p>
+                <span>{t("lotInventory.noPlan")}</span>
+                <p>{t("lotInventory.noPlanText")}</p>
               </div>
               <button
                 className="lot-upload-secondary"
                 onClick={() => setDraftProject((previous) => ({ ...previous, mode: "editor" }))}
               >
-                Continuar
+                {t("lotInventory.continue")}
               </button>
             </div>
           </div>

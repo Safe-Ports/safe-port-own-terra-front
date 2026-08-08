@@ -142,6 +142,7 @@ export function AppProvider({ children }) {
   const calendarAlertEventsRef = useRef([]);
   const prevAlertCountRef = useRef(0);
   const showToastRef = useRef(null);
+  const toastTimerRef = useRef(null);
 
   const computeCalendarAlerts = useCallback((appts) => {
     const now = Date.now();
@@ -228,10 +229,21 @@ export function AppProvider({ children }) {
   const closeModal = (modal) => setUi((p) => ({ ...p, [modal]: false }));
   const toggleSidebar = () => setUi((p) => ({ ...p, sidebarOpen: !p.sidebarOpen }));
   const closeSidebar = () => setUi((p) => ({ ...p, sidebarOpen: false }));
+  const dismissToast = () => {
+    window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = null;
+    setToast(null);
+  };
   const showToast = (message, kind = "success") => {
-    setToast(typeof message === "object" ? message : { kind, message });
-    window.clearTimeout(showToast._timer);
-    showToast._timer = window.setTimeout(() => setToast(null), 2600);
+    const nextToast = typeof message === "object" ? message : { kind, message };
+    setToast(nextToast);
+    window.clearTimeout(toastTimerRef.current);
+    const duration = nextToast.kind === "warning"
+      ? 10_000
+      : nextToast.kind === "info"
+        ? 7_000
+        : 6_000;
+    toastTimerRef.current = window.setTimeout(() => setToast(null), duration);
   };
   // keep a stable ref so effects without showToast in deps can still call it
   showToastRef.current = showToast;
@@ -262,35 +274,21 @@ export function AppProvider({ children }) {
         const label = events.length === 1
           ? `⏰ ${events[0].title || "Evento"} — es ahora`
           : `⏰ ${events.length} eventos de agenda ahora`;
-        showToastRef.current(label);
+        showToastRef.current(label, "info");
       }
     }
     prevAlertCountRef.current = calendarAlertCount;
   }, [calendarAlertCount]);
 
   // Muestra un error homologado (código + Ref + copiar). El reporte a Sentry lo hace el
-  // interceptor de api.js, así que aquí solo presentamos. Dura más para dar tiempo a copiar.
+  // interceptor de api.js. Los errores permanecen hasta que el usuario los descarte.
   const showError = (error, fallbackMessage) => {
     const parsed = parseApiError(error, fallbackMessage);
     setToast({ kind: "error", ...parsed });
-    window.clearTimeout(showToast._timer);
-    showToast._timer = window.setTimeout(() => setToast(null), 9000);
+    window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = null;
     return parsed;
   };
-
-  // Aviso global de tope de plan (OT-SUB-4001): el interceptor de api.js emite este
-  // evento en cualquier escritura bloqueada por cuota; aquí lo presentamos con el
-  // mensaje homologado ("Alcanzaste el límite… Mejora tu plan para agregar más").
-  useEffect(() => {
-    const onQuota = (e) => {
-      const parsed = parseApiError({ response: { data: e.detail } });
-      setToast({ kind: "error", ...parsed });
-      window.clearTimeout(showToast._timer);
-      showToast._timer = window.setTimeout(() => setToast(null), 9000);
-    };
-    window.addEventListener("ownterra:quota-exceeded", onQuota);
-    return () => window.removeEventListener("ownterra:quota-exceeded", onQuota);
-  }, []);
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   const applyAuthSession = (data, remember = true) => {
@@ -536,7 +534,7 @@ export function AppProvider({ children }) {
           p.status !== "paid"
       );
       if (!match) {
-        showToast("No se encontró la cuota indicada o ya está pagada");
+        showToast("No se encontró la cuota indicada o ya está pagada", "warning");
         return false;
       }
       saved = await quickPay(match.id, Number(data.amount || match.amount || 0));
@@ -588,7 +586,7 @@ export function AppProvider({ children }) {
   const sendReminder = async (paymentOrName) => {
     const name = typeof paymentOrName === "string" ? paymentOrName : (paymentOrName?.client?.name || "cliente");
     if (!paymentOrName?.id) {
-      showToast("Selecciona un pago para enviar el recordatorio");
+      showToast("Selecciona un pago para enviar el recordatorio", "warning");
       return false;
     }
     try {
@@ -604,7 +602,7 @@ export function AppProvider({ children }) {
   // ── Documents ─────────────────────────────────────────────────────────────
   const saveDocument = async (payload, file) => {
     if (!file) {
-      showToast("Selecciona un archivo para subir");
+      showToast("Selecciona un archivo para subir", "warning");
       return;
     }
     try {
@@ -941,6 +939,7 @@ export function AppProvider({ children }) {
     closeSidebar,
     showToast,
     showError,
+    dismissToast,
     canAccessApp: (appKey) => canAccessApp(currentUser, appKey),
     canUseFeature: (feature) => canUseFeature(currentUser, feature),
     login,

@@ -41,6 +41,7 @@ function compactNum(n) {
 
 /* ── KPI Card ────────────────────────────────────────────────── */
 function KpiCard({ icon: Icon, iconBg, label, value, sub, change }) {
+  const { t } = useLocale();
   const up   = change !== null && Number(change) >= 0;
   const down = change !== null && Number(change) < 0;
   return (
@@ -60,7 +61,7 @@ function KpiCard({ icon: Icon, iconBg, label, value, sub, change }) {
             <span style={{ display: "flex", alignItems: "center", gap: 2, fontSize: ".72rem",
               fontWeight: 700, color: up ? "#2F6A38" : "#c0392b" }}>
               {up ? <HiMiniArrowTrendingUp /> : <HiMiniArrowTrendingDown />}
-              {Math.abs(change)}% vs mes anterior
+              {Math.abs(change)}% {t("dashboard.kpi.vsPrev")}
             </span>
           ) : (
             <span style={{ fontSize: ".72rem", color: "var(--mu)" }}>{sub}</span>
@@ -206,6 +207,7 @@ function MiniChart({ data, bars, sharedScale = true, H = 120 }) {
 const AV_COLORS = ["#355E3B","#7B5C38","#1E3D2B","#6366F1","#0EA5E9"];
 import Avatar from "@/components/Avatar";
 import Button from "@/components/Button";
+import { useLocale } from "@/i18n";
 /* Reuse shared Avatar component; badge handled inline where needed */
 
 /* ══ PAGE ════════════════════════════════════════════════════════ */
@@ -213,6 +215,8 @@ export default function DashboardPage() {
   const navigate    = useNavigate();
   const { clients, contracts, payments, fracs } = useAppContext();
   const { data }    = useDashboardQuery();
+  const { locale, t } = useLocale();
+  const dateLocale  = locale === "en" ? "en-US" : "es-MX";
   const [chartYear] = useState(CY);
   const [showGuide, setShowGuide] = useState(false);
   useLandsGuide(() => setShowGuide(true));
@@ -269,8 +273,8 @@ export default function DashboardPage() {
   const monthlyChart = useMemo(() => {
     const months = Array.from({ length: 12 }, (_, m) => ({
       month: m,
-      label:     new Date(chartYear, m, 1).toLocaleDateString("es-MX", { month: "short" }),
-      fullLabel: new Date(chartYear, m, 1).toLocaleDateString("es-MX", { month: "long", year: "numeric" }),
+      label:     new Date(chartYear, m, 1).toLocaleDateString(dateLocale, { month: "short" }),
+      fullLabel: new Date(chartYear, m, 1).toLocaleDateString(dateLocale, { month: "long", year: "numeric" }),
       ingresos: 0, egresos: 0, contratos: 0,
     }));
     contracts.forEach(c => {
@@ -324,29 +328,29 @@ export default function DashboardPage() {
 
       {/* ── 6 KPIs ── */}
       <div className="db-grid6">
-        <KpiCard icon={HiOutlineBanknotes}    iconBg="#355E3B" label="Ingresos del mes"
+        <KpiCard icon={HiOutlineBanknotes}    iconBg="#355E3B" label={t("dashboard.kpi.revenue")}
           value={compactCurrency(revThisMonth)}
-          sub="Cobros aplicados"
+          sub={t("dashboard.kpi.revenueSub")}
           change={pct(revThisMonth, revLastMonth)} />
-        <KpiCard icon={HiOutlineShoppingCart}  iconBg="#0EA5E9" label="Ventas del mes"
+        <KpiCard icon={HiOutlineShoppingCart}  iconBg="#0EA5E9" label={t("dashboard.kpi.sales")}
           value={salesThisMonth}
-          sub="Contratos nuevos"
+          sub={t("dashboard.kpi.salesSub")}
           change={pct(salesThisMonth, salesLastMonth)} />
-        <KpiCard icon={HiOutlineHome}          iconBg="#6366F1" label="Lotes disponibles"
+        <KpiCard icon={HiOutlineHome}          iconBg="#6366F1" label={t("dashboard.kpi.available")}
           value={availLots}
-          sub={`${totalLots} en inventario`}
+          sub={`${totalLots} ${t("dashboard.kpi.inInventory")}`}
           change={null} />
-        <KpiCard icon={HiOutlineCheckCircle}   iconBg="#2F6A38" label="Lotes vendidos"
+        <KpiCard icon={HiOutlineCheckCircle}   iconBg="#2F6A38" label={t("dashboard.kpi.sold")}
           value={soldLots}
-          sub="Total histórico"
+          sub={t("dashboard.kpi.soldSub")}
           change={null} />
-        <KpiCard icon={HiOutlineSquares2X2}    iconBg="#7B5C38" label="Inventario total"
+        <KpiCard icon={HiOutlineSquares2X2}    iconBg="#7B5C38" label={t("dashboard.kpi.inventory")}
           value={totalLots}
-          sub="lotes en total"
+          sub={t("dashboard.kpi.inventorySub")}
           change={null} />
-        <KpiCard icon={HiOutlineDocumentText}  iconBg="#c0392b" label="Contratos activos"
+        <KpiCard icon={HiOutlineDocumentText}  iconBg="#c0392b" label={t("dashboard.kpi.contracts")}
           value={activeContracts}
-          sub={`${clients.length} clientes`}
+          sub={`${clients.length} ${t("dashboard.kpi.clientsSub")}`}
           change={null} />
       </div>
 
@@ -357,9 +361,9 @@ export default function DashboardPage() {
         <div className="db-card">
           <div className="db-card-hd">
             <div>
-              <div className="db-card-title">Ingresos vs Egresos</div>
+              <div className="db-card-title">{t("dashboard.charts.revenueVsCosts")}</div>
               <div style={{ display: "flex", gap: 12, marginTop: 5 }}>
-                {[["#355E3B","Ingresos"], ["#7B5C38","Egresos"]].map(([c,l]) => (
+                {[[`#355E3B`, t("dashboard.charts.revenue")], [`#7B5C38`, t("dashboard.charts.costs")]].map(([c,l]) => (
                   <div key={l} style={{ display:"flex", alignItems:"center", gap:5 }}>
                     <div style={{ width:8, height:8, borderRadius:2, background:c }} />
                     <span style={{ fontSize:".7rem", color:"var(--mu)" }}>{l}</span>
@@ -377,8 +381,8 @@ export default function DashboardPage() {
             <MiniChart
               data={monthlyChart}
               bars={[
-                { key:"ingresos", color:"#355E3B", label:"Ingresos", fmt: compactCurrency },
-                { key:"egresos",  color:"#7B5C38", label:"Egresos",  fmt: compactCurrency },
+                { key:"ingresos", color:"#355E3B", label: t("dashboard.charts.revenue"), fmt: compactCurrency },
+                { key:"egresos",  color:"#7B5C38", label: t("dashboard.charts.costs"),   fmt: compactCurrency },
               ]}
               sharedScale={true}
               H={110}
@@ -390,9 +394,9 @@ export default function DashboardPage() {
         <div className="db-card">
           <div className="db-card-hd">
             <div>
-              <div className="db-card-title">Contratos firmados</div>
+              <div className="db-card-title">{t("dashboard.charts.contracts")}</div>
               <div style={{ fontSize:".7rem", color:"var(--mu)", marginTop:4 }}>
-                Contratos registrados · <strong style={{ color:"var(--tx)" }}>{salesThisMonth} este mes</strong>
+                {t("dashboard.charts.contractsRegistered")} · <strong style={{ color:"var(--tx)" }}>{salesThisMonth} {t("dashboard.charts.contractsThisMonth")}</strong>
               </div>
             </div>
             <div style={{ fontSize:".7rem", fontWeight:600, color:"var(--mu)",
@@ -404,7 +408,7 @@ export default function DashboardPage() {
           <div style={{ padding:"12px 16px 10px" }}>
             <MiniChart
               data={monthlyChart}
-              bars={[{ key:"contratos", color:"#1E3D2B", label:"Contratos", fmt: n => String(Math.round(n)) }]}
+              bars={[{ key:"contratos", color:"#1E3D2B", label: t("dashboard.charts.contracts"), fmt: n => String(Math.round(n)) }]}
               sharedScale={false}
               H={110}
             />
@@ -414,23 +418,23 @@ export default function DashboardPage() {
         {/* 3. Estado de los lotes */}
         <div className="db-card">
           <div className="db-card-hd">
-            <div className="db-card-title">Estado de los lotes</div>
+            <div className="db-card-title">{t("dashboard.charts.lotStatus")}</div>
           </div>
           <div style={{ padding:"16px 18px" }}>
             <DonutChart
               segments={[
-                { label:"Disponibles", value:availLots,    color:"#355E3B" },
-                { label:"Vendidos",    value:soldLots,     color:"#c0392b" },
-                { label:"Apartados",   value:reservedLots, color:"#7B5C38" },
-                { label:"En trámite",  value:inTramite,    color:"#94a3b8" },
+                { label: t("dashboard.lots.available"), value:availLots,    color:"#355E3B" },
+                { label: t("dashboard.lots.sold"),      value:soldLots,     color:"#c0392b" },
+                { label: t("dashboard.lots.reserved"),  value:reservedLots, color:"#7B5C38" },
+                { label: t("dashboard.lots.inProcess"), value:inTramite,    color:"#94a3b8" },
               ]}
               total={totalLots}
-              centerLabel="Total lotes"
+              centerLabel={t("dashboard.lots.total")}
             />
           </div>
           <div style={{ borderTop:"1px solid var(--line-soft)", padding:"10px 18px" }}>
             <button className="db-ver-todos" onClick={() => navigate("/lotes")}>
-              Ver inventario completo <HiOutlineArrowRight />
+              {t("dashboard.charts.viewInventory")} <HiOutlineArrowRight />
             </button>
           </div>
         </div>
@@ -442,25 +446,25 @@ export default function DashboardPage() {
         {/* Ventas recientes */}
         <div className="db-card">
           <div className="db-card-hd">
-            <div className="db-card-title">Ventas recientes</div>
+            <div className="db-card-title">{t("dashboard.recent.title")}</div>
             <button className="db-ver-todos" onClick={() => navigate("/ventas")}>
-              Ver todas <HiOutlineArrowRight />
+              {t("dashboard.recent.viewAll")} <HiOutlineArrowRight />
             </button>
           </div>
           <table className="tbl">
             <thead>
               <tr>
-                <th>Lote</th>
-                <th>Cliente</th>
-                <th>Monto</th>
-                <th>Fecha</th>
-                <th>Estado</th>
+                <th>{t("dashboard.recent.colLot")}</th>
+                <th>{t("dashboard.recent.colClient")}</th>
+                <th>{t("dashboard.recent.colAmount")}</th>
+                <th>{t("dashboard.recent.colDate")}</th>
+                <th>{t("dashboard.recent.colStatus")}</th>
               </tr>
             </thead>
             <tbody>
               {recentSales.length === 0 && (
                 <tr><td colSpan={5} style={{ textAlign: "center", padding: "24px 0", color: "var(--mu)", fontSize: ".8rem" }}>
-                  Sin ventas recientes
+                  {t("dashboard.recent.empty")}
                 </td></tr>
               )}
               {recentSales.map(c => (
@@ -474,12 +478,12 @@ export default function DashboardPage() {
                   <td style={{ fontSize: ".8rem" }}>{c.client?.name || "—"}</td>
                   <td style={{ fontWeight: 700, fontSize: ".8rem", color: "var(--forest)" }}>{compactCurrency(c.amount)}</td>
                   <td style={{ fontSize: ".75rem", color: "var(--mu)", whiteSpace: "nowrap" }}>
-                    {c.contract_date ? new Date(`${c.contract_date}T12:00:00`).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
+                    {c.contract_date ? new Date(`${c.contract_date}T12:00:00`).toLocaleDateString(dateLocale, { day: "2-digit", month: "short", year: "numeric" }) : "—"}
                   </td>
                   <td>
                     <span className={`pc-chip ${c.status === "active" ? "paid" : c.status === "cancelled" ? "overdue" : "pending"}`}
                       style={{ fontSize: ".65rem" }}>
-                      {c.status === "active" ? "Activo" : c.status === "cancelled" ? "Cancelado" : "Pendiente"}
+                      {c.status === "active" ? t("dashboard.recent.statusActive") : c.status === "cancelled" ? t("dashboard.recent.statusCancelled") : t("dashboard.recent.statusPending")}
                     </span>
                   </td>
                 </tr>
@@ -491,23 +495,23 @@ export default function DashboardPage() {
         {/* Top vendedores */}
         <div className="db-card">
           <div className="db-card-hd">
-            <div className="db-card-title">Top vendedores</div>
+            <div className="db-card-title">{t("dashboard.sellers.title")}</div>
             <button className="db-ver-todos" onClick={() => navigate("/reportes")}>
-              Ver todas <HiOutlineArrowRight />
+              {t("dashboard.sellers.viewAll")} <HiOutlineArrowRight />
             </button>
           </div>
           {teamPerf.length === 0 ? (
             <div style={{ padding: "24px 0", textAlign: "center", color: "var(--mu)", fontSize: ".8rem" }}>
-              Sin datos de vendedores
+              {t("dashboard.sellers.empty")}
             </div>
           ) : (
             <table className="tbl">
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>Vendedor</th>
-                  <th>Ventas</th>
-                  <th>Ingresos</th>
+                  <th>{t("dashboard.sellers.colRank")}</th>
+                  <th>{t("dashboard.sellers.colSeller")}</th>
+                  <th>{t("dashboard.sellers.colSales")}</th>
+                  <th>{t("dashboard.sellers.colRevenue")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -537,29 +541,28 @@ export default function DashboardPage() {
         {/* Resumen financiero YTD */}
         <div className="db-card">
           <div className="db-card-hd">
-            <div className="db-card-title">Resumen financiero (YTD)</div>
+            <div className="db-card-title">{t("dashboard.finance.title")}</div>
           </div>
           <div style={{ padding: "16px 18px" }}>
             <div className="db-fin-row">
-              <span style={{ color: "var(--tx2)" }}>Ingresos totales</span>
+              <span style={{ color: "var(--tx2)" }}>{t("dashboard.finance.totalRevenue")}</span>
               <strong style={{ color: "var(--forest)" }}>{currency(ytdRevenue)}</strong>
             </div>
             <div className="db-fin-row">
-              <span style={{ color: "var(--tx2)" }}>Costos operativos</span>
+              <span style={{ color: "var(--tx2)" }}>{t("dashboard.finance.operatingCosts")}</span>
               <strong style={{ color: "var(--danger)" }}>{currency(ytdCostos)}</strong>
             </div>
             <div className="db-fin-row">
-              <span style={{ color: "var(--tx2)" }}>Utilidad bruta</span>
+              <span style={{ color: "var(--tx2)" }}>{t("dashboard.finance.grossProfit")}</span>
               <strong style={{ color: ytdUtilidad >= 0 ? "var(--forest)" : "var(--danger)" }}>
                 {currency(ytdUtilidad)}
               </strong>
             </div>
-            {/* Margen card */}
             <div style={{ marginTop: 12, background: "var(--tan-lt)", borderRadius: 12,
               padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
                 <div style={{ fontSize: ".68rem", fontWeight: 700, textTransform: "uppercase",
-                  letterSpacing: ".08em", color: "var(--tan-dk)" }}>Margen de utilidad</div>
+                  letterSpacing: ".08em", color: "var(--tan-dk)" }}>{t("dashboard.finance.margin")}</div>
                 <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.6rem",
                   fontWeight: 700, color: "var(--forest)", lineHeight: 1.1 }}>{margen}%</div>
               </div>
@@ -582,12 +585,12 @@ export default function DashboardPage() {
       <div style={{ marginBottom: 14 }}>
         <div style={{ fontSize: ".68rem", fontWeight: 800, letterSpacing: ".12em",
           textTransform: "uppercase", color: "var(--mu)", marginBottom: 10 }}>
-          Acciones rápidas
+          {t("dashboard.quickActions.title")}
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           {[
-            { icon: HiOutlineDocumentText, bg: "#fdecea", color: "#c0392b", label: "Generar contrato",  path: "/contratos" },
-            { icon: HiOutlineSquares2X2,   bg: "#fef3e2", color: "#7B5C38", label: "Ver reportes",      path: "/reportes"  },
+            { icon: HiOutlineDocumentText, bg: "#fdecea", color: "#c0392b", label: t("dashboard.quickActions.contract"), path: "/contratos" },
+            { icon: HiOutlineSquares2X2,   bg: "#fef3e2", color: "#7B5C38", label: t("dashboard.quickActions.reports"),  path: "/reportes"  },
           ].map(({ icon: Icon, bg, color, label, path }) => (
             <button key={label} className="db-accion" onClick={() => navigate(path)}>
               <div className="db-accion-ico" style={{ background: bg }}>

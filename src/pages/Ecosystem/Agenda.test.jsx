@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HttpResponse, http } from "msw";
 import { server } from "@/test/mocks/server";
 import AgendaPage from "./Agenda.jsx";
+import { LocaleProvider } from "@/i18n";
 
 const API = "http://127.0.0.1:8000/api/v1";
 
@@ -48,7 +49,9 @@ function renderAgenda() {
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter>
-        <AgendaPage />
+        <LocaleProvider defaultLocale="es">
+          <AgendaPage />
+        </LocaleProvider>
       </MemoryRouter>
     </QueryClientProvider>
   );
@@ -101,7 +104,7 @@ describe("AgendaPage", () => {
     await waitFor(() => expect(screen.getByText("Sin eventos para este día")).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole("button", { name: "Nuevo evento" }));
-    fireEvent.change(screen.getByPlaceholderText("Ej: Junta con equipo, Recordatorio pago..."), {
+    fireEvent.change(screen.getByPlaceholderText("Ej: Junta con equipo, recordatorio de pago…"), {
       target: { value: "Junta de seguimiento" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Guardar evento" }));

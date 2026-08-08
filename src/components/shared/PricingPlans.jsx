@@ -9,10 +9,10 @@ import { useState } from "react";
  * Stripe cuando está disponible y cae al de marketing (`price`) solo como respaldo,
  * así panel y cobro nunca se desincronizan.
  *
- * Para conectar cada tier: crea 3 precios en Stripe (USD) y pon sus IDs en las env
+ * Para conectar cada tier: crea 3 precios en Stripe y pon sus IDs en las env.
  * vars STRIPE_PRICE_ID_ESTANDAR / _CRECIMIENTO / _PROFESIONAL.
  */
-const CURRENCY = "USD"; // respaldo de moneda si Stripe aún no reporta la real
+const CURRENCY = "MXN"; // respaldo si Stripe aún no reporta la moneda real
 
 const DASH = "—";
 

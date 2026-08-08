@@ -1,0 +1,74 @@
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { es } from "./es";
+import { en } from "./en";
+
+const LOCALE_KEY = "ot_locale";
+const DICTS = { es, en };
+
+const LocaleContext = createContext(null);
+
+export function LocaleProvider({ children, defaultLocale }) {
+  const [locale, setLocale] = useState(() => {
+    if (defaultLocale === "en" || defaultLocale === "es") return defaultLocale;
+    let stored = null;
+    try {
+      stored = typeof localStorage?.getItem === "function" ? localStorage.getItem(LOCALE_KEY) : null;
+    } catch {
+      // Storage can be unavailable in private browsing or isolated test environments.
+    }
+    if (stored === "en" || stored === "es") return stored;
+    return navigator.language?.toLowerCase().startsWith("en") ? "en" : "es";
+  });
+
+  const localeTag = locale === "en" ? "en-US" : "es-MX";
+
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+
+  const switchLocale = useCallback((lang) => {
+    const nextLocale = lang === "en" ? "en" : "es";
+    try {
+      if (typeof localStorage?.setItem === "function") localStorage.setItem(LOCALE_KEY, nextLocale);
+    } catch {
+      // The in-memory language switch still works when persistence is unavailable.
+    }
+    setLocale(nextLocale);
+  }, []);
+
+  // Dot-notation path lookup: t("topbar.defaultTitle")
+  // The path may contain slashes (e.g. "routes./lotes") — only dots are separators.
+  // A second argument may be a fallback string (used when the key is missing)
+  // or a params object, whose entries interpolate into "{placeholder}" tokens.
+  const t = useCallback((path, fallbackOrParams) => {
+    const dict = DICTS[locale] || DICTS.es;
+    const value = path.split(".").reduce((obj, key) => obj?.[key], dict);
+    const fallback = typeof fallbackOrParams === "string" ? fallbackOrParams : undefined;
+    const resolved = value != null && typeof value !== "object" ? value : (fallback ?? path);
+    const params = fallbackOrParams && typeof fallbackOrParams === "object" ? fallbackOrParams : null;
+    if (!params) return resolved;
+    return String(resolved).replace(/\{(\w+)\}/g, (match, key) => (params[key] != null ? params[key] : match));
+  }, [locale]);
+
+  const format = useMemo(() => ({
+    date: (value, options) => new Intl.DateTimeFormat(localeTag, options).format(new Date(value)),
+    number: (value, options) => new Intl.NumberFormat(localeTag, options).format(Number(value)),
+    currency: (value, currency = "MXN", options = {}) => new Intl.NumberFormat(localeTag, {
+      style: "currency",
+      currency,
+      ...options,
+    }).format(Number(value)),
+  }), [localeTag]);
+
+  return (
+    <LocaleContext.Provider value={{ locale, localeTag, switchLocale, t, format }}>
+      {children}
+    </LocaleContext.Provider>
+  );
+}
+
+export function useLocale() {
+  const ctx = useContext(LocaleContext);
+  if (!ctx) throw new Error("useLocale must be used within LocaleProvider");
+  return ctx;
+}

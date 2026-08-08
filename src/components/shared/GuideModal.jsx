@@ -1,7 +1,9 @@
 import { createPortal } from "react-dom";
 import useEscapeKey from "@/hooks/useEscapeKey";
+import { useLocale } from "@/i18n";
 
 export default function GuideModal({ open, onClose, title, subtitle, steps }) {
+  const { t } = useLocale();
   useEscapeKey(onClose, open);
 
   if (!open) return null;
@@ -20,7 +22,7 @@ export default function GuideModal({ open, onClose, title, subtitle, steps }) {
             <div className="guide-title">{title}</div>
             {subtitle && <div className="guide-sub">{subtitle}</div>}
           </div>
-          <button className="guide-close-x" onClick={onClose} aria-label="Cerrar">×</button>
+          <button className="guide-close-x" onClick={onClose} aria-label={t("common.close")}>×</button>
         </div>
         <div className="guide-body">
           {steps.map(({ title: t, text }, i) => (
@@ -34,7 +36,7 @@ export default function GuideModal({ open, onClose, title, subtitle, steps }) {
           ))}
         </div>
         <div className="guide-foot">
-          <button className="guide-ok" onClick={onClose}>Entendido</button>
+          <button className="guide-ok" onClick={onClose}>{t("common.understood")}</button>
         </div>
       </div>
     </div>,

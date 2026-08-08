@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { formService } from "@/services/formService";
 import { parseApiError } from "@/errors/parseApiError";
+import { useLocale } from "@/i18n";
 import "./FormPublico.css";
 
 function FormPublico() {
+  const { t } = useLocale();
   const { pathname } = useLocation();
   const slug = pathname.replace(/^\/f\//, "").split("/")[0];
 
@@ -30,7 +32,7 @@ function FormPublico() {
   const validate = () => {
     const errs = {};
     (template?.fields ?? []).forEach((f) => {
-      if (f.required && !values[f.id]?.trim()) errs[f.id] = "Este campo es obligatorio";
+      if (f.required && !values[f.id]?.trim()) errs[f.id] = t("forms.public.required");
     });
     return errs;
   };
@@ -45,7 +47,7 @@ function FormPublico() {
       await formService.publicSubmit(slug, { data: values });
       setPhase("success");
     } catch (err) {
-      const parsed = parseApiError(err, "No fue posible enviar el formulario.");
+      const parsed = parseApiError(err, t("forms.public.submitError"));
       setErrors({ __global: parsed });
     } finally {
       setSubmitting(false);
@@ -82,9 +84,9 @@ function FormPublico() {
         <div className="fp-card">
           <div className="fp-unavail">
             <div className="fp-unavail-icon">🔒</div>
-            <div className="fp-unavail-title">Formulario no disponible</div>
+            <div className="fp-unavail-title">{t("forms.public.unavailable")}</div>
             <div className="fp-unavail-sub">
-              Este formulario no existe o no está habilitado por el momento. Contacta al equipo si crees que esto es un error.
+              {t("forms.public.unavailableText")}
             </div>
           </div>
         </div>
@@ -99,10 +101,9 @@ function FormPublico() {
                 <polyline points="20,33 28,41 44,24" stroke="#6FAF6B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
               </svg>
             </div>
-            <div className="fp-success-title">¡Información enviada!</div>
+            <div className="fp-success-title">{t("forms.public.success")}</div>
             <div className="fp-success-sub">
-              Tus datos han sido registrados correctamente.<br />
-              En breve el equipo se pondrá en contacto contigo.
+              {t("forms.public.successText")}
             </div>
           </div>
         </div>
@@ -119,13 +120,13 @@ function FormPublico() {
               <div className="fp-global-error">
                 <div>{errors.__global.message}</div>
                 <div className="fp-error-ref">
-                  {errors.__global.code} · Ref: {errors.__global.requestId ?? "—"}
+                  {errors.__global.code} · {t("forms.public.reference")}: {errors.__global.requestId ?? "—"}
                   <button
                     type="button"
                     className="fp-error-copy"
-                    onClick={() => navigator.clipboard.writeText(`${errors.__global.code} · Ref: ${errors.__global.requestId ?? "—"}`)}
+                    onClick={() => navigator.clipboard.writeText(`${errors.__global.code} · ${t("forms.public.reference")}: ${errors.__global.requestId ?? "—"}`)}
                   >
-                    Copiar
+                    {t("forms.public.copy")}
                   </button>
                 </div>
               </div>
@@ -144,7 +145,7 @@ function FormPublico() {
                     className={`fp-input${errors[f.id] ? " error" : ""}`}
                     value={values[f.id] ?? ""}
                     onChange={(e) => handleChange(f.id, e.target.value)}
-                    placeholder={`Escribe ${f.label.toLowerCase()}`}
+                    placeholder={t("forms.public.type").replace("{field}", f.label.toLowerCase())}
                     autoComplete="off"
                   />
                   {errors[f.id] && <div className="fp-error">{errors[f.id]}</div>}
@@ -153,12 +154,12 @@ function FormPublico() {
             </div>
 
             <button className="fp-submit" type="submit" disabled={submitting}>
-              {submitting ? "Enviando…" : "Enviar información"}
+              {submitting ? t("forms.public.sending") : t("forms.public.submit")}
             </button>
           </form>
 
           <div className="fp-footer">
-            Tus datos están protegidos y no se comparten con terceros.
+            {t("forms.public.privacy")}
           </div>
         </div>
       )}
