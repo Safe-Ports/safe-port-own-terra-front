@@ -339,6 +339,193 @@
   font-size: 11px;
 }
 
+/* ---- Galería de proyectos (vista inicial) ---- */
+.frac-gallery-page {
+  position: relative;
+  min-height: calc(100vh - 98px);
+  padding-bottom: 60px;
+  color: var(--tx2);
+}
+
+.frac-gallery-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.frac-gallery-heading .frac-eyebrow {
+  color: var(--deep);
+  margin-bottom: 12px;
+}
+
+.frac-gallery-heading h1 {
+  margin: 0;
+  font-family: "Playfair Display", serif;
+  font-size: 30px;
+  line-height: 1.05;
+  letter-spacing: -0.5px;
+  color: var(--deep);
+}
+
+.frac-gallery-heading p {
+  margin: 6px 0 0;
+  max-width: 520px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.frac-gallery-head .frac-search {
+  min-width: 240px;
+  background: var(--sf);
+}
+
+.frac-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.frac-gallery-card {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  padding: 0;
+  background: var(--sf);
+  border: 1px solid var(--bd);
+  border-radius: 20px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+}
+
+.frac-gallery-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(111, 175, 107, 0.45);
+  box-shadow: 0 16px 34px rgba(30, 61, 43, 0.12);
+}
+
+.frac-gallery-thumb {
+  display: block;
+  aspect-ratio: 16 / 10;
+  background: linear-gradient(135deg, #d4eae0, #ede3d3);
+  overflow: hidden;
+}
+
+.frac-gallery-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.frac-gallery-thumb-empty {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+
+.frac-gallery-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px 16px;
+}
+
+.frac-gallery-name {
+  font-family: "Playfair Display", serif;
+  font-size: 17px;
+  line-height: 1.15;
+  color: var(--deep);
+}
+
+.frac-gallery-meta {
+  display: flex;
+  gap: 10px;
+  color: var(--muted);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+}
+
+.frac-gallery-meta span + span::before {
+  content: "·";
+  margin-right: 10px;
+}
+
+.frac-gallery-empty {
+  padding: 40px 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* ---- Vista detalle (proyecto seleccionado, sin sidebar) ---- */
+.frac-page-detail {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.frac-detail-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.frac-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px 0 10px;
+  border-radius: 999px;
+  background: var(--sf);
+  border: 1px solid var(--bd);
+  color: var(--deep);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.16s, border-color 0.16s;
+}
+
+.frac-back:hover {
+  background: var(--sf2);
+  border-color: rgba(111, 175, 107, 0.45);
+}
+
+.frac-detail-head {
+  flex: 1;
+  min-width: 200px;
+}
+
+.frac-detail-head .frac-eyebrow {
+  color: var(--deep);
+  margin-bottom: 6px;
+}
+
+.frac-detail-head h1 {
+  margin: 0;
+  font-family: "Playfair Display", serif;
+  font-size: 26px;
+  line-height: 1.05;
+  letter-spacing: -0.5px;
+  color: var(--deep);
+}
+
+.frac-detail-bar .frac-hero-actions {
+  margin-top: 0;
+}
+
+.frac-detail-bar .frac-hero-actions .btn-s {
+  background: var(--sf);
+  border-color: var(--bd);
+  color: var(--deep);
+}
+
 .frac-filters {
   display: flex;
   flex-wrap: wrap;
@@ -1400,12 +1587,23 @@
     margin-top: 16px;
   }
 
-  .frac-kpis,
   .frac-detail-grid,
   .frac-services,
   .frac-form-grid,
   .frac-status-options {
     grid-template-columns: 1fr;
+  }
+
+  .frac-kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .frac-detail-bar {
+    align-items: flex-start;
+  }
+
+  .frac-detail-bar .frac-hero-actions {
+    width: 100%;
   }
 
   .frac-filters {
@@ -1437,4 +1635,75 @@
   .frac-quote.collapsed {
     width: 100%;
   }
+}
+
+/* ── Apartado con expiración ── */
+.frac-countdown {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.frac-countdown.ok { background: rgba(111,175,107,.16); color: var(--mid); }
+.frac-countdown.amber { background: #FBF0DC; color: #b0791f; }
+.frac-countdown.red { background: #FBE7E4; color: var(--danger); }
+
+.frac-apartar { margin-bottom: 14px; }
+.frac-apartar-meta { font-size: 12.5px; color: var(--muted); margin-bottom: 10px; }
+.frac-apartar-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.frac-apartar-btns button,
+.frac-apartar-cta {
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--bd);
+  background: var(--sf);
+  color: var(--deep);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background .15s, border-color .15s;
+}
+.frac-apartar-btns button:hover,
+.frac-apartar-cta:hover { border-color: var(--leaf); background: var(--sf2); }
+.frac-apartar-cta { background: rgba(111,175,107,.14); border-color: rgba(111,175,107,.35); color: var(--mid); }
+.frac-apartar-release { color: var(--danger) !important; }
+.frac-apartar-release:hover { border-color: var(--danger) !important; background: #FBE7E4 !important; }
+
+.frac-apartar-form {
+  margin: 4px 0 16px;
+  padding: 14px;
+  border: 1px solid var(--bd);
+  border-radius: 14px;
+  background: var(--sf2);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.frac-apartar-presets { display: flex; gap: 7px; flex-wrap: wrap; }
+.frac-apartar-presets button {
+  padding: 6px 12px;
+  border-radius: 30px;
+  border: 1px solid var(--bd);
+  background: var(--sf);
+  color: var(--tx2);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.frac-apartar-presets button:hover { border-color: var(--leaf); color: var(--deep); }
+.frac-apartar-input {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--bd);
+  border-radius: 10px;
+  background: var(--sf);
+  color: var(--tx);
+  font-family: inherit;
+  font-size: 13px;
 }

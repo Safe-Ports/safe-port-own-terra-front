@@ -88,6 +88,24 @@ function StatusBadge({ status }) {
   );
 }
 
+/* Tiempo restante de un apartado → texto + tono (ok/amber/red). */
+function reservationLeft(untilISO) {
+  if (!untilISO) return null;
+  const ms = new Date(untilISO) - Date.now();
+  if (ms <= 0) return { text: "Apartado vencido", tone: "red" };
+  const days = Math.floor(ms / 86400000);
+  const hours = Math.floor((ms % 86400000) / 3600000);
+  if (days === 0) return { text: `Vence hoy · ${hours} h`, tone: "red" };
+  if (days <= 2) return { text: `Vence en ${days} d ${hours} h`, tone: "amber" };
+  return { text: `Vence en ${days} días`, tone: "ok" };
+}
+
+/* Date → valor para <input type="datetime-local"> en hora local. */
+function toLocalInput(d) {
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
 function MapViewer({ src, onClose }) {
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -166,12 +184,19 @@ function FracsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const [homeMode, setHomeMode]   = useState(true);
   const [showGuide, setShowGuide] = useState(false);
   useLandsGuide(() => setShowGuide(true));
 
+  // Qué proyecto está ABIERTO en esta vista (galería vs. detalle). Es local a la
+  // página: el `selectedFracId` global se auto-reselecciona en el contexto (lo usan
+  // los contratos), así que no sirve para "sin selección". null = galería.
+  const [openFracId, setOpenFracId] = useState(null);
+
+  const openFrac = (id) => { setOpenFracId(id); setSelectedFracId(id); };
+
+  // Arrancamos siempre en la galería y volvemos a ella cuando cambia el set.
   useEffect(() => {
-    setHomeMode(true);
+    setOpenFracId(null);
   }, [fracsResetKey]);
 
   const [statusFilter, setStatusFilter] = useState("all");
@@ -189,14 +214,17 @@ function FracsPage() {
   const [cotTasa, setCotTasa] = useState(12);
   const [cotPlazo, setCotPlazo] = useState(96);
   const [showApptForm, setShowApptForm] = useState(false);
-  const [apptDraft, setApptDraft] = useState({ contact_name: "", contact_phone: "", scheduled_at: "", notes: "" });
+  const [apptDraft, setApptDraft] = useState({ contact_name: "", contact_phone: "", date: "", time: "", notes: "" });
   const [apptSaving, setApptSaving] = useState(false);
+  const [apartarOpen, setApartarOpen] = useState(false);
+  const [apartarUntil, setApartarUntil] = useState("");   // datetime-local
+  const [apartarBusy, setApartarBusy] = useState(false);
   useEscapeKey(() => {
     if (showCotizador) setShowCotizador(false);
     else if (showLotModal) setShowLotModal(false);
   }, showCotizador || showLotModal);
 
-  const selectedFrac = fracs.find((f) => f.id === selectedFracId) || fracs[0] || null;
+  const selectedFrac = fracs.find((f) => f.id === openFracId) || null;
 
   const { data: lotsData, isLoading: lotsLoading } = useQuery({
     queryKey: ["lots", selectedFrac?.id],
@@ -212,6 +240,7 @@ function FracsPage() {
   });
 
   const selectedLot = lots.find((lot) => lot.id === selectedLotId) || null;
+  const resLeft = selectedLot?.status === "reserved" ? reservationLeft(selectedLot.reserved_until) : null;
   const sections = useMemo(() => [...new Set(lots.map((lot) => lot.section || "General"))], [lots]);
 
   const filteredLots = useMemo(
@@ -286,79 +315,55 @@ function FracsPage() {
     );
   }
 
-  if (homeMode) {
+  if (!selectedFrac) {
     return (
-      <div className="frac-page">
-        <aside className="frac-projects frac-panel">
-          <div className="frac-panel-head">
-            <div>
-              <div className="frac-panel-title">Proyectos</div>
-              <div className="frac-panel-sub">Fraccionamientos activos</div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span className="frac-project-count">{fracs.length}</span>
-            </div>
+      <div className="frac-gallery-page">
+        <header className="frac-gallery-head">
+          <div className="frac-gallery-heading">
+            <div className="frac-eyebrow">OwnTerra Lands</div>
+            <h1>Proyectos</h1>
+            <p>{fracs.length} fraccionamiento{fracs.length === 1 ? "" : "s"} activo{fracs.length === 1 ? "" : "s"}. Elige uno para ver su plano, inventario de lotes y cotizador.</p>
           </div>
-          <div className="frac-panel-body">
-            <div className="frac-project-list">
-              {fracs.map((frac) => (
-                <button
-                  key={frac.id}
-                  className="frac-project-item"
-                  onClick={() => { setSelectedFracId(frac.id); setHomeMode(false); }}
-                >
-                  <span className="frac-project-mark">{frac.name.slice(0, 2).toUpperCase()}</span>
-                  <span className="frac-project-copy">
-                    <span className="frac-project-name">{frac.name}</span>
-                    <span className="frac-project-meta">
-                      {frac.total_lots ?? 0} lotes
-                      {frac.created_at ? ` / ${new Date(frac.created_at).toLocaleDateString("es-MX")}` : ""}
-                    </span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </aside>
-        <section className="frac-workspace" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ textAlign: "center", maxWidth: 360, padding: "0 24px" }}>
-            <div style={{
-              width: 80, height: 80, borderRadius: 24,
-              background: "linear-gradient(135deg,#D4EAE0,#EDE3D3)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: "2rem", margin: "0 auto 20px",
-              boxShadow: "0 8px 24px rgba(30,61,43,.1)",
-              animation: "pulse-soft 3s ease-in-out infinite",
-            }}>
-              🗺️
-            </div>
-            <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.3rem", color: "#1E3D2B", marginBottom: 10, fontWeight: 600 }}>
-              Bienvenido a OwnTerra Lands
-            </div>
-            <div style={{ fontSize: "0.84rem", color: "#83867C", lineHeight: 1.6, marginBottom: 20 }}>
-              Selecciona un fraccionamiento del panel izquierdo para explorar su inventario de lotes, plano de referencia y cotizador.
-            </div>
-            <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
-              {[["🏡","Inventario de lotes"],["📐","Plano interactivo"],["💰","Cotizador"]].map(([icon, label]) => (
-                <span key={label} style={{
-                  display: "flex", alignItems: "center", gap: 5,
-                  background: "#F1EEE6", borderRadius: 20, padding: "5px 12px",
-                  fontSize: ".74rem", fontWeight: 600, color: "#43453F",
-                }}>
-                  {icon} {label}
+          <label className="frac-search">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="7" cy="7" r="5"/><line x1="10.8" y1="10.8" x2="14.5" y2="14.5"/></svg>
+            <input value={projectSearch} onChange={(event) => setProjectSearch(event.target.value)} placeholder="Buscar proyecto" />
+          </label>
+        </header>
+
+        {filteredProjects.length ? (
+          <div className="frac-gallery-grid">
+            {filteredProjects.map((frac) => (
+              <button
+                key={frac.id}
+                className="frac-gallery-card"
+                onClick={() => openFrac(frac.id)}
+              >
+                <span className="frac-gallery-thumb">
+                  {frac.image_url
+                    ? <img src={frac.image_url} alt={`Plano de ${frac.name}`} loading="lazy" />
+                    : <span className="frac-gallery-thumb-empty">🗺️</span>}
                 </span>
-              ))}
-            </div>
-            <style>{`@keyframes pulse-soft { 0%,100%{transform:scale(1)} 50%{transform:scale(1.04)} }`}</style>
+                <span className="frac-gallery-body">
+                  <span className="frac-gallery-name">{frac.name}</span>
+                  <span className="frac-gallery-meta">
+                    <span>{frac.total_lots ?? 0} lotes</span>
+                    {frac.created_at ? <span>{new Date(frac.created_at).toLocaleDateString("es-MX")}</span> : null}
+                  </span>
+                </span>
+              </button>
+            ))}
           </div>
-        </section>
+        ) : (
+          <div className="frac-gallery-empty">No hay proyectos que coincidan con “{projectSearch}”.</div>
+        )}
+
       <GuideModal
         open={showGuide}
         onClose={() => setShowGuide(false)}
         title="Fraccionamientos"
         subtitle="Gestión táctil de tu inventario de lotes con plano interactivo."
         steps={[
-          { title: "Seleccionar proyecto", text: "La lista izquierda muestra todos tus fraccionamientos. Haz clic en uno para ver su plano interactivo y la matriz de lotes." },
+          { title: "Seleccionar proyecto", text: "La galería muestra todos tus fraccionamientos con la miniatura de su plano. Haz clic en uno para ver su plano interactivo y la matriz de lotes; usa la flecha ‹ Proyectos para volver." },
           { title: "Plano interactivo", text: "Usa el scroll o pinch para hacer zoom. Haz clic en el plano para ver los lotes superpuestos con su estado (disponible, apartado, vendido)." },
           { title: "Filtrar lotes", text: "Los botones de estado en la barra superior filtran los lotes visibles en el plano. Combínalos con la búsqueda por sección o código." },
           { title: "Ficha de lote", text: "Selecciona un lote para ver su ficha completa: medidas, servicios disponibles, precio de contado y financiado, y vendedor asignado." },
@@ -417,24 +422,74 @@ function FracsPage() {
 
 
   const saveAppointment = async () => {
-    if (!selectedLot || !apptDraft.contact_name.trim() || !apptDraft.scheduled_at) return;
+    if (!selectedLot || !apptDraft.contact_name.trim() || !apptDraft.date || !apptDraft.time) return;
     setApptSaving(true);
     try {
       await appointmentService.create({
         lot_id: selectedLot.id,
         contact_name: apptDraft.contact_name.trim(),
         contact_phone: apptDraft.contact_phone.trim() || undefined,
-        scheduled_at: new Date(apptDraft.scheduled_at).toISOString(),
+        scheduled_at: new Date(`${apptDraft.date}T${apptDraft.time}`).toISOString(),
         notes: apptDraft.notes.trim() || undefined,
       });
       await refetchAppts();
-      setApptDraft({ contact_name: "", contact_phone: "", scheduled_at: "", notes: "" });
+      setApptDraft({ contact_name: "", contact_phone: "", date: "", time: "", notes: "" });
       setShowApptForm(false);
       showToast("Cita agendada");
     } catch (err) {
       showError(err, "Error al agendar la cita");
     } finally {
       setApptSaving(false);
+    }
+  };
+
+  // ── Apartado con expiración ──────────────────────────────────────────────
+  const reserveLot = async () => {
+    if (!selectedLot || !apartarUntil) return;
+    setApartarBusy(true);
+    try {
+      await lotService.update(selectedLot.id, {
+        status: "reserved",
+        reserved_until: new Date(apartarUntil).toISOString(),
+      });
+      await queryClient.invalidateQueries({ queryKey: ["lots"] });
+      setApartarOpen(false); setApartarUntil("");
+      showToast("Lote apartado");
+    } catch (err) {
+      showError(err, "No se pudo apartar el lote");
+    } finally {
+      setApartarBusy(false);
+    }
+  };
+
+  const extendReservation = async () => {
+    if (!selectedLot || !apartarUntil) return;
+    setApartarBusy(true);
+    try {
+      await lotService.update(selectedLot.id, {
+        reserved_until: new Date(apartarUntil).toISOString(),
+      });
+      await queryClient.invalidateQueries({ queryKey: ["lots"] });
+      setApartarOpen(false); setApartarUntil("");
+      showToast("Vencimiento actualizado");
+    } catch (err) {
+      showError(err, "No se pudo extender el apartado");
+    } finally {
+      setApartarBusy(false);
+    }
+  };
+
+  const releaseLot = async () => {
+    if (!selectedLot) return;
+    setApartarBusy(true);
+    try {
+      await lotService.update(selectedLot.id, { status: "available" });
+      await queryClient.invalidateQueries({ queryKey: ["lots"] });
+      showToast("Lote liberado");
+    } catch (err) {
+      showError(err, "No se pudo liberar el lote");
+    } finally {
+      setApartarBusy(false);
     }
   };
 
@@ -449,60 +504,29 @@ function FracsPage() {
   };
 
   return (
-    <div className="frac-page">
-      <aside className="frac-projects frac-panel">
-        <div className="frac-panel-head">
-          <div>
-            <div className="frac-panel-title">Proyectos</div>
-            <div className="frac-panel-sub">Fraccionamientos activos</div>
-          </div>
-          <span className="frac-project-count">{filteredProjects.length}</span>
-        </div>
-        <div className="frac-panel-body">
-          <label className="frac-search">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="7" cy="7" r="5"/><line x1="10.8" y1="10.8" x2="14.5" y2="14.5"/></svg>
-            <input value={projectSearch} onChange={(event) => setProjectSearch(event.target.value)} placeholder="Buscar proyecto" />
-          </label>
-          <div className="frac-project-list">
-            {filteredProjects.map((frac) => (
-              <button
-                key={frac.id}
-                className={`frac-project-item ${frac.id === selectedFrac.id ? "active" : ""}`}
-                onClick={() => setSelectedFracId(frac.id)}
-              >
-                <span className="frac-project-mark">{frac.name.slice(0, 2).toUpperCase()}</span>
-                <span className="frac-project-copy">
-                  <span className="frac-project-name">{frac.name}</span>
-                  <span className="frac-project-meta">
-                    {frac.total_lots ?? 0} lotes
-                    {frac.created_at ? ` / ${new Date(frac.created_at).toLocaleDateString("es-MX")}` : ""}
-                  </span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </aside>
-
+    <div className="frac-page frac-page-detail">
       <section className="frac-workspace">
-        <div className="frac-hero-grid">
-          <article className="frac-hero">
+        <div className="frac-detail-bar">
+          <button className="frac-back" onClick={() => setOpenFracId(null)}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10 3 5 8l5 5"/></svg>
+            Proyectos
+          </button>
+          <div className="frac-detail-head">
             <div className="frac-eyebrow">OwnTerra Lands</div>
             <h1>{selectedFrac.name}</h1>
-            <p>Inventario territorial consolidado con lectura rapida de disponibilidad, plano de referencia, detalle tecnico y cotizador comercial por lote.</p>
-            <div className="frac-hero-actions">
-              <Button variant="secondary" onClick={() => selectedFrac.image_url && setShowMapViewer(true)} disabled={!selectedFrac.image_url}>Ver plano</Button>
-              <Button variant="secondary" onClick={openEditor}>Editar</Button>
-              <Button variant="secondary" onClick={() => exportAppData("lots")}>Exportar</Button>
-            </div>
-          </article>
-
-          <div className="frac-kpis">
-            <article className="frac-kpi deep"><span>Total lotes</span><strong>{stats.total}</strong><small>{sections.length} secciones</small></article>
-            <article className="frac-kpi available"><span>Disponibles</span><strong>{stats.available}</strong><small>{stats.total ? Math.round((stats.available / stats.total) * 100) : 0}% inventario</small></article>
-            <article className="frac-kpi reserved"><span>Apartados</span><strong>{stats.reserved}</strong><small>seguimiento activo</small></article>
-            <article className="frac-kpi sold"><span>Vendidos</span><strong>{stats.sold}</strong><small>cerrados</small></article>
           </div>
+          <div className="frac-hero-actions">
+            <Button variant="secondary" onClick={() => selectedFrac.image_url && setShowMapViewer(true)} disabled={!selectedFrac.image_url}>Ver plano</Button>
+            <Button variant="secondary" onClick={openEditor}>Editar</Button>
+            <Button variant="secondary" onClick={() => exportAppData("lots")}>Exportar</Button>
+          </div>
+        </div>
+
+        <div className="frac-kpis">
+          <article className="frac-kpi deep"><span>Total lotes</span><strong>{stats.total}</strong><small>{sections.length} secciones</small></article>
+          <article className="frac-kpi available"><span>Disponibles</span><strong>{stats.available}</strong><small>{stats.total ? Math.round((stats.available / stats.total) * 100) : 0}% inventario</small></article>
+          <article className="frac-kpi reserved"><span>Apartados</span><strong>{stats.reserved}</strong><small>seguimiento activo</small></article>
+          <article className="frac-kpi sold"><span>Vendidos</span><strong>{stats.sold}</strong><small>cerrados</small></article>
         </div>
 
         <div className="frac-filters">
@@ -647,6 +671,7 @@ function FracsPage() {
                 <p>{selectedFrac.name} / {selectedLot.section || "General"} / {selectedLot.area_m2 || 0} m2</p>
               </div>
               <StatusBadge status={selectedLot.status} />
+              {resLeft ? <span className={`frac-countdown ${resLeft.tone}`}>{resLeft.text}</span> : null}
               <button className="frac-modal-close" onClick={() => setShowLotModal(false)}>×</button>
             </div>
             <div className="frac-modal-body">
@@ -690,9 +715,58 @@ function FracsPage() {
               {activeTab === "gestion" ? (
                 <div className="frac-management">
                   <div className="frac-section-label">Estado actual</div>
-                  <div style={{ marginBottom: 14 }}>
+                  <div style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                     <StatusBadge status={selectedLot.status} />
+                    {resLeft ? <span className={`frac-countdown ${resLeft.tone}`}>{resLeft.text}</span> : null}
                   </div>
+
+                  {/* Apartado con expiración */}
+                  {selectedLot.status === "reserved" ? (
+                    <div className="frac-apartar">
+                      <div className="frac-apartar-meta">
+                        Apartado desde {selectedLot.reserved_at ? new Date(selectedLot.reserved_at).toLocaleDateString("es-MX") : "—"}
+                        {" · "}vence {selectedLot.reserved_until ? new Date(selectedLot.reserved_until).toLocaleString("es-MX") : "—"}
+                      </div>
+                      <div className="frac-apartar-btns">
+                        <button onClick={() => { setApartarOpen((v) => !v); setApartarUntil(selectedLot.reserved_until ? toLocalInput(new Date(selectedLot.reserved_until)) : ""); }}>
+                          {apartarOpen ? "Cancelar" : "Extender vencimiento"}
+                        </button>
+                        <button className="frac-apartar-release" onClick={releaseLot} disabled={apartarBusy}>Liberar lote</button>
+                      </div>
+                    </div>
+                  ) : selectedLot.status === "available" ? (
+                    <div className="frac-apartar">
+                      <button className="frac-apartar-cta" onClick={() => { setApartarOpen((v) => !v); if (!apartarOpen) setApartarUntil(toLocalInput(new Date(Date.now() + 7 * 86400000))); }}>
+                        {apartarOpen ? "Cancelar" : "🔖 Apartar lote"}
+                      </button>
+                    </div>
+                  ) : null}
+
+                  {apartarOpen && selectedLot.status !== "sold" ? (
+                    <div className="frac-apartar-form">
+                      <label className="frac-appt-lbl">Vence el</label>
+                      <div className="frac-apartar-presets">
+                        {[[3, "3 días"], [7, "7 días"], [15, "15 días"], [30, "30 días"]].map(([n, l]) => (
+                          <button type="button" key={n} onClick={() => setApartarUntil(toLocalInput(new Date(Date.now() + n * 86400000)))}>{l}</button>
+                        ))}
+                      </div>
+                      <input
+                        type="datetime-local"
+                        className="frac-apartar-input"
+                        value={apartarUntil}
+                        min={toLocalInput(new Date())}
+                        onChange={(e) => setApartarUntil(e.target.value)}
+                      />
+                      <Button
+                        variant="primary"
+                        onClick={selectedLot.status === "reserved" ? extendReservation : reserveLot}
+                        disabled={apartarBusy || !apartarUntil}
+                      >
+                        {apartarBusy ? "Guardando..." : selectedLot.status === "reserved" ? "Guardar vencimiento" : "Confirmar apartado"}
+                      </Button>
+                    </div>
+                  ) : null}
+
                   <div className="frac-actions-list">
                     {selectedLot.status !== "sold" ? <button onClick={() => navigate("/contratos")}>Registrar venta</button> : null}
                     <button onClick={() => setShowApptForm((value) => !value)}>Agendar cita</button>
@@ -709,14 +783,18 @@ function FracsPage() {
                         <input value={apptDraft.contact_phone} onChange={(event) => setApptDraft((p) => ({ ...p, contact_phone: event.target.value }))} placeholder="Opcional" />
                       </div>
                       <div className="frac-appt-field">
-                        <label className="frac-appt-lbl">Fecha y hora</label>
-                        <input type="datetime-local" value={apptDraft.scheduled_at} onChange={(event) => setApptDraft((p) => ({ ...p, scheduled_at: event.target.value }))} />
+                        <label className="frac-appt-lbl">Fecha</label>
+                        <input type="date" value={apptDraft.date} onChange={(event) => setApptDraft((p) => ({ ...p, date: event.target.value }))} />
+                      </div>
+                      <div className="frac-appt-field">
+                        <label className="frac-appt-lbl">Hora</label>
+                        <input type="time" value={apptDraft.time} onChange={(event) => setApptDraft((p) => ({ ...p, time: event.target.value }))} />
                       </div>
                       <div className="frac-appt-field">
                         <label className="frac-appt-lbl">Notas</label>
                         <textarea rows="2" value={apptDraft.notes} onChange={(event) => setApptDraft((p) => ({ ...p, notes: event.target.value }))} placeholder="Contexto de la visita" />
                       </div>
-                      <Button variant="primary" onClick={saveAppointment} disabled={apptSaving || !apptDraft.contact_name.trim() || !apptDraft.scheduled_at}>
+                      <Button variant="primary" onClick={saveAppointment} disabled={apptSaving || !apptDraft.contact_name.trim() || !apptDraft.date || !apptDraft.time}>
                         {apptSaving ? "Guardando..." : "Guardar cita"}
                       </Button>
                     </div>
@@ -808,7 +886,7 @@ function FracsPage() {
         title="Fraccionamientos"
         subtitle="Gestión táctil de tu inventario de lotes con plano interactivo."
         steps={[
-          { title: "Seleccionar proyecto", text: "La lista izquierda muestra todos tus fraccionamientos. Haz clic en uno para ver su plano interactivo y la matriz de lotes." },
+          { title: "Seleccionar proyecto", text: "La galería muestra todos tus fraccionamientos con la miniatura de su plano. Haz clic en uno para ver su plano interactivo y la matriz de lotes; usa la flecha ‹ Proyectos para volver." },
           { title: "Plano interactivo", text: "Usa el scroll o pinch para hacer zoom. Haz clic en el plano para ver los lotes superpuestos con su estado (disponible, apartado, vendido)." },
           { title: "Filtrar lotes", text: "Los botones de estado en la barra superior filtran los lotes visibles en el plano. Combínalos con la búsqueda por sección o código." },
           { title: "Ficha de lote", text: "Selecciona un lote para ver su ficha completa: medidas, servicios disponibles, precio de contado y financiado, y vendedor asignado." },

@@ -370,6 +370,22 @@ function ContractModal() {
     });
   }, [activeCalc, form.amount, form.down_payment, form.interest_rate, form.totalM]);
 
+  // Con calculadora activa, la tasa del contrato la manda la variable TASA_ANUAL
+  // de la calculadora (ya no hay un campo aparte). guessVarValue la expone como
+  // porcentaje (interest_rate * 100), así que aquí hacemos la conversión inversa.
+  useEffect(() => {
+    if (!useCalculator || !activeCalc?.variables?.length) return;
+    const tasaVar = activeCalc.variables.find((v) => {
+      const k = v.toLowerCase().replace(/_/g, "");
+      return /(tasa|interes|rate)/.test(k);
+    });
+    if (!tasaVar) return;
+    const raw = calcVars[tasaVar];
+    if (raw === "" || raw == null) return;
+    const dec = (Number(raw) || 0) / 100;
+    setForm((f) => (f.interest_rate === dec ? f : { ...f, interest_rate: dec }));
+  }, [useCalculator, activeCalc, calcVars]);
+
   const calcResult = useMemo(() => {
     if (!activeCalc?.formula || !activeCalc.variables?.length) return { value: null, error: "" };
     if (activeCalc.variables.some((v) => calcVars[v] === "" || calcVars[v] == null)) return { value: null, error: "" };
@@ -919,12 +935,16 @@ function ContractModal() {
         </div>
       )}
 
-      <div className="fg">
-        <label className="fl">Tasa anual (decimal, 0 a 1)</label>
-        <input id="cf-interest_rate" type="number" min="0" max="1" step="0.01" {...fi(errors.interest_rate)}
-          value={form.interest_rate} onChange={setNum("interest_rate")} onBlur={() => blurField("interest_rate")} />
-        <FieldError msg={errors.interest_rate} />
-      </div>
+      {/* La tasa vive en la variable TASA_ANUAL de la calculadora activa; este campo
+          solo aparece cuando NO hay calculadora (edición o tipos sin calculadora). */}
+      {!(useCalculator && activeCalc) && (
+        <div className="fg">
+          <label className="fl">Tasa anual (decimal, 0 a 1)</label>
+          <input id="cf-interest_rate" type="number" min="0" max="1" step="0.01" {...fi(errors.interest_rate)}
+            value={form.interest_rate} onChange={setNum("interest_rate")} onBlur={() => blurField("interest_rate")} />
+          <FieldError msg={errors.interest_rate} />
+        </div>
+      )}
 
       <div className="fg">
         <label className="fl">Método de pago del enganche</label>

@@ -8,6 +8,7 @@ import App from "@/App";
 import { initSentry } from "@/observability/sentry";
 import ErrorBoundary from "@/components/shared/ErrorBoundary";
 import "@/styles/index.css";
+import "@/styles/primitives.css";
 
 // En desarrollo, elimina cualquier service worker + caché que haya quedado de un
 // build/preview de producción anterior en este origen. Un SW viejo secuestra el

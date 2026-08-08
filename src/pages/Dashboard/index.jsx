@@ -14,6 +14,22 @@ import {
   HiOutlinePlus, HiOutlineChevronDown, HiOutlineArrowRight,
   HiMiniArrowTrendingUp, HiMiniArrowTrendingDown,
 } from "react-icons/hi2";
+import { Skeleton } from "@/components/ui/Skeleton";
+
+/* Paleta de data-viz: ÚNICA fuente para los colores de gráficas. Usa tokens
+   donde existen; los categóricos sin token (café/gris) quedan aquí centralizados. */
+const VIZ = {
+  ingresos:  "var(--mid)",
+  egresos:   "#7B5C38",
+  contratos: "var(--deep)",
+  available: "var(--mid)",
+  sold:      "var(--danger)",
+  reserved:  "#7B5C38",
+  tramite:   "#94A3B8",
+  grid:      "var(--line-soft)",
+  axis:      "var(--muted)",
+  hover:     "var(--sf2)",
+};
 
 /* ── helpers ─────────────────────────────────────────────────── */
 const NOW   = new Date();
@@ -44,11 +60,10 @@ function KpiCard({ icon: Icon, iconBg, label, value, sub, change }) {
   const up   = change !== null && Number(change) >= 0;
   const down = change !== null && Number(change) < 0;
   return (
-    <div style={{ background: "#fff", border: "1px solid var(--bd)", borderRadius: 18,
-      padding: "16px 18px", boxShadow: "0 2px 12px rgba(24,18,14,.06)", display: "flex", gap: 14, alignItems: "flex-start" }}>
+    <div className="ot-card" style={{ padding: "16px 18px", display: "flex", gap: 14, alignItems: "flex-start" }}>
       <div style={{ width: 42, height: 42, borderRadius: 12, background: iconBg,
         display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        <Icon style={{ fontSize: "1.25rem", color: "#fff" }} />
+        <Icon style={{ fontSize: "1.25rem", color: "var(--cream)" }} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: ".68rem", fontWeight: 700, textTransform: "uppercase",
@@ -58,7 +73,7 @@ function KpiCard({ icon: Icon, iconBg, label, value, sub, change }) {
         <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
           {change !== null ? (
             <span style={{ display: "flex", alignItems: "center", gap: 2, fontSize: ".72rem",
-              fontWeight: 700, color: up ? "#2F6A38" : "#c0392b" }}>
+              fontWeight: 700, color: up ? "var(--mid)" : "var(--danger)" }}>
               {up ? <HiMiniArrowTrendingUp /> : <HiMiniArrowTrendingDown />}
               {Math.abs(change)}% vs mes anterior
             </span>
@@ -80,7 +95,7 @@ function DonutChart({ segments, total, centerLabel }) {
     <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
       <div style={{ position: "relative", flexShrink: 0 }}>
         <svg width="110" height="110" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}>
-          <circle cx="50" cy="50" r={R} fill="none" stroke="#f0ebe3" strokeWidth="11" />
+          <circle cx="50" cy="50" r={R} fill="none" stroke={VIZ.grid} strokeWidth="11" />
           {segments.map((s, i) => {
             const dash = total > 0 ? (s.value / total) * C : 0;
             const offset = -cumulative;
@@ -141,8 +156,8 @@ function MiniChart({ data, bars, sharedScale = true, H = 120 }) {
           const maxForLabel = globalMax ?? maxes[0];
           return (
             <g key={p}>
-              <line x1={PAD_L} x2={W - 4} y1={y} y2={y} stroke="#f0ebe3" strokeWidth={1} />
-              <text x={PAD_L - 6} y={y + 3.5} textAnchor="end" fontSize="9" fill="#a09080">
+              <line x1={PAD_L} x2={W - 4} y1={y} y2={y} stroke={VIZ.grid} strokeWidth={1} />
+              <text x={PAD_L - 6} y={y + 3.5} textAnchor="end" fontSize="9" fill={VIZ.axis}>
                 {bars[0].fmt(Math.round(p * maxForLabel))}
               </text>
             </g>
@@ -157,7 +172,7 @@ function MiniChart({ data, bars, sharedScale = true, H = 120 }) {
               {isHov && (
                 <rect x={x - 4} y={PAD_T}
                   width={BW * bars.length + GAP * (bars.length - 1) + 8} height={H}
-                  fill="#f5f0ea" rx={4} />
+                  fill={VIZ.hover} rx={4} />
               )}
               {bars.map((b, bi) => {
                 const val = d[b.key] || 0;
@@ -170,7 +185,7 @@ function MiniChart({ data, bars, sharedScale = true, H = 120 }) {
                 );
               })}
               <text x={x + (BW * bars.length + GAP * (bars.length - 1)) / 2}
-                y={H + PAD_T + PAD_B - 2} textAnchor="middle" fontSize="9" fill="#a09080">
+                y={H + PAD_T + PAD_B - 2} textAnchor="middle" fontSize="9" fill={VIZ.axis}>
                 {d.label}
               </text>
             </g>
@@ -182,11 +197,11 @@ function MiniChart({ data, bars, sharedScale = true, H = 120 }) {
           position: "absolute", top: 4,
           left: `${Math.min((hovered / data.length) * 100 + 4, 55)}%`,
           transform: hovered > data.length * 0.6 ? "translateX(-110%)" : "none",
-          background: "#1E3D2B", color: "#fff", borderRadius: 10, padding: "8px 12px",
+          background: "var(--deep)", color: "var(--cream)", borderRadius: 10, padding: "8px 12px",
           fontSize: ".75rem", pointerEvents: "none", zIndex: 10, minWidth: 160,
           boxShadow: "0 4px 16px rgba(0,0,0,.2)",
         }}>
-          <div style={{ fontWeight: 700, marginBottom: 5, color: "#E7E4DB" }}>
+          <div style={{ fontWeight: 700, marginBottom: 5, color: "var(--line-soft)" }}>
             {data[hovered].fullLabel}
           </div>
           {bars.map(b => (
@@ -207,6 +222,44 @@ const AV_COLORS = ["#355E3B","#7B5C38","#1E3D2B","#6366F1","#0EA5E9"];
 import Avatar from "@/components/Avatar";
 import Button from "@/components/Button";
 /* Reuse shared Avatar component; badge handled inline where needed */
+
+/* ── Skeleton de carga (reemplaza la pantalla en blanco) ─────────── */
+function DashboardSkeleton() {
+  return (
+    <div aria-busy="true">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12, marginBottom: 18 }}>
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="ot-card" style={{ padding: "16px 18px", display: "flex", gap: 14, alignItems: "flex-start" }}>
+            <Skeleton w={42} h={42} r={12} />
+            <div style={{ flex: 1 }}>
+              <Skeleton w="60%" h={9} />
+              <Skeleton w="45%" h={22} style={{ marginTop: 10 }} />
+              <Skeleton w="70%" h={9} style={{ marginTop: 10 }} />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="ot-card" style={{ padding: 18 }}>
+            <Skeleton w="45%" h={11} />
+            <Skeleton w="100%" h={140} r={12} style={{ marginTop: 16 }} />
+          </div>
+        ))}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="ot-card" style={{ padding: 18 }}>
+            <Skeleton w="40%" h={11} />
+            <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
+              {Array.from({ length: 4 }).map((__, j) => <Skeleton key={j} w="100%" h={14} />)}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /* ══ PAGE ════════════════════════════════════════════════════════ */
 export default function DashboardPage() {
@@ -299,7 +352,7 @@ export default function DashboardPage() {
       .sort((a, b) => new Date(b.contract_date) - new Date(a.contract_date))
       .slice(0, 5), [contracts]);
 
-  if (!data) return null;
+  if (!data) return <DashboardSkeleton />;
 
   return (
     <>
@@ -307,12 +360,12 @@ export default function DashboardPage() {
         .db-grid6 { display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:18px; }
         .db-charts { display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px; }
         .db-row3  { display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px; }
-        .db-card  { background:#fff;border:1px solid var(--bd);border-radius:20px;overflow:hidden;box-shadow:0 4px 20px rgba(24,18,14,.06); }
+        .db-card  { background:var(--sf);border:1px solid var(--bd);border-radius:20px;overflow:hidden;box-shadow:var(--sh); }
         .db-card-hd { display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line-soft); }
-        .db-card-title { font-size:.72rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6f6253; }
+        .db-card-title { font-size:.72rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted); }
         .db-ver-todos { font-size:.72rem;font-weight:700;color:var(--forest);background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:3px; }
         .db-ver-todos:hover { text-decoration:underline; }
-        .db-accion { display:flex;align-items:center;gap:10px;padding:14px 16px;border-radius:14px;border:1.5px solid var(--bd);background:#fff;cursor:pointer;transition:all .14s;flex:1;font-family:inherit; }
+        .db-accion { display:flex;align-items:center;gap:10px;padding:14px 16px;border-radius:14px;border:1.5px solid var(--bd);background:var(--sf);cursor:pointer;transition:all .14s;flex:1;font-family:inherit; }
         .db-accion:hover { border-color:var(--forest);background:var(--tan-lt); }
         .db-accion-ico { width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
         .db-fin-row { display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line-soft);font-size:.83rem; }
@@ -359,7 +412,7 @@ export default function DashboardPage() {
             <div>
               <div className="db-card-title">Ingresos vs Egresos</div>
               <div style={{ display: "flex", gap: 12, marginTop: 5 }}>
-                {[["#355E3B","Ingresos"], ["#7B5C38","Egresos"]].map(([c,l]) => (
+                {[[VIZ.ingresos,"Ingresos"], [VIZ.egresos,"Egresos"]].map(([c,l]) => (
                   <div key={l} style={{ display:"flex", alignItems:"center", gap:5 }}>
                     <div style={{ width:8, height:8, borderRadius:2, background:c }} />
                     <span style={{ fontSize:".7rem", color:"var(--mu)" }}>{l}</span>
@@ -377,8 +430,8 @@ export default function DashboardPage() {
             <MiniChart
               data={monthlyChart}
               bars={[
-                { key:"ingresos", color:"#355E3B", label:"Ingresos", fmt: compactCurrency },
-                { key:"egresos",  color:"#7B5C38", label:"Egresos",  fmt: compactCurrency },
+                { key:"ingresos", color:VIZ.ingresos, label:"Ingresos", fmt: compactCurrency },
+                { key:"egresos",  color:VIZ.egresos,  label:"Egresos",  fmt: compactCurrency },
               ]}
               sharedScale={true}
               H={110}
@@ -404,7 +457,7 @@ export default function DashboardPage() {
           <div style={{ padding:"12px 16px 10px" }}>
             <MiniChart
               data={monthlyChart}
-              bars={[{ key:"contratos", color:"#1E3D2B", label:"Contratos", fmt: n => String(Math.round(n)) }]}
+              bars={[{ key:"contratos", color:VIZ.contratos, label:"Contratos", fmt: n => String(Math.round(n)) }]}
               sharedScale={false}
               H={110}
             />
@@ -419,10 +472,10 @@ export default function DashboardPage() {
           <div style={{ padding:"16px 18px" }}>
             <DonutChart
               segments={[
-                { label:"Disponibles", value:availLots,    color:"#355E3B" },
-                { label:"Vendidos",    value:soldLots,     color:"#c0392b" },
-                { label:"Apartados",   value:reservedLots, color:"#7B5C38" },
-                { label:"En trámite",  value:inTramite,    color:"#94a3b8" },
+                { label:"Disponibles", value:availLots,    color:VIZ.available },
+                { label:"Vendidos",    value:soldLots,     color:VIZ.sold },
+                { label:"Apartados",   value:reservedLots, color:VIZ.reserved },
+                { label:"En trámite",  value:inTramite,    color:VIZ.tramite },
               ]}
               total={totalLots}
               centerLabel="Total lotes"
@@ -467,7 +520,7 @@ export default function DashboardPage() {
                 <tr key={c.id} style={{ cursor: "pointer" }} onClick={() => navigate("/contratos")}>
                   <td style={{ fontWeight: 700, fontSize: ".8rem" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#355E3B", flexShrink: 0 }} />
+                      <div style={{ width: 7, height: 7, borderRadius: "50%", background: VIZ.available, flexShrink: 0 }} />
                       {c.lot?.sku || c.contract_number}
                     </div>
                   </td>
@@ -570,7 +623,7 @@ export default function DashboardPage() {
                     const maxR = Math.max(...arr.map(x => x.ingresos), 1);
                     return `${i * (60 / Math.max(arr.length - 1, 1))},${30 - (m.ingresos / maxR) * 26}`;
                   }).join(" ")}
-                  fill="none" stroke="#355E3B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  fill="none" stroke={VIZ.ingresos} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                 />
               </svg>
             </div>

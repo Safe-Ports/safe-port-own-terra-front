@@ -7,6 +7,7 @@ import { appointmentService } from "@/services/appointmentService";
 import { paymentService } from "@/services/paymentService";
 import { notificationService } from "@/services/notificationService";
 import EcoLayout from "./EcoLayout";
+import TasksBoard from "./TasksBoard";
 import GuideModal from "@/components/shared/GuideModal";
 
 const TOUR_STEPS = [
@@ -94,7 +95,6 @@ function EcosystemDia() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { currentUser } = useAppContext();
-  const [ntab, setNtab] = useState("Todas");
   const [showTour, setShowTour] = useState(false);
 
   const { data: midia } = useQuery({
@@ -118,11 +118,6 @@ function EcosystemDia() {
     queryFn: () => notificationService.list({ limit: 20 }),
   });
   const notifs = notifsData?.items ?? [];
-
-  const markReadMutation = useMutation({
-    mutationFn: () => notificationService.markAllRead(),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
-  });
 
   const firstName = midia?.user_first_name || (currentUser?.name || "").split(" ")[0] || "Bienvenido";
   const greeting = midia?.greeting || (() => {
@@ -148,28 +143,6 @@ function EcosystemDia() {
   const unreadCount = notifs.filter((n) => !n.is_read).length;
   const tasksCount = midia?.tasks?.length ?? 0;
   const pendingTotal = tasksCount + overdueItems.length + unreadCount;
-
-  // Group notifications by recency
-  const now = Date.now();
-  const todayNotifs = notifs.filter((n) => now - new Date(n.created_at).getTime() < 86400000);
-  const yesterdayNotifs = notifs.filter((n) => {
-    const d = now - new Date(n.created_at).getTime();
-    return d >= 86400000 && d < 172800000;
-  });
-  const weekNotifs = notifs.filter((n) => {
-    const d = now - new Date(n.created_at).getTime();
-    return d >= 172800000 && d < 604800000;
-  });
-
-  const NOTIF_GROUPS = [
-    { key: "hoy", label: "Hoy", items: todayNotifs },
-    { key: "ayer", label: "Ayer", items: yesterdayNotifs },
-    { key: "semana", label: "Esta semana", items: weekNotifs },
-  ].filter((g) => g.items.length > 0);
-
-  const tabs = ["Todas", "Hoy", "Ayer", "Esta semana"];
-  const tabKey = { Hoy: "hoy", Ayer: "ayer", "Esta semana": "semana" };
-  const shownGroups = ntab === "Todas" ? NOTIF_GROUPS : NOTIF_GROUPS.filter((g) => g.key === tabKey[ntab]);
 
   const motiv = done === totalAppts && totalAppts > 0
     ? "¡Completaste todas tus citas del día! 🎉 Excelente trabajo."
@@ -306,30 +279,8 @@ function EcosystemDia() {
           </div>
         </div>
 
-        {/* TAREAS + PAGOS */}
+        {/* PAGOS (las tareas ahora viven en el tablero full-width de abajo) */}
         <div className="md-side">
-          {/* Tareas prioritarias de Mi Día */}
-          <div className="md-card">
-            <div className="md-card-head">
-              <div className="md-card-title">Tareas prioritarias</div>
-              <button className="sh-link" onClick={() => navigate("/dashboard")}>Ver dashboard →</button>
-            </div>
-            {midia?.tasks?.slice(0, 4).map((t) => (
-              <div key={t.id || t.title} className="md-row">
-                <span className="md-row-ico" style={{ background: "var(--bg2)" }}>{t.icon}</span>
-                <div className="md-row-info">
-                  <div className="md-row-name">{t.title}</div>
-                  {t.subtitle && <div className="md-row-meta">{t.subtitle}</div>}
-                </div>
-                <span className={`md-prio ${t.priority === "urgent" ? "alta" : t.priority === "warn" ? "media" : "baja"}`}>
-                  {t.priority === "urgent" ? "Urgente" : t.priority === "warn" ? "Media" : "Baja"}
-                </span>
-              </div>
-            )) || (
-              <div style={{ padding: "16px 0", color: "var(--text3)", fontSize: 13 }}>Sin tareas pendientes.</div>
-            )}
-          </div>
-
           {/* Pagos vencidos */}
           <div className="md-card">
             <div className="md-card-head">
@@ -364,46 +315,8 @@ function EcosystemDia() {
         steps={TOUR_STEPS}
       />
 
-      {/* ALERTAS Y PENDIENTES */}
-      <div className="md-card" style={{ marginBottom: 30 }}>
-        <div className="md-card-head" style={{ marginBottom: 16 }}>
-          <div>
-            <div className="md-card-title">Alertas y pendientes {pendingTotal > 0 && <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, background: "var(--danger)", color: "#fff", borderRadius: 10, padding: "1px 6px", marginLeft: 6 }}>{pendingTotal}</span>}</div>
-            <div className="md-card-sub">notificaciones, pagos y tareas que requieren atención</div>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <div className="seg">
-              {tabs.map((t) => <span key={t} className={ntab === t ? "on" : ""} onClick={() => setNtab(t)}>{t}</span>)}
-            </div>
-            <button className="sh-link" onClick={() => markReadMutation.mutate()}>Marcar todas como leídas</button>
-          </div>
-        </div>
-        <div className="md-ngrid">
-          {shownGroups.length ? shownGroups.map((g) => (
-            <div key={g.key}>
-              <div className="md-ngroup-label">{g.label}</div>
-              {g.items.map((n) => (
-                <div key={n.id} className="md-row" style={{ opacity: n.is_read ? 0.6 : 1 }}>
-                  <span className="md-row-ico" style={{ background: "var(--bg2)" }}>🔔</span>
-                  <div className="md-row-info">
-                    <div className="md-row-name" style={{ whiteSpace: "normal" }}>{n.message || n.title || "Notificación"}</div>
-                    <div className="md-row-meta">{fmtRelative(n.created_at)}</div>
-                  </div>
-                  {!n.is_read && (
-                    <button className="sh-link" style={{ fontSize: 11 }} onClick={() => notificationService.markRead(n.id).then(() => qc.invalidateQueries({ queryKey: ["notifications"] }))}>
-                      ✓
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          )) : (
-            <div style={{ padding: "16px 0", color: "var(--text3)", fontSize: 13, textAlign: "center" }}>
-              {ntab === "Todas" ? "Sin notificaciones recientes." : `Sin notificaciones de "${ntab}".`}
-            </div>
-          )}
-        </div>
-      </div>
+      {/* TABLERO DE TAREAS (personal) */}
+      <TasksBoard />
     </EcoLayout>
   );
 }
