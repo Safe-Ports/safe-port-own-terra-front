@@ -16,6 +16,14 @@ export function getApiErrorData(error) {
 }
 
 export function getFieldErrors(error, fieldMap = {}) {
+  // Los errores por campo (marcar inputs en rojo) SOLO vienen de validación 422.
+  // Los errores de negocio (400/404/409) pueden traer `details` de contexto (ids)
+  // que NO son errores de campo — tratarlos como tales pintaba campos con un UUID
+  // y ocultaba el mensaje real. Fuera de 422 devolvemos null para que el caller
+  // muestre el mensaje del backend con showError.
+  const status = error?.response?.status ?? error?.status ?? null;
+  if (status !== 422) return null;
+
   const data = getApiErrorData(error);
   // El backend homologado manda los errores de campo en data.error.details (envelope OT-).
   // Se mantiene data.detail y data.errors como fallback para respuestas sin envelope.

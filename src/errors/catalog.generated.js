@@ -164,6 +164,14 @@ export const ERROR_CATALOG = {
     "name": "CON_TOO_RECENT",
     "severity": "warning"
   },
+  "OT-CON-3004": {
+    "action": "Reasigna el lote a un vendedor activo o elige otro.",
+    "domain": "CON",
+    "http_status": 409,
+    "message": "El vendedor asignado está deshabilitado.",
+    "name": "CON_SELLER_INACTIVE",
+    "severity": "warning"
+  },
   "OT-DOC-1010": {
     "action": "Sube uno más pequeño.",
     "domain": "DOC",
@@ -242,6 +250,14 @@ export const ERROR_CATALOG = {
     "http_status": 400,
     "message": "Ese cambio de estado del lote no está permitido.",
     "name": "LOT_FORBIDDEN_TRANSITION",
+    "severity": "warning"
+  },
+  "OT-LOT-1002": {
+    "action": "Indica una fecha de vencimiento futura al apartar.",
+    "domain": "LOT",
+    "http_status": 400,
+    "message": "El vencimiento del apartado no es válido.",
+    "name": "LOT_RESERVATION_INVALID",
     "severity": "warning"
   },
   "OT-LOT-3002": {

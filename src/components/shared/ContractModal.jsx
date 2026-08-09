@@ -546,12 +546,15 @@ function ContractModal() {
         _docs: docs.filter(d => d.file),
       });
     } catch (err) {
-      const serverErrs = parseServerErrors(err);
-      if (serverErrs?._general) {
-        showToast(serverErrs._general);
-      } else if (serverErrs) {
+      // Solo las validaciones 422 (Pydantic) traen errores por campo. Los errores
+      // de negocio (400/404/409, p. ej. "vendedor deshabilitado") llevan un mensaje
+      // claro + `details` de contexto (ids) — NO son errores de campo, así que van
+      // al toast de error con su mensaje real, no a "revisa los campos en rojo".
+      const status = err?.response?.status;
+      const serverErrs = status === 422 ? parseServerErrors(err) : null;
+      if (serverErrs) {
         setErrors(serverErrs);
-        showToast("Revisa los campos marcados en rojo");
+        showToast("Revisa los campos marcados en rojo", "warning");
       } else {
         showError(err, "Error al guardar el contrato");
       }
