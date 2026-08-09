@@ -9,9 +9,8 @@ import { compactCurrency, currency } from "@/services/formatters";
 import { expenseService } from "@/services/expenseService";
 import { dashboardService } from "@/services/dashboardService";
 import {
-  HiOutlineBanknotes, HiOutlineShoppingCart, HiOutlineHome,
-  HiOutlineCheckCircle, HiOutlineSquares2X2, HiOutlineDocumentText,
-  HiOutlinePlus, HiOutlineChevronDown, HiOutlineArrowRight,
+  HiOutlineSquares2X2, HiOutlineDocumentText,
+  HiOutlineChevronDown, HiOutlineArrowRight,
   HiMiniArrowTrendingUp, HiMiniArrowTrendingDown,
 } from "react-icons/hi2";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -56,31 +55,24 @@ function compactNum(n) {
 }
 
 /* ── KPI Card ────────────────────────────────────────────────── */
-function KpiCard({ icon: Icon, iconBg, label, value, sub, change }) {
-  const up   = change !== null && Number(change) >= 0;
-  const down = change !== null && Number(change) < 0;
+function KpiCard({ label, value, sub, change }) {
+  const up = change !== null && Number(change) >= 0;
   return (
-    <div className="ot-card" style={{ padding: "16px 18px", display: "flex", gap: 14, alignItems: "flex-start" }}>
-      <div style={{ width: 42, height: 42, borderRadius: 12, background: iconBg,
-        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        <Icon style={{ fontSize: "1.25rem", color: "var(--cream)" }} />
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: ".68rem", fontWeight: 700, textTransform: "uppercase",
-          letterSpacing: ".1em", color: "var(--mu)", marginBottom: 2 }}>{label}</div>
-        <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.6rem",
-          fontWeight: 700, color: "var(--tx)", lineHeight: 1.1 }}>{value}</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
-          {change !== null ? (
-            <span style={{ display: "flex", alignItems: "center", gap: 2, fontSize: ".72rem",
-              fontWeight: 700, color: up ? "var(--mid)" : "var(--danger)" }}>
-              {up ? <HiMiniArrowTrendingUp /> : <HiMiniArrowTrendingDown />}
-              {Math.abs(change)}% vs mes anterior
-            </span>
-          ) : (
-            <span style={{ fontSize: ".72rem", color: "var(--mu)" }}>{sub}</span>
-          )}
-        </div>
+    <div className="ot-card" style={{ padding: "16px 18px" }}>
+      <div style={{ fontSize: ".68rem", fontWeight: 700, textTransform: "uppercase",
+        letterSpacing: ".1em", color: "var(--mu)", marginBottom: 6 }}>{label}</div>
+      <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.7rem",
+        fontWeight: 700, color: "var(--tx)", lineHeight: 1.1 }}>{value}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4 }}>
+        {change !== null ? (
+          <span style={{ display: "flex", alignItems: "center", gap: 2, fontSize: ".72rem",
+            fontWeight: 700, color: up ? "var(--mid)" : "var(--danger)" }}>
+            {up ? <HiMiniArrowTrendingUp /> : <HiMiniArrowTrendingDown />}
+            {Math.abs(change)}% vs mes anterior
+          </span>
+        ) : (
+          <span style={{ fontSize: ".72rem", color: "var(--mu)" }}>{sub}</span>
+        )}
       </div>
     </div>
   );
@@ -229,13 +221,10 @@ function DashboardSkeleton() {
     <div aria-busy="true">
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12, marginBottom: 18 }}>
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="ot-card" style={{ padding: "16px 18px", display: "flex", gap: 14, alignItems: "flex-start" }}>
-            <Skeleton w={42} h={42} r={12} />
-            <div style={{ flex: 1 }}>
-              <Skeleton w="60%" h={9} />
-              <Skeleton w="45%" h={22} style={{ marginTop: 10 }} />
-              <Skeleton w="70%" h={9} style={{ marginTop: 10 }} />
-            </div>
+          <div key={i} className="ot-card" style={{ padding: "16px 18px" }}>
+            <Skeleton w="60%" h={9} />
+            <Skeleton w="45%" h={24} style={{ marginTop: 10 }} />
+            <Skeleton w="70%" h={9} style={{ marginTop: 10 }} />
           </div>
         ))}
       </div>
@@ -377,27 +366,27 @@ export default function DashboardPage() {
 
       {/* ── 6 KPIs ── */}
       <div className="db-grid6">
-        <KpiCard icon={HiOutlineBanknotes}    iconBg="#355E3B" label="Ingresos del mes"
+        <KpiCard label="Ingresos del mes"
           value={compactCurrency(revThisMonth)}
           sub="Cobros aplicados"
           change={pct(revThisMonth, revLastMonth)} />
-        <KpiCard icon={HiOutlineShoppingCart}  iconBg="#0EA5E9" label="Ventas del mes"
+        <KpiCard label="Ventas del mes"
           value={salesThisMonth}
           sub="Contratos nuevos"
           change={pct(salesThisMonth, salesLastMonth)} />
-        <KpiCard icon={HiOutlineHome}          iconBg="#6366F1" label="Lotes disponibles"
+        <KpiCard label="Lotes disponibles"
           value={availLots}
           sub={`${totalLots} en inventario`}
           change={null} />
-        <KpiCard icon={HiOutlineCheckCircle}   iconBg="#2F6A38" label="Lotes vendidos"
+        <KpiCard label="Lotes vendidos"
           value={soldLots}
           sub="Total histórico"
           change={null} />
-        <KpiCard icon={HiOutlineSquares2X2}    iconBg="#7B5C38" label="Inventario total"
+        <KpiCard label="Inventario total"
           value={totalLots}
           sub="lotes en total"
           change={null} />
-        <KpiCard icon={HiOutlineDocumentText}  iconBg="#c0392b" label="Contratos activos"
+        <KpiCard label="Contratos activos"
           value={activeContracts}
           sub={`${clients.length} clientes`}
           change={null} />
@@ -570,9 +559,9 @@ export default function DashboardPage() {
                       <div style={{ position: "relative", display: "inline-block" }}>
                         <Avatar name={m.name} size={30} />
                         <div style={{ position: "absolute", bottom: -3, right: -3, width: 14, height: 14,
-                          borderRadius: "50%", background: (i + 1) === 1 ? "#f59e0b" : (i + 1) === 2 ? "#94a3b8" : (i + 1) === 3 ? "#cd7f32" : "#e5e7eb",
-                          border: "1.5px solid #fff", display: "flex", alignItems: "center", justifyContent: "center",
-                          fontSize: "7px", fontWeight: 800, color: (i + 1) <= 3 ? "#fff" : "#6b7280" }}>
+                          borderRadius: "50%", background: (i + 1) === 1 ? "var(--deep)" : (i + 1) === 2 ? "var(--mid)" : (i + 1) === 3 ? "var(--leaf)" : "var(--sf2)",
+                          border: "1.5px solid var(--sf)", display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: "7px", fontWeight: 800, color: (i + 1) <= 3 ? "var(--cream)" : "var(--mu)" }}>
                           {i + 1}
                         </div>
                       </div>
@@ -639,12 +628,12 @@ export default function DashboardPage() {
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           {[
-            { icon: HiOutlineDocumentText, bg: "#fdecea", color: "#c0392b", label: "Generar contrato",  path: "/contratos" },
-            { icon: HiOutlineSquares2X2,   bg: "#fef3e2", color: "#7B5C38", label: "Ver reportes",      path: "/reportes"  },
-          ].map(({ icon: Icon, bg, color, label, path }) => (
+            { icon: HiOutlineDocumentText, label: "Generar contrato", path: "/contratos" },
+            { icon: HiOutlineSquares2X2,   label: "Ver reportes",     path: "/reportes"  },
+          ].map(({ icon: Icon, label, path }) => (
             <button key={label} className="db-accion" onClick={() => navigate(path)}>
-              <div className="db-accion-ico" style={{ background: bg }}>
-                <Icon style={{ fontSize: "1rem", color }} />
+              <div className="db-accion-ico" style={{ background: "rgba(111,175,107,.14)" }}>
+                <Icon style={{ fontSize: "1rem", color: "var(--mid)" }} />
               </div>
               <span style={{ fontSize: ".8rem", fontWeight: 600, color: "var(--tx2)" }}>
                 + {label}
