@@ -327,7 +327,7 @@ function CalculatorPage() {
               </div>
               <textarea
                 className="fi"
-                style={{ fontFamily: "'JetBrains Mono',monospace", minHeight: 80, resize: "vertical" }}
+                style={{ fontFamily: "var(--font-body)", minHeight: 80, resize: "vertical" }}
                 value={editor.formula}
                 onChange={(e) => setEditor((p) => ({ ...p, formula: e.target.value }))}
                 placeholder={EXAMPLE}
@@ -354,7 +354,7 @@ function CalculatorPage() {
                 <div className="grid gap-3 md:grid-cols-3">
                   {vars.map((v) => (
                     <div className="fg" key={v}>
-                      <label className="fl" style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".72rem" }}>{v}</label>
+                      <label className="fl" style={{ fontFamily: "var(--font-body)", fontSize: ".72rem" }}>{v}</label>
                       <input className="fi" type="number" value={testValues[v] ?? ""}
                         onChange={(e) => setTestValue(v, e.target.value)} placeholder="0" />
                     </div>

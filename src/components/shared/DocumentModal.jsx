@@ -150,7 +150,7 @@ function DocumentModal() {
             }}>
               <HiOutlineMagnifyingGlass style={{ color: "#83867C", flexShrink: 0, fontSize: "1rem" }} />
               <input
-                style={{ border: "none", background: "none", outline: "none", width: "100%", fontSize: ".84rem", color: "#1E3D2B", fontFamily: "inherit" }}
+                style={{ border: "none", background: "none", outline: "none", width: "100%", fontSize: ".84rem", color: "#1E3D2B", fontFamily: "var(--font-body)" }}
                 value={clients.find(c => String(c.id) === String(form.linkedId))?.name || clientSearch}
                 onChange={(e) => {
                   setClientSearch(e.target.value);

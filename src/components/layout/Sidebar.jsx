@@ -119,7 +119,7 @@ function Sidebar() {
           </NavLink>
           <button onClick={handleLogout} className="sb-foot-item" style={{
             border: "none", background: "transparent", width: "100%", textAlign: "left",
-            fontFamily: "inherit", cursor: "pointer", marginTop: 4,
+            fontFamily: "var(--font-body)", cursor: "pointer", marginTop: 4,
           }}>
             <span className="sb-foot-ico"><HiArrowLeftOnRectangle /></span>
             <span>Cerrar sesión</span>

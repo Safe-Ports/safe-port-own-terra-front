@@ -74,7 +74,7 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     padding: 24,
-    fontFamily: "system-ui, sans-serif",
+    fontFamily: "var(--font-body)",
     background: "#16120f",
   },
   card: {
@@ -97,7 +97,7 @@ const styles = {
     paddingTop: 12,
     borderTop: "1px solid rgba(233,229,219,0.12)",
   },
-  code: { fontSize: "0.74rem", fontFamily: "ui-monospace, monospace", color: "#B7AE9E" },
+  code: { fontSize: "0.74rem", fontFamily: "var(--font-body)", color: "#B7AE9E" },
   copy: {
     border: "1px solid rgba(233,229,219,0.24)",
     background: "transparent",

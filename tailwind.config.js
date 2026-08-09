@@ -21,9 +21,11 @@ export default {
         ink2: "var(--tx2)"
       },
       fontFamily: {
-        display: ["'Playfair Display'", "serif"],
-        sans: ["Outfit", "Inter", "sans-serif"],
-        mono: ["'JetBrains Mono'", "monospace"]
+        // 2 fuentes homologadas (mismos tokens que el CSS). `mono` ya no es
+        // monoespaciada: apunta al body (Inter) para no reintroducir una 3ª fuente.
+        display: ["var(--font-title)"],
+        sans: ["var(--font-body)"],
+        mono: ["var(--font-body)"]
       },
       boxShadow: {
         soft: "var(--sh)",

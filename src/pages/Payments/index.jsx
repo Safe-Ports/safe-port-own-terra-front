@@ -134,7 +134,7 @@ function BarChart({ data }) {
 function SmartFilterBar({ search, onSearch, estado, onEstado, periodo, onPeriodo, desde, onDesde, hasta, onHasta, estadoOptions }) {
   const sel = { appearance: "none", border: "1.5px solid var(--bd)", borderRadius: 10,
     fontSize: ".82rem", fontWeight: 600, background: "#fff", color: "var(--tx)",
-    cursor: "pointer", fontFamily: "inherit", outline: "none" };
+    cursor: "pointer", fontFamily: "var(--font-body)", outline: "none" };
   return (
     <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 14,
       background: "var(--sf)", border: "1px solid rgba(67,69,63,.1)", borderRadius: 18,
@@ -174,7 +174,7 @@ function SmartFilterBar({ search, onSearch, estado, onEstado, periodo, onPeriodo
         <span style={{ fontSize: ".72rem", fontWeight: 700, color: "var(--mu)" }}>Desde</span>
         <input type="date" value={desde} onChange={e => onDesde(e.target.value)}
           style={{ border: "1.5px solid var(--bd)", borderRadius: 10, padding: "6px 10px",
-            fontSize: ".8rem", background: "#fff", fontFamily: "inherit", outline: "none", cursor: "pointer" }} />
+            fontSize: ".8rem", background: "#fff", fontFamily: "var(--font-body)", outline: "none", cursor: "pointer" }} />
       </div>
 
       {/* Hasta */}
@@ -182,7 +182,7 @@ function SmartFilterBar({ search, onSearch, estado, onEstado, periodo, onPeriodo
         <span style={{ fontSize: ".72rem", fontWeight: 700, color: "var(--mu)" }}>Hasta</span>
         <input type="date" value={hasta} onChange={e => onHasta(e.target.value)}
           style={{ border: "1.5px solid var(--bd)", borderRadius: 10, padding: "6px 10px",
-            fontSize: ".8rem", background: "#fff", fontFamily: "inherit", outline: "none", cursor: "pointer" }} />
+            fontSize: ".8rem", background: "#fff", fontFamily: "var(--font-body)", outline: "none", cursor: "pointer" }} />
       </div>
 
       {/* Limpiar */}
@@ -204,7 +204,7 @@ function Pagination({ total, page, limit, onPage, onLimit }) {
     width: 30, height: 30, borderRadius: 8, border: "1px solid var(--bd)",
     background: disabled ? "var(--sf2)" : "#fff", color: disabled ? "var(--mu)" : "var(--tx)",
     cursor: disabled ? "default" : "pointer", display: "flex", alignItems: "center",
-    justifyContent: "center", fontSize: ".8rem", fontFamily: "inherit", fontWeight: 700,
+    justifyContent: "center", fontSize: ".8rem", fontFamily: "var(--font-body)", fontWeight: 700,
   });
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -223,7 +223,7 @@ function Pagination({ total, page, limit, onPage, onLimit }) {
       </div>
       <select value={limit} onChange={e => { onLimit(Number(e.target.value)); onPage(1); }}
         style={{ border: "1px solid var(--bd)", borderRadius: 8, padding: "5px 8px",
-          fontSize: ".75rem", background: "#fff", fontFamily: "inherit", outline: "none", cursor: "pointer" }}>
+          fontSize: ".75rem", background: "#fff", fontFamily: "var(--font-body)", outline: "none", cursor: "pointer" }}>
         {[10, 25, 50].map(n => <option key={n} value={n}>{n} por página</option>)}
       </select>
     </div>
@@ -546,7 +546,7 @@ function TipoModal({ onSelect, onClose }) {
             <button key={type} onClick={() => onSelect(type)} style={{
               display: "flex", alignItems: "center", gap: 14, padding: "16px 18px",
               border: `2px solid ${border}`, borderRadius: 16, background: bg,
-              cursor: "pointer", textAlign: "left", fontFamily: "inherit", width: "100%",
+              cursor: "pointer", textAlign: "left", fontFamily: "var(--font-body)", width: "100%",
             }}>
               <span style={{ fontSize: "1.8rem" }}>{icon}</span>
               <div>
@@ -737,7 +737,7 @@ export default function PaymentsPage() {
         .pv2-subtab  { padding:6px 16px;border-radius:8px;border:none;background:transparent;font-size:.78rem;font-weight:600;cursor:pointer;color:var(--mu);font-family:inherit; }
         .pv2-subtab.act { background:var(--sf);color:var(--tx);box-shadow:0 1px 3px rgba(30,61,43,.1); }
         .pv2-wrap { background:var(--sf);border:1px solid rgba(67,69,63,.1);border-radius:22px;overflow:hidden;box-shadow:0 12px 30px rgba(30,61,43,.06); }
-        .pv2-sect-hd { font-size:.6rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--mu);padding:14px 18px 8px;border-bottom:1px solid rgba(67,69,63,.08);display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace; }
+        .pv2-sect-hd { font-size:.6rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--mu);padding:14px 18px 8px;border-bottom:1px solid rgba(67,69,63,.08);display:flex;align-items:center;gap:8px;font-family: var(--font-body); }
         .pv2-pill { padding:6px 13px;border-radius:30px;border:1px solid rgba(67,69,63,.12);background:var(--sf);font-size:.72rem;font-weight:600;color:var(--tx2);cursor:pointer;font-family:inherit;transition:all .15s; }
         .pv2-pill:hover { border-color:var(--leaf); }
         .pv2-pill.act-g { background:rgba(111,175,107,.15);color:#2F6A38;border-color:rgba(111,175,107,.4); }
@@ -749,7 +749,7 @@ export default function PaymentsPage() {
         .al-badge { width:34px;height:34px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.95rem; }
         .al-badge.roja { background:#FDECEA; }
         .al-badge.amarilla { background:#FEF3E2; }
-        .al-tipo { font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:3px 8px;border-radius:30px;font-family:'JetBrains Mono',monospace; }
+        .al-tipo { font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:3px 8px;border-radius:30px;font-family: var(--font-body); }
         .al-tipo.ingreso { background:rgba(111,175,107,.14);color:#2F6A38; }
         .al-tipo.egreso  { background:rgba(67,69,63,.1);color:#43453F; }
         .al-action { margin-left:auto;padding:7px 15px;border-radius:9px;border:1px solid rgba(67,69,63,.18);cursor:pointer;font-size:.74rem;font-weight:600;white-space:nowrap;font-family:inherit;transition:all .15s; }

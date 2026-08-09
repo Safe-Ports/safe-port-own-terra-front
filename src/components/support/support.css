@@ -76,7 +76,7 @@
 .sp-head-back svg { width: 14px; height: 14px; }
 .sp-head-title {
   flex: 1;
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-title);
   font-size: 15px;
   color: var(--deep, #1E3D2B);
   line-height: 1.2;
@@ -85,7 +85,7 @@
   display: block;
   font-size: 10px;
   color: var(--text3, #83867C);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-body);
   margin-top: 1px;
 }
 .sp-head-close {
@@ -119,7 +119,7 @@
 }
 .sp-menu-welcome strong {
   display: block;
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-title);
   font-size: 16px;
   color: var(--deep, #1E3D2B);
   margin-bottom: 3px;
@@ -130,7 +130,7 @@
   display: flex; align-items: center; gap: 11px;
   width: 100%; padding: 13px 18px;
   border: none; background: none; cursor: pointer;
-  text-align: left; font-family: 'Outfit', sans-serif;
+  text-align: left; font-family: var(--font-body);
   border-bottom: 1px solid var(--border, rgba(67,69,63,.10));
   transition: background .14s;
 }
@@ -163,7 +163,7 @@
   font-size: 9px; font-weight: 700;
   letter-spacing: .14em; text-transform: uppercase;
   color: var(--text3, #83867C);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-body);
   margin-bottom: 6px;
 }
 .sp-input, .sp-textarea {
@@ -175,7 +175,7 @@
   font-size: 13px;
   color: var(--text, #1E3D2B);
   outline: none;
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-body);
   transition: border-color .15s, background .15s;
   box-sizing: border-box;
 }
@@ -192,7 +192,7 @@
   color: var(--cream, #E9E5DB);
   font-size: 13px; font-weight: 600;
   cursor: pointer;
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-body);
   box-shadow: 0 6px 16px rgba(30,61,43,.22);
   transition: filter .15s;
   margin-top: 4px;
@@ -217,7 +217,7 @@
   background: none; cursor: pointer;
   font-size: 12px; font-weight: 600;
   color: var(--mid, #355E3B);
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-body);
   text-align: center;
   transition: background .13s;
 }
@@ -233,12 +233,12 @@
   background: none;
   border-left: 3px solid transparent;
   width: 100%; text-align: left;
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-body);
 }
 .sp-ticket-row:hover { background: var(--surface2, #F1EEE6); }
 .sp-ticket-row.has-unread { border-left-color: var(--leaf, #6FAF6B); }
 .sp-ticket-info { flex: 1; min-width: 0; }
-.sp-ticket-id { font-size: 9.5px; font-family: 'JetBrains Mono', monospace; color: var(--text3, #83867C); margin-bottom: 3px; }
+.sp-ticket-id { font-size: 9.5px; font-family: var(--font-body); color: var(--text3, #83867C); margin-bottom: 3px; }
 .sp-ticket-desc { font-size: 12.5px; font-weight: 600; color: var(--text, #1E3D2B); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sp-ticket-date { font-size: 10.5px; color: var(--text3, #83867C); margin-top: 3px; }
 .sp-ticket-right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0; }
@@ -248,7 +248,7 @@
 .sp-badge {
   font-size: 9px; font-weight: 700; letter-spacing: .04em;
   text-transform: uppercase; padding: 3px 8px; border-radius: 30px;
-  font-family: 'JetBrains Mono', monospace; white-space: nowrap;
+  font-family: var(--font-body); white-space: nowrap;
 }
 .sp-badge--open        { background: rgba(201,154,59,.14); color: #9D6B18; border: 1px solid rgba(201,154,59,.3); }
 .sp-badge--in_progress { background: rgba(53,130,220,.12); color: #1A5FAB; border: 1px solid rgba(53,130,220,.28); }
@@ -272,7 +272,7 @@
 .sp-msg--support { align-self: flex-start; align-items: flex-start; }
 .sp-msg-author {
   font-size: 9.5px; color: var(--text3, #83867C);
-  margin-bottom: 3px; font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 3px; font-family: var(--font-body);
 }
 .sp-msg-bubble { padding: 9px 12px; border-radius: 14px; font-size: 13px; line-height: 1.5; }
 .sp-msg--user .sp-msg-bubble {
@@ -363,7 +363,7 @@
   border-radius: 11px;
   padding: 8px 11px; font-size: 13px;
   color: var(--text, #1E3D2B); outline: none;
-  font-family: 'Outfit', sans-serif; resize: none;
+  font-family: var(--font-body); resize: none;
   transition: border-color .15s, background .15s;
 }
 .sp-msg-input:focus {

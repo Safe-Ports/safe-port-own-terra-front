@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -35,6 +35,11 @@
   --mu:       #83867C;
   --sh:  0 1px 3px rgba(30, 61, 43, 0.06), 0 4px 12px rgba(30, 61, 43, 0.07);
   --sh2: 0 18px 40px rgba(30, 61, 43, 0.10), 0 20px 40px rgba(30, 61, 43, 0.11);
+  /* ── Tipografía homologada: 2 fuentes ──────────────────────────────────────
+     --font-title = Playfair (títulos/nombres) · --font-body = Inter (texto y
+     TODOS los números, con tabular-nums para que las cifras alineen). */
+  --font-title: "Playfair Display", Georgia, serif;
+  --font-body:  "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 * {
@@ -54,7 +59,9 @@ html {
 
 body {
   margin: 0;
-  font-family: "Outfit", "Inter", "DM Sans", sans-serif;
+  font-family: var(--font-body);
+  /* Números tabulares en toda la app → las cifras alinean en columnas. */
+  font-variant-numeric: tabular-nums;
   background: var(--bg);
   color: var(--tx);
   -webkit-font-smoothing: antialiased;
@@ -174,7 +181,7 @@ a {
 }
 
 .sb-logo-nm {
-  font-family: "Playfair Display", serif;
+  font-family: var(--font-title);
   font-size: 1.18rem;
   color: #fff;
   line-height: 1.05;
@@ -186,7 +193,7 @@ a {
 }
 
 .sb-logo-nm small {
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-body);
   font-size: 0.56rem;
   color: rgba(167, 203, 161, 0.6);
   font-weight: 400;
@@ -203,7 +210,7 @@ a {
   letter-spacing: 0.16em;
   color: rgba(167, 203, 161, 0.45);
   font-weight: 500;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-body);
 }
 
 .sb-nav {
@@ -234,7 +241,7 @@ a {
   background: transparent;
   width: 100%;
   text-align: left;
-  font-family: "Outfit", "Inter", sans-serif;
+  font-family: var(--font-body);
 }
 
 .sb-btn:hover {
@@ -377,7 +384,7 @@ a {
 }
 
 .topbar-title {
-  font-family: "Playfair Display", serif;
+  font-family: var(--font-title);
   font-size: 1.25rem;
   color: var(--tx);
   letter-spacing: -0.01em;
@@ -418,7 +425,7 @@ a {
   background: var(--surface, var(--sf, #fbfaf6));
   color: var(--text2, var(--tx2, #43453f));
   cursor: pointer;
-  font-family: "Outfit", sans-serif;
+  font-family: var(--font-body);
   font-size: 0.78rem;
   font-weight: 600;
   line-height: 1;
@@ -599,7 +606,7 @@ a {
   font-size: 0.62rem;
   font-weight: 700;
   color: var(--mu);
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-body);
   letter-spacing: 0.5px;
 }
 
@@ -625,7 +632,7 @@ a {
 }
 
 .topbar-role {
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-body);
   font-size: 0.58rem;
   line-height: 1.1;
   text-transform: uppercase;
@@ -906,7 +913,7 @@ a {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--mu);
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-body);
 }
 
 .fi {
@@ -919,7 +926,7 @@ a {
   color: var(--deep);
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
-  font-family: "Outfit", sans-serif;
+  font-family: var(--font-body);
 }
 
 .fi:focus {
@@ -983,7 +990,8 @@ textarea.is-invalid {
 }
 
 .kpi-val {
-  font-family: "Playfair Display", serif;
+  font-family: var(--font-body);
+  font-weight: 800;
 }
 
 .kpi-lbl {
@@ -1113,12 +1121,12 @@ textarea.is-invalid {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #83867C;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-body);
 }
 
 .pc-v {
   margin-top: 8px;
-  font-family: "Playfair Display", serif;
+  font-family: var(--font-title);
   font-size: 1.2rem;
   color: #1E3D2B;
 }
@@ -1259,7 +1267,8 @@ textarea.is-invalid {
 }
 
 .donut-pct {
-  font-family: "Playfair Display", serif;
+  font-family: var(--font-body);
+  font-weight: 800;
   font-size: 1.15rem;
   color: var(--tx);
 }
@@ -1391,7 +1400,7 @@ textarea.is-invalid {
   color: var(--tx);
   width: 100%;
   outline: none;
-  font-family: "Outfit", sans-serif;
+  font-family: var(--font-body);
 }
 
 .cl-filters {
@@ -1414,7 +1423,7 @@ textarea.is-invalid {
   background: var(--sf);
   white-space: nowrap;
   transition: all 0.15s;
-  font-family: "Outfit", sans-serif;
+  font-family: var(--font-body);
 }
 
 .cl-fp:hover {
@@ -1494,7 +1503,7 @@ textarea.is-invalid {
   display: block;
   font-size: 0.66rem;
   color: var(--mu);
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-body);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1539,7 +1548,7 @@ textarea.is-invalid {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-body);
 }
 
 .cl-det-hd {
@@ -1560,7 +1569,7 @@ textarea.is-invalid {
 }
 
 .cl-det-nm {
-  font-family: "Playfair Display", serif;
+  font-family: var(--font-title);
   font-size: 1.25rem;
   color: var(--deep);
   line-height: 1.1;
@@ -1570,7 +1579,7 @@ textarea.is-invalid {
   font-size: 0.7rem;
   color: var(--text3, #83867C);
   margin-top: 3px;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-body);
 }
 
 .cl-det-body {
@@ -1618,7 +1627,7 @@ textarea.is-invalid {
 .ow-mt {
   font-size: 0.66rem;
   color: var(--mu);
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-body);
 }
 
 .price-row {
@@ -1637,7 +1646,7 @@ textarea.is-invalid {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-body);
 }
 
 .sec-hd::after {
@@ -1767,7 +1776,7 @@ textarea.is-invalid {
     border: 1px solid rgba(111, 175, 107, 0.30);
     cursor: pointer;
     transition: all 0.15s;
-    font-family: "Outfit", sans-serif;
+    font-family: var(--font-body);
   }
 
   .btn-soft:hover {
@@ -1931,7 +1940,7 @@ textarea.is-invalid {
 }
 
 .modal-title {
-  font-family: "Playfair Display", serif;
+  font-family: var(--font-title);
   font-size: 1.22rem;
   line-height: 1.1;
   color: var(--deep);
@@ -2237,7 +2246,7 @@ textarea.is-invalid {
   border: 1px solid rgba(38, 73, 50, 0.16);
   border-radius: 16px;
   padding: 14px 16px;
-  font-family: inherit;
+  font-family: var(--font-body);
   color: #294332;
   background: rgba(255, 253, 248, 0.98);
   box-shadow:
@@ -2375,7 +2384,7 @@ textarea.is-invalid {
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  font-family: inherit;
+  font-family: var(--font-body);
   font-size: 0.75rem;
   font-weight: 600;
   display: flex;
@@ -2402,7 +2411,7 @@ textarea.is-invalid {
   gap: 10px;
   margin-top: 10px;
 }
-.etoast-codes { font-size: 0.72rem; font-family: ui-monospace, monospace; color: var(--muted); }
+.etoast-codes { font-size: 0.72rem; font-family: var(--font-body); color: var(--muted); }
 .etoast-copy {
   flex-shrink: 0;
   border: 1px solid var(--bd);
@@ -2656,7 +2665,7 @@ textarea.is-invalid {
 }
 
 .ll-tagline {
-  font-family: "Playfair Display", serif;
+  font-family: var(--font-title);
   font-size: 2.6rem;
   color: #fff;
   line-height: 1.2;
@@ -2715,7 +2724,7 @@ textarea.is-invalid {
 }
 
 .lf-title {
-  font-family: "Playfair Display", serif;
+  font-family: var(--font-title);
   font-size: 1.85rem;
   color: var(--tx);
   margin-bottom: 6px;
@@ -2830,7 +2839,7 @@ textarea.is-invalid {
 }
 
 .ie-codes {
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-body);
   font-size: 0.72rem;
   font-weight: 700;
   opacity: 0.75;
@@ -2921,7 +2930,7 @@ textarea.is-invalid {
 }
 
 .lf-error__codes {
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-body);
   font-size: 0.7rem;
   font-weight: 600;
   opacity: 0.85;
@@ -2951,7 +2960,7 @@ textarea.is-invalid {
   color: var(--mu);
   display: block;
   margin-bottom: 6px;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-body);
 }
 
 .lf-input-wrap {
@@ -2968,7 +2977,7 @@ textarea.is-invalid {
   background: var(--sf);
   outline: none;
   transition: all 0.18s;
-  font-family: "Outfit", sans-serif;
+  font-family: var(--font-body);
   box-sizing: border-box;
 }
 
@@ -2996,7 +3005,7 @@ textarea.is-invalid {
   background: var(--sf2);
   color: var(--mid);
   border: 1px solid var(--bd);
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-body);
   font-size: 0.58rem;
   font-weight: 800;
   opacity: 1;
@@ -3205,7 +3214,7 @@ textarea.is-invalid {
   align-items: center;
   gap: 7px;
   border-radius: 999px;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-body);
   font-size: 0.64rem;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -3331,7 +3340,7 @@ textarea.is-invalid {
   width: 46px;
   height: 46px;
   border-radius: 14px;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-body);
   font-size: 0.72rem;
   font-weight: 900;
   letter-spacing: 0.12em;
@@ -3344,7 +3353,7 @@ textarea.is-invalid {
 }
 
 .lots-map-empty-title {
-  font-family: "Playfair Display", serif;
+  font-family: var(--font-title);
   font-size: 1.18rem;
   font-weight: 700;
   color: #1E3D2B;
@@ -3410,14 +3419,14 @@ textarea.is-invalid {
 
 .lots-builder-title {
   color: #1E3D2B;
-  font-family: "Playfair Display", serif;
+  font-family: var(--font-title);
   font-size: 1.05rem;
   font-weight: 800;
 }
 
 .lots-builder-count {
   color: #83867C;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-body);
   font-size: 0.64rem;
   font-weight: 800;
 }
@@ -3433,7 +3442,7 @@ textarea.is-invalid {
 .lots-builder-label {
   margin-bottom: 5px;
   color: #83867C;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-body);
   font-size: 0.58rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -3588,7 +3597,7 @@ textarea.is-invalid {
   display: inline-flex;
   margin-bottom: 8px;
   color: var(--mu);
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-body);
   font-size: 0.62rem;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -3598,7 +3607,7 @@ textarea.is-invalid {
 .lot-upload-title {
   margin: 0;
   color: var(--deep);
-  font-family: "Playfair Display", serif;
+  font-family: var(--font-title);
   font-size: 1.45rem;
   line-height: 1.1;
 }
@@ -3652,7 +3661,7 @@ textarea.is-invalid {
   border-radius: 14px;
   background: rgba(111, 175, 107, 0.12);
   color: var(--mid);
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-body);
   font-size: 0.72rem;
   font-weight: 900;
   letter-spacing: 0.1em;
@@ -3682,7 +3691,7 @@ textarea.is-invalid {
   background: var(--sf);
   color: var(--tx2);
   padding: 5px 9px;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-body);
   font-size: 0.62rem;
   font-weight: 800;
 }
@@ -3792,7 +3801,7 @@ textarea.is-invalid {
 }
 .guide-head-text { flex: 1; min-width: 0; }
 .guide-title {
-  font-family: "Playfair Display", serif; font-size: 1.05rem;
+  font-family: var(--font-title); font-size: 1.05rem;
   font-weight: 700; color: var(--tx);
 }
 .guide-sub { font-size: .75rem; color: var(--mu); margin-top: 2px; }
@@ -3908,7 +3917,7 @@ textarea.is-invalid {
   justify-content: center;
   background: linear-gradient(145deg, var(--leaf), #2F6A38);
   color: #fff;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-body);
   font-weight: 700;
   font-size: 11px;
   flex-shrink: 0;
@@ -3916,7 +3925,7 @@ textarea.is-invalid {
 }
 
 .lot-edit-title {
-  font-family: "Playfair Display", serif;
+  font-family: var(--font-title);
   font-size: 19px;
   color: var(--deep);
   line-height: 1.1;
@@ -3994,7 +4003,7 @@ textarea.is-invalid {
   border: 1px solid var(--bd);
   background: var(--sf);
   color: var(--deep);
-  font-family: "Outfit", sans-serif;
+  font-family: var(--font-body);
   font-size: 13px;
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -4103,7 +4112,7 @@ textarea.is-invalid {
   background: var(--deep);
   color: #fff;
   border: 1.5px solid var(--deep);
-  font-family: "Outfit", sans-serif;
+  font-family: var(--font-body);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -4118,7 +4127,7 @@ textarea.is-invalid {
   background: transparent;
   color: var(--tx2);
   border: 1.5px solid var(--bd);
-  font-family: "Outfit", sans-serif;
+  font-family: var(--font-body);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;

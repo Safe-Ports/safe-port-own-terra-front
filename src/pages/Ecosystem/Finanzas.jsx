@@ -50,7 +50,7 @@ function BarChart({ labels, revenue }) {
       {pts.map(([x, y], i) => (
         <circle key={i} cx={x} cy={y} r={i === pts.length - 1 ? 4.4 : 3.4} fill="#fff" stroke="#6FAF6B" strokeWidth="2.4" />
       ))}
-      <g fill="#83867C" fontSize="11" fontFamily="'Outfit',sans-serif" textAnchor="middle">
+      <g fill="#83867C" fontSize="11" fontFamily="Inter, system-ui, sans-serif" textAnchor="middle">
         {labels.map((l, i) => <text key={i} x={pad + i * step} y={H + 18}>{l}</text>)}
       </g>
     </svg>
@@ -153,7 +153,7 @@ function EcosystemFinanzas() {
               ].map(([label, val]) => (
                 <div key={label} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, borderBottom: "1px solid var(--border)", paddingBottom: 10 }}>
                   <span style={{ color: "var(--text2)" }}>{label}</span>
-                  <b style={{ color: "var(--deep)", fontFamily: "'JetBrains Mono',monospace" }}>{val}</b>
+                  <b style={{ color: "var(--deep)", fontFamily: "var(--font-body)" }}>{val}</b>
                 </div>
               ))}
             </div>

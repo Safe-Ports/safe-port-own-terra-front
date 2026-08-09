@@ -30,7 +30,7 @@
   border: 1px solid rgba(111, 175, 107, 0.28);
   background: rgba(111, 175, 107, 0.12);
   color: var(--deep);
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-body);
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -46,7 +46,7 @@
 
 .ot-page-title {
   margin: 0;
-  font-family: "Playfair Display", serif;
+  font-family: var(--font-title);
   font-size: clamp(22px, 3vw, 30px);
   line-height: 1.05;
   letter-spacing: -0.5px;

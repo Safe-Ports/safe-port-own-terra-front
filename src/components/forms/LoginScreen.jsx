@@ -31,11 +31,11 @@ const MAP_SVG = (
     <rect x="20" y="20" width="90" height="70" rx="4" fill="white" fillOpacity="0.06" />
     <rect x="230" y="110" width="90" height="70" rx="4" fill="white" fillOpacity="0.1" />
     <rect x="125" y="200" width="90" height="100" rx="4" fill="white" fillOpacity="0.07" />
-    <text x="65" y="60" textAnchor="middle" fontFamily="sans-serif" fontSize="11" fill="white" opacity="0.5">Lote 1</text>
-    <text x="170" y="60" textAnchor="middle" fontFamily="sans-serif" fontSize="11" fill="white" opacity="0.5">Lote 2</text>
-    <text x="275" y="60" textAnchor="middle" fontFamily="sans-serif" fontSize="11" fill="white" opacity="0.5">Lote 3</text>
-    <text x="275" y="150" textAnchor="middle" fontFamily="sans-serif" fontSize="10" fill="white" opacity="0.8">Vendido</text>
-    <text x="170" y="255" textAnchor="middle" fontFamily="sans-serif" fontSize="10" fill="white" opacity="0.8">Apartado</text>
+    <text x="65" y="60" textAnchor="middle" fontFamily="Inter, system-ui, sans-serif" fontSize="11" fill="white" opacity="0.5">Lote 1</text>
+    <text x="170" y="60" textAnchor="middle" fontFamily="Inter, system-ui, sans-serif" fontSize="11" fill="white" opacity="0.5">Lote 2</text>
+    <text x="275" y="60" textAnchor="middle" fontFamily="Inter, system-ui, sans-serif" fontSize="11" fill="white" opacity="0.5">Lote 3</text>
+    <text x="275" y="150" textAnchor="middle" fontFamily="Inter, system-ui, sans-serif" fontSize="10" fill="white" opacity="0.8">Vendido</text>
+    <text x="170" y="255" textAnchor="middle" fontFamily="Inter, system-ui, sans-serif" fontSize="10" fill="white" opacity="0.8">Apartado</text>
   </svg>
 );
 

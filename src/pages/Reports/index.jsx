@@ -77,7 +77,7 @@ function ClientList({ clients, selectedId, onSelect, search, onSearch }) {
             style={{ width: "100%", padding: "7px 10px 7px 30px",
               border: "1.5px solid var(--bd)", borderRadius: 10,
               fontSize: ".8rem", background: "var(--sf2)",
-              fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+              fontFamily: "var(--font-body)", outline: "none", boxSizing: "border-box" }} />
         </div>
       </div>
       <div style={{ overflowY: "auto", flex: 1 }}>
@@ -93,7 +93,7 @@ function ClientList({ clients, selectedId, onSelect, search, onSearch }) {
               padding: "10px 14px", border: "none", cursor: "pointer",
               background: selectedId === c.id ? "var(--tan-lt)" : "transparent",
               borderLeft: selectedId === c.id ? "3px solid var(--forest)" : "3px solid transparent",
-              fontFamily: "inherit", textAlign: "left",
+              fontFamily: "var(--font-body)", textAlign: "left",
             }}>
             <Avatar name={c.name} size={32} />
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -120,7 +120,7 @@ function EmptyReport() {
       minHeight: 500, gap: 14, boxShadow: "var(--sh)",
     }}>
       <HiOutlineUserCircle style={{ fontSize: "3.4rem", color: "var(--mu)", opacity: 0.5 }} />
-      <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.3rem", color: "var(--tx)" }}>
+      <div style={{ fontFamily: "var(--font-title)", fontSize: "1.3rem", color: "var(--tx)" }}>
         Selecciona un cliente
       </div>
       <div style={{ fontSize: ".88rem", color: "var(--mu)", maxWidth: 320, lineHeight: 1.5 }}>
@@ -382,7 +382,7 @@ function ClientReport({ clientId }) {
           display: "flex", alignItems: "center", gap: 6, padding: "9px 18px",
           borderRadius: 12, border: "none", cursor: "pointer",
           background: "var(--navy)", color: "#fff", fontWeight: 700,
-          fontSize: ".82rem", fontFamily: "inherit",
+          fontSize: ".82rem", fontFamily: "var(--font-body)",
           boxShadow: "0 4px 14px rgba(27,43,24,.25)",
         }}>
           <HiOutlinePrinter style={{ fontSize: "1rem" }}/> Imprimir reporte
@@ -402,12 +402,12 @@ function ClientReport({ clientId }) {
           <OwnTerraLogo width={150} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ marginTop: 4 }}>
-              <div style={{ fontSize: "1.35rem", fontFamily: "'Playfair Display',serif",
+              <div style={{ fontSize: "1.35rem", fontFamily: "var(--font-title)",
                 fontWeight: 700, color: "var(--tx)", letterSpacing: "0.02em",
                 textTransform: "uppercase", lineHeight: 1.1 }}>
                 Reporte financiero del cliente
               </div>
-              <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.45rem",
+              <div style={{ fontFamily: "var(--font-title)", fontSize: "1.45rem",
                 fontWeight: 600, color: "var(--forest)", marginTop: 4, lineHeight: 1.1 }}>
                 {client.name}
               </div>
@@ -515,8 +515,8 @@ function ClientReport({ clientId }) {
                   background: c.bg, border: `1.5px solid ${c.border}`, borderRadius: 10,
                   padding: "10px 6px", textAlign: "center",
                 }}>
-                  <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.4rem",
-                    fontWeight: 700, color: c.color, lineHeight: 1 }}>{c.val}</div>
+                  <div style={{ fontFamily: "var(--font-body)", fontSize: "1.4rem",
+                    fontWeight: 800, color: c.color, lineHeight: 1 }}>{c.val}</div>
                   <div style={{ fontSize: ".64rem", fontWeight: 700, color: c.color,
                     marginTop: 4, textTransform: "uppercase", letterSpacing: ".05em" }}>{c.lbl}</div>
                 </div>

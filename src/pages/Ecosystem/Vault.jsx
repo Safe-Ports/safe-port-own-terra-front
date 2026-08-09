@@ -223,7 +223,7 @@ function EcosystemVault() {
 
       <div className="section-head">
         <h3>Bóveda de documentos</h3>
-        <span style={{ fontSize: 12, color: "var(--text3)", fontFamily: "'JetBrains Mono',monospace" }}>
+        <span style={{ fontSize: 12, color: "var(--text3)", fontFamily: "var(--font-body)" }}>
           {folders.length} carpetas · {totalDocs} documentos
         </span>
       </div>

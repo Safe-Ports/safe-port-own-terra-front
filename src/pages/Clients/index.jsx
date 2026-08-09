@@ -354,7 +354,7 @@ function ClientsPage() {
                     <span style={{ fontSize: ".72rem", fontWeight: 800, color: "#2F6A38", display: "flex", alignItems: "center", gap: 6 }}>
                       🌐 Identidad del ecosistema
                     </span>
-                    <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".64rem", color: "var(--mu)" }}>{eco.coreId}</span>
+                    <span style={{ fontFamily: "var(--font-body)", fontSize: ".64rem", color: "var(--mu)" }}>{eco.coreId}</span>
                     {eco.multiApp && (
                       <span style={{ fontSize: ".68rem", color: "var(--tx2)" }}>
                         · También en {eco.otherApps.map((a) => a.short).join(", ")}
@@ -497,7 +497,7 @@ function ClientsPage() {
           ) : (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", flexDirection: "column", gap: 12, color: "var(--mu)", padding: 40, textAlign: "center" }}>
               <div style={{ fontSize: "2.8rem", opacity: 0.18 }}>👤</div>
-              <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1rem", color: "var(--tx)", opacity: 0.35 }}>Selecciona un cliente</div>
+              <div style={{ fontFamily: "var(--font-title)", fontSize: "1rem", color: "var(--tx)", opacity: 0.35 }}>Selecciona un cliente</div>
               <div style={{ fontSize: ".78rem", maxWidth: 190, lineHeight: 1.5 }}>Elige un cliente de la lista para ver su expediente completo</div>
             </div>
           )}
@@ -532,7 +532,7 @@ function ClientsPage() {
                   value={cancelForm.reason}
                   onChange={(e) => setCancelForm((p) => ({ ...p, reason: e.target.value }))}
                   placeholder="Ej: Solicitud del cliente, incumplimiento de pago..."
-                  style={{ width: "100%", borderRadius: 8, border: "1.5px solid #DCDAD2", padding: "8px 10px", fontSize: ".82rem", color: "#1E3D2B", outline: "none", fontFamily: "inherit", resize: "none", boxSizing: "border-box" }}
+                  style={{ width: "100%", borderRadius: 8, border: "1.5px solid #DCDAD2", padding: "8px 10px", fontSize: ".82rem", color: "#1E3D2B", outline: "none", fontFamily: "var(--font-body)", resize: "none", boxSizing: "border-box" }}
                 />
               </div>
               <div>
@@ -543,7 +543,7 @@ function ClientsPage() {
                   value={cancelForm.refund_amount}
                   onChange={(e) => setCancelForm((p) => ({ ...p, refund_amount: e.target.value }))}
                   placeholder="0"
-                  style={{ width: "100%", borderRadius: 8, border: "1.5px solid #DCDAD2", padding: "8px 10px", fontSize: ".82rem", color: "#1E3D2B", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
+                  style={{ width: "100%", borderRadius: 8, border: "1.5px solid #DCDAD2", padding: "8px 10px", fontSize: ".82rem", color: "#1E3D2B", outline: "none", fontFamily: "var(--font-body)", boxSizing: "border-box" }}
                 />
               </div>
             </div>

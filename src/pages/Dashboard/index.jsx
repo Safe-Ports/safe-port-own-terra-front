@@ -61,7 +61,7 @@ function KpiCard({ label, value, sub, change }) {
     <div className="ot-card" style={{ padding: "16px 18px" }}>
       <div style={{ fontSize: ".68rem", fontWeight: 700, textTransform: "uppercase",
         letterSpacing: ".1em", color: "var(--mu)", marginBottom: 6 }}>{label}</div>
-      <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.7rem",
+      <div style={{ fontFamily: "var(--font-body)", fontSize: "1.7rem",
         fontWeight: 700, color: "var(--tx)", lineHeight: 1.1 }}>{value}</div>
       <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4 }}>
         {change !== null ? (
@@ -104,7 +104,7 @@ function DonutChart({ segments, total, centerLabel }) {
         </svg>
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column",
           alignItems: "center", justifyContent: "center" }}>
-          <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.35rem",
+          <div style={{ fontFamily: "var(--font-body)", fontSize: "1.35rem",
             fontWeight: 700, color: "var(--tx)", lineHeight: 1 }}>{total}</div>
           <div style={{ fontSize: ".62rem", color: "var(--mu)", fontWeight: 600,
             textTransform: "uppercase", letterSpacing: ".05em" }}>{centerLabel}</div>
@@ -602,7 +602,7 @@ export default function DashboardPage() {
               <div>
                 <div style={{ fontSize: ".68rem", fontWeight: 700, textTransform: "uppercase",
                   letterSpacing: ".08em", color: "var(--tan-dk)" }}>Margen de utilidad</div>
-                <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.6rem",
+                <div style={{ fontFamily: "var(--font-body)", fontSize: "1.6rem",
                   fontWeight: 700, color: "var(--forest)", lineHeight: 1.1 }}>{margen}%</div>
               </div>
               {/* Mini sparkline */}

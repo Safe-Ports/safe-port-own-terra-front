@@ -2,7 +2,7 @@
 .tb { margin-bottom: 24px; }
 
 .tb-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
-.tb-title { font-family: "Playfair Display", serif; font-size: 18px; color: var(--deep); line-height: 1.1; }
+.tb-title { font-family: var(--font-title); font-size: 18px; color: var(--deep); line-height: 1.1; }
 .tb-sub { margin-top: 3px; font-size: 12px; color: var(--muted); }
 
 .tb-board {
@@ -25,7 +25,7 @@
 .tb-col-name { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 700; color: var(--deep); }
 .tb-col-name i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 .tb-col-count {
-  font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--muted);
+  font-family: var(--font-body); font-size: 11px; color: var(--muted);
   background: var(--sf); border: 1px solid var(--bd); border-radius: 30px; padding: 1px 8px;
 }
 
@@ -56,14 +56,14 @@
 .tb-card-foot { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
 .tb-prio {
   border: 1px solid transparent; border-radius: 30px; padding: 2px 10px;
-  font-size: 10.5px; font-weight: 700; cursor: pointer; font-family: "JetBrains Mono", monospace;
+  font-size: 10.5px; font-weight: 700; cursor: pointer; font-family: var(--font-body);
 }
 .tb-prio.low  { background: var(--sf2); color: var(--muted); border-color: var(--bd); }
 .tb-prio.med  { background: #FBF0DC; color: #b0791f; }
 .tb-prio.high { background: #FBE7E4; color: var(--danger); }
 
 .tb-due {
-  font-size: 11px; font-family: "JetBrains Mono", monospace; color: var(--muted);
+  font-size: 11px; font-family: var(--font-body); color: var(--muted);
   margin-left: auto;
 }
 .tb-due.soon { color: #b0791f; font-weight: 700; }
@@ -74,7 +74,7 @@
   display: inline-flex; align-items: center; gap: 7px;
   padding: 9px 16px; border-radius: 11px;
   border: 1px solid var(--mid); background: var(--mid); color: var(--cream);
-  font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font-body);
   transition: background .15s, border-color .15s;
 }
 .tb-add-btn:hover { background: var(--deep); border-color: var(--deep); }
@@ -83,19 +83,19 @@
 .tb-add-bar input {
   flex: 1; height: 42px; padding: 0 14px;
   border: 1px solid var(--leaf); border-radius: 11px;
-  background: var(--sf); color: var(--tx); font-family: inherit; font-size: 13.5px; outline: none;
+  background: var(--sf); color: var(--tx); font-family: var(--font-body); font-size: 13.5px; outline: none;
 }
 .tb-add-confirm {
   padding: 0 18px; border-radius: 11px; border: 1px solid var(--mid);
   background: var(--mid); color: var(--cream); font-size: 13px; font-weight: 600;
-  cursor: pointer; font-family: inherit;
+  cursor: pointer; font-family: var(--font-body);
 }
 .tb-add-confirm:disabled { opacity: .5; cursor: not-allowed; }
 
 .tb-empty-hint {
   width: 100%; padding: 12px; border-radius: 10px;
   border: 1px dashed var(--bd); background: transparent; color: var(--muted);
-  font-size: 12.5px; cursor: pointer; font-family: inherit;
+  font-size: 12.5px; cursor: pointer; font-family: var(--font-body);
 }
 .tb-empty-hint:hover { border-color: var(--leaf); color: var(--deep); }
 

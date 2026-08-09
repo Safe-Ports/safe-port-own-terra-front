@@ -41,7 +41,7 @@ function RevenueChart({ labels, revenue }) {
       {pts.map(([x, y], i) => (
         <circle key={i} cx={x} cy={y} r={i === pts.length - 1 ? 4.4 : 3.4} fill="#fff" stroke="#6FAF6B" strokeWidth="2.4" />
       ))}
-      <g fill="#83867C" fontSize="11" fontFamily="'Outfit',sans-serif" textAnchor="middle">
+      <g fill="#83867C" fontSize="11" fontFamily="Inter, system-ui, sans-serif" textAnchor="middle">
         {labels.map((l, i) => <text key={i} x={pad + i * step} y={H + 18}>{l}</text>)}
       </g>
     </svg>

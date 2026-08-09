@@ -107,11 +107,11 @@ function DocRow({ entry, folders, onChange, onRemove }) {
           onChange={e => handleFile(e.target.files?.[0])} />
       </button>
       <select value={entry.category} onChange={e => onChange({ ...entry, category: e.target.value })}
-        style={{ border: "1.5px solid var(--bd)", borderRadius: 10, padding: "7px 10px", fontSize: ".78rem", background: "#fff", fontFamily: "inherit", color: "var(--tx)", outline: "none", cursor: "pointer" }}>
+        style={{ border: "1.5px solid var(--bd)", borderRadius: 10, padding: "7px 10px", fontSize: ".78rem", background: "#fff", fontFamily: "var(--font-body)", color: "var(--tx)", outline: "none", cursor: "pointer" }}>
         {DOC_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
       </select>
       <select value={entry.folderId} onChange={e => onChange({ ...entry, folderId: e.target.value })}
-        style={{ border: "1.5px solid var(--bd)", borderRadius: 10, padding: "7px 10px", fontSize: ".78rem", background: "#fff", fontFamily: "inherit", color: "var(--tx)", outline: "none", cursor: "pointer", maxWidth: 160 }}>
+        style={{ border: "1.5px solid var(--bd)", borderRadius: 10, padding: "7px 10px", fontSize: ".78rem", background: "#fff", fontFamily: "var(--font-body)", color: "var(--tx)", outline: "none", cursor: "pointer", maxWidth: 160 }}>
         <option value="">Sin carpeta</option>
         {folders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
       </select>
@@ -702,7 +702,7 @@ function ContractModal() {
                       onMouseEnter={e => e.currentTarget.style.background = "var(--tan-lt, #f5f0e8)"}
                       onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                     >
-                      <strong style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".78rem" }}>{l.code}</strong>
+                      <strong style={{ fontFamily: "var(--font-body)", fontSize: ".78rem" }}>{l.code}</strong>
                       {l.area_m2 && <span style={{ color: "var(--mu)", fontSize: ".74rem" }}>{l.area_m2} m²</span>}
                       {l.price_contado && <span style={{ color: "var(--mu)", fontSize: ".74rem", marginLeft: "auto" }}>${Number(l.price_contado).toLocaleString("en-US")}</span>}
                     </div>
@@ -867,7 +867,7 @@ function ContractModal() {
           marginBottom: 4,
         }}>
           <span style={{ color: "var(--mu)" }}>Cuota mensual estimada</span>
-          <b style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".92rem" }}>
+          <b style={{ fontFamily: "var(--font-body)", fontSize: ".92rem" }}>
             ${Math.round((Number(form.amount) - Number(form.down_payment || 0)) / Number(form.totalM)).toLocaleString("en-US")} / mes
           </b>
         </div>
@@ -910,14 +910,14 @@ function ContractModal() {
               background: "var(--sf)", padding: "2px 9px", borderRadius: 999, border: "1px solid rgba(53,94,59,.30)",
             }}>CALCULADORA ACTIVA</span>
           </div>
-          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".7rem", color: "var(--mu)", marginBottom: 10 }}>
+          <div style={{ fontFamily: "var(--font-body)", fontSize: ".7rem", color: "var(--mu)", marginBottom: 10 }}>
             {activeCalc.formula}
           </div>
           {activeCalc.variables?.length > 0 && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(120px,1fr))", gap: 8 }}>
               {activeCalc.variables.map((v) => (
                 <div className="fg" key={v} style={{ margin: 0 }}>
-                  <label className="fl" style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".68rem" }}>{v}</label>
+                  <label className="fl" style={{ fontFamily: "var(--font-body)", fontSize: ".68rem" }}>{v}</label>
                   <input className="fi" type="number" value={calcVars[v] ?? ""}
                     onChange={(e) => { calcEditedRef.current[v] = true; setCalcVars((p) => ({ ...p, [v]: e.target.value })); }} placeholder="0" />
                 </div>
@@ -930,7 +930,7 @@ function ContractModal() {
           {calcResult.value != null && !calcResult.error && (
             <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: ".78rem", color: "var(--mu)" }}>Mensualidad (se congela en la venta)</span>
-              <b style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: ".95rem", color: "var(--forest,#355E3B)" }}>
+              <b style={{ fontFamily: "var(--font-body)", fontSize: ".95rem", color: "var(--forest,#355E3B)" }}>
                 ${calcResult.value.toLocaleString("en-US", { minimumFractionDigits: 2 })}
               </b>
             </div>
@@ -999,7 +999,7 @@ function ContractModal() {
         padding: "8px 14px", borderRadius: 12,
         border: "1.5px dashed var(--forest)", background: "var(--tan-lt)",
         color: "var(--forest)", fontWeight: 700, fontSize: ".8rem",
-        cursor: "pointer", fontFamily: "inherit", width: "100%",
+        cursor: "pointer", fontFamily: "var(--font-body)", width: "100%",
         justifyContent: "center", marginTop: 4,
       }}>
         <HiOutlinePlus /> Agregar documento
