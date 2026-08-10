@@ -43,7 +43,7 @@ function OwnTerraWordmark() {
 }
 
 /* ── Lista de clientes (izquierda) ───────────────────────────── */
-const AV_COLORS = ["#2A5020", "#7B5C38", "#1B2B18", "#2A5020", "#6B4E2A"];
+const AV_COLORS = ["#355E3B", "#2A5020", "#1E3D2B", "#4A7C5A", "#6FAF6B"];
 function Avatar({ name = "?", size = 32 }) {
   const col = AV_COLORS[(name.charCodeAt(0) || 0) % AV_COLORS.length];
   const init = name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
@@ -277,7 +277,7 @@ function PaymentBehaviorChart({ payments }) {
           <div style={{ fontWeight: 700, marginBottom: 5, color: "var(--tan-lt)",
             textTransform: "capitalize" }}>{data[hover].fullLabel}</div>
           {[
-            ["Programado", data[hover].due,     "#A09080"],
+            ["Programado", data[hover].due,     "#94A3B8"],
             ["Pagado",     data[hover].paid,    "#2A5020"],
             ["Vencido",    data[hover].overdue, "#C0392B"],
           ].map(([l, v, c]) => (
@@ -507,9 +507,9 @@ function ClientReport({ clientId }) {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
               {[
-                { val: cntPaid,    lbl: "Al corriente", bg: "#D5ECC0", border: "#2A5020", color: "#2A5020" },
-                { val: cntPending, lbl: "Por vencer",   bg: "#F4ECD8", border: "#A88B58", color: "#7B5C38" },
-                { val: cntOverdue, lbl: "Vencidas",     bg: cntOverdue > 0 ? "#FCE0DC" : "#EDE8DF", border: cntOverdue > 0 ? "#C0392B" : "#A09080", color: cntOverdue > 0 ? "#C0392B" : "var(--mu)" },
+                { val: cntPaid,    lbl: "Al corriente", bg: "rgba(111,175,107,.14)", border: "rgba(111,175,107,.4)", color: "var(--mid)" },
+                { val: cntPending, lbl: "Por vencer",   bg: "var(--sf2)", border: "var(--bd)", color: "var(--tx2)" },
+                { val: cntOverdue, lbl: "Vencidas",     bg: cntOverdue > 0 ? "#FBE7E4" : "var(--sf2)", border: cntOverdue > 0 ? "var(--danger)" : "var(--bd)", color: cntOverdue > 0 ? "var(--danger)" : "var(--muted)" },
               ].map((c, i) => (
                 <div key={i} style={{
                   background: c.bg, border: `1.5px solid ${c.border}`, borderRadius: 10,
@@ -674,18 +674,18 @@ export default function ReportsPage() {
       <style>{`
         /* ── Estilos exclusivos del reporte ── */
         .rp-table th {
-          background: #F4ECD8;
-          color: #2A5020 !important;
+          background: var(--sf2);
+          color: var(--deep) !important;
           font-size: .65rem !important;
           padding: 8px 10px !important;
           font-weight: 800 !important;
           letter-spacing: .08em !important;
-          border-bottom: 1.5px solid var(--tan-lt) !important;
+          border-bottom: 1px solid var(--line-soft) !important;
         }
         .rp-table td {
           padding: 8px 10px !important;
           font-size: .8rem;
-          border-bottom: 1px solid #F0EBE0 !important;
+          border-bottom: 1px solid var(--line-soft) !important;
         }
         .rp-table tr:last-child td { border-bottom: none !important; }
 
@@ -698,9 +698,10 @@ export default function ReportsPage() {
           text-transform: uppercase;
           letter-spacing: .05em;
         }
-        .rp-badge-active  { background:#D5ECC0; color:#2A5020; border:1px solid #2A5020; }
-        .rp-badge-pending { background:#F4ECD8; color:#7B5C38; border:1px solid #A88B58; }
-        .rp-badge-overdue { background:#FCE0DC; color:#C0392B; border:1px solid #C0392B; }
+        /* verde = al corriente/pagado · neutro = pendiente/por vencer · rojo = vencido */
+        .rp-badge-active  { background:rgba(111,175,107,.16); color:var(--mid); border:1px solid rgba(111,175,107,.4); }
+        .rp-badge-pending { background:var(--sf2); color:var(--tx2); border:1px solid var(--bd); }
+        .rp-badge-overdue { background:#FBE7E4; color:var(--danger); border:1px solid var(--danger); }
 
         .rp-pill {
           font-size: .62rem;
@@ -709,9 +710,9 @@ export default function ReportsPage() {
           border-radius: 99px;
           letter-spacing: .03em;
         }
-        .rp-pill-paid    { background:#D5ECC0; color:#2A5020; }
-        .rp-pill-pending { background:#EDE8DF; color:#3A3228; }
-        .rp-pill-overdue { background:#FCE0DC; color:#C0392B; }
+        .rp-pill-paid    { background:rgba(111,175,107,.16); color:var(--mid); }
+        .rp-pill-pending { background:var(--sf2); color:var(--tx2); }
+        .rp-pill-overdue { background:#FBE7E4; color:var(--danger); }
 
         /* Print rules */
         @media print {
