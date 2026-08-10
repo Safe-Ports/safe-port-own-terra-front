@@ -2,11 +2,12 @@ import { useState } from "react";
 import { errorClipboardText } from "@/errors/parseApiError";
 import useEscapeKey from "@/hooks/useEscapeKey";
 
-const ICON  = { fatal: "✕", error: "⚠", warning: "!" };
-const LABEL = { fatal: "Error crítico", error: "Error", warning: "Advertencia" };
-const BG   = { fatal: "#fce4e0", error: "#fdecea", warning: "#fefbeb" };
-const BD   = { fatal: "#9b1212", error: "#c0392b", warning: "#b2760e" };
-const CLR  = { fatal: "#5E0A0A", error: "#7F1C10", warning: "#7A4F00" };
+const ICON   = { fatal: "✕", error: "!", warning: "!" };
+const LABEL  = { fatal: "Error crítico", error: "Error", warning: "Advertencia" };
+// Estilo elegante = superficie neutra; la severidad la lleva SOLO el chip del ícono
+// (igual que el toast nuevo). accent = color del glifo, chip = fondo suave.
+const ACCENT = { fatal: "var(--danger)", error: "var(--danger)", warning: "#b0791f" };
+const CHIP   = { fatal: "#FBE7E4", error: "#FBE7E4", warning: "#FBF0DC" };
 
 /**
  * Sin onDismiss → bloque inline (LoginScreen).
@@ -19,10 +20,9 @@ function InlineError({ error, onDismiss, children }) {
   if (!error) return null;
 
   const severity = error.severity || "error";
-  const icon = ICON[severity] ?? "⚠";
-  const bg   = BG[severity]   ?? BG.error;
-  const bd   = BD[severity]   ?? BD.error;
-  const clr  = CLR[severity]  ?? CLR.error;
+  const icon   = ICON[severity]   ?? "!";
+  const accent = ACCENT[severity] ?? ACCENT.error;
+  const chip   = CHIP[severity]   ?? CHIP.error;
 
   const copy = async () => {
     try {
@@ -33,13 +33,9 @@ function InlineError({ error, onDismiss, children }) {
   };
 
   const card = (
-    <div
-      className="ie-card"
-      style={{ background: bg, border: `1.5px solid ${bd}`, color: clr }}
-      onClick={(e) => e.stopPropagation()}
-    >
+    <div className="ie-card" onClick={(e) => e.stopPropagation()}>
       <div className="ie-head">
-        <span className="ie-icon">{icon}</span>
+        <span className="ie-icon" style={{ background: chip, color: accent }} aria-hidden="true">{icon}</span>
         <div className="ie-body">
           {onDismiss && <div className="ie-title">{LABEL[severity] ?? "Error"}</div>}
           <div className="ie-msg">{error.message}</div>
@@ -51,12 +47,12 @@ function InlineError({ error, onDismiss, children }) {
         )}
       </div>
       {error.code && (
-        <div className="ie-meta" style={{ borderTopColor: `${bd}33` }}>
+        <div className="ie-meta">
           <div className="ie-meta-left">
             <div className="ie-support">Si no se soluciona, contacta a soporte con este código de referencia</div>
             <span className="ie-codes">{error.code}{error.requestId ? ` · ${error.requestId}` : ""}</span>
           </div>
-          <button type="button" className="ie-copy" style={{ borderColor: `${bd}44`, color: clr }} onClick={copy}>
+          <button type="button" className="ie-copy" onClick={copy}>
             {copied ? "¡Copiado!" : "Copiar"}
           </button>
         </div>

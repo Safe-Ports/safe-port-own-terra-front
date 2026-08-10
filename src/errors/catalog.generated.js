@@ -285,10 +285,10 @@ export const ERROR_CATALOG = {
     "severity": "warning"
   },
   "OT-NET-9001": {
-    "action": "Revisa tu conexión a internet e intenta de nuevo.",
+    "action": "Puede ser tu conexión o que el servicio no esté disponible por el momento. Intenta de nuevo en unos segundos.",
     "domain": "NET",
     "http_status": null,
-    "message": "No pudimos conectar.",
+    "message": "No pudimos conectar con el servidor.",
     "name": "NET_OFFLINE",
     "severity": "error"
   },
