@@ -432,8 +432,10 @@ function ContractModal() {
     enabled: ui.contractModal && !editingContract && !!form.inmuebleId,
   });
   const { data: usersData } = useQuery({
-    queryKey: ["users-list"],
-    queryFn: () => orgService.listUsers({ limit: 100 }),
+    // Solo vendedores ACTIVOS: no ofrecer integrantes dados de baja como responsable.
+    // Se filtra en el servidor (para no-admin la lista ni siquiera trae is_active).
+    queryKey: ["users-list", "active"],
+    queryFn: () => orgService.listUsers({ limit: 100, is_active: true }),
     enabled: ui.contractModal,
     staleTime: 120_000,
   });
