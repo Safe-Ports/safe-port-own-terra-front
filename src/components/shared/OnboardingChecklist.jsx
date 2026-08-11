@@ -45,10 +45,8 @@ export default function OnboardingChecklist() {
   const dataLoading = fracsLoading || clientsLoading || contractsLoading || paymentsLoading || usersLoading;
   if (dataLoading) return null;
 
-  // Normalmente se oculta al completar todo o al cerrarlo. Con ?onboarding=1 en la
-  // URL se fuerza a mostrar (para verlo/demostrarlo aunque la org ya esté lista).
-  const forceShow = new URLSearchParams(window.location.search).get("onboarding") === "1";
-  if (!forceShow && (dismissed || doneCount === steps.length)) return null;
+  // Se oculta al completar todos los pasos o al cerrarlo manualmente.
+  if (dismissed || doneCount === steps.length) return null;
 
   const close = () => { localStorage.setItem(DISMISS_KEY, "1"); setDismissed(true); };
 
