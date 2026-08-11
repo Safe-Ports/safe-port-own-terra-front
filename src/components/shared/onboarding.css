@@ -1,0 +1,102 @@
+/* Onboarding checklist — bienvenida para tenants nuevos (tokens del Core). */
+.ob-card {
+  position: relative;
+  background: var(--sf);
+  border: 1px solid var(--bd);
+  border-radius: 20px;
+  box-shadow: var(--sh);
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+
+.ob-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.ob-close:hover { background: rgba(255, 255, 255, 0.28); }
+
+.ob-hero {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 22px 24px;
+  background: linear-gradient(150deg, var(--mid), var(--deep));
+  color: #EAF0E4;
+}
+
+.ob-ring { position: relative; flex-shrink: 0; width: 76px; height: 76px; }
+.ob-ring-lbl { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.ob-rp { font-family: var(--font-body); font-size: 20px; font-weight: 800; color: #fff; }
+
+.ob-h { font-family: var(--font-title); font-size: 20px; color: #fff; line-height: 1.1; }
+.ob-sub { margin-top: 5px; font-size: 13px; color: rgba(233, 240, 228, 0.85); max-width: 54ch; }
+
+.ob-steps { padding: 6px 8px; }
+.ob-step {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.ob-step:last-child { border-bottom: 0; }
+
+.ob-check {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bd);
+  color: transparent;
+  font-size: 14px;
+  font-weight: 800;
+}
+.ob-step.done .ob-check { background: var(--leaf); border-color: var(--leaf); color: #fff; }
+
+.ob-step-body { flex: 1; min-width: 0; }
+.ob-step-t { font-size: 14px; font-weight: 600; color: var(--deep); }
+.ob-step.done .ob-step-t { color: var(--muted); text-decoration: line-through; }
+.ob-step-d { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+.ob-cta {
+  padding: 7px 14px;
+  border-radius: 10px;
+  background: var(--mid);
+  color: var(--sf);
+  border: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-body);
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.ob-cta:hover { background: var(--deep); }
+
+.ob-badge {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--mid);
+  background: rgba(111, 175, 107, 0.16);
+  border-radius: 30px;
+  padding: 4px 12px;
+  white-space: nowrap;
+}

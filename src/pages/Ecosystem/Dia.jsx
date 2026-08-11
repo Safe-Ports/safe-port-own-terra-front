@@ -9,6 +9,7 @@ import { notificationService } from "@/services/notificationService";
 import { taskService } from "@/services/taskService";
 import EcoLayout from "./EcoLayout";
 import TasksBoard from "./TasksBoard";
+import OnboardingChecklist from "@/components/shared/OnboardingChecklist";
 import GuideModal from "@/components/shared/GuideModal";
 
 const TOUR_STEPS = [
@@ -196,6 +197,9 @@ function EcosystemDia() {
           </div>
         </div>
       </div>
+
+      {/* Onboarding: se muestra solo si faltan pasos y no se cerró */}
+      <OnboardingChecklist />
 
       {/* KPIs */}
       <div className="md-kpis">
