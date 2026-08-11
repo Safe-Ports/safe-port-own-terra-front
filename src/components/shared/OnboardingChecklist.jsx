@@ -37,7 +37,10 @@ export default function OnboardingChecklist() {
   const doneCount = steps.filter((s) => s.done).length;
   const pct = Math.round((doneCount / steps.length) * 100);
 
-  if (dismissed || doneCount === steps.length) return null;
+  // Normalmente se oculta al completar todo o al cerrarlo. Con ?onboarding=1 en la
+  // URL se fuerza a mostrar (para verlo/demostrarlo aunque la org ya esté lista).
+  const forceShow = new URLSearchParams(window.location.search).get("onboarding") === "1";
+  if (!forceShow && (dismissed || doneCount === steps.length)) return null;
 
   const close = () => { localStorage.setItem(DISMISS_KEY, "1"); setDismissed(true); };
 
