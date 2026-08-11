@@ -10,6 +10,8 @@ import FieldError from "@/components/shared/FieldError";
 import { useFieldErrors } from "@/hooks/useFieldErrors";
 import Button from "@/components/Button";
 import Avatar from "@/components/Avatar";
+import EmptyState from "@/components/ui/EmptyState";
+import { SkeletonRows } from "@/components/ui/Skeleton";
 import { clientService } from "@/services/clientService";
 import { contractService } from "@/services/contractService";
 import { currency } from "@/services/formatters";
@@ -158,7 +160,7 @@ function ClientModal() {
 
 function ClientsPage() {
   const {
-    clients, contracts, payments,
+    clients, contracts, payments, clientsLoading,
     selectedClientId, setSelectedClientId,
     openModal, setEditingClient,
     openClientReport, sendClientMessage, openContractCreate,
@@ -279,6 +281,22 @@ function ClientsPage() {
             ))}
           </div>
           <div className="cl-list-body">
+            {clientsLoading ? (
+              <SkeletonRows rows={6} />
+            ) : clients.length === 0 ? (
+              <EmptyState
+                icon="👥"
+                title="Aún no tienes clientes"
+                description="Da de alta tu primer cliente para gestionar sus contratos, pagos y documentos."
+                ctaLabel="Nuevo cliente"
+                onCta={() => { setEditingClient(null); openModal("clientModal"); }}
+              />
+            ) : filtered.length === 0 ? (
+              <div style={{ padding: "24px 16px", textAlign: "center", color: "var(--mu)", fontSize: ".8rem" }}>
+                Sin resultados para tu búsqueda.
+              </div>
+            ) : (
+              <>
             {filtered.map((client) => {
               const cEco = getClientEcosystem(withApps(client));
               return (
@@ -318,6 +336,8 @@ function ClientsPage() {
               <div style={{ padding: "24px 16px", textAlign: "center", color: "var(--mu)", fontSize: ".8rem" }}>
                 Sin clientes vinculados a Lands.
               </div>
+            )}
+              </>
             )}
           </div>
         </div>

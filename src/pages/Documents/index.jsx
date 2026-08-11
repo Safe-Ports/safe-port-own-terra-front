@@ -8,6 +8,8 @@ import {
   HiOutlineArrowRight, HiOutlineMagnifyingGlass,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
+import EmptyState from "@/components/ui/EmptyState";
+import { SkeletonRows } from "@/components/ui/Skeleton";
 import { useLandsGuide } from "@/context/LandsGuideContext";
 import { folderService } from "@/services/folderService";
 import { documentService, filenameForDocument } from "@/services/documentService";
@@ -184,7 +186,7 @@ function MoveModal({ folders, doc, onMove, onClose }) {
 
 /* ── main page ──────────────────────────────────────────────────────────── */
 export default function DocumentsPage() {
-  const { documents, openDocumentUpload, openDocumentPreview, downloadDocument, deleteDocument, showToast, showError } = useAppContext();
+  const { documents, documentsLoading, openDocumentUpload, openDocumentPreview, downloadDocument, deleteDocument, showToast, showError } = useAppContext();
   const [showGuide, setShowGuide] = useState(false);
   useLandsGuide(() => setShowGuide(true));
   const qc = useQueryClient();
@@ -514,7 +516,17 @@ export default function DocumentsPage() {
           </label>
 
           {/* documentos (tarjetas) */}
-          {filtered.length === 0 ? (
+          {documentsLoading ? (
+            <SkeletonRows rows={6} />
+          ) : documents.length === 0 ? (
+            <EmptyState
+              icon="📁"
+              title="Aún no hay documentos"
+              description="Sube contratos, comprobantes o identificaciones y organízalos en carpetas."
+              ctaLabel="Subir documento"
+              onCta={() => openDocumentUpload({})}
+            />
+          ) : filtered.length === 0 ? (
             <div className="doc-empty">
               {search ? "Sin resultados para esa búsqueda." : "Esta carpeta está vacía."}
               {!search && (

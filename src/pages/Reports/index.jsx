@@ -7,6 +7,7 @@ import {
   HiOutlineEnvelope,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
+import { SkeletonRows } from "@/components/ui/Skeleton";
 import { useLandsGuide } from "@/context/LandsGuideContext";
 import { clientService } from "@/services/clientService";
 import { currency, compactCurrency } from "@/services/formatters";
@@ -56,7 +57,7 @@ function Avatar({ name = "?", size = 32 }) {
   );
 }
 
-function ClientList({ clients, selectedId, onSelect, search, onSearch }) {
+function ClientList({ clients, selectedId, onSelect, search, onSearch, loading }) {
   return (
     <aside style={{
       width: 280, flexShrink: 0, background: "var(--sf)",
@@ -81,12 +82,15 @@ function ClientList({ clients, selectedId, onSelect, search, onSearch }) {
         </div>
       </div>
       <div style={{ overflowY: "auto", flex: 1 }}>
-        {clients.length === 0 && (
+        {loading && (
+          <div style={{ padding: "12px" }}><SkeletonRows rows={6} /></div>
+        )}
+        {!loading && clients.length === 0 && (
           <div style={{ padding: "24px 14px", textAlign: "center", fontSize: ".8rem", color: "var(--mu)" }}>
             Sin resultados.
           </div>
         )}
-        {clients.map(c => (
+        {!loading && clients.map(c => (
           <button key={c.id} onClick={() => onSelect(c.id)}
             style={{
               width: "100%", display: "flex", alignItems: "center", gap: 10,
@@ -655,7 +659,7 @@ function ClientReport({ clientId }) {
 
 /* ══ PAGE ════════════════════════════════════════════════════════ */
 export default function ReportsPage() {
-  const { clients } = useAppContext();
+  const { clients, clientsLoading } = useAppContext();
   const [search, setSearch]     = useState("");
   const [selectedId, setSelectedId] = useState(null);
   const [showGuide, setShowGuide]   = useState(false);
@@ -741,6 +745,7 @@ export default function ReportsPage() {
             onSelect={setSelectedId}
             search={search}
             onSearch={setSearch}
+            loading={clientsLoading}
           />
         </div>
         {selectedId ? <ClientReport clientId={selectedId} /> : <EmptyReport />}

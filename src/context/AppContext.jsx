@@ -76,35 +76,35 @@ export function AppProvider({ children }) {
   }, []);
 
   // ── Data queries ──────────────────────────────────────────────────────────
-  const { data: clientsData } = useQuery({
+  const { data: clientsData, isLoading: clientsLoading } = useQuery({
     queryKey: ["clients"],
     queryFn: () => clientService.list({ limit: 100 }).then((r) => r.items),
     enabled: !!currentUser && !authHydrating,
   });
   const clients = clientsData || [];
 
-  const { data: fracsData } = useQuery({
+  const { data: fracsData, isLoading: fracsLoading } = useQuery({
     queryKey: ["inmuebles"],
     queryFn: () => inmuebleService.list({ limit: 50 }).then((r) => r.items),
     enabled: !!currentUser && !authHydrating,
   });
   const fracs = fracsData || [];
 
-  const { data: contractsData } = useQuery({
+  const { data: contractsData, isLoading: contractsLoading } = useQuery({
     queryKey: ["contracts"],
     queryFn: () => contractService.list({ limit: 100 }).then((r) => r.items),
     enabled: !!currentUser && !authHydrating,
   });
   const contracts = contractsData || [];
 
-  const { data: paymentsData } = useQuery({
+  const { data: paymentsData, isLoading: paymentsLoading } = useQuery({
     queryKey: ["payments"],
     queryFn: () => paymentService.list({ limit: 200 }).then((r) => r.items),
     enabled: !!currentUser && !authHydrating,
   });
   const payments = paymentsData || [];
 
-  const { data: documentsData } = useQuery({
+  const { data: documentsData, isLoading: documentsLoading } = useQuery({
     queryKey: ["documents"],
     queryFn: () => documentService.list({ limit: 100 }).then((r) => r.items),
     enabled: !!currentUser && !authHydrating,
@@ -917,6 +917,12 @@ export function AppProvider({ children }) {
     contracts,
     payments,
     documents,
+    // Flags de carga (primer fetch) para mostrar skeletons en las páginas.
+    clientsLoading,
+    fracsLoading,
+    contractsLoading,
+    paymentsLoading,
+    documentsLoading,
     draftProject,
     ui,
     toast,
