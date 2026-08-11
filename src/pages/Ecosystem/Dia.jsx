@@ -6,6 +6,7 @@ import { dashboardService } from "@/services/dashboardService";
 import { appointmentService } from "@/services/appointmentService";
 import { paymentService } from "@/services/paymentService";
 import { notificationService } from "@/services/notificationService";
+import { taskService } from "@/services/taskService";
 import EcoLayout from "./EcoLayout";
 import TasksBoard from "./TasksBoard";
 import GuideModal from "@/components/shared/GuideModal";
@@ -119,6 +120,10 @@ function EcosystemDia() {
   });
   const notifs = notifsData?.items ?? [];
 
+  // Tareas reales del tablero (no las derivadas de midia) para el KPI.
+  const { data: tasksData = [] } = useQuery({ queryKey: ["tasks"], queryFn: taskService.list });
+  const openTasks = tasksData.filter((t) => t.status !== "done").length;
+
   const firstName = midia?.user_first_name || (currentUser?.name || "").split(" ")[0] || "Bienvenido";
   const greeting = midia?.greeting || (() => {
     const h = new Date().getHours();
@@ -141,7 +146,7 @@ function EcosystemDia() {
   const totalOverdue = overdueItems.reduce((s, o) => s + Number(o.amount || 0), 0);
 
   const unreadCount = notifs.filter((n) => !n.is_read).length;
-  const tasksCount = midia?.tasks?.length ?? 0;
+  const tasksCount = openTasks;
   const pendingTotal = tasksCount + overdueItems.length + unreadCount;
 
   const motiv = done === totalAppts && totalAppts > 0
@@ -206,8 +211,8 @@ function EcosystemDia() {
           <span className="md-kpi-ico">📊</span>
           <div className="md-kpi-body">
             <div className="md-kpi-label">Tareas pendientes</div>
-            <div className="md-kpi-val">{midia?.tasks?.length ?? "—"}</div>
-            <div className="md-kpi-sub">Acciones prioritarias</div>
+            <div className="md-kpi-val">{openTasks}</div>
+            <div className="md-kpi-sub">Sin terminar en tu tablero</div>
           </div>
         </div>
         <div className="md-kpi danger">

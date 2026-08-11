@@ -210,7 +210,6 @@ function MiniChart({ data, bars, sharedScale = true, H = 120 }) {
 }
 
 /* ── Avatar (top vendedores) ─────────────────────────────────── */
-const AV_COLORS = ["#355E3B","#7B5C38","#1E3D2B","#6366F1","#0EA5E9"];
 import Avatar from "@/components/Avatar";
 import Button from "@/components/Button";
 /* Reuse shared Avatar component; badge handled inline where needed */
