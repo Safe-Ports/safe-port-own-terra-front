@@ -16,10 +16,13 @@ const CIRC = 2 * Math.PI * R;
 
 export default function OnboardingChecklist() {
   const navigate = useNavigate();
-  const { fracs, clients, contracts, payments } = useAppContext();
+  const {
+    fracs, clients, contracts, payments,
+    fracsLoading, clientsLoading, contractsLoading, paymentsLoading,
+  } = useAppContext();
   const [dismissed, setDismissed] = useState(() => localStorage.getItem(DISMISS_KEY) === "1");
 
-  const { data: usersData } = useQuery({
+  const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: ["users-list", "onboarding"],
     queryFn: () => orgService.listUsers({ limit: 5 }),
     staleTime: 300_000,
@@ -36,6 +39,11 @@ export default function OnboardingChecklist() {
   ];
   const doneCount = steps.filter((s) => s.done).length;
   const pct = Math.round((doneCount / steps.length) * 100);
+
+  // No mostrar nada mientras los datos aún cargan (evita que "parpadee" en el primer
+  // instante y le aparezca a una org que en realidad ya tiene todo).
+  const dataLoading = fracsLoading || clientsLoading || contractsLoading || paymentsLoading || usersLoading;
+  if (dataLoading) return null;
 
   // Normalmente se oculta al completar todo o al cerrarlo. Con ?onboarding=1 en la
   // URL se fuerza a mostrar (para verlo/demostrarlo aunque la org ya esté lista).
