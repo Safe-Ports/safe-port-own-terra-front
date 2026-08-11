@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import GuideModal from "@/components/shared/GuideModal";
 import EcoLayout from "../EcoLayout";
+import { SkeletonRows } from "@/components/ui/Skeleton";
 import { formService } from "@/services/formService";
 import { useAppContext } from "@/context/AppContext";
 
@@ -98,7 +99,7 @@ function EcosystemFormularios() {
   if (isLoading) {
     return (
       <EcoLayout active="formularios" title="Formularios" subtitle="Captura de datos para compradores e interesados">
-        <div className="usr-empty">Cargando formularios…</div>
+        <SkeletonRows rows={5} />
       </EcoLayout>
     );
   }

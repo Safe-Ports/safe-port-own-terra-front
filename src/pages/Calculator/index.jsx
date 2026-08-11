@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { SkeletonRows } from "@/components/ui/Skeleton";
 import { currency } from "@/services/formatters";
 import { calculatorService } from "@/services/calculatorService";
 import { extractVariables, evaluate, buildFlatSchedule, FormulaError } from "@/services/formulaEngine";
@@ -221,7 +222,7 @@ function CalculatorPage() {
             <div className="card-title">Guardadas</div>
           </div>
           <div className="card-body" style={{ padding: 8, display: "flex", flexDirection: "column", gap: 8 }}>
-            {isLoading && <div className="text-xs" style={{ color: "var(--mu)", padding: 12 }}>Cargando…</div>}
+            {isLoading && <div style={{ padding: 12 }}><SkeletonRows rows={4} /></div>}
             {!isLoading && !list.length && (
               <div className="text-xs" style={{ color: "var(--mu)", padding: 12, textAlign: "center" }}>
                 Sin calculadoras. Crea la primera con “+ Nueva”.

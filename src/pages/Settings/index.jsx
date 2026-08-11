@@ -4,6 +4,7 @@ import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
 import { orgService } from "@/services/orgService";
 import { billingService } from "@/services/billingService";
+import { SkeletonRows } from "@/components/ui/Skeleton";
 import GuideModal from "@/components/shared/GuideModal";
 import Button from "@/components/Button";
 import FieldError from "@/components/shared/FieldError";
@@ -366,7 +367,7 @@ function SettingsPage() {
           )}
 
           {usersLoading ? (
-            <div className="text-sm text-[#83867C]">Cargando usuarios...</div>
+            <SkeletonRows rows={4} />
           ) : (
             <table className="tbl">
               <thead>

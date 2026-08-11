@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import GuideModal from "@/components/shared/GuideModal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { SkeletonRows } from "@/components/ui/Skeleton";
 import { HiOutlineEllipsisVertical, HiOutlineFolderPlus, HiOutlinePencil, HiOutlineTrash } from "react-icons/hi2";
 import { documentService, filenameForDocument } from "@/services/documentService";
 import { folderService } from "@/services/folderService";
@@ -53,7 +54,7 @@ function EcosystemVault() {
     queryFn: () => folderService.list(),
   });
 
-  const { data: docsData } = useQuery({
+  const { data: docsData, isLoading: docsLoading } = useQuery({
     queryKey: ["docs", "folder", activeId],
     queryFn: () => documentService.list({ folder_id: activeId, limit: 100, search: search || undefined }),
     enabled: !!activeId,
@@ -286,7 +287,9 @@ function EcosystemVault() {
                   <input placeholder="Buscar documento en esta carpeta…" value={search} onChange={(e) => setSearch(e.target.value)} />
                 </label>
 
-                {shownDocs.length ? (
+                {docsLoading ? (
+                  <SkeletonRows rows={5} />
+                ) : shownDocs.length ? (
                   <div className="usr-rows">
                     {shownDocs.map((d) => (
                       <div key={d.id} className="usr-row">

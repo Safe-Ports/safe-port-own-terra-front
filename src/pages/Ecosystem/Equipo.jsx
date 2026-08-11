@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import EcoLayout from "./EcoLayout";
 import GuideModal from "@/components/shared/GuideModal";
+import { SkeletonRows } from "@/components/ui/Skeleton";
 import InlineError from "@/components/shared/InlineError";
 import FieldError from "@/components/shared/FieldError";
 import { useFieldErrors } from "@/hooks/useFieldErrors";
@@ -242,7 +243,7 @@ function EcosystemEquipo() {
   if (isLoading) {
     return (
       <EcoLayout active="team" title="Equipo del core" subtitle="Usuarios, vendedores y permisos por app">
-        <div className="usr-empty" style={{ padding: 40 }}>Cargando equipo...</div>
+        <SkeletonRows rows={5} />
       </EcoLayout>
     );
   }
