@@ -10,6 +10,7 @@ import useEscapeKey from "@/hooks/useEscapeKey";
 import EcoLayout from "./EcoLayout";
 import AgendaTimeGrid from "./AgendaTimeGrid";
 import AgendaQuickCreate from "./AgendaQuickCreate";
+import ConnectCalendarModal from "./ConnectCalendarModal";
 import {
   APP_META,
   CREATABLE_APPS,
@@ -21,7 +22,6 @@ import {
   getVisibleRange,
   normalizeAppt,
   buildAppointmentBody,
-  googleCalendarUrl,
   AppTag,
 } from "./agendaShared";
 
@@ -129,8 +129,7 @@ function AgendaPage() {
     setEditingId(null);
   }, showModal);
   const fe = useFieldErrors();
-  // Al crear un evento, ofrecer meterlo también en el Google Calendar del usuario.
-  const [addToGoogle, setAddToGoogle] = useState(false);
+  const [showConnect, setShowConnect] = useState(false);
   const [form, setForm] = useState({
     title: "",
     date: toDateKey(today),
@@ -160,7 +159,6 @@ function AgendaPage() {
 
   const openCreate = (date = selectedDate, time = "10:00") => {
     setEditingId(null);
-    setAddToGoogle(false);
     setForm({ title: "", date, time, client: "", app: "core", type: "evento", context: "", owner: "" });
     setSelectedDate(date);
     setShowModal(true);
@@ -168,7 +166,6 @@ function AgendaPage() {
 
   const openEdit = (appointment) => {
     setEditingId(appointment.id);
-    setAddToGoogle(false);
     setSelectedDate(appointment.date);
     setForm({
       title: appointment.title,
@@ -187,17 +184,6 @@ function AgendaPage() {
     event.preventDefault();
     if (!fe.validate(form, AGENDA_RULES)) return;
     const body = buildAppointmentBody(form);
-    // Si es un evento nuevo y el usuario marcó "agregar a Google", abrimos el link
-    // AQUÍ (dentro del gesto de submit, antes del await) para que el navegador no
-    // bloquee la pestaña. El link se arma con los datos del formulario, no del server.
-    if (!editingId && addToGoogle) {
-      const phone = clients.find((c) => c.name?.toLowerCase() === form.client.toLowerCase())?.phone || null;
-      window.open(
-        googleCalendarUrl({ date: form.date, time: form.time, title: body.title, client: form.client, clientPhone: phone, context: form.context }),
-        "_blank",
-        "noopener,noreferrer",
-      );
-    }
     if (editingId) {
       await updateMutation.mutateAsync({ id: editingId, body });
     } else {
@@ -254,7 +240,11 @@ function AgendaPage() {
           <h2>Tu agenda centralizada</h2>
           <p>Registra visitas, reuniones, recordatorios, tareas, llamadas y cualquier evento personal o de negocio.</p>
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <button className="ag-connect" onClick={() => setShowConnect(true)} title="Sincroniza tu agenda con Google Calendar">
+            <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 11v6m3-3H9m10.5 6h-15A1.5 1.5 0 0 1 3 18.5v-11A1.5 1.5 0 0 1 4.5 6h15A1.5 1.5 0 0 1 21 7.5v11a1.5 1.5 0 0 1-1.5 1.5M7 3v4m10-4v4" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round"/></svg>
+            Conectar Google Calendar
+          </button>
           <button className="ag-primary" onClick={() => openCreate()}>Nuevo evento</button>
         </div>
       </div>
@@ -492,15 +482,6 @@ function AgendaPage() {
                 <input value={form.owner} onChange={(e) => setForm((p) => ({ ...p, owner: e.target.value }))} placeholder="Nombre del responsable (opcional)" />
               </label>
             </div>
-            {!editingId ? (
-              <label className="ag-gcal-opt">
-                <input type="checkbox" checked={addToGoogle} onChange={(e) => setAddToGoogle(e.target.checked)} />
-                <span className="ag-gcal-ico">
-                  <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 11v6m3-3H9m10.5 6h-15A1.5 1.5 0 0 1 3 18.5v-11A1.5 1.5 0 0 1 4.5 6h15A1.5 1.5 0 0 1 21 7.5v11a1.5 1.5 0 0 1-1.5 1.5M7 3v4m10-4v4" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round"/></svg>
-                </span>
-                Agregar también a mi Google Calendar
-              </label>
-            ) : null}
             <div className="ag-modal-foot">
               <button type="button" className="ag-soft" onClick={() => { setShowModal(false); setEditingId(null); }}>Cancelar</button>
               <button className="ag-primary" type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
@@ -527,6 +508,7 @@ function AgendaPage() {
           { title: "KPIs de la agenda", text: "Los 4 indicadores muestran el total de eventos del período visible (mes, semana o día), completados, pendientes y cuántos hay programados para hoy." },
         ]}
       />
+      {showConnect ? <ConnectCalendarModal onClose={() => setShowConnect(false)} /> : null}
     </EcoLayout>
   );
 }

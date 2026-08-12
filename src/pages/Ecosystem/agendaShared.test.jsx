@@ -4,7 +4,6 @@ import {
   buildMonthDays,
   buildWeekDays,
   getVisibleRange,
-  googleCalendarUrl,
   normalizeAppt,
   startOfWeek,
   toDateKey,
@@ -57,23 +56,5 @@ describe("agenda API mapping", () => {
       id: "a1", date: "2026-07-14", title: "Visita", app: "lands",
       type: "visita", status: "completed",
     });
-  });
-
-  it("builds a Google Calendar link with a 60-min UTC range", () => {
-    const url = googleCalendarUrl({
-      date: "2026-07-14", time: "09:00", title: "Visita con Ana",
-      client: "Ana", clientPhone: "5551234567", context: "Lote 1",
-    });
-    const params = new URL(url).searchParams;
-    expect(url).toContain("calendar.google.com/calendar/render");
-    expect(params.get("action")).toBe("TEMPLATE");
-    expect(params.get("text")).toBe("Visita con Ana");
-    // 09:00 local en la TZ de la corrida; el rango debe ser exactamente 60 min.
-    const [start, end] = params.get("dates").split("/");
-    const toDate = (s) => new Date(
-      `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}T${s.slice(9, 11)}:${s.slice(11, 13)}:${s.slice(13, 15)}Z`
-    );
-    expect((toDate(end) - toDate(start)) / 60000).toBe(60);
-    expect(params.get("details")).toContain("Ana");
   });
 });

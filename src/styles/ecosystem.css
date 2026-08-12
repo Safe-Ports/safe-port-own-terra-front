@@ -690,11 +690,28 @@
 .eco-root .ag-form-grid label.wide{grid-column:1/-1}
 .eco-root .ag-form-grid input,.eco-root .ag-form-grid select{height:40px;border:1px solid var(--border2);border-radius:11px;background:var(--surface);color:var(--deep);padding:0 12px;outline:none;font-family: var(--font-body);font-size:13px;text-transform:none;letter-spacing:0}
 .eco-root .ag-form-grid input:focus,.eco-root .ag-form-grid select:focus{border-color:var(--leaf);box-shadow:0 0 0 4px rgba(111,175,107,.12)}
-.eco-root .ag-gcal-opt{display:flex;align-items:center;gap:9px;margin:0 22px;padding:11px 14px;border:1px solid var(--border2);border-radius:12px;background:var(--surface2);color:var(--tx2, var(--deep));font-size:12.5px;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0}
-.eco-root .ag-gcal-opt:hover{border-color:var(--leaf)}
-.eco-root .ag-gcal-opt input{width:16px;height:16px;accent-color:var(--leaf);cursor:pointer;flex-shrink:0}
-.eco-root .ag-gcal-ico{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;background:rgba(111,175,107,.14);color:var(--mid, var(--leaf));flex-shrink:0}
 .eco-root .ag-modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid var(--border);background:var(--surface2)}
+
+/* Botón "Conectar Google Calendar" en el hero de la agenda. */
+.eco-root .ag-connect{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 15px;border:1px solid var(--border2);border-radius:11px;background:var(--surface);color:var(--deep);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;transition:border-color .15s,background .15s}
+.eco-root .ag-connect:hover{border-color:var(--leaf);background:var(--surface2)}
+.eco-root .ag-connect svg{color:var(--mid, var(--leaf))}
+
+/* Modal "Conectar con Google Calendar". */
+.eco-root .cc-modal{max-width:520px}
+.eco-root .cc-body{padding:18px 22px 22px}
+.eco-root .cc-loading,.eco-root .cc-error{padding:24px 4px;font-size:13px;color:var(--muted)}
+.eco-root .cc-error button{margin-left:6px;border:none;background:none;color:var(--leaf);font-weight:700;cursor:pointer;font-family:var(--font-body)}
+.eco-root .cc-url-label{display:block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.eco-root .cc-url-row{display:flex;gap:8px}
+.eco-root .cc-url{flex:1;min-width:0;height:40px;border:1px solid var(--border2);border-radius:11px;background:var(--surface2);color:var(--deep);padding:0 12px;font-family:var(--font-body);font-size:12.5px;outline:none}
+.eco-root .cc-copy{height:40px;white-space:nowrap}
+.eco-root .cc-hint{font-size:11.5px;color:var(--muted);margin:9px 2px 0;line-height:1.4}
+.eco-root .cc-steps{display:flex;flex-direction:column;gap:11px;margin:18px 0 0;padding:16px;border:1px solid var(--border);border-radius:13px;background:var(--surface2)}
+.eco-root .cc-step{display:flex;align-items:flex-start;gap:11px;font-size:13px;color:var(--deep);line-height:1.45}
+.eco-root .cc-step a{color:var(--mid, var(--leaf));font-weight:600}
+.eco-root .cc-num{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:var(--mid, var(--leaf));color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.eco-root .cc-note{font-size:12px;color:var(--muted);line-height:1.5;margin:16px 2px 0}
 
 @keyframes eco-fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @keyframes eco-barGrow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
