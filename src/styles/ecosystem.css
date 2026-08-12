@@ -740,6 +740,9 @@
 .eco-root .ag-meet-join:hover{background:rgba(111,175,107,.26)}
 .eco-root .ag-gcal-link{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:8px;border:1px solid var(--border2);color:var(--tx2, var(--deep));font-size:.7rem;font-weight:600;text-decoration:none}
 .eco-root .ag-gcal-link:hover{border-color:var(--leaf);color:var(--deep)}
+/* Fila de enlaces (Meet / Google) dentro del modal de editar evento. */
+.eco-root .ag-meet-links{display:flex;flex-wrap:wrap;gap:10px;margin:2px 22px 0;padding:12px 14px;border:1px solid var(--border2);border-radius:12px;background:var(--surface2)}
+.eco-root .ag-meet-links .ag-meet-join,.eco-root .ag-meet-links .ag-gcal-link{font-size:.8rem;padding:6px 12px}
 
 @keyframes eco-fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @keyframes eco-barGrow{from{transform:scaleY(0)}to{transform:scaleY(1)}}

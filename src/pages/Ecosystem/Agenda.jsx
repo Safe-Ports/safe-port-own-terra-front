@@ -133,6 +133,8 @@ function AgendaPage() {
   const fe = useFieldErrors();
   const [showConnect, setShowConnect] = useState(false);
   const [withMeet, setWithMeet] = useState(false);
+  // Enlaces de Google/Meet de la cita que se está editando (para mostrarlos en el modal).
+  const [editLinks, setEditLinks] = useState({ meetUrl: null, eventUrl: null });
 
   // ¿El usuario conectó su Google? (para ofrecer la videollamada de Meet al crear).
   const { data: gcal } = useQuery({
@@ -172,6 +174,7 @@ function AgendaPage() {
   const openCreate = (date = selectedDate, time = "10:00") => {
     setEditingId(null);
     setWithMeet(false);
+    setEditLinks({ meetUrl: null, eventUrl: null });
     setForm({ title: "", date, time, client: "", app: "core", type: "evento", context: "", owner: "" });
     setSelectedDate(date);
     setShowModal(true);
@@ -180,6 +183,7 @@ function AgendaPage() {
   const openEdit = (appointment) => {
     setEditingId(appointment.id);
     setWithMeet(false);
+    setEditLinks({ meetUrl: appointment.meetUrl || null, eventUrl: appointment.eventUrl || null });
     setSelectedDate(appointment.date);
     setForm({
       title: appointment.title,
@@ -510,6 +514,22 @@ function AgendaPage() {
                 <input value={form.owner} onChange={(e) => setForm((p) => ({ ...p, owner: e.target.value }))} placeholder="Nombre del responsable (opcional)" />
               </label>
             </div>
+            {editingId && (editLinks.meetUrl || editLinks.eventUrl) ? (
+              <div className="ag-meet-links">
+                {editLinks.meetUrl ? (
+                  <a href={editLinks.meetUrl} target="_blank" rel="noopener noreferrer" className="ag-meet-join">
+                    <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 10l4.5-2.5v9L15 14m-11-4A1.5 1.5 0 0 1 5.5 8.5h8A1.5 1.5 0 0 1 15 10v4a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 4 14z" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinejoin="round"/></svg>
+                    Unirse a la videollamada
+                  </a>
+                ) : null}
+                {editLinks.eventUrl ? (
+                  <a href={editLinks.eventUrl} target="_blank" rel="noopener noreferrer" className="ag-gcal-link">
+                    <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 6h15A1.5 1.5 0 0 1 21 7.5v11a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5v-11A1.5 1.5 0 0 1 4.5 6M3 10h18M7 3v4m10-4v4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>
+                    Ver en Google Calendar
+                  </a>
+                ) : null}
+              </div>
+            ) : null}
             {!editingId && googleConnected ? (
               <label className="ag-meet-opt">
                 <input type="checkbox" checked={withMeet} onChange={(e) => setWithMeet(e.target.checked)} />
