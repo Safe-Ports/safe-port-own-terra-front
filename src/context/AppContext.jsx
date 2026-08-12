@@ -397,7 +397,10 @@ export function AppProvider({ children }) {
         setSelectedClientId(String(payload.linkClientId));
         showToast("Cliente vinculado a Lands correctamente");
       } else if (payload.id) {
-        await clientService.update(payload.id, body);
+        // El schema de actualización no acepta `type` (el tipo no cambia en edición);
+        // enviarlo dispara un 422 por "campo extra no permitido".
+        const { type: _omitType, ...updateBody } = body;
+        await clientService.update(payload.id, updateBody);
         showToast("Cliente actualizado correctamente");
       } else {
         const created = await clientService.create(body);
