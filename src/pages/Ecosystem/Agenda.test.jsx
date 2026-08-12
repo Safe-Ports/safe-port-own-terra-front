@@ -158,7 +158,7 @@ describe("AgendaPage", () => {
 
     // Abre el evento (panel/rejilla) y elimina desde el modal.
     fireEvent.click(screen.getAllByRole("button", { name: /10:00.*Visita con Ana/i })[0]);
-    fireEvent.click(await screen.findByRole("button", { name: "Eliminar" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Eliminar evento" }));
 
     await waitFor(() => expect(showToast).toHaveBeenCalledWith("Evento eliminado"));
     expect(deletedId).toBe("appt-1");

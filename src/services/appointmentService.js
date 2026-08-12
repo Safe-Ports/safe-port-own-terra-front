@@ -5,5 +5,4 @@ export const appointmentService = {
   create: (body) => api.post("/appointments", body).then((r) => r.data),
   update: (id, body) => api.patch(`/appointments/${id}`, body).then((r) => r.data),
   cancel: (id) => api.delete(`/appointments/${id}`),
-  removeMeet: (id) => api.post(`/appointments/${id}/remove-meet`).then((r) => r.data),
 };

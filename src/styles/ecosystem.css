@@ -748,9 +748,6 @@
 /* Fila de enlaces (Meet / Google) dentro del modal de editar evento. */
 .eco-root .ag-meet-links{display:flex;flex-wrap:wrap;gap:10px;margin:2px 22px 0;padding:12px 14px;border:1px solid var(--border2);border-radius:12px;background:var(--surface2)}
 .eco-root .ag-meet-links .ag-meet-join,.eco-root .ag-meet-links .ag-gcal-link{font-size:.8rem;padding:6px 12px}
-.eco-root .ag-meet-remove{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;border:1px solid rgba(192,57,43,.3);background:transparent;color:var(--danger,#C0392B);font-family:var(--font-body);font-size:.8rem;font-weight:600;cursor:pointer}
-.eco-root .ag-meet-remove:hover{background:rgba(192,57,43,.08)}
-.eco-root .ag-meet-remove:disabled{opacity:.5;cursor:default}
 .eco-root .ag-danger{padding:0 16px;height:38px;border-radius:11px;border:1px solid rgba(192,57,43,.3);background:transparent;color:var(--danger,#C0392B);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer}
 .eco-root .ag-danger:hover{background:rgba(192,57,43,.08)}
 

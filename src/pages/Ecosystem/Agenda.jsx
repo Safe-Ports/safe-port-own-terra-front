@@ -124,16 +124,6 @@ function AgendaPage() {
     onError: (err) => showError(err, "Error al actualizar el evento"),
   });
 
-  const removeMeetMutation = useMutation({
-    mutationFn: (id) => appointmentService.removeMeet(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["appointments"] });
-      setEditLinks({ meetUrl: null, eventUrl: null });
-      showToast("Videollamada eliminada");
-    },
-    onError: (err) => showError(err, "No se pudo quitar la videollamada"),
-  });
-
   const [filter, setFilter] = useState("Todos");
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -504,16 +494,6 @@ function AgendaPage() {
                     Ver en Google Calendar
                   </a>
                 ) : null}
-                {editLinks.meetUrl ? (
-                  <button
-                    type="button"
-                    className="ag-meet-remove"
-                    onClick={() => { if (window.confirm("¿Quitar la videollamada de este evento? Se borrará también de Google Calendar.")) removeMeetMutation.mutate(editingId); }}
-                    disabled={removeMeetMutation.isPending}
-                  >
-                    ✕ Quitar videollamada
-                  </button>
-                ) : null}
               </div>
             ) : null}
             {!editingId && googleConnected ? (
@@ -531,9 +511,9 @@ function AgendaPage() {
                   type="button"
                   className="ag-danger"
                   style={{ marginRight: "auto" }}
-                  onClick={() => { if (window.confirm("¿Eliminar este evento?")) { cancelMutation.mutate(editingId); setShowModal(false); setEditingId(null); } }}
+                  onClick={() => { if (window.confirm("¿Eliminar este evento del calendario? Si tiene videollamada, también se borra de Google Calendar.")) { cancelMutation.mutate(editingId); setShowModal(false); setEditingId(null); } }}
                 >
-                  Eliminar
+                  Eliminar evento
                 </button>
               ) : null}
               <button type="button" className="ag-soft" onClick={() => { setShowModal(false); setEditingId(null); }}>Cancelar</button>
