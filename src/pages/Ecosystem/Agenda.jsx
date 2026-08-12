@@ -137,9 +137,8 @@ function AgendaPage() {
   // La lista del día muestra solo los próximos 2 por defecto (para que no crezca
   // infinitamente); se puede expandir a todos.
   const [showAllDay, setShowAllDay] = useState(false);
-  // Enlaces de Google/Meet + estado de la cita que se está editando (para el modal).
+  // Enlaces de Google/Meet de la cita que se está editando (para el modal).
   const [editLinks, setEditLinks] = useState({ meetUrl: null, eventUrl: null });
-  const [editStatus, setEditStatus] = useState(null);
 
   // ¿El usuario conectó su Google? (para ofrecer la videollamada de Meet al crear).
   const { data: gcal } = useQuery({
@@ -185,7 +184,6 @@ function AgendaPage() {
     setEditingId(null);
     setWithMeet(false);
     setEditLinks({ meetUrl: null, eventUrl: null });
-    setEditStatus(null);
     setForm({ title: "", date, time, client: "", app: "core", type: "evento", context: "", owner: "" });
     setSelectedDate(date);
     setShowModal(true);
@@ -195,7 +193,6 @@ function AgendaPage() {
     setEditingId(appointment.id);
     setWithMeet(false);
     setEditLinks({ meetUrl: appointment.meetUrl || null, eventUrl: appointment.eventUrl || null });
-    setEditStatus(appointment.status || null);
     setSelectedDate(appointment.date);
     setForm({
       title: appointment.title,
@@ -514,16 +511,6 @@ function AgendaPage() {
                   onClick={() => { if (window.confirm("¿Eliminar este evento del calendario? Si tiene videollamada, también se borra de Google Calendar.")) { cancelMutation.mutate(editingId); setShowModal(false); setEditingId(null); } }}
                 >
                   Eliminar evento
-                </button>
-              ) : null}
-              <button type="button" className="ag-soft" onClick={() => { setShowModal(false); setEditingId(null); }}>Cancelar</button>
-              {editingId && editStatus !== "completed" ? (
-                <button
-                  type="button"
-                  className="ag-soft"
-                  onClick={() => { updateMutation.mutate({ id: editingId, body: { status: "completed" } }); setShowModal(false); setEditingId(null); }}
-                >
-                  Completar
                 </button>
               ) : null}
               <button className="ag-primary" type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
