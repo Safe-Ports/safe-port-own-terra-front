@@ -13,7 +13,7 @@ import useEscapeKey from "@/hooks/useEscapeKey";
    `active` marca el item activo del menú. */
 function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
   const navigate = useNavigate();
-  const { currentUser, canAccessApp, canUseFeature, showToast } = useAppContext();
+  const { currentUser, canUseFeature, showToast } = useAppContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   useEscapeKey(() => setSidebarOpen(false), sidebarOpen);
 
@@ -63,22 +63,7 @@ function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
             {navItem("fin", "Estados Financieros", "eco-n-chart", () => goTo("/ecosistema/finanzas"), !canUseFeature("core.finance"))}
           </div>
 
-          <div className="nav-group">
-            <div className="nav-label">Aplicaciones</div>
-            <button
-              className="nav-item"
-              onClick={() => canAccessApp("lands") ? goTo("/dashboard") : showToast("Tu usuario no tiene acceso a OwnTerra Lands", "warning")}
-              style={!canAccessApp("lands") ? { opacity: 0.5, cursor: "default" } : undefined}
-            >
-              <span className="nav-mini ic-lands"><svg width="14" height="14"><use href="#eco-g-lands" /></svg></span> OwnTerra Lands
-            </button>
-            <button className="nav-item" style={{ opacity: 0.5, cursor: "not-allowed", pointerEvents: "none" }} tabIndex={-1} aria-disabled="true">
-              <span className="nav-mini ic-neighb"><svg width="14" height="14"><use href="#eco-g-neighb" /></svg></span> Properties
-            </button>
-            <button className="nav-item" style={{ opacity: 0.5, cursor: "not-allowed", pointerEvents: "none" }} tabIndex={-1} aria-disabled="true">
-              <span className="nav-mini ic-homes"><svg width="14" height="14"><use href="#eco-g-homes" /></svg></span> OwnTerra Homes
-            </button>
-          </div>
+          {/* Las apps (Lands / Properties / Homes) se acceden desde el Panel General. */}
 
           <div className="nav-group">
             <div className="nav-label">Sistema</div>
