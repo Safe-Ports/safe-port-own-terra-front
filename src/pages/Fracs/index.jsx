@@ -842,7 +842,13 @@ function FracsPage() {
                 ].map(([label, value, setter, step]) => (
                   <label key={label}>
                     <span>{label}</span>
-                    <input type="number" value={value} step={step} onChange={(event) => setter(Number(event.target.value))} />
+                    <input
+                      type="number"
+                      value={value}
+                      step={step}
+                      onFocus={(event) => event.target.select()}
+                      onChange={(event) => setter(event.target.value === "" ? "" : Number(event.target.value))}
+                    />
                   </label>
                 ))}
                 <div className="frac-quote-result">
