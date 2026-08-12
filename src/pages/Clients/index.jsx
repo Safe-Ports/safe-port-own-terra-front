@@ -7,6 +7,7 @@ import { useLandsGuide } from "@/context/LandsGuideContext";
 import Modal from "@/components/ui/Modal";
 import InlineDocumentsPanel from "@/components/shared/InlineDocumentsPanel";
 import FieldError from "@/components/shared/FieldError";
+import PhoneInput from "@/components/shared/PhoneInput";
 import { useFieldErrors } from "@/hooks/useFieldErrors";
 import Button from "@/components/Button";
 import Avatar from "@/components/Avatar";
@@ -135,7 +136,7 @@ function ClientModal() {
       </div>
       <div className="fg">
         <label className="fl">Teléfono</label>
-        <input className="fi" value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))} />
+        <PhoneInput inputClassName="fi" value={form.phone} onChange={(v) => setForm((p) => ({ ...p, phone: v }))} />
       </div>
       <div className="fg">
         <label className="fl">Correo electrónico</label>

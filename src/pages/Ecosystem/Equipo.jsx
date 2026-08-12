@@ -5,6 +5,7 @@ import GuideModal from "@/components/shared/GuideModal";
 import { SkeletonRows } from "@/components/ui/Skeleton";
 import InlineError from "@/components/shared/InlineError";
 import FieldError from "@/components/shared/FieldError";
+import PhoneInput from "@/components/shared/PhoneInput";
 import { useFieldErrors } from "@/hooks/useFieldErrors";
 import { userService } from "@/services/userService";
 import { useAppContext } from "@/context/AppContext";
@@ -416,7 +417,7 @@ function EcosystemEquipo() {
               </div>
               <div className="usr-field">
                 <label className="usr-field-lbl">Teléfono</label>
-                <input className="usr-input" value={modal.draft.phone} onChange={(e) => setDraft({ phone: e.target.value })} />
+                <PhoneInput inputClassName="usr-input" value={modal.draft.phone} onChange={(v) => setDraft({ phone: v })} />
               </div>
               {modal.mode === "create" && (
                 <div className="usr-field">

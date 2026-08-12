@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import GuideModal from "@/components/shared/GuideModal";
+import PhoneInput from "@/components/shared/PhoneInput";
 import { clientService } from "@/services/clientService";
 import { documentService, filenameForDocument } from "@/services/documentService";
 import { userService } from "@/services/userService";
@@ -564,7 +565,7 @@ function EcosystemClientes() {
                     </div>
                     <div className="usr-field">
                       <label className="usr-field-lbl">Telefono</label>
-                      <input className="usr-input" value={modal.draft.phone} onChange={(e) => setDraft({ phone: e.target.value })} />
+                      <PhoneInput inputClassName="usr-input" value={modal.draft.phone} onChange={(v) => setDraft({ phone: v })} />
                     </div>
                   </div>
                   <div className="usr-field-row">

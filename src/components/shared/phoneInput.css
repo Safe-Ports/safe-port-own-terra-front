@@ -1,0 +1,31 @@
+/* Campo teléfono con lada. El <input> conserva la clase del formulario (fi / usr-input)
+   para verse igual que los demás; el <select> de lada se estira a su misma altura. */
+.phone-input {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.phone-input > input {
+  flex: 1;
+  min-width: 0;
+}
+.phone-input .phone-cc {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 92px;
+  padding: 0 8px;
+  border: 1px solid var(--bd, #DCDAD2);
+  border-radius: 10px;
+  background: var(--sf, #FBFAF6);
+  color: var(--tx, #1E3D2B);
+  font-family: var(--font-body, inherit);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+.phone-input .phone-cc:focus {
+  border-color: var(--leaf, #6FAF6B);
+  box-shadow: 0 0 0 3px rgba(111, 175, 107, 0.15);
+}
+.phone-input.is-disabled .phone-cc { opacity: 0.6; cursor: default; }
