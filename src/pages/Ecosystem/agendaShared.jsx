@@ -105,6 +105,7 @@ export function normalizeAppt(a) {
     context: a.notes || "",
     owner: a.owner || "",
     status: a.status || "pending",
+    meetUrl: a.meet_url || null,
   };
 }
 

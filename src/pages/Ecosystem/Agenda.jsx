@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import GuideModal from "@/components/shared/GuideModal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { appointmentService } from "@/services/appointmentService";
+import { calendarService } from "@/services/calendarService";
 import { useAppContext } from "@/context/AppContext";
 
 import FieldError from "@/components/shared/FieldError";
@@ -96,9 +97,10 @@ function AgendaPage() {
 
   const createMutation = useMutation({
     mutationFn: (body) => appointmentService.create(body),
-    onSuccess: () => {
+    onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["appointments"] });
-      showToast("Evento guardado");
+      if (data?.meet_url) showToast("Evento creado · videollamada de Meet lista");
+      else showToast("Evento guardado");
     },
     onError: (err) => showError(err, "Error al guardar el evento"),
   });
@@ -130,6 +132,16 @@ function AgendaPage() {
   }, showModal);
   const fe = useFieldErrors();
   const [showConnect, setShowConnect] = useState(false);
+  const [withMeet, setWithMeet] = useState(false);
+
+  // ¿El usuario conectó su Google? (para ofrecer la videollamada de Meet al crear).
+  const { data: gcal } = useQuery({
+    queryKey: ["calendar-google-status"],
+    queryFn: () => calendarService.googleStatus(),
+    staleTime: 60_000,
+  });
+  const googleConnected = !!gcal?.connected;
+
   const [form, setForm] = useState({
     title: "",
     date: toDateKey(today),
@@ -159,6 +171,7 @@ function AgendaPage() {
 
   const openCreate = (date = selectedDate, time = "10:00") => {
     setEditingId(null);
+    setWithMeet(false);
     setForm({ title: "", date, time, client: "", app: "core", type: "evento", context: "", owner: "" });
     setSelectedDate(date);
     setShowModal(true);
@@ -166,6 +179,7 @@ function AgendaPage() {
 
   const openEdit = (appointment) => {
     setEditingId(appointment.id);
+    setWithMeet(false);
     setSelectedDate(appointment.date);
     setForm({
       title: appointment.title,
@@ -187,7 +201,7 @@ function AgendaPage() {
     if (editingId) {
       await updateMutation.mutateAsync({ id: editingId, body });
     } else {
-      await createMutation.mutateAsync(body);
+      await createMutation.mutateAsync({ ...body, with_meet: withMeet && googleConnected });
     }
     setShowModal(false);
     setEditingId(null);
@@ -352,9 +366,16 @@ function AgendaPage() {
                     <div className="ag-row">
                       <AppTag app={item.app} />
                       <span className={`ag-status ${item.status}`}>{item.status}</span>
+                      {item.meetUrl ? (
+                        <a href={item.meetUrl} target="_blank" rel="noopener noreferrer" className="ag-meet-join"
+                          style={{ marginLeft: "auto" }} title="Unirse a la videollamada de Google Meet">
+                          <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 10l4.5-2.5v9L15 14m-11-4A1.5 1.5 0 0 1 5.5 8.5h8A1.5 1.5 0 0 1 15 10v4a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 4 14z" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinejoin="round"/></svg>
+                          Unirse
+                        </a>
+                      ) : null}
                       <button
                         className="ag-soft"
-                        style={{ marginLeft: "auto", fontSize: ".7rem", padding: "2px 8px" }}
+                        style={{ marginLeft: item.meetUrl ? undefined : "auto", fontSize: ".7rem", padding: "2px 8px" }}
                         onClick={() => openEdit(item)}
                       >
                         Editar
@@ -482,6 +503,15 @@ function AgendaPage() {
                 <input value={form.owner} onChange={(e) => setForm((p) => ({ ...p, owner: e.target.value }))} placeholder="Nombre del responsable (opcional)" />
               </label>
             </div>
+            {!editingId && googleConnected ? (
+              <label className="ag-meet-opt">
+                <input type="checkbox" checked={withMeet} onChange={(e) => setWithMeet(e.target.checked)} />
+                <span className="ag-meet-ico">
+                  <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 10l4.5-2.5v9L15 14m-11-4A1.5 1.5 0 0 1 5.5 8.5h8A1.5 1.5 0 0 1 15 10v4a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 4 14z" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinejoin="round"/></svg>
+                </span>
+                Agregar videollamada de Google Meet
+              </label>
+            ) : null}
             <div className="ag-modal-foot">
               <button type="button" className="ag-soft" onClick={() => { setShowModal(false); setEditingId(null); }}>Cancelar</button>
               <button className="ag-primary" type="submit" disabled={createMutation.isPending || updateMutation.isPending}>

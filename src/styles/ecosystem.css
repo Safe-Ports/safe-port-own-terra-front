@@ -713,6 +713,32 @@
 .eco-root .cc-num{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:var(--mid, var(--leaf));color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}
 .eco-root .cc-note{font-size:12px;color:var(--muted);line-height:1.5;margin:16px 2px 0}
 
+/* Bloque "Conectar Google (Meet)" dentro del modal de calendario. */
+.eco-root .cc-google{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--border2);border-radius:13px;background:var(--surface2)}
+.eco-root .cc-google.on{border-color:var(--leaf);background:rgba(111,175,107,.08)}
+.eco-root .cc-google-main{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+.eco-root .cc-google-ico{flex-shrink:0;width:38px;height:38px;border-radius:10px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--mid, var(--leaf))}
+.eco-root .cc-google-txt{min-width:0}
+.eco-root .cc-google-title{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;color:var(--deep)}
+.eco-root .cc-google-sub{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}
+.eco-root .cc-badge-on{font-size:10.5px;font-weight:700;color:var(--mid);background:rgba(111,175,107,.18);border-radius:20px;padding:2px 8px}
+.eco-root .cc-google-btn{flex-shrink:0;height:36px;padding:0 14px;border:0;border-radius:10px;background:var(--mid, var(--leaf));color:#fff;font-family:var(--font-body);font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+.eco-root .cc-google-btn:hover{background:var(--deep)}
+.eco-root .cc-google-btn:disabled{opacity:.6;cursor:default}
+.eco-root .cc-google-btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--border2)}
+.eco-root .cc-google-btn.ghost:hover{color:var(--deep);border-color:var(--muted)}
+.eco-root .cc-divider{display:flex;align-items:center;gap:12px;margin:18px 0}
+.eco-root .cc-divider::before,.eco-root .cc-divider::after{content:"";flex:1;height:1px;background:var(--border)}
+.eco-root .cc-divider span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+
+/* Casilla "Agregar Meet" en el formulario de evento + botón "Unirse" en la lista. */
+.eco-root .ag-meet-opt{display:flex;align-items:center;gap:9px;margin:0 22px;padding:11px 14px;border:1px solid var(--border2);border-radius:12px;background:var(--surface2);color:var(--deep);font-size:12.5px;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0}
+.eco-root .ag-meet-opt:hover{border-color:var(--leaf)}
+.eco-root .ag-meet-opt input{width:16px;height:16px;accent-color:var(--leaf);cursor:pointer;flex-shrink:0}
+.eco-root .ag-meet-ico{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;background:rgba(111,175,107,.14);color:var(--mid, var(--leaf));flex-shrink:0}
+.eco-root .ag-meet-join{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:8px;background:rgba(111,175,107,.16);color:var(--mid, var(--leaf));font-size:.7rem;font-weight:700;text-decoration:none}
+.eco-root .ag-meet-join:hover{background:rgba(111,175,107,.26)}
+
 @keyframes eco-fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @keyframes eco-barGrow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
 
