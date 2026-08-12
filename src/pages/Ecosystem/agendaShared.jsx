@@ -106,6 +106,7 @@ export function normalizeAppt(a) {
     owner: a.owner || "",
     status: a.status || "pending",
     meetUrl: a.meet_url || null,
+    eventUrl: a.google_event_url || null,
   };
 }
 

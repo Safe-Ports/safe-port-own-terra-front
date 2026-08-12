@@ -373,9 +373,16 @@ function AgendaPage() {
                           Unirse
                         </a>
                       ) : null}
+                      {item.eventUrl ? (
+                        <a href={item.eventUrl} target="_blank" rel="noopener noreferrer" className="ag-gcal-link"
+                          style={{ marginLeft: item.meetUrl ? undefined : "auto" }} title="Abrir el evento en Google Calendar">
+                          <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 6h15A1.5 1.5 0 0 1 21 7.5v11a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5v-11A1.5 1.5 0 0 1 4.5 6M3 10h18M7 3v4m10-4v4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>
+                          Ver en Google
+                        </a>
+                      ) : null}
                       <button
                         className="ag-soft"
-                        style={{ marginLeft: item.meetUrl ? undefined : "auto", fontSize: ".7rem", padding: "2px 8px" }}
+                        style={{ marginLeft: (item.meetUrl || item.eventUrl) ? undefined : "auto", fontSize: ".7rem", padding: "2px 8px" }}
                         onClick={() => openEdit(item)}
                       >
                         Editar
