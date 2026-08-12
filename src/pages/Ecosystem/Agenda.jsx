@@ -124,6 +124,16 @@ function AgendaPage() {
     onError: (err) => showError(err, "Error al actualizar el evento"),
   });
 
+  const removeMeetMutation = useMutation({
+    mutationFn: (id) => appointmentService.removeMeet(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["appointments"] });
+      setEditLinks({ meetUrl: null, eventUrl: null });
+      showToast("Videollamada eliminada");
+    },
+    onError: (err) => showError(err, "No se pudo quitar la videollamada"),
+  });
+
   const [filter, setFilter] = useState("Todos");
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -137,8 +147,9 @@ function AgendaPage() {
   // La lista del día muestra solo los próximos 2 por defecto (para que no crezca
   // infinitamente); se puede expandir a todos.
   const [showAllDay, setShowAllDay] = useState(false);
-  // Enlaces de Google/Meet de la cita que se está editando (para mostrarlos en el modal).
+  // Enlaces de Google/Meet + estado de la cita que se está editando (para el modal).
   const [editLinks, setEditLinks] = useState({ meetUrl: null, eventUrl: null });
+  const [editStatus, setEditStatus] = useState(null);
 
   // ¿El usuario conectó su Google? (para ofrecer la videollamada de Meet al crear).
   const { data: gcal } = useQuery({
@@ -184,6 +195,7 @@ function AgendaPage() {
     setEditingId(null);
     setWithMeet(false);
     setEditLinks({ meetUrl: null, eventUrl: null });
+    setEditStatus(null);
     setForm({ title: "", date, time, client: "", app: "core", type: "evento", context: "", owner: "" });
     setSelectedDate(date);
     setShowModal(true);
@@ -193,6 +205,7 @@ function AgendaPage() {
     setEditingId(appointment.id);
     setWithMeet(false);
     setEditLinks({ meetUrl: appointment.meetUrl || null, eventUrl: appointment.eventUrl || null });
+    setEditStatus(appointment.status || null);
     setSelectedDate(appointment.date);
     setForm({
       title: appointment.title,
@@ -367,74 +380,39 @@ function AgendaPage() {
               <button className="ag-soft" onClick={() => openCreate(selectedDate)}>Agregar</button>
             </div>
             <div className="ag-list">
-              {selectedAppointments.length ? dayList.map((item) => {
-                // Busca el teléfono del cliente: primero en el campo directo, luego en la lista de clientes
-                const matchedClient = clients.find(
-                  (c) => (item.clientId && String(c.id) === String(item.clientId))
-                    || (item.client && c.name?.toLowerCase() === item.client.toLowerCase())
-                );
-                const phone = item.clientPhone || matchedClient?.phone || null;
-                const waMessage = `Hola ${item.client || "cliente"}, te recordamos que tienes agendado: *${item.title}* el ${new Date(`${item.date}T12:00:00`).toLocaleDateString("es-MX", { day: "numeric", month: "long" })} a las ${item.time} hrs.${item.context ? ` (${item.context})` : ""} ¡Te esperamos!`;
-                const waLink = buildWhatsAppLink(phone, waMessage);
-                return (
-                <div key={item.id} className="ag-item">
-                  <div className="ag-time">{item.time}<span>HRS</span></div>
-                  <div className="ag-info">
-                    <div className="ag-title">{item.title}</div>
-                    <div className="ag-meta">{item.client ? `${item.client} · ` : ""}{item.context}</div>
-                    <div className="ag-row">
-                      <AppTag app={item.app} />
-                      <span className={`ag-status ${item.status}`}>{item.status}</span>
-                      {item.meetUrl ? (
-                        <a href={item.meetUrl} target="_blank" rel="noopener noreferrer" className="ag-meet-join"
-                          style={{ marginLeft: "auto" }} title="Unirse a la videollamada de Google Meet">
-                          <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 10l4.5-2.5v9L15 14m-11-4A1.5 1.5 0 0 1 5.5 8.5h8A1.5 1.5 0 0 1 15 10v4a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 4 14z" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinejoin="round"/></svg>
-                          Unirse
-                        </a>
-                      ) : null}
-                      {item.eventUrl ? (
-                        <a href={item.eventUrl} target="_blank" rel="noopener noreferrer" className="ag-gcal-link"
-                          style={{ marginLeft: item.meetUrl ? undefined : "auto" }} title="Abrir el evento en Google Calendar">
-                          <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 6h15A1.5 1.5 0 0 1 21 7.5v11a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5v-11A1.5 1.5 0 0 1 4.5 6M3 10h18M7 3v4m10-4v4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>
-                          Ver en Google
-                        </a>
-                      ) : null}
-                      <button
-                        className="ag-soft"
-                        style={{ marginLeft: (item.meetUrl || item.eventUrl) ? undefined : "auto", fontSize: ".7rem", padding: "2px 8px" }}
-                        onClick={() => openEdit(item)}
-                      >
-                        Editar
-                      </button>
-                      {item.status !== "completed" && (
-                        <button
-                          className="ag-soft"
-                          style={{ fontSize: ".7rem", padding: "2px 8px" }}
-                          onClick={() => updateMutation.mutate({ id: item.id, body: { status: "completed" } })}
-                        >
-                          Completar
-                        </button>
-                      )}
-                      {/* TODO: habilitar cuando se implemente notificación al cliente
-                      {item.client && (
-                        <a href={waLink} target="_blank" rel="noopener noreferrer" className="ag-soft"
-                          style={{ fontSize: ".7rem", padding: "2px 8px", textDecoration: "none", color: "inherit", display: "inline-flex", alignItems: "center", gap: 3 }}>
-                          📲 Notificar
-                        </a>
-                      )}
-                      */}
-                      <button
-                        className="ag-soft"
-                        style={{ fontSize: ".7rem", padding: "2px 8px" }}
-                        onClick={() => cancelMutation.mutate(item.id)}
-                      >
-                        Eliminar
-                      </button>
-                    </div>
+              {selectedAppointments.length ? dayList.map((item) => (
+                <div
+                  key={item.id}
+                  className="md-visit ag-visit"
+                  role="button"
+                  tabIndex={0}
+                  title="Ver / editar evento"
+                  onClick={() => openEdit(item)}
+                  onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), openEdit(item))}
+                >
+                  <div className="md-time"><b>{item.time}</b><span>HRS</span></div>
+                  <div className="md-st">
+                    <span className={`md-sdot ${item.status}`}>{item.status === "completed" ? "✓" : ""}</span>
                   </div>
+                  <div className="md-info">
+                    <div className="md-name">{item.title}</div>
+                    <div className="md-meta">{[item.client, item.context].filter(Boolean).join(" · ") || "—"}</div>
+                  </div>
+                  <AppTag app={item.app} />
+                  {item.meetUrl ? (
+                    <a
+                      href={item.meetUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="md-open"
+                      onClick={(e) => e.stopPropagation()}
+                      title="Unirse a la videollamada"
+                    >
+                      🎥 Unirse
+                    </a>
+                  ) : null}
                 </div>
-                );
-              }) : (
+              )) : (
                 <div className="ag-empty">
                   <b>Sin eventos para este día</b>
                   <span>Doble clic en el día o usa "Agregar" para crear un evento.</span>
@@ -526,6 +504,16 @@ function AgendaPage() {
                     Ver en Google Calendar
                   </a>
                 ) : null}
+                {editLinks.meetUrl ? (
+                  <button
+                    type="button"
+                    className="ag-meet-remove"
+                    onClick={() => { if (window.confirm("¿Quitar la videollamada de este evento? Se borrará también de Google Calendar.")) removeMeetMutation.mutate(editingId); }}
+                    disabled={removeMeetMutation.isPending}
+                  >
+                    ✕ Quitar videollamada
+                  </button>
+                ) : null}
               </div>
             ) : null}
             {!editingId && googleConnected ? (
@@ -538,7 +526,26 @@ function AgendaPage() {
               </label>
             ) : null}
             <div className="ag-modal-foot">
+              {editingId ? (
+                <button
+                  type="button"
+                  className="ag-danger"
+                  style={{ marginRight: "auto" }}
+                  onClick={() => { if (window.confirm("¿Eliminar este evento?")) { cancelMutation.mutate(editingId); setShowModal(false); setEditingId(null); } }}
+                >
+                  Eliminar
+                </button>
+              ) : null}
               <button type="button" className="ag-soft" onClick={() => { setShowModal(false); setEditingId(null); }}>Cancelar</button>
+              {editingId && editStatus !== "completed" ? (
+                <button
+                  type="button"
+                  className="ag-soft"
+                  onClick={() => { updateMutation.mutate({ id: editingId, body: { status: "completed" } }); setShowModal(false); setEditingId(null); }}
+                >
+                  Completar
+                </button>
+              ) : null}
               <button className="ag-primary" type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
                 {createMutation.isPending || updateMutation.isPending ? "Guardando…" : editingId ? "Guardar cambios" : "Guardar evento"}
               </button>

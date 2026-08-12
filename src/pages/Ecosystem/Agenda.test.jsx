@@ -132,7 +132,9 @@ describe("AgendaPage", () => {
     renderAgenda();
     await waitFor(() => expect(screen.getAllByText("Visita con Ana").length).toBeGreaterThan(0));
 
-    fireEvent.click(screen.getByRole("button", { name: /10:00.*Visita con Ana/i }));
+    // La rejilla y el panel lateral (informativo) exponen el mismo evento; ambos
+    // abren el modal de edición. Tomamos el primero (el bloque de la rejilla).
+    fireEvent.click(screen.getAllByRole("button", { name: /10:00.*Visita con Ana/i })[0]);
     const titleInput = await screen.findByDisplayValue("Visita con Ana");
     fireEvent.change(titleInput, { target: { value: "Visita reagendada" } });
     fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
@@ -141,7 +143,7 @@ describe("AgendaPage", () => {
     expect(patchedBody).toMatchObject({ title: "Visita reagendada" });
   });
 
-  it("elimina un evento desde la lista lateral del día", async () => {
+  it("elimina un evento desde el modal de edición", async () => {
     server.use(http.get(`${API}/appointments`, () => HttpResponse.json([apptFixture()])));
     let deletedId = null;
     server.use(
@@ -150,12 +152,16 @@ describe("AgendaPage", () => {
         return new HttpResponse(null, { status: 204 });
       })
     );
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     renderAgenda();
     await waitFor(() => expect(screen.getAllByText("Visita con Ana").length).toBeGreaterThan(0));
 
-    fireEvent.click(screen.getByRole("button", { name: "Eliminar" }));
+    // Abre el evento (panel/rejilla) y elimina desde el modal.
+    fireEvent.click(screen.getAllByRole("button", { name: /10:00.*Visita con Ana/i })[0]);
+    fireEvent.click(await screen.findByRole("button", { name: "Eliminar" }));
 
     await waitFor(() => expect(showToast).toHaveBeenCalledWith("Evento eliminado"));
     expect(deletedId).toBe("appt-1");
+    confirmSpy.mockRestore();
   });
 });
