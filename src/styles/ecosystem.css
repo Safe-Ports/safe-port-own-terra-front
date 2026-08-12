@@ -657,6 +657,8 @@
 .eco-root .ag-day-items em{font-style:normal;font-size:10px;color:var(--text3);font-family: var(--font-body)}
 
 .eco-root .ag-list{display:flex;flex-direction:column}
+.eco-root .ag-more{margin:8px auto 2px;padding:7px 16px;border:1px solid var(--border2);border-radius:20px;background:var(--surface);color:var(--mid, var(--leaf));font-family:var(--font-body);font-size:12.5px;font-weight:700;cursor:pointer}
+.eco-root .ag-more:hover{border-color:var(--leaf);background:var(--surface2)}
 .eco-root .ag-item{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--border)}
 .eco-root .ag-item:last-child{border-bottom:0}
 .eco-root .ag-time{width:54px;min-width:54px;height:48px;border:1px solid rgba(111,175,107,.25);border-radius:13px;background:rgba(111,175,107,.1);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family: var(--font-title);color:var(--deep);font-size:15px;font-weight:700;line-height:1}

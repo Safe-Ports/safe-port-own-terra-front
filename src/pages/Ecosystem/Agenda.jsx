@@ -62,6 +62,7 @@ function AgendaPage() {
   // usuario navega a otra semana/día/mes o cambia de vista.
   useEffect(() => {
     setQuickCreate(null);
+    setShowAllDay(false);
   }, [view, visibleMonth, selectedDate]);
 
   const visibleRange = useMemo(
@@ -133,6 +134,9 @@ function AgendaPage() {
   const fe = useFieldErrors();
   const [showConnect, setShowConnect] = useState(false);
   const [withMeet, setWithMeet] = useState(false);
+  // La lista del día muestra solo los próximos 2 por defecto (para que no crezca
+  // infinitamente); se puede expandir a todos.
+  const [showAllDay, setShowAllDay] = useState(false);
   // Enlaces de Google/Meet de la cita que se está editando (para mostrarlos en el modal).
   const [editLinks, setEditLinks] = useState({ meetUrl: null, eventUrl: null });
 
@@ -163,6 +167,11 @@ function AgendaPage() {
   const selectedAppointments = visibleAppointments
     .filter((item) => item.date === selectedDate)
     .sort((a, b) => a.time.localeCompare(b.time));
+
+  // Por defecto solo los próximos 2 del día; el resto se despliega con "Ver todos".
+  const DAY_PREVIEW = 2;
+  const dayList = showAllDay ? selectedAppointments : selectedAppointments.slice(0, DAY_PREVIEW);
+  const hiddenDayCount = selectedAppointments.length - dayList.length;
 
   const total = appointments.length;
   const pending = appointments.filter((a) => a.status === "pending").length;
@@ -347,12 +356,18 @@ function AgendaPage() {
             <div className="ag-card-head compact">
               <div>
                 <h3>{new Date(`${selectedDate}T12:00:00`).toLocaleDateString("es-MX", { day: "numeric", month: "long" })}</h3>
-                <p>{selectedAppointments.length} eventos programados</p>
+                <p>
+                  {selectedAppointments.length === 0
+                    ? "Sin eventos"
+                    : !showAllDay && selectedAppointments.length > DAY_PREVIEW
+                      ? `Próximos ${dayList.length} de ${selectedAppointments.length}`
+                      : `${selectedAppointments.length} evento${selectedAppointments.length === 1 ? "" : "s"} programado${selectedAppointments.length === 1 ? "" : "s"}`}
+                </p>
               </div>
               <button className="ag-soft" onClick={() => openCreate(selectedDate)}>Agregar</button>
             </div>
             <div className="ag-list">
-              {selectedAppointments.length ? selectedAppointments.map((item) => {
+              {selectedAppointments.length ? dayList.map((item) => {
                 // Busca el teléfono del cliente: primero en el campo directo, luego en la lista de clientes
                 const matchedClient = clients.find(
                   (c) => (item.clientId && String(c.id) === String(item.clientId))
@@ -425,31 +440,14 @@ function AgendaPage() {
                   <span>Doble clic en el día o usa "Agregar" para crear un evento.</span>
                 </div>
               )}
+              {selectedAppointments.length > DAY_PREVIEW ? (
+                <button className="ag-more" onClick={() => setShowAllDay((v) => !v)}>
+                  {showAllDay ? "Ver menos" : `Ver todos (${selectedAppointments.length})`}
+                </button>
+              ) : null}
             </div>
           </div>
 
-          <div className="ag-side-card">
-            <div className="ag-card-head compact">
-              <div>
-                <h3>Tipos de evento</h3>
-                <p>Categorías disponibles</p>
-              </div>
-            </div>
-            <div className="ag-flow">
-              {[
-                ["Visita / Llamada / Firma", "Actividades comerciales con clientes."],
-                ["Reunión / Seguimiento", "Juntas internas o de seguimiento de proyecto."],
-                ["Recordatorio / Tarea", "Avisos y pendientes personales u operativos."],
-                ["Cobranza", "Gestión de pagos y cobros pendientes."],
-                ["Personal / Evento", "Cualquier actividad de agenda libre."],
-              ].map(([label, text]) => (
-                <div key={label}>
-                  <span>{label}</span>
-                  <p>{text}</p>
-                </div>
-              ))}
-            </div>
-          </div>
         </aside>
       </div>
 
