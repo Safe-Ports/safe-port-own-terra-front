@@ -124,6 +124,29 @@ export function buildAppointmentBody(form) {
   };
 }
 
+// Link para "Agregar a Google Calendar" a partir de una cita ya normalizada
+// (normalizeAppt). Google espera el rango en UTC compacto: YYYYMMDDTHHMMSSZ.
+// Como el backend no guarda hora de fin, usamos DEFAULT_DURATION_MINUTES.
+export function googleCalendarUrl(appt) {
+  const [h, m] = (appt.time || "10:00").split(":");
+  const start = new Date(`${appt.date}T${h}:${m}:00`);
+  const end = new Date(start.getTime() + DEFAULT_DURATION_MINUTES * 60000);
+  const fmt = (d) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const details = [
+    appt.client ? `Cliente: ${appt.client}` : "",
+    appt.clientPhone ? `Tel: ${appt.clientPhone}` : "",
+    appt.context || "",
+    "— Creado desde OwnTerra",
+  ].filter(Boolean).join("\n");
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: appt.title || "Evento OwnTerra",
+    dates: `${fmt(start)}/${fmt(end)}`,
+    details,
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
 export function AppTag({ app }) {
   const meta = APP_META[app] || APP_META.core;
   return (
