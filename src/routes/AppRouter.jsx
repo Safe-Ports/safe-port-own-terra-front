@@ -1,33 +1,34 @@
-import { Suspense, lazy } from "react";
+import { Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import AppShell from "@/layouts/AppShell";
 import { useAppContext } from "@/context/AppContext";
 import { getDeniedMessage } from "@/services/permissions";
 import SupportWidget from "@/components/support/SupportWidget";
+import { lazyWithRetry } from "@/routes/lazyWithRetry";
 
-const EcosystemHub = lazy(() => import("@/pages/Ecosystem"));
-const EcosystemClientes = lazy(() => import("@/pages/Ecosystem/Clientes"));
-const EcosystemVault = lazy(() => import("@/pages/Ecosystem/Vault"));
-const EcosystemDia = lazy(() => import("@/pages/Ecosystem/Dia"));
-const EcosystemFinanzas = lazy(() => import("@/pages/Ecosystem/Finanzas"));
-const EcosystemAgenda = lazy(() => import("@/pages/Ecosystem/Agenda"));
-const EcosystemEquipo = lazy(() => import("@/pages/Ecosystem/Equipo"));
-const EcosystemFormularios = lazy(() => import("@/pages/Ecosystem/Formularios"));
-const EcosystemFormEditor = lazy(() => import("@/pages/Ecosystem/Formularios/Editor"));
-const EcosystemFormRespuestas = lazy(() => import("@/pages/Ecosystem/Formularios/Respuestas"));
-const DashboardPage = lazy(() => import("@/pages/Dashboard"));
-const LotsPage = lazy(() => import("@/pages/Lots"));
-const FracsPage = lazy(() => import("@/pages/Fracs"));
-const ClientsPage = lazy(() => import("@/pages/Clients"));
-const SalesPage = lazy(() => import("@/pages/Sales"));
-const DocumentsPage = lazy(() => import("@/pages/Documents"));
-const PaymentsPage = lazy(() => import("@/pages/Payments"));
-const CalculatorPage = lazy(() => import("@/pages/Calculator"));
-const ProfilePage = lazy(() => import("@/pages/Profile"));
-const SettingsPage = lazy(() => import("@/pages/Settings"));
-const ReportsPage = lazy(() => import("@/pages/Reports"));
-const PricingPage = lazy(() => import("@/pages/Pricing"));
-const AccessDenied = lazy(() => import("@/pages/AccessDenied"));
+const EcosystemHub = lazyWithRetry(() => import("@/pages/Ecosystem"));
+const EcosystemClientes = lazyWithRetry(() => import("@/pages/Ecosystem/Clientes"));
+const EcosystemVault = lazyWithRetry(() => import("@/pages/Ecosystem/Vault"));
+const EcosystemDia = lazyWithRetry(() => import("@/pages/Ecosystem/Dia"));
+const EcosystemFinanzas = lazyWithRetry(() => import("@/pages/Ecosystem/Finanzas"));
+const EcosystemAgenda = lazyWithRetry(() => import("@/pages/Ecosystem/Agenda"));
+const EcosystemEquipo = lazyWithRetry(() => import("@/pages/Ecosystem/Equipo"));
+const EcosystemFormularios = lazyWithRetry(() => import("@/pages/Ecosystem/Formularios"));
+const EcosystemFormEditor = lazyWithRetry(() => import("@/pages/Ecosystem/Formularios/Editor"));
+const EcosystemFormRespuestas = lazyWithRetry(() => import("@/pages/Ecosystem/Formularios/Respuestas"));
+const DashboardPage = lazyWithRetry(() => import("@/pages/Dashboard"));
+const LotsPage = lazyWithRetry(() => import("@/pages/Lots"));
+const FracsPage = lazyWithRetry(() => import("@/pages/Fracs"));
+const ClientsPage = lazyWithRetry(() => import("@/pages/Clients"));
+const SalesPage = lazyWithRetry(() => import("@/pages/Sales"));
+const DocumentsPage = lazyWithRetry(() => import("@/pages/Documents"));
+const PaymentsPage = lazyWithRetry(() => import("@/pages/Payments"));
+const CalculatorPage = lazyWithRetry(() => import("@/pages/Calculator"));
+const ProfilePage = lazyWithRetry(() => import("@/pages/Profile"));
+const SettingsPage = lazyWithRetry(() => import("@/pages/Settings"));
+const ReportsPage = lazyWithRetry(() => import("@/pages/Reports"));
+const PricingPage = lazyWithRetry(() => import("@/pages/Pricing"));
+const AccessDenied = lazyWithRetry(() => import("@/pages/AccessDenied"));
 
 function PageLoader() {
   return (
