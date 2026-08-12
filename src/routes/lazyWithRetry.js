@@ -17,7 +17,7 @@ import { lazy } from "react";
  * Se mantiene además el listener global `vite:preloadError` en main.jsx como red
  * de seguridad para los preloads que no pasan por aquí.
  */
-export function lazyWithRetry(factory, { retries = 2, delay = 400 } = {}) {
+export function lazyWithRetry(factory, { retries = 5, delay = 600 } = {}) {
   return lazy(
     () =>
       new Promise((resolve, reject) => {
@@ -25,14 +25,18 @@ export function lazyWithRetry(factory, { retries = 2, delay = 400 } = {}) {
           factory()
             .then(resolve)
             .catch((err) => {
+              // Reintenta con backoff creciente (~9s en total). La ventana en la que
+              // un chunk no está disponible durante un deploy suele durar pocos
+              // segundos; reintentar la aguanta SIN recargar (menos disruptivo).
               if (n < retries) {
                 setTimeout(() => attempt(n + 1), delay * (n + 1));
                 return;
               }
-              // Último recurso: recarga una vez (shell viejo tras un deploy).
+              // Último recurso, tras agotar los reintentos: recarga una vez para
+              // tomar el index.html nuevo (guardia anti-bucle en sessionStorage).
               const KEY = "chunk_reload_at";
               const last = Number(sessionStorage.getItem(KEY) || 0);
-              if (Date.now() - last > 10000) {
+              if (Date.now() - last > 20000) {
                 sessionStorage.setItem(KEY, String(Date.now()));
                 window.location.reload();
                 return; // la página se está recargando; no resolvemos ni rechazamos
