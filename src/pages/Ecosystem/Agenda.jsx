@@ -129,6 +129,8 @@ function AgendaPage() {
     setEditingId(null);
   }, showModal);
   const fe = useFieldErrors();
+  // Al crear un evento, ofrecer meterlo también en el Google Calendar del usuario.
+  const [addToGoogle, setAddToGoogle] = useState(false);
   const [form, setForm] = useState({
     title: "",
     date: toDateKey(today),
@@ -158,6 +160,7 @@ function AgendaPage() {
 
   const openCreate = (date = selectedDate, time = "10:00") => {
     setEditingId(null);
+    setAddToGoogle(false);
     setForm({ title: "", date, time, client: "", app: "core", type: "evento", context: "", owner: "" });
     setSelectedDate(date);
     setShowModal(true);
@@ -165,6 +168,7 @@ function AgendaPage() {
 
   const openEdit = (appointment) => {
     setEditingId(appointment.id);
+    setAddToGoogle(false);
     setSelectedDate(appointment.date);
     setForm({
       title: appointment.title,
@@ -183,6 +187,17 @@ function AgendaPage() {
     event.preventDefault();
     if (!fe.validate(form, AGENDA_RULES)) return;
     const body = buildAppointmentBody(form);
+    // Si es un evento nuevo y el usuario marcó "agregar a Google", abrimos el link
+    // AQUÍ (dentro del gesto de submit, antes del await) para que el navegador no
+    // bloquee la pestaña. El link se arma con los datos del formulario, no del server.
+    if (!editingId && addToGoogle) {
+      const phone = clients.find((c) => c.name?.toLowerCase() === form.client.toLowerCase())?.phone || null;
+      window.open(
+        googleCalendarUrl({ date: form.date, time: form.time, title: body.title, client: form.client, clientPhone: phone, context: form.context }),
+        "_blank",
+        "noopener,noreferrer",
+      );
+    }
     if (editingId) {
       await updateMutation.mutateAsync({ id: editingId, body });
     } else {
@@ -354,17 +369,6 @@ function AgendaPage() {
                       >
                         Editar
                       </button>
-                      <a
-                        href={googleCalendarUrl(item)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="ag-soft"
-                        style={{ fontSize: ".7rem", padding: "2px 8px", textDecoration: "none", color: "inherit", display: "inline-flex", alignItems: "center", gap: 4 }}
-                        title="Agregar este evento a tu Google Calendar"
-                      >
-                        <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 11v6m3-3H9m10.5 6h-15A1.5 1.5 0 0 1 3 18.5v-11A1.5 1.5 0 0 1 4.5 6h15A1.5 1.5 0 0 1 21 7.5v11a1.5 1.5 0 0 1-1.5 1.5M7 3v4m10-4v4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
-                        Google
-                      </a>
                       {item.status !== "completed" && (
                         <button
                           className="ag-soft"
@@ -488,6 +492,15 @@ function AgendaPage() {
                 <input value={form.owner} onChange={(e) => setForm((p) => ({ ...p, owner: e.target.value }))} placeholder="Nombre del responsable (opcional)" />
               </label>
             </div>
+            {!editingId ? (
+              <label className="ag-gcal-opt">
+                <input type="checkbox" checked={addToGoogle} onChange={(e) => setAddToGoogle(e.target.checked)} />
+                <span className="ag-gcal-ico">
+                  <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 11v6m3-3H9m10.5 6h-15A1.5 1.5 0 0 1 3 18.5v-11A1.5 1.5 0 0 1 4.5 6h15A1.5 1.5 0 0 1 21 7.5v11a1.5 1.5 0 0 1-1.5 1.5M7 3v4m10-4v4" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round"/></svg>
+                </span>
+                Agregar también a mi Google Calendar
+              </label>
+            ) : null}
             <div className="ag-modal-foot">
               <button type="button" className="ag-soft" onClick={() => { setShowModal(false); setEditingId(null); }}>Cancelar</button>
               <button className="ag-primary" type="submit" disabled={createMutation.isPending || updateMutation.isPending}>

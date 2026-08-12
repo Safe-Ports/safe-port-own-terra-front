@@ -690,6 +690,10 @@
 .eco-root .ag-form-grid label.wide{grid-column:1/-1}
 .eco-root .ag-form-grid input,.eco-root .ag-form-grid select{height:40px;border:1px solid var(--border2);border-radius:11px;background:var(--surface);color:var(--deep);padding:0 12px;outline:none;font-family: var(--font-body);font-size:13px;text-transform:none;letter-spacing:0}
 .eco-root .ag-form-grid input:focus,.eco-root .ag-form-grid select:focus{border-color:var(--leaf);box-shadow:0 0 0 4px rgba(111,175,107,.12)}
+.eco-root .ag-gcal-opt{display:flex;align-items:center;gap:9px;margin:0 22px;padding:11px 14px;border:1px solid var(--border2);border-radius:12px;background:var(--surface2);color:var(--tx2, var(--deep));font-size:12.5px;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0}
+.eco-root .ag-gcal-opt:hover{border-color:var(--leaf)}
+.eco-root .ag-gcal-opt input{width:16px;height:16px;accent-color:var(--leaf);cursor:pointer;flex-shrink:0}
+.eco-root .ag-gcal-ico{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;background:rgba(111,175,107,.14);color:var(--mid, var(--leaf));flex-shrink:0}
 .eco-root .ag-modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid var(--border);background:var(--surface2)}
 
 @keyframes eco-fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
