@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import GuideModal from "@/components/shared/GuideModal";
+import PhoneInput from "@/components/shared/PhoneInput";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
@@ -780,7 +781,7 @@ function FracsPage() {
                       </div>
                       <div className="frac-appt-field">
                         <label className="frac-appt-lbl">Telefono</label>
-                        <input value={apptDraft.contact_phone} onChange={(event) => setApptDraft((p) => ({ ...p, contact_phone: event.target.value }))} placeholder="Opcional" />
+                        <PhoneInput value={apptDraft.contact_phone} onChange={(v) => setApptDraft((p) => ({ ...p, contact_phone: v }))} placeholder="Opcional" />
                       </div>
                       <div className="frac-appt-field">
                         <label className="frac-appt-lbl">Fecha</label>
