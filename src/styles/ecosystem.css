@@ -536,7 +536,7 @@
 .eco-root .md-qa-btn:hover{background:var(--surface2);transform:translateY(-1px);border-color:var(--leaf)}
 
 /* ── KPIs con icono en círculo ── */
-.eco-root .md-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px}
+.eco-root .md-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:18px}
 .eco-root .md-kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;
   display:flex;align-items:center;gap:15px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;animation:eco-fadeUp .5s ease both}
 .eco-root .md-kpi:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(30,61,43,.08)}

@@ -5,7 +5,6 @@ import { useAppContext } from "@/context/AppContext";
 import { dashboardService } from "@/services/dashboardService";
 import { appointmentService } from "@/services/appointmentService";
 import { paymentService } from "@/services/paymentService";
-import { notificationService } from "@/services/notificationService";
 import { taskService } from "@/services/taskService";
 import EcoLayout from "./EcoLayout";
 import TasksBoard from "./TasksBoard";
@@ -19,7 +18,7 @@ const TOUR_STEPS = [
   },
   {
     title: "☀️ Mi Día",
-    text: "La vista que ves ahora. Muestra tu progreso diario: citas agendadas, tareas prioritarias, pagos vencidos y alertas recientes. Es tu resumen ejecutivo cada mañana.",
+    text: "La vista que ves ahora. Muestra tu progreso diario: citas agendadas, tareas prioritarias y pagos vencidos. Es tu resumen ejecutivo cada mañana.",
   },
   {
     title: "📅 Agenda",
@@ -115,12 +114,6 @@ function EcosystemDia() {
   });
   const overdueItems = overdueData?.items ?? [];
 
-  const { data: notifsData } = useQuery({
-    queryKey: ["notifications"],
-    queryFn: () => notificationService.list({ limit: 20 }),
-  });
-  const notifs = notifsData?.items ?? [];
-
   // Tareas reales del tablero (no las derivadas de midia) para el KPI.
   const { data: tasksData = [] } = useQuery({ queryKey: ["tasks"], queryFn: taskService.list });
   const openTasks = tasksData.filter((t) => t.status !== "done").length;
@@ -145,10 +138,6 @@ function EcosystemDia() {
   const showingUpcoming = todayAppts.length === 0 && agendaAppts.length > 0;
 
   const totalOverdue = overdueItems.reduce((s, o) => s + Number(o.amount || 0), 0);
-
-  const unreadCount = notifs.filter((n) => !n.is_read).length;
-  const tasksCount = openTasks;
-  const pendingTotal = tasksCount + overdueItems.length + unreadCount;
 
   const motiv = done === totalAppts && totalAppts > 0
     ? "¡Completaste todas tus citas del día! 🎉 Excelente trabajo."
@@ -227,14 +216,6 @@ function EcosystemDia() {
             <div className="md-kpi-val">{overdueItems.length}</div>
             <div className="md-kpi-sub">${totalOverdue.toLocaleString("en-US", { minimumFractionDigits: 0 })} por cobrar</div>
             <button className="md-kpi-cta" onClick={() => navigate("/pagos")}>Revisar ahora</button>
-          </div>
-        </div>
-        <div className="md-kpi">
-          <span className="md-kpi-ico">🔔</span>
-          <div className="md-kpi-body">
-            <div className="md-kpi-label">Alertas Mi Día</div>
-            <div className="md-kpi-val">{pendingTotal}</div>
-            <div className="md-kpi-sub">{unreadCount} sin leer · {tasksCount} tareas</div>
           </div>
         </div>
       </div>
