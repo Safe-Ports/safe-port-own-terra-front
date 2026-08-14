@@ -147,8 +147,6 @@ function EcosystemDia() {
         ? `Llevas ${done} de ${totalAppts} citas. ¡Tú puedes con el resto! 🚀`
         : "Sin citas para hoy. Buen momento para planificar. 📋";
 
-  const open = (app) => APP_META[app]?.live && navigate("/dashboard");
-
   return (
     <EcoLayout active="miday" title="Mi Día" subtitle="Tu jornada consolidada en el ecosistema" onGuide={() => setShowTour(true)}>
 
@@ -249,9 +247,6 @@ function EcosystemDia() {
                   <div className="md-meta">{a.client_name || ""}{a.notes ? ` · ${a.notes}` : ""}</div>
                 </div>
                 {appOk && <AppTag app={appKey} />}
-                {APP_META[appKey]?.live
-                  ? <span className="md-open" onClick={() => open(appKey)}>Ver expediente →</span>
-                  : <span className="md-open" style={{ opacity: .5, cursor: "default" }}>Ver detalle →</span>}
               </div>
             );
           }) : (
