@@ -1,5 +1,17 @@
 import { useState } from "react";
 import { useAppContext } from "@/context/AppContext";
+import InlineError from "@/components/shared/InlineError";
+import FieldError from "@/components/shared/FieldError";
+import { useFieldErrors } from "@/hooks/useFieldErrors";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const REGISTER_RULES = {
+  organization_name: (v) => (!v || v.trim().length < 3 ? "El nombre de la empresa debe tener al menos 3 caracteres." : ""),
+  name: (v) => (!v || v.trim().length < 2 ? "Tu nombre debe tener al menos 2 caracteres." : ""),
+  email: (v) => (!EMAIL_RE.test((v || "").trim()) ? "Escribe un correo electrónico válido." : ""),
+  password: (v) => ((v || "").length < 8 ? "La contraseña debe tener al menos 8 caracteres." : ""),
+  confirm: (v, form) => (v !== form.password ? "Las contraseñas no coinciden." : ""),
+};
 
 const MAP_SVG = (
   <svg className="ll-map-deco" width="340" height="320" viewBox="0 0 340 320" fill="none">
@@ -19,15 +31,15 @@ const MAP_SVG = (
     <rect x="20" y="20" width="90" height="70" rx="4" fill="white" fillOpacity="0.06" />
     <rect x="230" y="110" width="90" height="70" rx="4" fill="white" fillOpacity="0.1" />
     <rect x="125" y="200" width="90" height="100" rx="4" fill="white" fillOpacity="0.07" />
-    <text x="65" y="60" textAnchor="middle" fontFamily="sans-serif" fontSize="11" fill="white" opacity="0.5">Lote 1</text>
-    <text x="170" y="60" textAnchor="middle" fontFamily="sans-serif" fontSize="11" fill="white" opacity="0.5">Lote 2</text>
-    <text x="275" y="60" textAnchor="middle" fontFamily="sans-serif" fontSize="11" fill="white" opacity="0.5">Lote 3</text>
-    <text x="275" y="150" textAnchor="middle" fontFamily="sans-serif" fontSize="10" fill="white" opacity="0.8">Vendido</text>
-    <text x="170" y="255" textAnchor="middle" fontFamily="sans-serif" fontSize="10" fill="white" opacity="0.8">Apartado</text>
+    <text x="65" y="60" textAnchor="middle" fontFamily="Inter, system-ui, sans-serif" fontSize="11" fill="white" opacity="0.5">Lote 1</text>
+    <text x="170" y="60" textAnchor="middle" fontFamily="Inter, system-ui, sans-serif" fontSize="11" fill="white" opacity="0.5">Lote 2</text>
+    <text x="275" y="60" textAnchor="middle" fontFamily="Inter, system-ui, sans-serif" fontSize="11" fill="white" opacity="0.5">Lote 3</text>
+    <text x="275" y="150" textAnchor="middle" fontFamily="Inter, system-ui, sans-serif" fontSize="10" fill="white" opacity="0.8">Vendido</text>
+    <text x="170" y="255" textAnchor="middle" fontFamily="Inter, system-ui, sans-serif" fontSize="10" fill="white" opacity="0.8">Apartado</text>
   </svg>
 );
 
-function LeftPanel() {
+export function LeftPanel() {
   return (
     <div className="ll-panel">
       <div className="ll-logo">
@@ -42,20 +54,6 @@ function LeftPanel() {
           Administra lotes, clientes, contratos y amortizaciones desde un solo lugar. El ecosistema completo para desarrolladores inmobiliarios.
         </div>
       </div>
-      <div className="ll-stats">
-        <div>
-          <div className="ll-stat-v">100%</div>
-          <div className="ll-stat-l">Sin papel</div>
-        </div>
-        <div>
-          <div className="ll-stat-v">∞</div>
-          <div className="ll-stat-l">Lotes &amp; Frac.</div>
-        </div>
-        <div>
-          <div className="ll-stat-v">0</div>
-          <div className="ll-stat-l">Pagos perdidos</div>
-        </div>
-      </div>
     </div>
   );
 }
@@ -64,7 +62,7 @@ function LeftPanel() {
 function LoginView({ onForgot, onRegister }) {
   const { login, resendVerification, showToast } = useAppContext();
   const [form, setForm]     = useState({ identifier: "", password: "", remember: false });
-  const [error, setError]   = useState("");
+  const [error, setError]   = useState(null);
   const [unverifiedEmail, setUnverifiedEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
@@ -73,20 +71,14 @@ function LoginView({ onForgot, onRegister }) {
   const submit = async () => {
     if (!form.identifier || !form.password) return;
     setLoading(true);
-    setError("");
+    setError(null);
     setUnverifiedEmail("");
     const result = await login(form);
     setLoading(false);
     if (!result.ok) {
-      setError(result.msg || "Usuario o contraseña incorrectos. Intenta de nuevo.");
+      setError(result.error || { code: "OT-SYS-9000", message: result.msg || "No pudimos iniciar sesión.", action: "", requestId: null });
       if (result.needsVerification) setUnverifiedEmail(result.email || form.identifier);
     }
-  };
-
-  const fillDemo = (identifier, password) => {
-    setForm({ identifier, password, remember: true });
-    setError("");
-    setUnverifiedEmail("");
   };
 
   const resend = async () => {
@@ -102,16 +94,13 @@ function LoginView({ onForgot, onRegister }) {
       <div className="lf-title">Bienvenido</div>
       <div className="lf-sub">Accede a tu sistema de gestión inmobiliaria</div>
 
-      {error && (
-        <div className="lf-error">
-          <div>{error}</div>
-          {unverifiedEmail ? (
-            <button type="button" className="lf-error-action" onClick={resend} disabled={resending}>
-              {resending ? "Reenviando..." : "Reenviar correo de verificación"}
-            </button>
-          ) : null}
-        </div>
-      )}
+      <InlineError error={error}>
+        {unverifiedEmail ? (
+          <button type="button" className="lf-error-action" onClick={resend} disabled={resending}>
+            {resending ? "Reenviando..." : "Reenviar correo de verificación"}
+          </button>
+        ) : null}
+      </InlineError>
 
       <div className="lf-field">
         <label className="lf-label">Usuario / Correo</label>
@@ -172,32 +161,6 @@ function LoginView({ onForgot, onRegister }) {
         {loading ? "Ingresando..." : "Iniciar sesión"}
       </button>
 
-      <div className="lf-divider">Ambientes de prueba</div>
-
-      <div className="lf-demo-box">
-        <div className="lf-demo-title">Usuarios de prueba</div>
-        <div className="lf-demo-user" onClick={() => fillDemo("admin", "admin123")}>
-          <div className="lf-demo-info">
-            <div className="lf-demo-av" style={{ background: "var(--forest)" }}>AD</div>
-            <div>
-              <div className="lf-demo-nm">Administrador</div>
-              <div className="lf-demo-role">admin · Acceso total</div>
-            </div>
-          </div>
-          <div className="lf-demo-fill">Usar</div>
-        </div>
-        <div className="lf-demo-user" onClick={() => fillDemo("vendedor", "vende123")} style={{ marginTop: 4 }}>
-          <div className="lf-demo-info">
-            <div className="lf-demo-av" style={{ background: "var(--mid)" }}>VN</div>
-            <div>
-              <div className="lf-demo-nm">Vendedor</div>
-              <div className="lf-demo-role">vendedor · Solo lectura</div>
-            </div>
-          </div>
-          <div className="lf-demo-fill">Usar</div>
-        </div>
-      </div>
-
       <div style={{ textAlign: "center", marginTop: 16, fontSize: ".82rem", color: "#83867C" }}>
         ¿No tienes cuenta?{" "}
         <button
@@ -210,7 +173,7 @@ function LoginView({ onForgot, onRegister }) {
       </div>
 
       <div className="lf-footer">
-        OwnTerra v1.0 &nbsp;·&nbsp; © 2026 &nbsp;·&nbsp; <button type="button" className="lf-link-btn" onClick={() => showToast("Aviso de privacidad próximamente")}>Privacidad</button>
+        OwnTerra v1.0 &nbsp;·&nbsp; © 2026
       </div>
     </div>
   );
@@ -222,18 +185,18 @@ function ForgotView({ onBack }) {
   const [email, setEmail]   = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent]     = useState(false);
-  const [error, setError]   = useState(false);
+  const [error, setError]   = useState(null);
 
   const submit = async () => {
     if (!email.trim()) return;
     setLoading(true);
-    setError(false);
+    setError(null);
     const result = await forgotPassword(email.trim());
     setLoading(false);
     if (result.ok) {
       setSent(true);
     } else {
-      setError(true);
+      setError({ message: "Ocurrió un error al enviar el correo.", action: "Verifica tu dirección e intenta de nuevo.", severity: "warning" });
     }
   };
 
@@ -264,18 +227,14 @@ function ForgotView({ onBack }) {
       <div className="lf-title">Recuperar contraseña</div>
       <div className="lf-sub">Ingresa tu correo y te enviaremos instrucciones para recuperar el acceso.</div>
 
-      {error && (
-        <div className="lf-error">
-          Ocurrió un error. Intenta de nuevo.
-        </div>
-      )}
+      <InlineError error={error} />
 
       <div className="lf-field">
         <label className="lf-label">Correo electrónico</label>
         <div className="lf-input-wrap">
           <span className="lf-ico">✉️</span>
           <input
-            className={`lf-input${error ? " error" : ""}`}
+            className="lf-input"
             type="email"
             placeholder="correo@empresa.mx"
             value={email}
@@ -311,33 +270,18 @@ function RegisterView({ onBack }) {
   });
   const { resendVerification } = useAppContext();
   const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState("");
+  const [error, setError]     = useState(null);
   const [showPass, setShowPass] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
+  const fe = useFieldErrors();
 
-  const set = (key) => (e) => setForm((p) => ({ ...p, [key]: e.target.value }));
-
-  const validate = () => {
-    const organizationName = form.organization_name.trim();
-    const name = form.name.trim();
-    const email = form.email.trim();
-
-    if (organizationName.length < 3) return "El nombre de la empresa debe tener al menos 3 caracteres.";
-    if (name.length < 2) return "Tu nombre debe tener al menos 2 caracteres.";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Escribe un correo electrónico válido.";
-    if (form.password.length < 8) return "La contraseña debe tener al menos 8 caracteres.";
-    if (form.password !== form.confirm) return "Las contraseñas no coinciden.";
-    return "";
-  };
+  const set = (key) => (e) => { const v = e.target.value; setForm((p) => ({ ...p, [key]: v })); fe.clear(key); };
 
   const submit = async () => {
-    const validationError = validate();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+    // Validación de llenado: por campo (rojo bajo el input), no en la caja general.
+    if (!fe.validate(form, REGISTER_RULES)) return;
     setLoading(true);
-    setError("");
+    setError(null);
     const result = await register({
       organization_name: form.organization_name.trim(),
       name: form.name.trim(),
@@ -349,7 +293,7 @@ function RegisterView({ onBack }) {
       setRegisteredEmail(result.email || form.email.trim());
       return;
     }
-    if (!result.ok) setError(result.msg || "Error al crear la cuenta. Verifica los datos.");
+    if (!result.ok) setError(result.error || { message: result.msg || "Error al crear la cuenta. Verifica los datos." });
   };
 
   if (registeredEmail) {
@@ -401,7 +345,7 @@ function RegisterView({ onBack }) {
       <div className="lf-title">Crear cuenta nueva</div>
       <div className="lf-sub">Registra tu empresa y comienza a gestionar tu fraccionamiento.</div>
 
-      {error && <div className="lf-error">{error}</div>}
+      <InlineError error={error} />
 
       {fields.map((f) => (
         <div className="lf-field" key={f.key}>
@@ -409,7 +353,7 @@ function RegisterView({ onBack }) {
           <div className="lf-input-wrap">
             <span className="lf-ico">{f.ico}</span>
             <input
-              className={`lf-input${error ? " error" : ""}`}
+              className={fe.errors[f.key] ? "lf-input is-invalid" : "lf-input"}
               type={f.type}
               placeholder={f.placeholder}
               value={form[f.key]}
@@ -418,6 +362,7 @@ function RegisterView({ onBack }) {
               autoComplete={f.auto}
             />
           </div>
+          <FieldError msg={fe.errors[f.key]} />
         </div>
       ))}
 
@@ -426,7 +371,7 @@ function RegisterView({ onBack }) {
         <div className="lf-input-wrap">
           <span className="lf-ico">🔒</span>
           <input
-            className={`lf-input${error ? " error" : ""}`}
+            className={fe.errors.password ? "lf-input is-invalid" : "lf-input"}
             type={showPass ? "text" : "password"}
             placeholder="Mínimo 8 caracteres"
             value={form.password}
@@ -438,6 +383,7 @@ function RegisterView({ onBack }) {
             {showPass ? "🙈" : "👁"}
           </button>
         </div>
+        <FieldError msg={fe.errors.password} />
       </div>
 
       <div className="lf-field">
@@ -445,7 +391,7 @@ function RegisterView({ onBack }) {
         <div className="lf-input-wrap">
           <span className="lf-ico">🔒</span>
           <input
-            className={`lf-input${error ? " error" : ""}`}
+            className={fe.errors.confirm ? "lf-input is-invalid" : "lf-input"}
             type={showPass ? "text" : "password"}
             placeholder="Repite la contraseña"
             value={form.confirm}
@@ -454,6 +400,7 @@ function RegisterView({ onBack }) {
             autoComplete="new-password"
           />
         </div>
+        <FieldError msg={fe.errors.confirm} />
       </div>
 
       <button
@@ -465,12 +412,7 @@ function RegisterView({ onBack }) {
         {loading ? "Creando cuenta..." : "🚀 Crear cuenta"}
       </button>
 
-      <div className="lf-footer" style={{ marginTop: 16 }}>
-        Al registrarte aceptas nuestros{" "}
-        <button type="button" className="lf-link-btn" onClick={() => showToast("Términos de uso próximamente")}>Términos de uso</button>
-        {" "}y{" "}
-        <button type="button" className="lf-link-btn" onClick={() => showToast("Aviso de privacidad próximamente")}>Privacidad</button>.
-      </div>
+      <div className="lf-footer" style={{ marginTop: 16 }}>OwnTerra v1.0 &nbsp;·&nbsp; © 2026</div>
     </div>
   );
 }

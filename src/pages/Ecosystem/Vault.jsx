@@ -1,10 +1,13 @@
 import { Fragment, useEffect, useRef, useState } from "react";
+import GuideModal from "@/components/shared/GuideModal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { SkeletonRows } from "@/components/ui/Skeleton";
 import { HiOutlineEllipsisVertical, HiOutlineFolderPlus, HiOutlinePencil, HiOutlineTrash } from "react-icons/hi2";
 import { documentService, filenameForDocument } from "@/services/documentService";
 import { folderService } from "@/services/folderService";
 import { useAppContext } from "@/context/AppContext";
-import { getUserErrorMessage } from "@/services/errors";
+import useEscapeKey from "@/hooks/useEscapeKey";
+
 import EcoLayout from "./EcoLayout";
 
 const CATEGORIES = ["otro", "contrato", "identificacion", "comprobante", "escritura", "plano"];
@@ -28,10 +31,11 @@ const SearchIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentCo
 
 function EcosystemVault() {
   const qc = useQueryClient();
-  const { downloadDocument, showToast } = useAppContext();
+  const { downloadDocument, showToast, showError } = useAppContext();
   const [activeId, setActiveId] = useState(null);
   const [expanded, setExpanded] = useState(() => new Set());
-  const [modal, setModal] = useState(null);
+  const [modal, setModal]         = useState(null);
+  const [showGuide, setShowGuide] = useState(false);
   const [menuFor, setMenuFor] = useState(null);
   const [newIn, setNewIn] = useState(null);
   const [newName, setNewName] = useState("");
@@ -40,13 +44,17 @@ function EcosystemVault() {
   const [search, setSearch] = useState("");
   const [uploadFile, setUploadFile] = useState(null);
   const menuRef = useRef(null);
+  useEscapeKey(() => {
+    setModal(null);
+    setUploadFile(null);
+  }, Boolean(modal));
 
   const { data: folders = [] } = useQuery({
     queryKey: ["folders"],
     queryFn: () => folderService.list(),
   });
 
-  const { data: docsData } = useQuery({
+  const { data: docsData, isLoading: docsLoading } = useQuery({
     queryKey: ["docs", "folder", activeId],
     queryFn: () => documentService.list({ folder_id: activeId, limit: 100, search: search || undefined }),
     enabled: !!activeId,
@@ -75,13 +83,13 @@ function EcosystemVault() {
       setActiveId(String(created.id));
       showToast("Carpeta creada");
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al crear la carpeta")),
+    onError: (err) => showError(err, "Error al crear la carpeta"),
   });
 
   const renameFolderMutation = useMutation({
     mutationFn: ({ id, name }) => folderService.update(id, { name }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["folders"] }); showToast("Carpeta renombrada"); },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al renombrar la carpeta")),
+    onError: (err) => showError(err, "Error al renombrar la carpeta"),
   });
 
   const deleteFolderMutation = useMutation({
@@ -92,7 +100,7 @@ function EcosystemVault() {
       setActiveId(roots[0] ? String(roots[0].id) : null);
       showToast("Carpeta eliminada");
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al eliminar la carpeta")),
+    onError: (err) => showError(err, "Error al eliminar la carpeta"),
   });
 
   const uploadMutation = useMutation({
@@ -105,13 +113,13 @@ function EcosystemVault() {
       setUploadFile(null);
       showToast("Documento subido");
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al subir el documento")),
+    onError: (err) => showError(err, "Error al subir el documento"),
   });
 
   const deleteDocMutation = useMutation({
     mutationFn: (id) => documentService.delete(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["docs", "folder", activeId] }); showToast("Documento eliminado"); },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al eliminar el documento")),
+    onError: (err) => showError(err, "Error al eliminar el documento"),
   });
 
   const active = folders.find((f) => String(f.id) === activeId) || null;
@@ -143,14 +151,20 @@ function EcosystemVault() {
 
   const deleteFolder = (id) => {
     setMenuFor(null);
-    if (!window.confirm("¿Eliminar esta carpeta y todos sus documentos?")) return;
+    if (!window.confirm("¿Eliminar esta carpeta? Los documentos dentro se conservarán sin carpeta.")) return;
     deleteFolderMutation.mutate(id);
   };
 
   const saveDoc = () => {
-    if (!uploadFile && !modal?.name) return;
-    const file = uploadFile || new File([], modal.name);
-    uploadMutation.mutate({ file, name: modal.name || file.name, category: modal.category });
+    if (!uploadFile) {
+      showToast("Selecciona un archivo para subir");
+      return;
+    }
+    if (uploadFile.size > 50 * 1024 * 1024) {
+      showToast("El archivo no puede superar 50 MB");
+      return;
+    }
+    uploadMutation.mutate({ file: uploadFile, name: modal.name || uploadFile.name, category: modal.category });
   };
 
   const shownDocs = search ? docs.filter((d) => d.name.toLowerCase().includes(search.toLowerCase())) : docs;
@@ -206,11 +220,11 @@ function EcosystemVault() {
   };
 
   return (
-    <EcoLayout active="vault" title="OwnTerra Vault" subtitle="Bóveda de documentos del ecosistema">
+    <EcoLayout active="vault" title="OwnTerra Vault" subtitle="Bóveda de documentos del ecosistema" onGuide={() => setShowGuide(true)}>
 
       <div className="section-head">
         <h3>Bóveda de documentos</h3>
-        <span style={{ fontSize: 12, color: "var(--text3)", fontFamily: "'JetBrains Mono',monospace" }}>
+        <span style={{ fontSize: 12, color: "var(--text3)", fontFamily: "var(--font-body)" }}>
           {folders.length} carpetas · {totalDocs} documentos
         </span>
       </div>
@@ -273,7 +287,9 @@ function EcosystemVault() {
                   <input placeholder="Buscar documento en esta carpeta…" value={search} onChange={(e) => setSearch(e.target.value)} />
                 </label>
 
-                {shownDocs.length ? (
+                {docsLoading ? (
+                  <SkeletonRows rows={5} />
+                ) : shownDocs.length ? (
                   <div className="usr-rows">
                     {shownDocs.map((d) => (
                       <div key={d.id} className="usr-row">
@@ -311,14 +327,19 @@ function EcosystemVault() {
 
       {/* MODAL subir documento */}
       {modal && active && (
-        <div className="usr-modal-overlay" onClick={(e) => e.target === e.currentTarget && setModal(null)}>
+        <div className="usr-modal-overlay" onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setModal(null);
+            setUploadFile(null);
+          }
+        }}>
           <div className="usr-modal">
             <div className="usr-modal-head">
               <div>
                 <div className="usr-modal-title">Subir documento</div>
                 <div className="usr-modal-sub">{ancestors(activeId).map((a) => a.name).join(" › ")} · bóveda del ecosistema</div>
               </div>
-              <button className="usr-modal-close" onClick={() => setModal(null)}>×</button>
+              <button className="usr-modal-close" onClick={() => { setModal(null); setUploadFile(null); }}>×</button>
             </div>
             <div className="usr-modal-body">
               <div className="usr-field">
@@ -340,14 +361,27 @@ function EcosystemVault() {
               </div>
             </div>
             <div className="usr-modal-foot">
-              <button className="usr-btn-ghost" onClick={() => setModal(null)}>Cancelar</button>
-              <button className="usr-btn-primary" onClick={saveDoc} disabled={uploadMutation.isPending}>
+              <button className="usr-btn-ghost" onClick={() => { setModal(null); setUploadFile(null); }}>Cancelar</button>
+              <button className="usr-btn-primary" onClick={saveDoc} disabled={uploadMutation.isPending || !uploadFile}>
                 {uploadMutation.isPending ? "Subiendo…" : "✓ Guardar"}
               </button>
             </div>
           </div>
         </div>
       )}
+      <GuideModal
+        open={showGuide}
+        onClose={() => setShowGuide(false)}
+        title="OwnTerra Vault"
+        subtitle="Bóveda centralizada de documentos compartida entre todas las apps."
+        steps={[
+          { title: "Árbol de carpetas", text: "La barra izquierda muestra el árbol de carpetas. Haz clic para expandir subcarpetas. El ícono '+' crea una subcarpeta dentro de la seleccionada." },
+          { title: "Subir documentos", text: "Selecciona la carpeta destino, luego pulsa 'Subir documento'. Elige el archivo (máx. 50 MB) y asígnale una categoría (contrato, identificación, escritura, etc.)." },
+          { title: "Buscar documentos", text: "La barra de búsqueda filtra por nombre dentro de la carpeta activa. Los resultados se muestran en tiempo real." },
+          { title: "Descargar y eliminar", text: "El ícono de descarga descarga el archivo original. El de papelera lo elimina de la bóveda (acción irreversible)." },
+          { title: "Renombrar carpetas", text: "El menú de opciones (⋮) junto al nombre de la carpeta permite renombrarla o eliminarla. Si la eliminas, los documentos se conservan sin carpeta." },
+        ]}
+      />
     </EcoLayout>
   );
 }

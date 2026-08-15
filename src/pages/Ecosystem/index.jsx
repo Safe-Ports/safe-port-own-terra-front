@@ -1,4 +1,5 @@
 import { useState } from "react";
+import GuideModal from "@/components/shared/GuideModal";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
@@ -40,7 +41,7 @@ function RevenueChart({ labels, revenue }) {
       {pts.map(([x, y], i) => (
         <circle key={i} cx={x} cy={y} r={i === pts.length - 1 ? 4.4 : 3.4} fill="#fff" stroke="#6FAF6B" strokeWidth="2.4" />
       ))}
-      <g fill="#83867C" fontSize="11" fontFamily="'Outfit',sans-serif" textAnchor="middle">
+      <g fill="#83867C" fontSize="11" fontFamily="Inter, system-ui, sans-serif" textAnchor="middle">
         {labels.map((l, i) => <text key={i} x={pad + i * step} y={H + 18}>{l}</text>)}
       </g>
     </svg>
@@ -50,11 +51,12 @@ function RevenueChart({ labels, revenue }) {
 function EcosystemHub() {
   const navigate = useNavigate();
   const { canAccessApp, canUseFeature, showToast } = useAppContext();
-  const [period, setPeriod] = useState("month");
+  const [period, setPeriod]   = useState("month");
+  const [showGuide, setShowGuide] = useState(false);
 
   const openLands = () => canAccessApp("lands")
     ? navigate("/dashboard")
-    : showToast("Tu usuario no tiene acceso a OwnTerra Lands");
+    : showToast("Tu usuario no tiene acceso a OwnTerra Lands", "warning");
 
   const { data: stats, isLoading } = useQuery({
     queryKey: ["dashboard-stats", period],
@@ -68,7 +70,7 @@ function EcosystemHub() {
   const maxSales = Math.max(...salesBars, 1);
 
   return (
-    <EcoLayout active="panel" title="Ecosistema Inmobiliario">
+    <EcoLayout active="panel" title="Ecosistema Inmobiliario" onGuide={() => setShowGuide(true)}>
 
       {/* APP LAUNCHER */}
       <div className="section-head">
@@ -97,8 +99,8 @@ function EcosystemHub() {
             <div className="app-icon ic-neighb"><svg><use href="#eco-g-neighb" /></svg></div>
             <span className="app-status st-soon">Próximamente</span>
           </div>
-          <div className="app-name">OwnTerra Neighborhoods</div>
-          <div className="app-handle">terra.neighborhoods</div>
+          <div className="app-name">OwnTerra Properties</div>
+          <div className="app-handle">terra.properties</div>
           <div className="app-desc">Departamentos y fraccionamientos residenciales: cuotas de mantenimiento y normativa de colonos.</div>
           <div className="app-tags"><span className="atag">Cuotas</span><span className="atag">Amenidades</span><span className="atag">Reglamento</span></div>
           <div className="app-cta">
@@ -137,7 +139,7 @@ function EcosystemHub() {
           </div>
           <button
             className="sh-link"
-            onClick={() => canUseFeature("core.finance") ? navigate("/ecosistema/finanzas") : showToast("Tu usuario no tiene acceso a Finanzas")}
+            onClick={() => canUseFeature("core.finance") ? navigate("/ecosistema/finanzas") : showToast("Tu usuario no tiene acceso a Finanzas", "warning")}
           >
             Ver estados financieros →
           </button>
@@ -221,6 +223,19 @@ function EcosystemHub() {
         </div>
       </div>
 
+      <GuideModal
+        open={showGuide}
+        onClose={() => setShowGuide(false)}
+        title="Ecosistema OwnTerra"
+        subtitle="Hub central de todas las aplicaciones verticales del ecosistema."
+        steps={[
+          { title: "Lanzador de apps", text: "Las tarjetas muestran las apps disponibles. OwnTerra Lands está activo. Properties y Homes están en desarrollo (próximamente)." },
+          { title: "Ingresar a Lands", text: "Haz clic en la tarjeta de OwnTerra Lands para acceder al módulo de gestión de lotes, clientes y cobranza de fraccionamientos." },
+          { title: "KPIs del período", text: "Los indicadores muestran ingresos, ventas, tasa de cobranza y ticket promedio del período seleccionado (mes, trimestre o año)." },
+          { title: "Cambiar período", text: "Usa los botones 'Este mes', 'Este trimestre' o 'Este año' para cambiar el período de análisis de los KPIs y gráficas." },
+          { title: "Gráficas de ingresos", text: "Visualiza la tendencia de ingresos y contratos cerrados durante el período. Úsalas para identificar meses pico o caídas en ventas." },
+        ]}
+      />
     </EcoLayout>
   );
 }

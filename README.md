@@ -2,6 +2,8 @@
 
 Frontend de OwnTerra para el ecosistema inmobiliario: Core central, OwnTerra Lands y modulos operativos de clientes, lotes, contratos, pagos, agenda y documentos.
 
+> **Pruebas automatizadas** — ver [TESTING.md](./TESTING.md) para el stack completo, comandos y guía de como agregar nuevos tests.
+
 ## Scope Actual
 
 - Login, registro, recuperacion de contrasena y sesion con tokens API.
@@ -119,7 +121,8 @@ Pendientes de backend para cerrar estos flujos:
 ## Requisitos
 
 - Node.js 18+.
-- Backend disponible en `VITE_API_URL` o, por defecto, `http://127.0.0.1:8000/api/v1`.
+- Backend disponible en `VITE_API_URL`. En desarrollo local, si se omite, se usa `http://127.0.0.1:8000/api/v1`.
+- Los builds de producción requieren `VITE_API_URL` y fallan si no está configurada.
 
 ## Desarrollo Local
 
@@ -143,11 +146,13 @@ npm run build
 
 ## Variables De Entorno
 
-Crear `.env` local cuando se use un backend diferente:
+Crear `.env` local a partir de `.env.example`:
 
 ```bash
 VITE_API_URL=http://127.0.0.1:8000/api/v1
 ```
+
+En el proveedor de despliegue, configurar `VITE_API_URL` con la URL pública HTTPS del backend antes de ejecutar `npm run build`.
 
 ## Notas Tecnicas
 

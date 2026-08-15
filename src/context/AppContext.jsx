@@ -1,18 +1,23 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePersistentState } from "@/hooks/usePersistentState";
 import api from "@/services/api";
 import { clientService } from "@/services/clientService";
 import { inmuebleService } from "@/services/inmuebleService";
+import { mapFileFromUrl } from "@/utils/mapImage";
 import { lotService } from "@/services/lotService";
 import { contractService } from "@/services/contractService";
 import { paymentService } from "@/services/paymentService";
 import { documentService, filenameForDocument, toBackendEntityType } from "@/services/documentService";
 import { notificationService } from "@/services/notificationService";
-import { initialDraftProject } from "@/services/mockData";
+import { appointmentService } from "@/services/appointmentService";
+import { folderService } from "@/services/folderService";
+import { createEmptyDraftProject } from "@/services/draftProject";
 import { canAccessApp, canUseFeature } from "@/services/permissions";
-import { getUserErrorMessage } from "@/services/errors";
+import { parseApiError } from "@/errors/parseApiError";
+
+const AG_SEEN_KEY = "ag_triggered_seen";
 
 const AppContext = createContext(null);
 
@@ -21,51 +26,158 @@ export function AppProvider({ children }) {
   const queryClient = useQueryClient();
   const [currentUser, setCurrentUser] = usePersistentState("lm_session", null);
 
+  // ── Rehidratación de sesión (fuente de verdad = backend) ────────────────────
+  // La sesión persiste en localStorage, pero role/permissions/apps pueden quedar
+  // viejos o incompletos (login anterior, cambio de permisos server-side). Al
+  // arrancar, si hay token, revalidamos contra /auth/me y refrescamos esos campos.
+  // Así una sesión desactualizada se autocorrige sola, sin pedirle nada al usuario.
+  // Mientras resuelve, authHydrating bloquea a los guards de ruta para que no
+  // manden a "sin acceso" con datos aún sin refrescar.
+  const [authHydrating, setAuthHydrating] = useState(() => Boolean(currentUser?.token));
+  const didHydrateRef = useRef(false);
+
+  useEffect(() => {
+    if (didHydrateRef.current) return;
+    didHydrateRef.current = true;
+    if (!currentUser?.token) {
+      setAuthHydrating(false);
+      return;
+    }
+    // Sin flag `cancelled`: con StrictMode (doble montaje en dev) el cleanup del
+    // primer montaje cancelaría esta única petición (didHydrateRef evita relanzarla),
+    // dejando authHydrating en true para siempre. AppProvider es raíz y no se
+    // desmonta en runtime, así que aplicar el estado al resolver es seguro.
+    api
+      .get("/auth/me")
+      .then(({ data }) => {
+        setCurrentUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                id: String(data.user.id),
+                name: data.user.name,
+                initials: data.user.initials || data.user.name.slice(0, 2).toUpperCase(),
+                email: data.user.email,
+                role: data.user.role,
+                apps: data.user.apps || data.user.user_apps || [],
+                permissions: data.user.permissions || [],
+                organization: data.organization,
+              }
+            : prev
+        );
+      })
+      .catch(() => {
+        // 401 lo maneja el interceptor de api.js (refresh o logout). Ante otros
+        // fallos (red), conservamos la sesión cacheada para no desloguear por un hipo.
+      })
+      .finally(() => setAuthHydrating(false));
+    // Solo en el montaje: revalidar una vez por carga de la app.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Data queries ──────────────────────────────────────────────────────────
-  const { data: clientsData } = useQuery({
+  const { data: clientsData, isLoading: clientsLoading } = useQuery({
     queryKey: ["clients"],
     queryFn: () => clientService.list({ limit: 100 }).then((r) => r.items),
-    enabled: !!currentUser,
+    enabled: !!currentUser && !authHydrating,
   });
   const clients = clientsData || [];
 
-  const { data: fracsData } = useQuery({
+  const { data: fracsData, isLoading: fracsLoading } = useQuery({
     queryKey: ["inmuebles"],
     queryFn: () => inmuebleService.list({ limit: 50 }).then((r) => r.items),
-    enabled: !!currentUser,
+    enabled: !!currentUser && !authHydrating,
   });
   const fracs = fracsData || [];
 
-  const { data: contractsData } = useQuery({
+  const { data: contractsData, isLoading: contractsLoading } = useQuery({
     queryKey: ["contracts"],
     queryFn: () => contractService.list({ limit: 100 }).then((r) => r.items),
-    enabled: !!currentUser,
+    enabled: !!currentUser && !authHydrating,
   });
   const contracts = contractsData || [];
 
-  const { data: paymentsData } = useQuery({
+  const { data: paymentsData, isLoading: paymentsLoading } = useQuery({
     queryKey: ["payments"],
     queryFn: () => paymentService.list({ limit: 200 }).then((r) => r.items),
-    enabled: !!currentUser,
+    enabled: !!currentUser && !authHydrating,
   });
   const payments = paymentsData || [];
 
-  const { data: documentsData } = useQuery({
+  const { data: documentsData, isLoading: documentsLoading } = useQuery({
     queryKey: ["documents"],
     queryFn: () => documentService.list({ limit: 100 }).then((r) => r.items),
-    enabled: !!currentUser,
+    enabled: !!currentUser && !authHydrating,
   });
   const documents = documentsData || [];
 
   const { data: notificationCount = 0, refetch: refetchNotifications } = useQuery({
     queryKey: ["notifications-unread"],
     queryFn: () => notificationService.unreadCount(),
-    enabled: !!currentUser,
+    enabled: !!currentUser && !authHydrating,
     refetchInterval: 60_000,
+    retry: 0,
   });
 
+  const todayIso = (() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString();
+  })();
+  const todayEndIso = (() => {
+    const d = new Date();
+    d.setHours(23, 59, 59, 999);
+    return d.toISOString();
+  })();
+
+  const { data: todayApptsRaw = [] } = useQuery({
+    queryKey: ["appointments", "today-alerts"],
+    queryFn: () => appointmentService.list({ upcoming_only: false, from_date: todayIso, to_date: todayEndIso }),
+    enabled: !!currentUser && !authHydrating,
+    refetchInterval: 60_000,
+    retry: 0,
+  });
+
+  const [calendarAlertCount, setCalendarAlertCount] = useState(0);
+  const calendarAlertEventsRef = useRef([]);
+  const prevAlertCountRef = useRef(0);
+  const showToastRef = useRef(null);
+
+  const computeCalendarAlerts = useCallback((appts) => {
+    const now = Date.now();
+    const PRE  = 2  * 60 * 1000; // 2 min antes
+    const POST = 30 * 60 * 1000; // 30 min después
+    const triggered = appts.filter((a) => {
+      const t = new Date(a.scheduled_at).getTime();
+      return t <= now + PRE && t >= now - POST
+        && a.status !== "completed" && a.status !== "cancelled";
+    });
+    const seen = JSON.parse(sessionStorage.getItem(AG_SEEN_KEY) || "[]");
+    const unacked = triggered.filter((a) => !seen.includes(String(a.id)));
+    calendarAlertEventsRef.current = unacked;
+    setCalendarAlertCount(unacked.length);
+  }, []);
+
+  useEffect(() => {
+    computeCalendarAlerts(todayApptsRaw);
+  }, [todayApptsRaw, computeCalendarAlerts]);
+
+  useEffect(() => {
+    const interval = setInterval(() => computeCalendarAlerts(todayApptsRaw), 30_000);
+    return () => clearInterval(interval);
+  }, [todayApptsRaw, computeCalendarAlerts]);
+
+  const clearCalendarAlerts = useCallback(() => {
+    const ids = calendarAlertEventsRef.current.map((a) => String(a.id));
+    if (ids.length === 0) return;
+    const existing = JSON.parse(sessionStorage.getItem(AG_SEEN_KEY) || "[]");
+    sessionStorage.setItem(AG_SEEN_KEY, JSON.stringify([...new Set([...existing, ...ids])]));
+    calendarAlertEventsRef.current = [];
+    setCalendarAlertCount(0);
+  }, []);
+
   // ── UI state ──────────────────────────────────────────────────────────────
-  const [draftProject, setDraftProject] = usePersistentState("lm_draft_project", initialDraftProject);
+  const [draftProject, setDraftProject] = usePersistentState("lm_draft_project", createEmptyDraftProject());
   const [ui, setUi] = useState({
     sidebarOpen: false,
     clientModal: false,
@@ -116,11 +228,69 @@ export function AppProvider({ children }) {
   const closeModal = (modal) => setUi((p) => ({ ...p, [modal]: false }));
   const toggleSidebar = () => setUi((p) => ({ ...p, sidebarOpen: !p.sidebarOpen }));
   const closeSidebar = () => setUi((p) => ({ ...p, sidebarOpen: false }));
-  const showToast = (message) => {
-    setToast(message);
+  const showToast = (message, kind = "success") => {
+    setToast(typeof message === "object" ? message : { kind, message });
     window.clearTimeout(showToast._timer);
     showToast._timer = window.setTimeout(() => setToast(null), 2600);
   };
+  // keep a stable ref so effects without showToast in deps can still call it
+  showToastRef.current = showToast;
+
+  // Pide permiso de notificaciones cuando el usuario inicia sesión
+  useEffect(() => {
+    if (currentUser && "Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, [currentUser]);
+
+  // Dispara notificación browser + toast cuando llega la hora de un evento
+  useEffect(() => {
+    if (calendarAlertCount > prevAlertCountRef.current) {
+      const events = calendarAlertEventsRef.current;
+      // Browser notification (funciona aunque la pestaña esté en segundo plano)
+      if ("Notification" in window && Notification.permission === "granted") {
+        events.slice(0, 3).forEach((a) => {
+          new Notification("⏰ Evento en tu agenda", {
+            body: a.title || "Tienes un evento programado ahora",
+            tag: `ag-event-${a.id}`,
+            requireInteraction: false,
+          });
+        });
+      }
+      // Toast en la app
+      if (events.length > 0 && showToastRef.current) {
+        const label = events.length === 1
+          ? `⏰ ${events[0].title || "Evento"} — es ahora`
+          : `⏰ ${events.length} eventos de agenda ahora`;
+        showToastRef.current(label);
+      }
+    }
+    prevAlertCountRef.current = calendarAlertCount;
+  }, [calendarAlertCount]);
+
+  // Muestra un error homologado (código + Ref + copiar). El reporte a Sentry lo hace el
+  // interceptor de api.js, así que aquí solo presentamos. Dura más para dar tiempo a copiar.
+  const showError = (error, fallbackMessage) => {
+    const parsed = parseApiError(error, fallbackMessage);
+    setToast({ kind: "error", ...parsed });
+    window.clearTimeout(showToast._timer);
+    showToast._timer = window.setTimeout(() => setToast(null), 9000);
+    return parsed;
+  };
+
+  // Aviso global de tope de plan (OT-SUB-4001): el interceptor de api.js emite este
+  // evento en cualquier escritura bloqueada por cuota; aquí lo presentamos con el
+  // mensaje homologado ("Alcanzaste el límite… Mejora tu plan para agregar más").
+  useEffect(() => {
+    const onQuota = (e) => {
+      const parsed = parseApiError({ response: { data: e.detail } });
+      setToast({ kind: "error", ...parsed });
+      window.clearTimeout(showToast._timer);
+      showToast._timer = window.setTimeout(() => setToast(null), 9000);
+    };
+    window.addEventListener("ownterra:quota-exceeded", onQuota);
+    return () => window.removeEventListener("ownterra:quota-exceeded", onQuota);
+  }, []);
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   const applyAuthSession = (data, remember = true) => {
@@ -146,11 +316,11 @@ export function AppProvider({ children }) {
       navigate("/ecosistema");
       return { ok: true };
     } catch (err) {
-      const code = err?.response?.data?.error?.code;
-      if (code === "EMAIL_NOT_VERIFIED") {
-        return { ok: false, needsVerification: true, email: identifier, msg: getUserErrorMessage(err, "Confirma tu correo") };
+      const parsed = parseApiError(err, "No pudimos iniciar sesión.");
+      if (parsed.code === "OT-AUTH-2005") {
+        return { ok: false, needsVerification: true, email: identifier, msg: parsed.message, error: parsed };
       }
-      return { ok: false, msg: getUserErrorMessage(err, "Credenciales inválidas") };
+      return { ok: false, msg: parsed.message, error: parsed };
     }
   };
 
@@ -160,7 +330,8 @@ export function AppProvider({ children }) {
       applyAuthSession(data, true);
       return { ok: true };
     } catch (err) {
-      return { ok: false, msg: getUserErrorMessage(err, "Enlace de verificación inválido o expirado") };
+      const parsed = parseApiError(err, "Enlace de verificación inválido o expirado");
+      return { ok: false, msg: parsed.message, error: parsed };
     }
   };
 
@@ -169,7 +340,8 @@ export function AppProvider({ children }) {
       await api.post("/auth/resend-verification", { email });
       return { ok: true };
     } catch (err) {
-      return { ok: false, msg: getUserErrorMessage(err, "No se pudo reenviar el correo") };
+      const parsed = parseApiError(err, "No se pudo reenviar el correo");
+      return { ok: false, msg: parsed.message, error: parsed };
     }
   };
 
@@ -179,7 +351,8 @@ export function AppProvider({ children }) {
       // Flujo bloqueante: el backend no devuelve tokens, el usuario debe confirmar su correo.
       return { ok: true, pendingVerification: true, email: data.email || email };
     } catch (err) {
-      return { ok: false, msg: getUserErrorMessage(err, "Error al registrar") };
+      const parsed = parseApiError(err, "No pudimos crear la cuenta.");
+      return { ok: false, msg: parsed.message, error: parsed };
     }
   };
 
@@ -189,6 +362,16 @@ export function AppProvider({ children }) {
       return { ok: true };
     } catch {
       return { ok: false };
+    }
+  };
+
+  const resetPassword = async (token, newPassword) => {
+    try {
+      await api.post("/auth/reset-password", { token, new_password: newPassword });
+      return { ok: true };
+    } catch (err) {
+      const parsed = parseApiError(err, "El enlace es inválido o expiró. Solicita uno nuevo.");
+      return { ok: false, msg: parsed.message, error: parsed };
     }
   };
 
@@ -202,36 +385,74 @@ export function AppProvider({ children }) {
   // ── Clients ───────────────────────────────────────────────────────────────
   const saveClient = async (payload) => {
     const body = {
-      name: payload.name,
-      email: payload.email || undefined,
-      phone: payload.phone || undefined,
+      name: payload.name?.trim(),
+      email: payload.email?.trim() || null,
+      phone: payload.phone?.trim() || null,
       type: payload.type || "lead",
-      notes: payload.notes || undefined,
+      notes: payload.notes?.trim() || null,
     };
     try {
-      if (payload.id) {
-        await clientService.update(payload.id, body);
+      if (payload.linkClientId) {
+        await clientService.assignApp(payload.linkClientId, "lands");
+        setSelectedClientId(String(payload.linkClientId));
+        showToast("Cliente vinculado a Lands correctamente");
+      } else if (payload.id) {
+        // El schema de actualización no acepta `type` (el tipo no cambia en edición);
+        // enviarlo dispara un 422 por "campo extra no permitido".
+        const { type: _omitType, ...updateBody } = body;
+        await clientService.update(payload.id, updateBody);
+        showToast("Cliente actualizado correctamente");
       } else {
         const created = await clientService.create(body);
         setSelectedClientId(String(created.id));
+        try {
+          await clientService.assignApp(created.id, "lands");
+        } catch (err) {
+          await queryClient.invalidateQueries({ queryKey: ["clients"] });
+          await queryClient.invalidateQueries({ queryKey: ["client-apps"] });
+          setEditingClient(null);
+          closeModal("clientModal");
+          showError(err, "Cliente creado en el Core, pero no se pudo vincular a Lands");
+          return false;
+        }
+        try {
+          const shortId = String(created.id).slice(0, 8).toUpperCase();
+          await folderService.create({ name: `${created.name} - ${shortId}`, parent_id: null });
+          await queryClient.invalidateQueries({ queryKey: ["document-folders"] });
+        } catch (_) {}
+        showToast("Cliente creado correctamente");
       }
       await queryClient.invalidateQueries({ queryKey: ["clients"] });
+      if (payload.id) {
+        await queryClient.invalidateQueries({ queryKey: ["client", String(payload.id)] });
+      }
+      if (payload.linkClientId || !payload.id) {
+        await queryClient.invalidateQueries({ queryKey: ["client-apps"] });
+      }
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al guardar el cliente"));
+      const fallback = payload.linkClientId
+        ? "No se pudo vincular el cliente a Lands"
+        : payload.id
+          ? "No se pudo actualizar el cliente"
+          : "No se pudo crear el cliente";
+      showError(err, fallback);
+      return false;
     }
     setEditingClient(null);
     closeModal("clientModal");
+    return true;
   };
 
   const deleteClient = async (id) => {
     try {
       await clientService.delete(id);
       await queryClient.invalidateQueries({ queryKey: ["clients"] });
+      setEditingClient(null);
+      closeModal("clientModal");
+      return true;
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al eliminar el cliente"));
+      showError(err, "Error al eliminar el cliente");
     }
-    setEditingClient(null);
-    closeModal("clientModal");
   };
 
   // ── Contracts ─────────────────────────────────────────────────────────────
@@ -240,9 +461,18 @@ export function AppProvider({ children }) {
     // Lanza el error hacia el caller (ContractModal lo maneja con errores inline)
     if (payload.id) {
       savedContract = await contractService.update(payload.id, {
-        notes:               payload.notes,
-        seller_id:           payload.seller_id || undefined,
-        down_payment_method: payload.down_payment_method || undefined,
+        contract_number:     payload.number?.trim() || payload.contract_number,
+        client_id:           payload.client_id ?? payload.clientId,
+        type:                payload.type,
+        amount:              Number(payload.amount),
+        down_payment:        Number(payload.down_payment ?? 0),
+        total_months:        Number(payload.total_months ?? payload.totalM),
+        contract_date:       payload.contract_date ?? payload.date,
+        first_payment_date:  payload.first_payment_date ?? payload.firstPaymentDate ?? payload.date,
+        expiration_date:     payload.expiration_date ?? payload.expirationDate ?? null,
+        notes:               payload.notes?.trim() || null,
+        seller_id:           payload.seller_id || null,
+        down_payment_method: payload.down_payment_method || null,
         interest_rate:       Number(payload.interest_rate ?? 0),
       });
     } else {
@@ -255,15 +485,20 @@ export function AppProvider({ children }) {
         interest_rate:       Number(payload.interest_rate ?? 0),
         total_months:        Number(payload.total_months ?? payload.totalM ?? 96),
         contract_date:       payload.contract_date ?? payload.date,
-        first_payment_date:  payload.first_payment_date ?? payload.date,
+        first_payment_date:  payload.first_payment_date ?? payload.firstPaymentDate ?? payload.date,
+        expiration_date:     (payload.expiration_date ?? payload.expirationDate) || undefined,
         seller_id:           payload.seller_id || undefined,
         down_payment_method: payload.down_payment_method || undefined,
         notes:               payload.notes || undefined,
+        calculator_id:       payload.calculator_id || undefined,
+        calculator_vars:     payload.calculator_vars || undefined,
       });
     }
     await queryClient.invalidateQueries({ queryKey: ["contracts"] });
     await queryClient.invalidateQueries({ queryKey: ["payments"] });
     await queryClient.invalidateQueries({ queryKey: ["lots"] });
+    await queryClient.invalidateQueries({ queryKey: ["clients"] });
+    await queryClient.invalidateQueries({ queryKey: ["inmuebles"] });
 
     const contractId = savedContract?.id || payload.id;
     const docs = (payload._docs || []).filter(d => d.file);
@@ -281,7 +516,7 @@ export function AppProvider({ children }) {
       await queryClient.invalidateQueries({ queryKey: ["document-folders"] });
     }
 
-    showToast(`Contrato registrado${docs.length > 0 ? ` · ${docs.length} doc${docs.length > 1 ? "s" : ""} subido${docs.length > 1 ? "s" : ""}` : ""}`);
+    showToast(`Contrato ${payload.id ? "actualizado" : "registrado"}${docs.length > 0 ? ` · ${docs.length} doc${docs.length > 1 ? "s" : ""} subido${docs.length > 1 ? "s" : ""}` : ""}`);
     setEditingContract(null);
     setContractDraft(null);
     closeModal("contractModal");
@@ -292,18 +527,20 @@ export function AppProvider({ children }) {
       await contractService.delete(id);
       await queryClient.invalidateQueries({ queryKey: ["contracts"] });
       await queryClient.invalidateQueries({ queryKey: ["payments"] });
+      setEditingContract(null);
+      setContractDraft(null);
+      closeModal("contractModal");
+      return true;
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al eliminar el contrato"));
+      showError(err, "Error al eliminar el contrato");
     }
-    setEditingContract(null);
-    setContractDraft(null);
-    closeModal("contractModal");
   };
 
   // ── Payments ──────────────────────────────────────────────────────────────
   const savePayment = async (data) => {
+    let saved = false;
     if (data?.id) {
-      await quickPay(data.id, Number(data.amount || 0));
+      saved = await quickPay(data.id, Number(data.amount || 0));
     } else {
       const match = payments.find(
         (p) =>
@@ -311,15 +548,18 @@ export function AppProvider({ children }) {
           p.installment_n === Number(data.cuota) &&
           p.status !== "paid"
       );
-      if (!match) { showToast("No se encontró la cuota indicada o ya está pagada"); return; }
-      await quickPay(match.id, Number(data.amount || match.amount || 0));
+      if (!match) {
+        showToast("No se encontró la cuota indicada o ya está pagada");
+        return false;
+      }
+      saved = await quickPay(match.id, Number(data.amount || match.amount || 0));
     }
+    if (!saved) return false;
     setEditingPayment(null);
     setPaymentDraft(null);
     closeModal("paymentModal");
+    return true;
   };
-
-  const deletePayment = () => showToast("Los pagos se generan desde contratos y no pueden eliminarse");
 
   const exportAppData = async (type = "contracts", format = "xlsx") => {
     try {
@@ -335,9 +575,10 @@ export function AppProvider({ children }) {
       anchor.download = filename;
       anchor.click();
       URL.revokeObjectURL(blobUrl);
-      showToast(`Exportando ${type}...`);
+      showToast(`Exportación de ${type} descargada`);
+      return true;
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al exportar"));
+      showError(err, "Error al exportar");
     }
   };
 
@@ -351,17 +592,26 @@ export function AppProvider({ children }) {
       await queryClient.invalidateQueries({ queryKey: ["payments"] });
       await queryClient.invalidateQueries({ queryKey: ["contracts"] });
       showToast("Pago registrado correctamente");
+      return true;
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al registrar el pago"));
+      showError(err, "Error al registrar el pago");
     }
   };
 
   const sendReminder = async (paymentOrName) => {
     const name = typeof paymentOrName === "string" ? paymentOrName : (paymentOrName?.client?.name || "cliente");
-    if (paymentOrName?.id) {
-      try { await paymentService.sendReminder(paymentOrName.id, { channel: "sms" }); } catch {}
+    if (!paymentOrName?.id) {
+      showToast("Selecciona un pago para enviar el recordatorio");
+      return false;
     }
-    showToast(`Recordatorio enviado a ${name}`);
+    try {
+      await paymentService.sendReminder(paymentOrName.id, { channel: "sms" });
+      showToast(`Recordatorio enviado a ${name}`);
+      return true;
+    } catch (err) {
+      showError(err, "No se pudo enviar el recordatorio");
+      return false;
+    }
   };
 
   // ── Documents ─────────────────────────────────────────────────────────────
@@ -383,12 +633,14 @@ export function AppProvider({ children }) {
       await queryClient.invalidateQueries({ queryKey: ["documents-entity"] });
       await queryClient.invalidateQueries({ queryKey: ["document-folders"] });
       showToast("Documento subido");
+      setDocumentDraft(null);
+      closeModal("documentModal");
+      return true;
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al subir el documento"));
+      showError(err, "Error al subir el documento");
       console.error("Upload error:", err?.response?.data);
+      return false;
     }
-    setDocumentDraft(null);
-    closeModal("documentModal");
   };
 
   const deleteDocument = async (id) => {
@@ -403,7 +655,7 @@ export function AppProvider({ children }) {
       }
       showToast("Documento eliminado");
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al eliminar el documento"));
+      showError(err, "Error al eliminar el documento");
     }
   };
 
@@ -423,7 +675,7 @@ export function AppProvider({ children }) {
       document.body.removeChild(a);
       window.setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al descargar el documento"));
+      showError(err, "Error al descargar el documento");
     }
   };
 
@@ -448,10 +700,14 @@ export function AppProvider({ children }) {
   const saveFrac = async ({ name, sections, mapUrl }) => {
     try {
       const inmueble = await inmuebleService.create({ name: name || "Fraccionamiento" });
+      let mapUploadError = null;
       if (mapUrl) {
-        const blob = await fetch(mapUrl).then((r) => r.blob());
-        const file = new File([blob], "map.png", { type: blob.type || "image/png" });
-        await inmuebleService.uploadMap(inmueble.id, file);
+        try {
+          const file = await mapFileFromUrl(mapUrl);
+          await inmuebleService.uploadMap(inmueble.id, file);
+        } catch (error) {
+          mapUploadError = error;
+        }
       }
 
       const draftLots = sections.flatMap((section) =>
@@ -491,23 +747,44 @@ export function AppProvider({ children }) {
 
       await queryClient.invalidateQueries({ queryKey: ["inmuebles"] });
       setSelectedFracId(String(inmueble.id));
-      setDraftProject(initialDraftProject);
+      setDraftProject(createEmptyDraftProject());
       navigate("/fraccionamientos");
-      showToast(`Fraccionamiento "${name || "Fraccionamiento"}" creado${draftLots.length > 0 ? ` con ${draftLots.length} lote${draftLots.length !== 1 ? "s" : ""}` : ""}`);
+      if (mapUploadError) {
+        showError(mapUploadError, "No se pudo subir el plano");
+      } else {
+        showToast(`Fraccionamiento "${name || "Fraccionamiento"}" creado${draftLots.length > 0 ? ` con ${draftLots.length} lote${draftLots.length !== 1 ? "s" : ""}` : ""}`);
+      }
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al crear el fraccionamiento"));
+      showError(err, "Error al crear el fraccionamiento");
     }
   };
 
-  const saveEditedFrac = async ({ sections, _editingFracId }) => {
+  const saveEditedFrac = async ({ name, sections, mapUrl, _editingFracId }) => {
     if (!_editingFracId) return;
     try {
+      await inmuebleService.update(_editingFracId, {
+        name: name?.trim() || "Fraccionamiento",
+      });
+      let mapUpdated = false;
+      let mapUploadError = null;
+      if (mapUrl && (mapUrl.startsWith("data:") || mapUrl.startsWith("blob:"))) {
+        try {
+          const file = await mapFileFromUrl(mapUrl);
+          await inmuebleService.uploadMap(_editingFracId, file);
+          mapUpdated = true;
+        } catch (error) {
+          mapUploadError = error;
+        }
+      }
+
       const patches = sections.flatMap((section) =>
         section.lots
           .filter((lot) => lot._backendId)
           .map((lot) => {
             const orig = lot._orig || {};
             const body = {};
+            if (lot.status && lot.status !== (orig.status || "available")) body.status = lot.status;
+            if (lot.code != null && String(lot.code) !== String(orig.code ?? "")) body.code = lot.code;
             if (String(lot.area ?? "")            !== String(orig.area ?? "")            && lot.area          != null && lot.area          !== "") body.area_m2          = Number(lot.area);
             if (String(lot.frente ?? "")           !== String(orig.frente ?? "")          && lot.frente        != null && lot.frente        !== "") body.frente_ml        = Number(lot.frente);
             if (String(lot.fondo ?? "")            !== String(orig.fondo ?? "")           && lot.fondo         != null && lot.fondo         !== "") body.fondo_ml         = Number(lot.fondo);
@@ -521,15 +798,52 @@ export function AppProvider({ children }) {
           .filter(Boolean)
       );
 
+      const newLots = sections.flatMap((section) =>
+        section.lots
+          .filter((lot) => !lot._backendId)
+          .map((lot) => ({
+            _draftStatus: lot.status || "available",
+            payload: {
+              inmueble_id: _editingFracId,
+              code: lot.code,
+              area_m2: lot.area !== "" && lot.area != null ? Number(lot.area) : null,
+              frente_ml: lot.frente !== "" && lot.frente != null ? Number(lot.frente) : null,
+              fondo_ml: lot.fondo !== "" && lot.fondo != null ? Number(lot.fondo) : null,
+              price_contado: lot.price !== "" && lot.price != null ? Number(lot.price) : null,
+              price_financiado: lot.priceFinanciado !== "" && lot.priceFinanciado != null ? Number(lot.priceFinanciado) : null,
+              services: lot.servicios
+                ? Object.fromEntries(Object.entries(lot.servicios).filter(([, value]) => value))
+                : {},
+            },
+          }))
+      );
+
       await Promise.all(patches.map(({ id, body }) => lotService.update(id, body)));
+      if (newLots.length > 0) {
+        const result = await lotService.bulkCreate({
+          inmueble_id: _editingFracId,
+          lots: newLots.map(({ payload }) => payload),
+        });
+        await Promise.all(
+          (result.lot_ids || [])
+            .map((id, index) => ({ id, status: newLots[index]?._draftStatus }))
+            .filter(({ status }) => status === "reserved")
+            .map(({ id, status }) => lotService.update(id, { status }))
+        );
+      }
       await queryClient.invalidateQueries({ queryKey: ["inmuebles"] });
       await queryClient.invalidateQueries({ queryKey: ["lots"] });
       setSelectedFracId(String(_editingFracId));
-      setDraftProject(initialDraftProject);
+      setDraftProject(createEmptyDraftProject());
       navigate("/fraccionamientos");
-      showToast(patches.length === 0 ? "Sin cambios que guardar" : `${patches.length} lote${patches.length !== 1 ? "s" : ""} actualizado${patches.length !== 1 ? "s" : ""}`);
+      const lotChanges = patches.length + newLots.length;
+      if (mapUploadError) {
+        showError(mapUploadError, "No se pudo actualizar el plano");
+      } else {
+        showToast(`Fraccionamiento actualizado${lotChanges ? ` · ${lotChanges} lote${lotChanges !== 1 ? "s" : ""}` : ""}${mapUpdated ? " · plano actualizado" : ""}`);
+      }
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al guardar los cambios"));
+      showError(err, "Error al guardar los cambios");
     }
   };
 
@@ -539,12 +853,12 @@ export function AppProvider({ children }) {
       await queryClient.invalidateQueries({ queryKey: ["inmuebles"] });
       showToast("Fraccionamiento eliminado");
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al eliminar el fraccionamiento"));
+      showError(err, "Error al eliminar el fraccionamiento");
     }
   };
 
   const startNewProject = () => {
-    setDraftProject(initialDraftProject);
+    setDraftProject(createEmptyDraftProject());
     navigate("/lotes");
   };
 
@@ -554,7 +868,7 @@ export function AppProvider({ children }) {
       await notificationService.markAllRead();
       refetchNotifications();
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al marcar notificaciones"));
+      showError(err, "Error al marcar notificaciones");
     }
   };
 
@@ -600,11 +914,18 @@ export function AppProvider({ children }) {
   // ── Context value ─────────────────────────────────────────────────────────
   const value = {
     currentUser,
+    authHydrating,
     clients,
     fracs,
     contracts,
     payments,
     documents,
+    // Flags de carga (primer fetch) para mostrar skeletons en las páginas.
+    clientsLoading,
+    fracsLoading,
+    contractsLoading,
+    paymentsLoading,
+    documentsLoading,
     draftProject,
     ui,
     toast,
@@ -631,11 +952,14 @@ export function AppProvider({ children }) {
     setSelectedFracId,
     notificationCount,
     markAllNotificationsRead,
+    calendarAlertCount,
+    clearCalendarAlerts,
     openModal,
     closeModal,
     toggleSidebar,
     closeSidebar,
     showToast,
+    showError,
     canAccessApp: (appKey) => canAccessApp(currentUser, appKey),
     canUseFeature: (feature) => canUseFeature(currentUser, feature),
     login,
@@ -643,6 +967,7 @@ export function AppProvider({ children }) {
     verifyEmail,
     resendVerification,
     forgotPassword,
+    resetPassword,
     logout,
     saveClient,
     deleteClient,
@@ -652,7 +977,6 @@ export function AppProvider({ children }) {
     resetContractDraft,
     quickPay,
     savePayment,
-    deletePayment,
     exportAppData,
     sendReminder,
     saveDocument,

@@ -1,29 +1,34 @@
-import { Suspense, lazy } from "react";
+import { Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import AppShell from "@/layouts/AppShell";
 import { useAppContext } from "@/context/AppContext";
 import { getDeniedMessage } from "@/services/permissions";
+import SupportWidget from "@/components/support/SupportWidget";
+import { lazyWithRetry } from "@/routes/lazyWithRetry";
 
-const EcosystemHub = lazy(() => import("@/pages/Ecosystem"));
-const EcosystemClientes = lazy(() => import("@/pages/Ecosystem/Clientes"));
-const EcosystemVault = lazy(() => import("@/pages/Ecosystem/Vault"));
-const EcosystemDia = lazy(() => import("@/pages/Ecosystem/Dia"));
-const EcosystemFinanzas = lazy(() => import("@/pages/Ecosystem/Finanzas"));
-const EcosystemAgenda = lazy(() => import("@/pages/Ecosystem/Agenda"));
-const EcosystemEquipo = lazy(() => import("@/pages/Ecosystem/Equipo"));
-const DashboardPage = lazy(() => import("@/pages/Dashboard"));
-const LotsPage = lazy(() => import("@/pages/Lots"));
-const FracsPage = lazy(() => import("@/pages/Fracs"));
-const ClientsPage = lazy(() => import("@/pages/Clients"));
-const SalesPage = lazy(() => import("@/pages/Sales"));
-const DocumentsPage = lazy(() => import("@/pages/Documents"));
-const PaymentsPage = lazy(() => import("@/pages/Payments"));
-const CalculatorPage = lazy(() => import("@/pages/Calculator"));
-const ProfilePage = lazy(() => import("@/pages/Profile"));
-const SettingsPage = lazy(() => import("@/pages/Settings"));
-const PaymentsPreview = lazy(() => import("@/pages/PaymentsPreview"));
-const ReportsPage = lazy(() => import("@/pages/Reports"));
-const AccessDenied = lazy(() => import("@/pages/AccessDenied"));
+const EcosystemHub = lazyWithRetry(() => import("@/pages/Ecosystem"));
+const EcosystemClientes = lazyWithRetry(() => import("@/pages/Ecosystem/Clientes"));
+const EcosystemVault = lazyWithRetry(() => import("@/pages/Ecosystem/Vault"));
+const EcosystemDia = lazyWithRetry(() => import("@/pages/Ecosystem/Dia"));
+const EcosystemFinanzas = lazyWithRetry(() => import("@/pages/Ecosystem/Finanzas"));
+const EcosystemAgenda = lazyWithRetry(() => import("@/pages/Ecosystem/Agenda"));
+const EcosystemEquipo = lazyWithRetry(() => import("@/pages/Ecosystem/Equipo"));
+const EcosystemFormularios = lazyWithRetry(() => import("@/pages/Ecosystem/Formularios"));
+const EcosystemFormEditor = lazyWithRetry(() => import("@/pages/Ecosystem/Formularios/Editor"));
+const EcosystemFormRespuestas = lazyWithRetry(() => import("@/pages/Ecosystem/Formularios/Respuestas"));
+const DashboardPage = lazyWithRetry(() => import("@/pages/Dashboard"));
+const LotsPage = lazyWithRetry(() => import("@/pages/Lots"));
+const FracsPage = lazyWithRetry(() => import("@/pages/Fracs"));
+const ClientsPage = lazyWithRetry(() => import("@/pages/Clients"));
+const SalesPage = lazyWithRetry(() => import("@/pages/Sales"));
+const DocumentsPage = lazyWithRetry(() => import("@/pages/Documents"));
+const PaymentsPage = lazyWithRetry(() => import("@/pages/Payments"));
+const CalculatorPage = lazyWithRetry(() => import("@/pages/Calculator"));
+const ProfilePage = lazyWithRetry(() => import("@/pages/Profile"));
+const SettingsPage = lazyWithRetry(() => import("@/pages/Settings"));
+const ReportsPage = lazyWithRetry(() => import("@/pages/Reports"));
+const PricingPage = lazyWithRetry(() => import("@/pages/Pricing"));
+const AccessDenied = lazyWithRetry(() => import("@/pages/AccessDenied"));
 
 function PageLoader() {
   return (
@@ -36,7 +41,12 @@ function PageLoader() {
 }
 
 function RequireFeature({ feature, app, children }) {
-  const { canAccessApp, canUseFeature } = useAppContext();
+  const { canAccessApp, canUseFeature, authHydrating } = useAppContext();
+
+  // Aún revalidando la sesión contra /auth/me: no decidir con datos posiblemente
+  // viejos (evita mandar a "sin acceso" a un admin legítimo con sesión cacheada).
+  if (authHydrating) return <PageLoader />;
+
   const allowed = app ? canAccessApp(app) : canUseFeature(feature);
 
   if (!allowed) return <Navigate to="/sin-acceso" replace state={{ message: getDeniedMessage(feature || `${app}.read`) }} />;
@@ -45,36 +55,44 @@ function RequireFeature({ feature, app, children }) {
 
 function AppRouter() {
   return (
-    <Suspense fallback={<PageLoader />}>
-      <Routes>
-        <Route index element={<Navigate to="/ecosistema" replace />} />
-        <Route path="/sin-acceso" element={<AccessDenied />} />
-        <Route path="/ecosistema" element={<EcosystemHub />} />
-        <Route path="/ecosistema/clientes" element={<RequireFeature feature="core.clients"><EcosystemClientes /></RequireFeature>} />
-        <Route path="/ecosistema/documentos" element={<RequireFeature feature="core.vault"><EcosystemVault /></RequireFeature>} />
-        <Route path="/ecosistema/mi-dia" element={<EcosystemDia />} />
-        <Route path="/ecosistema/finanzas" element={<RequireFeature feature="core.finance"><EcosystemFinanzas /></RequireFeature>} />
-        <Route path="/ecosistema/agenda" element={<EcosystemAgenda />} />
-        <Route path="/ecosistema/equipo" element={<RequireFeature feature="core.team"><EcosystemEquipo /></RequireFeature>} />
-        <Route element={<AppShell />}>
-          <Route path="/dashboard" element={<RequireFeature app="lands"><DashboardPage /></RequireFeature>} />
-          <Route path="/lotes" element={<RequireFeature app="lands"><LotsPage /></RequireFeature>} />
-          <Route path="/fraccionamientos" element={<RequireFeature app="lands"><FracsPage /></RequireFeature>} />
-          <Route path="/clientes" element={<RequireFeature feature="lands.clients"><ClientsPage /></RequireFeature>} />
-          <Route path="/ventas" element={<RequireFeature feature="lands.sales"><SalesPage /></RequireFeature>} />
-          <Route path="/contratos" element={<RequireFeature feature="lands.sales"><SalesPage /></RequireFeature>} />
-          <Route path="/documentos" element={<RequireFeature feature="lands.documents"><DocumentsPage /></RequireFeature>} />
-          <Route path="/alertas" element={<Navigate to="/pagos" replace />} />
-          <Route path="/pagos" element={<RequireFeature feature="lands.payments"><PaymentsPage /></RequireFeature>} />
-          <Route path="/pagos-preview" element={<RequireFeature feature="lands.payments"><PaymentsPreview /></RequireFeature>} />
-          <Route path="/reportes" element={<RequireFeature feature="lands.reports"><ReportsPage /></RequireFeature>} />
-          <Route path="/calculadora" element={<RequireFeature app="lands"><CalculatorPage /></RequireFeature>} />
-          <Route path="/perfil" element={<ProfilePage />} />
-          <Route path="/configuracion" element={<RequireFeature feature="core.config"><SettingsPage /></RequireFeature>} />
-        </Route>
-        <Route path="*" element={<Navigate to="/ecosistema" replace />} />
-      </Routes>
-    </Suspense>
+    <>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route index element={<Navigate to="/ecosistema" replace />} />
+          <Route path="/sin-acceso" element={<AccessDenied />} />
+          {/* Página de planes a pantalla completa (fuera del AppShell, sin sidebar) */}
+          <Route path="/planes" element={<RequireFeature feature="core.config"><PricingPage /></RequireFeature>} />
+          <Route path="/ecosistema" element={<EcosystemHub />} />
+          <Route path="/ecosistema/clientes" element={<RequireFeature feature="core.clients"><EcosystemClientes /></RequireFeature>} />
+          <Route path="/ecosistema/documentos" element={<RequireFeature feature="core.vault"><EcosystemVault /></RequireFeature>} />
+          <Route path="/ecosistema/mi-dia" element={<EcosystemDia />} />
+          <Route path="/ecosistema/finanzas" element={<RequireFeature feature="core.finance"><EcosystemFinanzas /></RequireFeature>} />
+          <Route path="/ecosistema/agenda" element={<EcosystemAgenda />} />
+          <Route path="/ecosistema/equipo" element={<RequireFeature feature="core.team"><EcosystemEquipo /></RequireFeature>} />
+          <Route path="/ecosistema/formularios" element={<RequireFeature feature="core.forms"><EcosystemFormularios /></RequireFeature>} />
+          <Route path="/ecosistema/formularios/nuevo" element={<RequireFeature feature="core.forms"><EcosystemFormEditor /></RequireFeature>} />
+          <Route path="/ecosistema/formularios/:id/editar" element={<RequireFeature feature="core.forms"><EcosystemFormEditor /></RequireFeature>} />
+          <Route path="/ecosistema/formularios/:id/respuestas" element={<RequireFeature feature="core.forms"><EcosystemFormRespuestas /></RequireFeature>} />
+          <Route element={<AppShell />}>
+            <Route path="/dashboard" element={<RequireFeature app="lands"><DashboardPage /></RequireFeature>} />
+            <Route path="/lotes" element={<RequireFeature app="lands"><LotsPage /></RequireFeature>} />
+            <Route path="/fraccionamientos" element={<RequireFeature app="lands"><FracsPage /></RequireFeature>} />
+            <Route path="/clientes" element={<RequireFeature feature="lands.clients"><ClientsPage /></RequireFeature>} />
+            <Route path="/ventas" element={<RequireFeature feature="lands.sales"><SalesPage /></RequireFeature>} />
+            <Route path="/contratos" element={<RequireFeature feature="lands.sales"><SalesPage /></RequireFeature>} />
+            <Route path="/documentos" element={<RequireFeature feature="lands.documents"><DocumentsPage /></RequireFeature>} />
+            <Route path="/alertas" element={<Navigate to="/pagos" replace />} />
+            <Route path="/pagos" element={<RequireFeature feature="lands.payments"><PaymentsPage /></RequireFeature>} />
+            <Route path="/reportes" element={<RequireFeature feature="lands.reports"><ReportsPage /></RequireFeature>} />
+            <Route path="/calculadora" element={<RequireFeature app="lands"><CalculatorPage /></RequireFeature>} />
+            <Route path="/perfil" element={<ProfilePage />} />
+            <Route path="/configuracion" element={<RequireFeature feature="core.config"><SettingsPage /></RequireFeature>} />
+          </Route>
+          <Route path="*" element={<Navigate to="/ecosistema" replace />} />
+        </Routes>
+      </Suspense>
+      <SupportWidget />
+    </>
   );
 }
 

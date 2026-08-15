@@ -3,23 +3,33 @@ export default {
   content: ["./index.html", "./src/**/*.{js,jsx}"],
   theme: {
     extend: {
+      // Fuente ÚNICA de verdad = variables CSS en src/styles/index.css (:root).
+      // Tailwind solo las REFERENCIA; así un color se define en un solo lugar y
+      // queda listo para theming (dark mode = redefinir los tokens en :root).
       colors: {
-        forest: "#1E3D2B",
-        moss: "#355E3B",
-        leaf: "#6FAF6B",
-        light: "#A7CBA1",
-        cream: "#FBFAF6",
-        sand: "#F1EEE6",
-        line: "#DCDAD2"
+        forest: "var(--deep)",
+        moss: "var(--mid)",
+        leaf: "var(--leaf)",
+        light: "var(--light)",
+        cream: "var(--cream)",
+        sand: "var(--sf2)",
+        line: "var(--bd)",
+        surface: "var(--sf)",
+        muted: "var(--muted)",
+        danger: "var(--danger)",
+        ink: "var(--tx)",
+        ink2: "var(--tx2)"
       },
       fontFamily: {
-        display: ["'Playfair Display'", "serif"],
-        sans: ["Outfit", "Inter", "sans-serif"],
-        mono: ["'JetBrains Mono'", "monospace"]
+        // 2 fuentes homologadas (mismos tokens que el CSS). `mono` ya no es
+        // monoespaciada: apunta al body (Inter) para no reintroducir una 3ª fuente.
+        display: ["var(--font-title)"],
+        sans: ["var(--font-body)"],
+        mono: ["var(--font-body)"]
       },
       boxShadow: {
-        soft: "0 1px 3px rgba(30,61,43,.06), 0 4px 12px rgba(30,61,43,.07)",
-        panel: "0 18px 40px rgba(30,61,43,.12), 0 20px 40px rgba(30,61,43,.11)"
+        soft: "var(--sh)",
+        panel: "var(--sh2)"
       }
     }
   },

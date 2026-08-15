@@ -1,0 +1,13 @@
+# Cache headers para Cloudflare Pages.
+# Objetivo: que los usuarios SIEMPRE reciban la versión más reciente tras un deploy,
+# sin tener que limpiar caché ni abrir incógnito.
+
+# index.html y rutas SPA: el navegador revalida siempre (nunca sirve un HTML viejo
+# que apunte a un bundle que ya no existe).
+/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Assets con hash en el nombre (JS/CSS): el nombre cambia cuando cambia el contenido,
+# así que se pueden cachear "para siempre" sin riesgo de quedar viejos.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

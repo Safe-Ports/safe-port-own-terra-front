@@ -4,3 +4,8 @@ dist
 ownterra-native/
 .env.local
 .env
+coverage
+test-results
+playwright-report
+# Token de Cloudflare para purga de caché en deploys (no secreto crítico, pero fuera de git)
+.cf-purge-token

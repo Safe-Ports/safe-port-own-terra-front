@@ -16,6 +16,7 @@ import {
   HiWallet,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
+import useEscapeKey from "@/hooks/useEscapeKey";
 
 const items = [
   { label: "Ecosistema", to: "/ecosistema", icon: HiRectangleGroup, section: "General" },
@@ -45,6 +46,7 @@ function Logo() {
 
 function Sidebar() {
   const { ui, closeSidebar, fracs, clients, payments, documents, notificationCount, logout, currentUser, canAccessApp, canUseFeature, resetFracsView, setDraftProject } = useAppContext();
+  useEscapeKey(closeSidebar, ui.sidebarOpen);
 
   const handleLogout = () => {
     if (window.confirm("¿Cerrar sesión?")) logout();
@@ -117,7 +119,7 @@ function Sidebar() {
           </NavLink>
           <button onClick={handleLogout} className="sb-foot-item" style={{
             border: "none", background: "transparent", width: "100%", textAlign: "left",
-            fontFamily: "inherit", cursor: "pointer", marginTop: 4,
+            fontFamily: "var(--font-body)", cursor: "pointer", marginTop: 4,
           }}>
             <span className="sb-foot-ico"><HiArrowLeftOnRectangle /></span>
             <span>Cerrar sesión</span>

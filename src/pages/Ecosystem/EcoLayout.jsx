@@ -1,31 +1,32 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { HiBars3 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 import EcoSprite from "./EcoSprite";
 import "@/styles/ecosystem.css";
-import Avatar from "@/components/Avatar";
+import CoreTopbarActions from "@/components/layout/CoreTopbarActions";
+import Toast from "@/components/shared/Toast";
+import SubscriptionBanner from "@/components/shared/SubscriptionBanner";
+import useEscapeKey from "@/hooks/useEscapeKey";
 
 /* Layout compartido del hub Aurora: sidebar + topbar + área de scroll.
    `active` marca el item activo del menú. */
-function EcoLayout({ active = "panel", title, subtitle, children }) {
+function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
   const navigate = useNavigate();
-  const { currentUser, logout, notificationCount, canAccessApp, canUseFeature, showToast } = useAppContext();
-
-  const initials = (currentUser?.name || "Usuario")
-    .split(" ")
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+  const { currentUser, canUseFeature, showToast } = useAppContext();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  useEscapeKey(() => setSidebarOpen(false), sidebarOpen);
 
   const today = new Date().toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
-  const handleLogout = () => {
-    if (window.confirm("¿Cerrar sesión?")) logout();
+  const goTo = (path) => {
+    setSidebarOpen(false);
+    navigate(path);
   };
 
   const navItem = (key, label, icon, onClick, disabled) => (
     <button
       className={`nav-item ${active === key ? "active" : ""}`}
-      onClick={disabled ? () => showToast("Tu usuario no tiene acceso a esta sección") : onClick}
+      onClick={disabled ? () => showToast("Tu usuario no tiene acceso a esta sección", "warning") : onClick}
       style={disabled ? { opacity: 0.5, cursor: "default" } : undefined}
       title={disabled ? "Sin acceso para tu rol actual" : undefined}
     >
@@ -38,7 +39,13 @@ function EcoLayout({ active = "panel", title, subtitle, children }) {
       <EcoSprite />
 
       {/* SIDEBAR */}
-      <aside className="sidebar">
+      <button
+        type="button"
+        className={`eco-sidebar-backdrop ${sidebarOpen ? "show" : ""}`}
+        onClick={() => setSidebarOpen(false)}
+        aria-label="Cerrar menú"
+      />
+      <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <div className="sidebar-inner">
           <div className="brand">
             <div className="brand-logo"><img src="/ownterra ecosistem.png" alt="OwnTerra Ecosistem" /></div>
@@ -46,35 +53,21 @@ function EcoLayout({ active = "panel", title, subtitle, children }) {
 
           <div className="nav-group">
             <div className="nav-label">Núcleo central</div>
-            {navItem("miday", "Mi Día", "eco-n-sun", () => navigate("/ecosistema/mi-dia"))}
-            {navItem("agenda", "Agenda", "eco-n-calendar", () => navigate("/ecosistema/agenda"))}
-            {navItem("panel", "Panel General", "eco-n-grid", () => navigate("/ecosistema"))}
-            {navItem("vault", "OwnTerra Vault", "eco-n-vault", () => navigate("/ecosistema/documentos"), !canUseFeature("core.vault"))}
-            {navItem("users", "Clientes del core", "eco-n-users", () => navigate("/ecosistema/clientes"), !canUseFeature("core.clients"))}
-            {navItem("team", "Equipo", "eco-n-shield", () => navigate("/ecosistema/equipo"), !canUseFeature("core.team"))}
-            {navItem("fin", "Estados Financieros", "eco-n-chart", () => navigate("/ecosistema/finanzas"), !canUseFeature("core.finance"))}
+            {navItem("miday", "Mi Día", "eco-n-sun", () => goTo("/ecosistema/mi-dia"))}
+            {navItem("agenda", "Agenda", "eco-n-calendar", () => goTo("/ecosistema/agenda"))}
+            {navItem("panel", "Panel General", "eco-n-grid", () => goTo("/ecosistema"))}
+            {navItem("vault", "OwnTerra Vault", "eco-n-vault", () => goTo("/ecosistema/documentos"), !canUseFeature("core.vault"))}
+            {navItem("formularios", "Formularios", "eco-n-forms", () => goTo("/ecosistema/formularios"))}
+            {navItem("users", "Clientes del core", "eco-n-users", () => goTo("/ecosistema/clientes"), !canUseFeature("core.clients"))}
+            {navItem("team", "Equipo", "eco-n-shield", () => goTo("/ecosistema/equipo"), !canUseFeature("core.team"))}
+            {navItem("fin", "Estados Financieros", "eco-n-chart", () => goTo("/ecosistema/finanzas"), !canUseFeature("core.finance"))}
           </div>
 
-          <div className="nav-group">
-            <div className="nav-label">Aplicaciones</div>
-            <button
-              className="nav-item"
-              onClick={() => canAccessApp("lands") ? navigate("/dashboard") : showToast("Tu usuario no tiene acceso a OwnTerra Lands")}
-              style={!canAccessApp("lands") ? { opacity: 0.5, cursor: "default" } : undefined}
-            >
-              <span className="nav-mini ic-lands"><svg width="14" height="14"><use href="#eco-g-lands" /></svg></span> OwnTerra Lands
-            </button>
-            <button className="nav-item" style={{ opacity: 0.5, cursor: "not-allowed", pointerEvents: "none" }} tabIndex={-1} aria-disabled="true">
-              <span className="nav-mini ic-neighb"><svg width="14" height="14"><use href="#eco-g-neighb" /></svg></span> Neighborhoods
-            </button>
-            <button className="nav-item" style={{ opacity: 0.5, cursor: "not-allowed", pointerEvents: "none" }} tabIndex={-1} aria-disabled="true">
-              <span className="nav-mini ic-homes"><svg width="14" height="14"><use href="#eco-g-homes" /></svg></span> OwnTerra Homes
-            </button>
-          </div>
+          {/* Las apps (Lands / Properties / Homes) se acceden desde el Panel General. */}
 
           <div className="nav-group">
             <div className="nav-label">Sistema</div>
-            {navItem("config", "Configuración", "eco-n-gear", () => {}, true)}
+            {navItem("config", "Configuración", "eco-n-gear", () => navigate("/configuracion"), !canUseFeature("core.config"))}
           </div>
 
           <div style={{ marginTop: "auto" }} />
@@ -93,27 +86,27 @@ function EcoLayout({ active = "panel", title, subtitle, children }) {
       {/* MAIN */}
       <div className="main">
         <div className="topbar">
-          <div>
-            <div className="topbar-title">{title}</div>
-            <div className="topbar-sub">{subtitle || `Bienvenido · Hoy, ${today}`}</div>
-          </div>
-          <div className="topbar-right">
-            <button className="tb-btn" onClick={() => navigate("/ecosistema/mi-dia")}>
-              Mi Día
-              {notificationCount > 0 && (
-                <span style={{ background: "var(--leaf)", color: "var(--deep)", borderRadius: 10, fontSize: 10, padding: "1px 7px", fontWeight: 600 }}>
-                  {notificationCount > 99 ? "99+" : notificationCount}
-                </span>
-              )}
+          <div className="eco-topbar-heading">
+            <button
+              type="button"
+              className="eco-menu-btn"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Abrir menú"
+            >
+              <HiBars3 aria-hidden="true" />
             </button>
-            <button className="tb-btn" onClick={() => navigate("/ecosistema/agenda")}>Calendario</button>
-            <Avatar name={currentUser?.name || "Usuario"} size={36} />
-            <button className="tb-btn eco-logout" onClick={handleLogout}>Cerrar sesión</button>
+            <div>
+              <div className="topbar-title">{title}</div>
+              <div className="topbar-sub">{subtitle || `Bienvenido · Hoy, ${today}`}</div>
+            </div>
           </div>
+          <CoreTopbarActions onGuide={onGuide} className="topbar-right" />
         </div>
 
+        <SubscriptionBanner />
         <div className="scroll-area">{children}</div>
       </div>
+      <Toast />
     </div>
   );
 }

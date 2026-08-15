@@ -1,0 +1,12 @@
+# Reglas de routing para Cloudflare Pages. El orden importa (primer match gana);
+# los archivos estáticos que SÍ existen se sirven antes que estas reglas.
+
+# Un asset con hash que NO existe (p.ej. un chunk viejo pedido por una pestaña
+# vieja tras un deploy) devuelve 404 — NO el index.html. Así Cloudflare nunca
+# cachea una respuesta HTML "immutable" en lugar del JS (que era lo que envenenaba
+# la caché y rompía el sitio). El front, al fallar el import, se recarga solo
+# (handler vite:preloadError) y toma la versión nueva.
+/assets/*  /index.html  404
+
+# SPA: cualquier otra ruta sirve el index.html (React Router se encarga del resto).
+/*  /index.html  200

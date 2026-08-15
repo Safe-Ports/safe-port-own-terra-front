@@ -5,12 +5,63 @@ import { useAppContext } from "@/context/AppContext";
 import { dashboardService } from "@/services/dashboardService";
 import { appointmentService } from "@/services/appointmentService";
 import { paymentService } from "@/services/paymentService";
-import { notificationService } from "@/services/notificationService";
+import { taskService } from "@/services/taskService";
 import EcoLayout from "./EcoLayout";
+import TasksBoard from "./TasksBoard";
+import OnboardingChecklist from "@/components/shared/OnboardingChecklist";
+import GuideModal from "@/components/shared/GuideModal";
+
+const TOUR_STEPS = [
+  {
+    title: "Bienvenido al Ecosistema OwnTerra",
+    text: "Este es tu hub central. Desde aquí controlas todas las aplicaciones, tu agenda, documentos y finanzas en un solo lugar. El menú lateral izquierdo es tu punto de partida para navegar.",
+  },
+  {
+    title: "☀️ Mi Día",
+    text: "La vista que ves ahora. Muestra tu progreso diario: citas agendadas, tareas prioritarias y pagos vencidos. Es tu resumen ejecutivo cada mañana.",
+  },
+  {
+    title: "📅 Agenda",
+    text: "Administra visitas, llamadas y firmas de contratos. Puedes crear citas, asignarles clientes y verlas en vista de semana o lista. Está sincronizada con todas las apps del ecosistema.",
+  },
+  {
+    title: "⚡ Acciones rápidas",
+    text: "Los botones 'Visita', 'Cobro' y 'Documento' en la barra de bienvenida te llevan directamente al módulo correspondiente sin buscar en el menú.",
+  },
+  {
+    title: "📊 Panel General",
+    text: "Vista de métricas globales: ingresos, actividad reciente y estadísticas del negocio. Ideal para revisiones semanales o presentaciones de resultados.",
+  },
+  {
+    title: "🔒 OwnTerra Vault",
+    text: "Bóveda centralizada de documentos. Organiza contratos, identificaciones, escrituras y planos en carpetas jerárquicas. Todos los documentos de tus clientes viven aquí.",
+  },
+  {
+    title: "👥 Clientes del core",
+    text: "El directorio maestro de identidades. Cada cliente tiene un perfil único que se comparte entre todas las apps. Aquí puedes vincularlos a Lands, Properties o Homes.",
+  },
+  {
+    title: "🛡️ Equipo",
+    text: "Gestiona los usuarios de tu organización: roles, permisos y acceso por aplicación. Solo los administradores pueden modificar esta sección.",
+  },
+  {
+    title: "💹 Estados Financieros",
+    text: "Resumen de ingresos, gastos y flujo de caja de tu operación. Registra egresos y consulta el estado económico en tiempo real.",
+  },
+  {
+    title: "🏡 OwnTerra Lands",
+    text: "La app principal de gestión inmobiliaria: fraccionamientos, lotes, contratos de compraventa y cobranza. Accede desde el menú lateral bajo 'Aplicaciones'.",
+  },
+  {
+    title: "🔔 Alertas y pendientes",
+    text: "Al final de Mi Día ves todas tus notificaciones agrupadas por fecha. Puedes marcarlas como leídas individualmente o todas de una vez con el enlace 'Marcar todas como leídas'.",
+  },
+];
+
 
 const APP_META = {
   lands: { name: "Lands", color: "#6FAF6B", live: true },
-  neighb: { name: "Neighborhoods", color: "#355E3B", live: false },
+  neighb: { name: "Properties", color: "#355E3B", live: false },
   homes: { name: "Homes", color: "#A7CBA1", live: false },
 };
 
@@ -36,11 +87,16 @@ function toTime(iso) {
   return new Date(iso).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
+function toDateLabel(iso) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "short" });
+}
+
 function EcosystemDia() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { currentUser } = useAppContext();
-  const [ntab, setNtab] = useState("Todas");
+  const [showTour, setShowTour] = useState(false);
 
   const { data: midia } = useQuery({
     queryKey: ["dashboard-midia"],
@@ -58,16 +114,9 @@ function EcosystemDia() {
   });
   const overdueItems = overdueData?.items ?? [];
 
-  const { data: notifsData } = useQuery({
-    queryKey: ["notifications"],
-    queryFn: () => notificationService.list({ limit: 20 }),
-  });
-  const notifs = notifsData?.items ?? [];
-
-  const markReadMutation = useMutation({
-    mutationFn: () => notificationService.markAllRead(),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
-  });
+  // Tareas reales del tablero (no las derivadas de midia) para el KPI.
+  const { data: tasksData = [] } = useQuery({ queryKey: ["tasks"], queryFn: taskService.list });
+  const openTasks = tasksData.filter((t) => t.status !== "done").length;
 
   const firstName = midia?.user_first_name || (currentUser?.name || "").split(" ")[0] || "Bienvenido";
   const greeting = midia?.greeting || (() => {
@@ -83,36 +132,12 @@ function EcosystemDia() {
   });
 
   const totalAppts = todayAppts.length;
-  const done = todayAppts.filter((a) => a.status === "confirmed").length;
+  const done = todayAppts.filter((a) => a.status === "completed").length;
   const pct = totalAppts > 0 ? Math.round((done / totalAppts) * 100) : 0;
+  const agendaAppts = todayAppts.length ? todayAppts : rawAppts.slice(0, 4);
+  const showingUpcoming = todayAppts.length === 0 && agendaAppts.length > 0;
 
   const totalOverdue = overdueItems.reduce((s, o) => s + Number(o.amount || 0), 0);
-
-  const unreadCount = notifs.filter((n) => !n.is_read).length;
-  const tasksCount = midia?.tasks?.length ?? 0;
-  const pendingTotal = tasksCount + overdueItems.length + unreadCount;
-
-  // Group notifications by recency
-  const now = Date.now();
-  const todayNotifs = notifs.filter((n) => now - new Date(n.created_at).getTime() < 86400000);
-  const yesterdayNotifs = notifs.filter((n) => {
-    const d = now - new Date(n.created_at).getTime();
-    return d >= 86400000 && d < 172800000;
-  });
-  const weekNotifs = notifs.filter((n) => {
-    const d = now - new Date(n.created_at).getTime();
-    return d >= 172800000 && d < 604800000;
-  });
-
-  const NOTIF_GROUPS = [
-    { key: "hoy", label: "Hoy", items: todayNotifs },
-    { key: "ayer", label: "Ayer", items: yesterdayNotifs },
-    { key: "semana", label: "Esta semana", items: weekNotifs },
-  ].filter((g) => g.items.length > 0);
-
-  const tabs = ["Todas", "Hoy", "Ayer", "Esta semana"];
-  const tabKey = { Hoy: "hoy", Ayer: "ayer", "Esta semana": "semana" };
-  const shownGroups = ntab === "Todas" ? NOTIF_GROUPS : NOTIF_GROUPS.filter((g) => g.key === tabKey[ntab]);
 
   const motiv = done === totalAppts && totalAppts > 0
     ? "¡Completaste todas tus citas del día! 🎉 Excelente trabajo."
@@ -122,10 +147,8 @@ function EcosystemDia() {
         ? `Llevas ${done} de ${totalAppts} citas. ¡Tú puedes con el resto! 🚀`
         : "Sin citas para hoy. Buen momento para planificar. 📋";
 
-  const open = (app) => APP_META[app]?.live && navigate("/dashboard");
-
   return (
-    <EcoLayout active="miday" title="Mi Día" subtitle="Tu jornada consolidada en el ecosistema">
+    <EcoLayout active="miday" title="Mi Día" subtitle="Tu jornada consolidada en el ecosistema" onGuide={() => setShowTour(true)}>
 
       {/* HERO motivador */}
       <div className="md-hero">
@@ -162,6 +185,9 @@ function EcosystemDia() {
         </div>
       </div>
 
+      {/* Onboarding: se muestra solo si faltan pasos y no se cerró */}
+      <OnboardingChecklist />
+
       {/* KPIs */}
       <div className="md-kpis">
         <div className="md-kpi">
@@ -176,8 +202,8 @@ function EcosystemDia() {
           <span className="md-kpi-ico">📊</span>
           <div className="md-kpi-body">
             <div className="md-kpi-label">Tareas pendientes</div>
-            <div className="md-kpi-val">{midia?.tasks?.length ?? "—"}</div>
-            <div className="md-kpi-sub">Acciones prioritarias</div>
+            <div className="md-kpi-val">{openTasks}</div>
+            <div className="md-kpi-sub">Sin terminar en tu tablero</div>
           </div>
         </div>
         <div className="md-kpi danger">
@@ -190,14 +216,6 @@ function EcosystemDia() {
             <button className="md-kpi-cta" onClick={() => navigate("/pagos")}>Revisar ahora</button>
           </div>
         </div>
-        <div className="md-kpi">
-          <span className="md-kpi-ico">🔔</span>
-          <div className="md-kpi-body">
-            <div className="md-kpi-label">Alertas Mi Día</div>
-            <div className="md-kpi-val">{pendingTotal}</div>
-            <div className="md-kpi-sub">{unreadCount} sin leer · {tasksCount} tareas</div>
-          </div>
-        </div>
       </div>
 
       <div className="md-grid">
@@ -205,17 +223,22 @@ function EcosystemDia() {
         <div className="md-card">
           <div className="md-card-head">
             <div>
-              <div className="md-card-title">Agenda del día</div>
-              <div className="md-card-sub">visitas, llamadas y firmas</div>
+              <div className="md-card-title">{showingUpcoming ? "Próximas citas" : "Agenda del día"}</div>
+              <div className="md-card-sub">
+                {showingUpcoming ? "sin citas hoy · mostrando las siguientes" : "visitas, llamadas y firmas"}
+              </div>
             </div>
             <button className="sh-link" onClick={() => navigate("/ecosistema/agenda")}>Ver agenda completa →</button>
           </div>
-          {todayAppts.length ? todayAppts.map((a) => {
+          {agendaAppts.length ? agendaAppts.map((a) => {
             const appKey = a.app_key || "lands";
             const appOk = !!APP_META[appKey];
             return (
               <div key={a.id} className={`md-visit ${a.status === "confirmed" ? "is-active" : ""}`}>
-                <div className="md-time"><b>{toTime(a.scheduled_at)}</b><span>HRS</span></div>
+                <div className="md-time">
+                  <b>{toTime(a.scheduled_at)}</b>
+                  <span>{showingUpcoming ? toDateLabel(a.scheduled_at) : "HRS"}</span>
+                </div>
                 <div className="md-st">
                   <span className={`md-sdot ${a.status}`}>{a.status === "confirmed" ? "✓" : ""}</span>
                 </div>
@@ -224,9 +247,6 @@ function EcosystemDia() {
                   <div className="md-meta">{a.client_name || ""}{a.notes ? ` · ${a.notes}` : ""}</div>
                 </div>
                 {appOk && <AppTag app={appKey} />}
-                {APP_META[appKey]?.live
-                  ? <span className="md-open" onClick={() => open(appKey)}>Ver expediente →</span>
-                  : <span className="md-open" style={{ opacity: .5, cursor: "default" }}>Ver detalle →</span>}
               </div>
             );
           }) : (
@@ -244,30 +264,8 @@ function EcosystemDia() {
           </div>
         </div>
 
-        {/* TAREAS + PAGOS */}
+        {/* PAGOS (las tareas ahora viven en el tablero full-width de abajo) */}
         <div className="md-side">
-          {/* Tareas prioritarias de Mi Día */}
-          <div className="md-card">
-            <div className="md-card-head">
-              <div className="md-card-title">Tareas prioritarias</div>
-              <button className="sh-link" onClick={() => navigate("/dashboard")}>Ver dashboard →</button>
-            </div>
-            {midia?.tasks?.slice(0, 4).map((t) => (
-              <div key={t.id || t.title} className="md-row">
-                <span className="md-row-ico" style={{ background: "var(--bg2)" }}>{t.icon}</span>
-                <div className="md-row-info">
-                  <div className="md-row-name">{t.title}</div>
-                  {t.subtitle && <div className="md-row-meta">{t.subtitle}</div>}
-                </div>
-                <span className={`md-prio ${t.priority === "urgent" ? "alta" : t.priority === "warn" ? "media" : "baja"}`}>
-                  {t.priority === "urgent" ? "Urgente" : t.priority === "warn" ? "Media" : "Baja"}
-                </span>
-              </div>
-            )) || (
-              <div style={{ padding: "16px 0", color: "var(--text3)", fontSize: 13 }}>Sin tareas pendientes.</div>
-            )}
-          </div>
-
           {/* Pagos vencidos */}
           <div className="md-card">
             <div className="md-card-head">
@@ -294,46 +292,16 @@ function EcosystemDia() {
         </div>
       </div>
 
-      {/* ALERTAS Y PENDIENTES */}
-      <div className="md-card" style={{ marginBottom: 30 }}>
-        <div className="md-card-head" style={{ marginBottom: 16 }}>
-          <div>
-            <div className="md-card-title">Alertas y pendientes {pendingTotal > 0 && <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, background: "var(--danger)", color: "#fff", borderRadius: 10, padding: "1px 6px", marginLeft: 6 }}>{pendingTotal}</span>}</div>
-            <div className="md-card-sub">notificaciones, pagos y tareas que requieren atención</div>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <div className="seg">
-              {tabs.map((t) => <span key={t} className={ntab === t ? "on" : ""} onClick={() => setNtab(t)}>{t}</span>)}
-            </div>
-            <button className="sh-link" onClick={() => markReadMutation.mutate()}>Marcar todas como leídas</button>
-          </div>
-        </div>
-        <div className="md-ngrid">
-          {shownGroups.length ? shownGroups.map((g) => (
-            <div key={g.key}>
-              <div className="md-ngroup-label">{g.label}</div>
-              {g.items.map((n) => (
-                <div key={n.id} className="md-row" style={{ opacity: n.is_read ? 0.6 : 1 }}>
-                  <span className="md-row-ico" style={{ background: "var(--bg2)" }}>🔔</span>
-                  <div className="md-row-info">
-                    <div className="md-row-name" style={{ whiteSpace: "normal" }}>{n.message || n.title || "Notificación"}</div>
-                    <div className="md-row-meta">{fmtRelative(n.created_at)}</div>
-                  </div>
-                  {!n.is_read && (
-                    <button className="sh-link" style={{ fontSize: 11 }} onClick={() => notificationService.markRead(n.id).then(() => qc.invalidateQueries({ queryKey: ["notifications"] }))}>
-                      ✓
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          )) : (
-            <div style={{ padding: "16px 0", color: "var(--text3)", fontSize: 13, textAlign: "center" }}>
-              {ntab === "Todas" ? "Sin notificaciones recientes." : `Sin notificaciones de "${ntab}".`}
-            </div>
-          )}
-        </div>
-      </div>
+      <GuideModal
+        open={showTour}
+        onClose={() => setShowTour(false)}
+        title="Recorrido del Ecosistema"
+        subtitle="Un vistazo a todo lo que puedes hacer desde aquí."
+        steps={TOUR_STEPS}
+      />
+
+      {/* TABLERO DE TAREAS (personal) */}
+      <TasksBoard />
     </EcoLayout>
   );
 }

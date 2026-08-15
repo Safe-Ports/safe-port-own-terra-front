@@ -3,11 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi2";
 import * as XLSX from "xlsx";
 import { useAppContext } from "@/context/AppContext";
+import { useLandsGuide } from "@/context/LandsGuideContext";
+import useEscapeKey from "@/hooks/useEscapeKey";
 import { useProjectsQuery } from "@/hooks/queries/useAppQueries";
 import { lotService } from "@/services/lotService";
-import { getUserErrorMessage } from "@/services/errors";
-import { compactCurrency, currency } from "@/services/formatters";
+import { inmuebleService } from "@/services/inmuebleService";
+import { parseApiError } from "@/errors/parseApiError";
+import { MAP_IMAGE_ACCEPT, isSupportedMapImage, mapFileFromUrl, prepareMapImage } from "@/utils/mapImage";
 import Button from "@/components/Button";
+import GuideModal from "@/components/shared/GuideModal";
+import LotImportFormatModal from "./LotImportFormatModal";
 
 const LOT_COLORS = {
   available: { bg: "#dcfce7", border: "#86efac", text: "#15803d" },
@@ -15,7 +20,112 @@ const LOT_COLORS = {
   reserved:  { bg: "#fef3c7", border: "#fcd34d", text: "#92400e" },
 };
 const STATUS_CYCLE = { available: "sold", sold: "reserved", reserved: "available" };
-const MAP_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const LOT_TEMPLATE_GUIDE = [
+  ["GUÍA PARA CARGAR LOTES DESDE EXCEL O CSV"],
+  ["Regla", "Detalle"],
+  ["Estructura", "La primera fila contiene encabezados y cada fila siguiente representa un lote. Máximo 5,000 filas por archivo."],
+  ["Campo requerido", "ID Lote (único por fila). También se aceptan: id, codigo, código, lote o clave. Filas sin ID Lote o con duplicados son rechazadas."],
+  ["Agrupación opcional", "Fraccionamiento, Fracc, Desarrollo, Proyecto. Si se omite, los lotes se agrupan en Importados."],
+  ["Campos numéricos opcionales", "Superficie (m2), Frente (ML), Fondo (ML), Precio Contado y Precio Financiado. Acepta formato $400,000.50."],
+  ["Estados válidos", "disponible / libre / vacante → Disponible. apartado / apartada / reservado / reservada → Apartado. vendido / ocupado → Vendido. Vacío = Disponible."],
+  ["Servicios opcionales", "Agua Potable, Energía Eléctrica, Drenaje, Gas Natural, Internet/Fibra y Pavimento. Activar con: sí, 1, yes, true, x o ✓."],
+  ["Vendedor Asignado", "Opcional. Se busca por nombre exacto o parcial entre usuarios activos. Si hay ambigüedad queda sin asignar (advertencia)."],
+  ["Archivos aceptados", "XLSX, XLS, CSV o TXT de hasta 10 MB."],
+  ["Importante", "El archivo se valida en el servidor. Los lotes se guardan en cuanto el archivo pasa la validación. No combines celdas ni dejes filas sin ID Lote."],
+];
+const LOT_IMPORT_GUIDE_STEPS = [
+  {
+    title: "Cómo subir el archivo",
+    text: "En Carga de Lotes entra al editor, pulsa Plantilla para descargar un ejemplo, completa el archivo y luego pulsa Subir. El servidor valida el archivo y guarda los lotes si no hay errores.",
+  },
+  {
+    title: "Formato de Excel y CSV",
+    text: "Se aceptan XLSX, XLS, CSV y TXT de hasta 10 MB y máximo 5,000 filas de datos. Usa la primera fila para los encabezados y una fila por lote. En CSV guarda con UTF-8 para conservar acentos y la ñ.",
+  },
+  {
+    title: "Campo obligatorio: ID Lote",
+    text: "Cada fila debe tener un identificador único, por ejemplo A-01 o L001. El encabezado recomendado es ID Lote; también se aceptan id, codigo, código, lote o clave. Filas sin ID o con código duplicado son rechazadas.",
+  },
+  {
+    title: "Agrupar por sección o manzana",
+    text: "Usa uno de estos encabezados: Fraccionamiento, Fracc, Desarrollo o Proyecto. Escribe el nombre que agrupará cada lote, por ejemplo Manzana A. Si omites la columna, todos los lotes quedan en Importados.",
+  },
+  {
+    title: "Medidas y precios opcionales",
+    text: "Encabezados aceptados: Superficie (m2), Frente (ML), Fondo (ML), Precio Contado y Precio Financiado. Los precios aceptan formato con $, comas y decimales: $400,000.50.",
+  },
+  {
+    title: "Estado del lote",
+    text: "Usa el encabezado Estado, Estatus o Status. Valores aceptados: disponible/libre/vacante → Disponible; apartado/reservado → Apartado; vendido/ocupado → Vendido. Si está vacío se usa Disponible.",
+  },
+  {
+    title: "Servicios opcionales",
+    text: "Encabezados: Agua Potable, Energía Eléctrica, Drenaje, Gas Natural, Internet/Fibra y Pavimento. Para indicar que sí tiene el servicio usa: sí, 1, true, yes, x o ✓.",
+  },
+  {
+    title: "Vendedor Asignado",
+    text: "Campo opcional. El servidor busca al usuario por nombre exacto y, si no lo encuentra, por coincidencia parcial. Si el nombre es ambiguo, el lote se importa sin vendedor y se registra una advertencia.",
+  },
+  {
+    title: "Validación en servidor y errores",
+    text: "La validación ocurre en el servidor. Los lotes válidos se guardan inmediatamente. Si hay errores en filas individuales se muestran con el número de fila para que puedas corregirlos. Columnas no reconocidas se ignoran con una advertencia.",
+  },
+];
+const LOT_SELECTOR_GUIDE = {
+  title: "Guía de Carga de Lotes",
+  subtitle: "Elige el método adecuado para iniciar o continuar un fraccionamiento.",
+  steps: [
+    {
+      title: "Revisa tu portafolio",
+      text: "En la parte superior aparecen los fraccionamientos existentes. Usa Ver para abrir uno o Editar lotes para modificar su inventario.",
+    },
+    {
+      title: "Carga manual",
+      text: "Selecciona Carga Manual para crear un fraccionamiento desde cero. Puedes subir una imagen del plano o continuar sin imagen y construir las secciones manualmente.",
+    },
+    {
+      title: "Importar CAD",
+      text: "La opción CAD está pensada para archivos técnicos DWG o DXF. Úsala cuando el plano ya contiene la estructura que deseas procesar.",
+    },
+    {
+      title: "Excel y CSV",
+      text: "Para cargar lotes desde Excel o CSV entra primero a Carga Manual, selecciona una imagen o continúa sin plano, y después usa Plantilla y Subir dentro del tablero.",
+    },
+  ],
+};
+const LOT_MAP_GUIDE = {
+  title: "Guía para preparar el plano",
+  subtitle: "La imagen es opcional y sirve como referencia visual del fraccionamiento.",
+  steps: [
+    {
+      title: "Nombre del fraccionamiento",
+      text: "Escribe un nombre claro antes de continuar, por ejemplo Residencial Las Palmas. Este será el nombre visible en tu portafolio.",
+    },
+    {
+      title: "Subir imagen del plano",
+      text: "Selecciona una imagen JPG, PNG o WEBP. La imagen se mostrará como referencia mientras construyes y revisas la matriz de lotes.",
+    },
+    {
+      title: "Continuar sin plano",
+      text: "La imagen no es obligatoria. Pulsa Continuar para abrir el tablero y crear secciones manualmente o importar los lotes desde Excel o CSV.",
+    },
+    {
+      title: "Cambiar de método",
+      text: "Pulsa Cambiar modo para regresar a la vista principal y elegir otro método de carga.",
+    },
+  ],
+};
+const LOT_EDITOR_GUIDE = {
+  title: "Guía del tablero y carga Excel/CSV",
+  subtitle: "Crea secciones manualmente o prepara todos los lotes desde un archivo.",
+  steps: [
+    {
+      title: "Crear lotes manualmente",
+      text: "Escribe el nombre de la sección o manzana, indica cuántos lotes necesitas y pulsa Agregar. Después haz clic en cada lote para editar código, estado, medidas, precios y servicios.",
+    },
+    ...LOT_IMPORT_GUIDE_STEPS,
+  ],
+};
 
 function createLots(sectionName, total) {
   return Array.from({ length: total }, (_, index) => ({
@@ -36,7 +146,7 @@ function sortLotsByCode(lots) {
   );
 }
 
-function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot }) {
+function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot, onDeleteLot }) {
   const [page, setPage] = useState(0);
   const sortedLots = useMemo(() => sortLotsByCode(section.lots), [section.lots]);
   const totalPages = Math.max(1, Math.ceil(sortedLots.length / LOTS_PER_PAGE));
@@ -53,8 +163,8 @@ function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot }) {
         </div>
         <div className="h-px flex-1 bg-[#DCDAD2]" />
         <button
-          onClick={() => onAddLots(section.id, 10)}
-          title="Añadir 10 lotes"
+          onClick={() => onAddLots(section.id, 1)}
+          title="Añadir un lote a esta sección"
           className="flex h-[22px] w-[22px] items-center justify-center rounded-[5px] border border-[#DCDAD2] bg-[#F1EEE6] text-[0.8rem] font-black text-[#355E3B]"
         >
           +
@@ -74,24 +184,33 @@ function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot }) {
           return (
             <div
               key={lot.id}
-              title={`${lot.code} — click para editar`}
-              className="select-none cursor-pointer rounded-[8px] border-[1.5px] px-1 py-2 text-center transition-all hover:opacity-80 hover:shadow-md"
+              className="group relative select-none rounded-[8px] border-[1.5px] transition-all hover:shadow-md"
               style={{ background: c.bg, borderColor: c.border }}
-              onClick={() => onEditLot(section.id, lot.id)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  onEditLot(section.id, lot.id);
-                }
-              }}
             >
-              <div className="text-[0.78rem] font-extrabold leading-none" style={{ color: c.text }}>
-                {lot.code}
-              </div>
-              <div className="mt-0.5 text-[0.56rem] opacity-70" style={{ color: c.text }}>
-                {lot.area ? `${lot.area}m²` : lot.status === "available" ? "Libre" : lot.status === "sold" ? "Vendido" : "Apartado"}
+              <div
+                title={`${lot.code} — click para editar`}
+                className="cursor-pointer px-1 py-2 text-center"
+                onClick={() => onEditLot(section.id, lot.id)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onEditLot(section.id, lot.id);
+                  }
+                }}
+              >
+                <div className="text-[0.78rem] font-extrabold leading-none" style={{ color: c.text }}>
+                  {lot.code}
+                </div>
+                <div className="mt-0.5 text-[0.56rem] opacity-70" style={{ color: c.text }}>
+                  {lot.area ? `${lot.area}m²` : lot.status === "available" ? "Libre" : lot.status === "sold" ? "Vendido" : "Apartado"}
+                </div>
+                {lot.price ? (
+                  <div className="mt-0.5 text-[0.5rem] font-extrabold leading-none" style={{ color: c.text }}>
+                    ${Number(lot.price).toLocaleString("es-MX", { maximumFractionDigits: 0 })}
+                  </div>
+                ) : null}
               </div>
             </div>
           );
@@ -123,112 +242,10 @@ function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot }) {
   );
 }
 
-function cropPlanImage(dataUrl) {
-  return new Promise((resolve) => {
-    const image = new window.Image();
-
-    image.onload = () => {
-      const canvas = window.document.createElement("canvas");
-      const context = canvas.getContext("2d", { willReadFrequently: true });
-
-      if (!context) {
-        resolve({ dataUrl, cropped: false });
-        return;
-      }
-
-      canvas.width = image.naturalWidth;
-      canvas.height = image.naturalHeight;
-      context.drawImage(image, 0, 0);
-
-      const { data, width, height } = context.getImageData(0, 0, canvas.width, canvas.height);
-
-      const getLightRatioForRow = (row) => {
-        let lightPixels = 0;
-        for (let column = 0; column < width; column += 1) {
-          const index = (row * width + column) * 4;
-          const r = data[index];
-          const g = data[index + 1];
-          const b = data[index + 2];
-          const lightness = (r + g + b) / 3;
-          if (lightness > 208) lightPixels += 1;
-        }
-        return lightPixels / width;
-      };
-
-      const getLightRatioForColumn = (column) => {
-        let lightPixels = 0;
-        for (let row = 0; row < height; row += 1) {
-          const index = (row * width + column) * 4;
-          const r = data[index];
-          const g = data[index + 1];
-          const b = data[index + 2];
-          const lightness = (r + g + b) / 3;
-          if (lightness > 208) lightPixels += 1;
-        }
-        return lightPixels / height;
-      };
-
-      let top = 0;
-      while (top < height && getLightRatioForRow(top) < 0.18) top += 1;
-
-      let bottom = height - 1;
-      while (bottom > top && getLightRatioForRow(bottom) < 0.18) bottom -= 1;
-
-      let left = 0;
-      while (left < width && getLightRatioForColumn(left) < 0.12) left += 1;
-
-      let right = width - 1;
-      while (right > left && getLightRatioForColumn(right) < 0.12) right -= 1;
-
-      const cropWidth = right - left;
-      const cropHeight = bottom - top;
-
-      if (cropWidth < width * 0.35 || cropHeight < height * 0.2) {
-        resolve({ dataUrl, cropped: false });
-        return;
-      }
-
-      const paddingX = Math.round(cropWidth * 0.02);
-      const paddingY = Math.round(cropHeight * 0.02);
-      const safeLeft = Math.max(0, left - paddingX);
-      const safeTop = Math.max(0, top - paddingY);
-      const safeRight = Math.min(width, right + paddingX);
-      const safeBottom = Math.min(height, bottom + paddingY);
-
-      const outputCanvas = window.document.createElement("canvas");
-      const outputContext = outputCanvas.getContext("2d");
-
-      if (!outputContext) {
-        resolve({ dataUrl, cropped: false });
-        return;
-      }
-
-      outputCanvas.width = safeRight - safeLeft;
-      outputCanvas.height = safeBottom - safeTop;
-      outputContext.drawImage(
-        image,
-        safeLeft,
-        safeTop,
-        outputCanvas.width,
-        outputCanvas.height,
-        0,
-        0,
-        outputCanvas.width,
-        outputCanvas.height
-      );
-
-      resolve({ dataUrl: outputCanvas.toDataURL("image/png"), cropped: true });
-    };
-
-    image.onerror = () => resolve({ dataUrl, cropped: false });
-    image.src = dataUrl;
-  });
-}
-
 function LotsPage() {
   const navigate = useNavigate();
   const { data: projects = [] } = useProjectsQuery();
-  const { draftProject, setDraftProject, saveFrac, saveEditedFrac, setSelectedFracId, showToast } = useAppContext();
+  const { draftProject, setDraftProject, saveFrac, saveEditedFrac, deleteFrac, setSelectedFracId, showToast, showError } = useAppContext();
   const isEditing = !!draftProject._editingFracId;
 
   useEffect(() => {
@@ -236,11 +253,31 @@ function LotsPage() {
   }, []);
 
   const [sectionName, setSectionName] = useState("");
-  const [sectionTotal, setSectionTotal] = useState(20);
+  // Se conserva como texto mientras el usuario escribe para permitir borrar
+  // completamente el valor antes de capturar una nueva cantidad.
+  const [sectionTotal, setSectionTotal] = useState("20");
   const [mapFileName, setMapFileName] = useState("");
-  const [lotEditDraft, setLotEditDraft] = useState(null); // null | { sectionId, ...lot }
+  const [lotEditDraft, setLotEditDraft] = useState(null);
   const [loadingEditId, setLoadingEditId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [deletedLotIds, setDeletedLotIds] = useState(new Set());
+  const [showDeleteFracConfirm, setShowDeleteFracConfirm] = useState(false);
+  const [deletingFrac, setDeletingFrac] = useState(false);
+  const [showImportGuide, setShowImportGuide] = useState(false);
+  const [showFormatGuide, setShowFormatGuide] = useState(false);
+  useEscapeKey(() => {
+    if (showDeleteFracConfirm) setShowDeleteFracConfirm(false);
+    else if (lotEditDraft) setLotEditDraft(null);
+  }, showDeleteFracConfirm || Boolean(lotEditDraft));
+  useLandsGuide(() => setShowImportGuide(true));
+  const activeGuide = draftProject.mode === "editor"
+    ? LOT_EDITOR_GUIDE
+    : draftProject.mode === "map-upload"
+      ? LOT_MAP_GUIDE
+      : LOT_SELECTOR_GUIDE;
+  const [importSummary, setImportSummary] = useState(null);
+  const [importLoading, setImportLoading] = useState(false);
+  const [downloadingTemplate, setDownloadingTemplate] = useState(false);
   const changeImageRef = useRef(null);
   const excelInputRef = useRef(null);
   const portfolioScrollRef = useRef(null);
@@ -266,6 +303,8 @@ function LotsPage() {
           id:              lot.id,
           _backendId:      lot.id,
           _orig: {
+            status:          lot.status || "available",
+            code:            lot.code ?? "",
             area:            lot.area_m2 ?? "",
             price:           lot.price_contado ?? "",
             priceFinanciado: lot.price_financiado ?? "",
@@ -286,87 +325,152 @@ function LotsPage() {
       setDraftProject({
         mode:           "editor",
         name:           project.name,
-        mapUrl:         "",
+        mapUrl:         project.mapImageUrl || "",
         cadProcessing:  false,
         sections:       Object.values(sectionMap),
         _editingFracId: project.id,
       });
     } catch (err) {
-      showToast(getUserErrorMessage(err, "Error al cargar los lotes para editar"));
+      showError(err, "Error al cargar los lotes para editar");
     } finally {
       setLoadingEditId(null);
     }
   };
 
-  const STATUS_MAP = {
-    disponible: "available", libre: "available", available: "available", vacante: "available",
-    vendido: "sold", sold: "sold", ocupado: "sold",
-    apartado: "reserved", apartada: "reserved", reservado: "reserved", reserved: "reserved",
+  const downloadImportTemplate = async () => {
+    if (downloadingTemplate) return;
+    setDownloadingTemplate(true);
+    try {
+      const blob = await lotService.importTemplate("xlsx");
+      const workbook = XLSX.read(await blob.arrayBuffer(), { type: "array" });
+      if (!workbook.SheetNames.includes("Guía")) {
+        const guideSheet = XLSX.utils.aoa_to_sheet(LOT_TEMPLATE_GUIDE);
+        guideSheet["!cols"] = [{ wch: 24 }, { wch: 82 }];
+        XLSX.utils.book_append_sheet(workbook, guideSheet, "Guía");
+      }
+      XLSX.writeFile(workbook, "plantilla_lotes.xlsx");
+      showToast("Plantilla de lotes descargada");
+    } catch (err) {
+      showError(err, "No se pudo descargar la plantilla");
+    } finally {
+      setDownloadingTemplate(false);
+    }
   };
 
-  const handleExcelFile = (event) => {
+  const handleExcelFile = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
     event.target.value = "";
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: "array" });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+    setImportLoading(true);
+    setImportSummary(null);
+    let mapUploadError = null;
 
-        if (!rows.length) { showToast("El archivo no tiene datos"); return; }
+    try {
+      let fracId = draftProject._editingFracId;
 
-        const norm = (s) => String(s || "").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+      // Para fraccionamiento nuevo: crear el inmueble primero y guardar los lotes manuales previos
+      if (!fracId) {
+        const inmueble = await inmuebleService.create({ name: draftProject.name || "Fraccionamiento" });
+        fracId = inmueble.id;
 
-        const findCol = (row, aliases) => {
-          const key = Object.keys(row).find((k) => aliases.some((a) => norm(k) === norm(a)));
-          return key ? String(row[key]).trim() : "";
-        };
+        if (draftProject.mapUrl) {
+          try {
+            const mapFile = await mapFileFromUrl(draftProject.mapUrl);
+            await inmuebleService.uploadMap(inmueble.id, mapFile);
+          } catch (error) {
+            mapUploadError = error;
+          }
+        }
 
-        const grouped = {};
-        rows.forEach((row, i) => {
-          const code = findCol(row, ["ID Lote", "id", "codigo", "lote", "clave"]) || `L-${String(i + 1).padStart(2, "0")}`;
-          const secName = findCol(row, ["Seccion", "sección", "manzana", "bloque", "section"]) || "Importados";
-          const statusRaw = norm(findCol(row, ["Estado", "estatus", "status"]));
-          const status = STATUS_MAP[statusRaw] || "available";
-          const area = Number(findCol(row, ["Superficie (m2)", "superficie", "area", "m2"])) || 0;
-          const price = Number(findCol(row, ["Precio Contado", "precio contado", "contado", "precio"])) || 0;
-          const priceFinanciado = Number(findCol(row, ["Precio Financiado", "financiado"])) || 0;
-          const frente = Number(findCol(row, ["Frente (ML)", "frente"])) || 0;
-          const fondo = Number(findCol(row, ["Fondo (ML)", "fondo"])) || 0;
-          const servicios = {
-            agua: !!findCol(row, ["Agua Potable", "agua"]),
-            luz: !!findCol(row, ["Energia Electrica", "luz", "electricidad"]),
-            drenaje: !!findCol(row, ["Drenaje"]),
-            gas: !!findCol(row, ["Gas Natural", "gas"]),
-            internet: !!findCol(row, ["Internet/Fibra", "internet"]),
-            pavimento: !!findCol(row, ["Pavimento"]),
-          };
-          if (!grouped[secName]) grouped[secName] = [];
-          grouped[secName].push({ id: `xl_${Date.now()}_${i}`, code, status, area, price, priceFinanciado, frente, fondo, servicios });
-        });
-
-        const newSections = Object.entries(grouped).map(([name, lots]) => ({
-          id: `section_xl_${Date.now()}_${name}`,
-          name,
-          lots,
-        }));
-
-        setDraftProject((prev) => ({
-          ...prev,
-          sections: [...prev.sections, ...newSections],
-        }));
-
-        const total = newSections.reduce((s, sec) => s + sec.lots.length, 0);
-        showToast(`${total} lotes importados desde Excel`);
-      } catch {
-        showToast("Error al leer el archivo. Usa el formato de plantilla.");
+        const manualLots = draftProject.sections.flatMap((s) =>
+          s.lots.map((lot) => ({
+            code: lot.code,
+            section: s.name,
+            area_m2: lot.area ? Number(lot.area) : null,
+            frente_ml: lot.frente ? Number(lot.frente) : null,
+            fondo_ml: lot.fondo ? Number(lot.fondo) : null,
+            price_contado: lot.price ? Number(lot.price) : null,
+            price_financiado: lot.priceFinanciado ? Number(lot.priceFinanciado) : null,
+            services: lot.servicios ? Object.fromEntries(Object.entries(lot.servicios).filter(([, v]) => v)) : {},
+          }))
+        );
+        if (manualLots.length > 0) {
+          await lotService.bulkCreate({ inmueble_id: fracId, lots: manualLots });
+        }
       }
-    };
-    reader.readAsArrayBuffer(file);
+
+      // Enviar archivo al backend para validación e importación
+      const result = await lotService.importCsv(file, { fraccionamiento_id: fracId });
+
+      // Nada fue importado y hay errores: mostrar sin actualizar la vista
+      if (result.imported === 0 && result.failed > 0) {
+        setImportSummary({ fileName: file.name, imported: 0, failed: result.failed, errors: result.errors, warnings: result.warnings });
+        setShowImportGuide(true);
+        showToast(result.errors[0]?.message || "No se importaron lotes: revisa los errores");
+        return;
+      }
+
+      // Recargar todos los lotes desde el backend y reconstruir secciones
+      const { items: lots } = await lotService.list({ inmueble_id: fracId, limit: 200 });
+      const sectionMap = {};
+      lots.forEach((lot) => {
+        const sec = lot.section || "Importados";
+        if (!sectionMap[sec]) sectionMap[sec] = { id: `sec_${sec}`, name: sec, lots: [] };
+        sectionMap[sec].lots.push({
+          id:              lot.id,
+          _backendId:      lot.id,
+          _orig: {
+            status:          lot.status || "available",
+            code:            lot.code ?? "",
+            area:            lot.area_m2 ?? "",
+            price:           lot.price_contado ?? "",
+            priceFinanciado: lot.price_financiado ?? "",
+            frente:          lot.frente_ml ?? "",
+            fondo:           lot.fondo_ml ?? "",
+            servicios:       JSON.stringify(lot.services || {}),
+          },
+          code:            lot.code,
+          status:          lot.status || "available",
+          area:            lot.area_m2 ?? "",
+          price:           lot.price_contado ?? "",
+          priceFinanciado: lot.price_financiado ?? "",
+          frente:          lot.frente_ml ?? "",
+          fondo:           lot.fondo_ml ?? "",
+          servicios:       lot.services || {},
+        });
+      });
+
+      setDraftProject((prev) => ({
+        ...prev,
+        sections: Object.values(sectionMap),
+        _editingFracId: fracId,
+      }));
+
+      setImportSummary({
+        fileName: file.name,
+        imported: result.imported,
+        updated: result.updated ?? 0,
+        failed: result.failed ?? 0,
+        errors: result.errors || [],
+        warnings: result.warnings || [],
+      });
+
+      if (mapUploadError) {
+        showError(mapUploadError, "Los lotes se importaron, pero el plano no pudo subirse");
+      } else {
+        showToast(`${result.imported} lotes importados${result.failed ? ` · ${result.failed} con errores` : ""}`);
+      }
+      if (result.failed > 0) setShowImportGuide(true);
+
+    } catch (err) {
+      const msg = parseApiError(err, "Error al importar el archivo. Descarga la plantilla y verifica el formato.").message;
+      setImportSummary({ fileName: file?.name ?? null, imported: 0, failed: 0, errors: [{ message: msg }], warnings: [] });
+      setShowImportGuide(true);
+      showError(err, "Error al importar el archivo. Descarga la plantilla y verifica el formato.");
+    } finally {
+      setImportLoading(false);
+    }
   };
 
   const openEditLot = (sectionId, lotId) => {
@@ -391,34 +495,38 @@ function LotsPage() {
     setLotEditDraft(null);
   };
 
-  const loadDemo = () => {
-    setDraftProject({
-      mode: "editor",
-      name: "Residencial Terracota",
-      mapUrl: "",
-      cadProcessing: false,
-      sections: [
-        { id: "sec_a", name: "Manzana A", lots: createLots("A", 10) },
-        { id: "sec_b", name: "Manzana B", lots: createLots("B", 8) }
-      ]
-    });
-  };
-
   const addSection = () => {
-    if (!sectionName.trim()) return;
+    const cleanName = sectionName.trim();
+    const cleanTotal = String(sectionTotal).trim();
+
+    if (!cleanName) {
+      showToast("Escribe el nombre de la sección o manzana para continuar", "warning");
+      return;
+    }
+    if (!/^\d+$/.test(cleanTotal)) {
+      showToast("Escribe una cantidad válida de lotes", "warning");
+      return;
+    }
+
+    const total = Number(cleanTotal);
+    if (!Number.isSafeInteger(total) || total < 1 || total > 5000) {
+      showToast("Escribe una cantidad de lotes entre 1 y 5,000", "warning");
+      return;
+    }
     setDraftProject((previous) => ({
       ...previous,
       sections: [
         ...previous.sections,
         {
           id: `section_${Date.now()}`,
-          name: sectionName.trim(),
-          lots: createLots(sectionName.trim(), Number(sectionTotal))
+          name: cleanName,
+          lots: createLots(cleanName, total)
         }
       ]
     }));
     setSectionName("");
-    setSectionTotal(20);
+    setSectionTotal("20");
+    showToast(`${cleanName} agregada · ${total} lote${total === 1 ? "" : "s"}`);
   };
 
   const cycleLotStatus = (sectionId, lotId) => {
@@ -448,9 +556,26 @@ function LotsPage() {
   };
 
   const removeSection = (sectionId) => {
+    const sec = draftProject.sections.find((s) => s.id === sectionId);
+    if (sec) {
+      const backendIds = sec.lots.filter((l) => l._backendId).map((l) => l._backendId);
+      if (backendIds.length) setDeletedLotIds((prev) => new Set([...prev, ...backendIds]));
+    }
     setDraftProject((previous) => ({
       ...previous,
       sections: previous.sections.filter((sec) => sec.id !== sectionId)
+    }));
+  };
+
+  const deleteLotFromSection = (sectionId, lotId) => {
+    const sec = draftProject.sections.find((s) => s.id === sectionId);
+    const lot = sec?.lots.find((l) => l.id === lotId);
+    if (lot?._backendId) setDeletedLotIds((prev) => new Set([...prev, lot._backendId]));
+    setDraftProject((previous) => ({
+      ...previous,
+      sections: previous.sections.map((s) =>
+        s.id !== sectionId ? s : { ...s, lots: s.lots.filter((l) => l.id !== lotId) }
+      ),
     }));
   };
 
@@ -473,35 +598,36 @@ function LotsPage() {
     }));
   };
 
-  const isValidMapImage = (file) => {
-    const extension = file.name.split(".").pop()?.toLowerCase();
-    return MAP_IMAGE_TYPES.has(file.type) || ["jpg", "jpeg", "png", "webp"].includes(extension);
-  };
+  // El usuario ya importó por archivo: el flujo elegido fue Excel/CSV, así que el
+  // builder manual de secciones se deshabilita. Para agregar un lote olvidado se usa
+  // el "+" de cada sección (que ahora agrega 1).
+  const importedByFile = (importSummary?.imported ?? 0) > 0;
 
-  const updateMap = (file) => {
-    if (!isValidMapImage(file)) {
-      showToast("El plano debe ser una imagen JPG, PNG o WEBP. El Excel solo va en Llenar con Excel.");
+  const updateMap = async (file) => {
+    if (!isSupportedMapImage(file)) {
+      showToast("El plano debe ser una imagen JPG, PNG, WEBP, HEIC o HEIF. Excel y CSV solo van en Llenar con Excel o CSV.", "warning");
       return false;
     }
-
-    setMapFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const sourceDataUrl = event.target?.result || "";
-      const processed = await cropPlanImage(sourceDataUrl);
-
+    try {
+      const processed = await prepareMapImage(file);
+      setMapFileName(file.name);
       setDraftProject((previous) => ({
         ...previous,
         mapUrl: processed.dataUrl,
         name: previous.name || "Nuevo Fraccionamiento"
       }));
-
-      if (processed.cropped) {
+      if (processed.converted) {
+        showToast("Plano HEIC/HEIF convertido a un formato compatible");
+      } else if (processed.cropped) {
         showToast("Plano ajustado automáticamente para enfocar el lote");
+      } else if (processed.resized) {
+        showToast("Plano optimizado para cargarlo correctamente");
       }
-    };
-    reader.readAsDataURL(file);
-    return true;
+      return true;
+    } catch (error) {
+      showToast(`${error.message}. Intenta exportarla como JPG o PNG.`, "warning");
+      return false;
+    }
   };
 
   const totalDraftLots = draftProject.sections.reduce((sum, section) => sum + section.lots.length, 0);
@@ -557,19 +683,32 @@ function LotsPage() {
               Apartado
             </span>
           </div>
+          {isEditing && (
+            <button
+              className="lots-editor-btn"
+              style={{ color: "#C0392B", borderColor: "#fca5a5" }}
+              onClick={() => setShowDeleteFracConfirm(true)}
+            >
+              Eliminar
+            </button>
+          )}
           <button
             className="lots-editor-btn lots-editor-primary"
             onClick={async () => {
               if (saving) return;
               setSaving(true);
               try {
+                if (deletedLotIds.size > 0) {
+                  await Promise.all([...deletedLotIds].map((id) => lotService.delete(id)));
+                  setDeletedLotIds(new Set());
+                }
                 if (isEditing) await saveEditedFrac(draftProject);
                 else await saveFrac(draftProject);
               } finally {
                 setSaving(false);
               }
             }}
-            disabled={!draftProject.sections.length || saving}
+            disabled={!draftProject.name?.trim() || saving}
           >
             {saving ? "Guardando..." : isEditing ? "Guardar cambios" : "Crear fraccionamiento"}
           </button>
@@ -605,11 +744,11 @@ function LotsPage() {
             <input
               ref={changeImageRef}
               type="file"
-              accept="image/*"
+              accept={MAP_IMAGE_ACCEPT}
               className="hidden"
-              onChange={(event) => {
+              onChange={async (event) => {
                 const file = event.target.files?.[0];
-                if (file) updateMap(file);
+                if (file) await updateMap(file);
                 event.target.value = "";
               }}
             />
@@ -629,15 +768,29 @@ function LotsPage() {
                 </div>
               </div>
               <div className="lots-section-form">
+                <div className="lots-section-name" style={{ flex: 1 }}>
+                  <div className="lots-builder-label">Nombre del fraccionamiento</div>
+                  <input
+                    value={draftProject.name}
+                    onChange={(event) => setDraftProject((previous) => ({ ...previous, name: event.target.value }))}
+                    placeholder="Nombre del fraccionamiento"
+                    className="lots-builder-input"
+                  />
+                </div>
+              </div>
+              <div className="lots-section-form" style={importedByFile ? { opacity: 0.5 } : undefined}>
                 <div className="lots-section-name">
                   <div className="lots-builder-label">
-                    Nombre de sección
+                    Nombre de sección *
                   </div>
                   <input
                     value={sectionName}
                     onChange={(event) => setSectionName(event.target.value)}
                     onKeyDown={(event) => event.key === "Enter" && addSection()}
                     placeholder="Ej: Manzana A, Frente Norte..."
+                    required
+                    disabled={importedByFile}
+                    title={importedByFile ? "Deshabilitado: ya importaste los lotes por archivo" : undefined}
                     className="lots-builder-input"
                   />
                 </div>
@@ -646,34 +799,68 @@ function LotsPage() {
                     N° de lotes
                   </div>
                   <input
-                    type="number"
+                    type="text"
                     value={sectionTotal}
-                    onChange={(event) => setSectionTotal(Number(event.target.value))}
+                    onChange={(event) => {
+                      const digitsOnly = event.target.value.replace(/\D/g, "");
+                      setSectionTotal(digitsOnly);
+                    }}
+                    onKeyDown={(event) => event.key === "Enter" && addSection()}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="off"
+                    aria-label="Número de lotes"
+                    disabled={importedByFile}
                     className="lots-builder-input center"
                   />
                 </div>
                 <button
+                  type="button"
                   onClick={addSection}
+                  disabled={importedByFile}
                   className="lots-add-section"
+                  style={importedByFile ? { cursor: "not-allowed" } : undefined}
                 >
                   Agregar
                 </button>
               </div>
+              {importedByFile && (
+                <div className="lots-import-hint">
+                  Lotes importados por archivo. Para agregar uno olvidado, usa el <b>+</b> de la sección abajo.
+                </div>
+              )}
               <div className="lots-excel-row">
                 <div>
-                  <span className="lots-excel-title">Llenar con Excel</span>
-                  <span className="lots-excel-sub">Importa lotes desde archivo</span>
+                  <span className="lots-excel-title">Llenar con Excel o CSV</span>
+                  <span className="lots-excel-sub">
+                    {importLoading
+                      ? "Validando e importando..."
+                      : importSummary
+                        ? `${importSummary.imported} importados${importSummary.failed ? ` · ${importSummary.failed} con errores` : ""}${importSummary.warnings?.length ? ` · ${importSummary.warnings.length} advertencias` : ""}`
+                        : "Importa lotes desde XLSX, XLS o CSV"}
+                  </span>
                 </div>
+                <button className="lots-excel-upload" onClick={downloadImportTemplate} disabled={downloadingTemplate}>
+                  {downloadingTemplate ? "Descargando..." : "Plantilla"}
+                </button>
+                <button
+                  className="lots-excel-upload"
+                  onClick={() => setShowFormatGuide(true)}
+                  title="Ver campos y formato del archivo"
+                >
+                  Ver formato
+                </button>
                 <button
                   className="lots-excel-upload"
                   onClick={() => excelInputRef.current?.click()}
+                  disabled={importLoading}
                 >
-                  Subir
+                  {importLoading ? "Importando..." : "Subir"}
                 </button>
                 <input
                   ref={excelInputRef}
                   type="file"
-                  accept=".xlsx,.xls,.csv"
+                  accept=".xlsx,.xls,.csv,.txt"
                   className="hidden"
                   onChange={handleExcelFile}
                 />
@@ -689,12 +876,6 @@ function LotsPage() {
                   <div className="lots-empty-sub">
                     Construye la matriz de lotes por manzana, frente o etapa.
                   </div>
-                  <button
-                    onClick={loadDemo}
-                    className="lots-demo-btn"
-                  >
-                    Cargar ejemplo rápido
-                  </button>
                 </div>
               ) : (
                 <div className="space-y-5">
@@ -705,6 +886,7 @@ function LotsPage() {
                       onAddLots={addLotsToSection}
                       onRemoveSection={removeSection}
                       onEditLot={openEditLot}
+                      onDeleteLot={deleteLotFromSection}
                     />
                   ))}
                 </div>
@@ -744,6 +926,34 @@ function LotsPage() {
 
               {/* Body */}
               <div className="lot-edit-body">
+
+                {/* Imagen del plano */}
+                <div className="lot-edit-sec">Imagen del plano</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
+                  {draftProject.mapUrl ? (
+                    <img
+                      src={draftProject.mapUrl}
+                      alt="Plano"
+                      style={{ width: 90, height: 64, objectFit: "cover", borderRadius: 8, border: "1.5px solid #DCDAD2", flexShrink: 0 }}
+                    />
+                  ) : (
+                    <div style={{ width: 90, height: 64, borderRadius: 8, border: "1.5px dashed #DCDAD2", background: "#F1EEE6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <span style={{ fontSize: "0.6rem", color: "#83867C", textAlign: "center", lineHeight: 1.3 }}>Sin imagen</span>
+                    </div>
+                  )}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: "0.72rem", color: "#83867C", marginBottom: 6 }}>
+                      {draftProject.mapUrl ? "Imagen del plano cargada" : "No hay imagen de plano"}
+                    </div>
+                    <button
+                      className="lot-edit-ghost"
+                      style={{ fontSize: "0.72rem", padding: "4px 10px" }}
+                      onClick={() => changeImageRef.current?.click()}
+                    >
+                      {draftProject.mapUrl ? "Cambiar imagen" : "Subir imagen"}
+                    </button>
+                  </div>
+                </div>
 
                 {/* Identificación */}
                 <div className="lot-edit-sec">Identificación</div>
@@ -831,6 +1041,16 @@ function LotsPage() {
 
               {/* Footer */}
               <div className="lot-edit-foot">
+                <button
+                  className="lot-edit-ghost"
+                  style={{ color: "#C0392B", borderColor: "#fca5a5", marginRight: "auto" }}
+                  onClick={() => {
+                    deleteLotFromSection(d.sectionId, d.id);
+                    setLotEditDraft(null);
+                  }}
+                >
+                  Eliminar lote
+                </button>
                 <button className="lot-edit-primary" onClick={saveLotEdit}>Guardar</button>
                 <button className="lot-edit-ghost" onClick={() => setLotEditDraft(null)}>Cancelar</button>
               </div>
@@ -838,6 +1058,55 @@ function LotsPage() {
           </div>
         );
       })()}
+
+      <LotImportFormatModal open={showFormatGuide} onClose={() => setShowFormatGuide(false)} />
+      <GuideModal
+        open={showImportGuide}
+        onClose={() => setShowImportGuide(false)}
+        title={activeGuide.title}
+        subtitle={activeGuide.subtitle}
+        steps={activeGuide.steps}
+      />
+
+      {showDeleteFracConfirm && (
+        <div className="lot-edit-overlay" onClick={() => setShowDeleteFracConfirm(false)}>
+          <div className="lot-edit-modal" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
+            <div className="lot-edit-head">
+              <div className="lot-edit-badge" style={{ background: "#fee2e2", color: "#991b1b", borderColor: "#fca5a5" }}>!</div>
+              <div>
+                <div className="lot-edit-title">Eliminar fraccionamiento</div>
+                <div className="lot-edit-sub">{draftProject.name}</div>
+              </div>
+              <button className="lot-edit-close" onClick={() => setShowDeleteFracConfirm(false)}>×</button>
+            </div>
+            <div className="lot-edit-body" style={{ gap: 12 }}>
+              <p style={{ fontSize: "0.84rem", color: "#43453F", lineHeight: 1.6 }}>
+                Esta acción eliminará el fraccionamiento <strong>{draftProject.name}</strong> y todos sus lotes de forma permanente. No se puede deshacer.
+              </p>
+              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8 }}>
+                <button className="lot-edit-ghost" onClick={() => setShowDeleteFracConfirm(false)}>Cancelar</button>
+                <button
+                  className="lot-edit-primary"
+                  style={{ background: "#C0392B", borderColor: "#991b1b" }}
+                  disabled={deletingFrac}
+                  onClick={async () => {
+                    setDeletingFrac(true);
+                    try {
+                      await deleteFrac(draftProject._editingFracId);
+                      setShowDeleteFracConfirm(false);
+                      navigate("/fraccionamientos");
+                    } finally {
+                      setDeletingFrac(false);
+                    }
+                  }}
+                >
+                  {deletingFrac ? "Eliminando..." : "Sí, eliminar"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       </>
     );
   }
@@ -857,15 +1126,9 @@ function LotsPage() {
           </div>
         </div>
         <div className="mt-4 flex gap-3 overflow-x-auto pb-1 no-scrollbar">
-          <button
-            className="rounded-2xl bg-[#E9E5DB] px-4 py-3 text-sm font-semibold text-[#1E3D2B]"
-            onClick={loadDemo}
-          >
-            Cargar demo
-          </button>
           {draftProject.mode === "selector" && (
             <button
-              className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white"
+              className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white transition-colors hover:border-white/30 hover:bg-white/20"
               onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
             >
               Nuevo proyecto
@@ -884,7 +1147,7 @@ function LotsPage() {
           </div>
           <div className="flex items-center gap-2">
             <span className="mr-1 text-sm font-semibold text-[#1E3D2B]">
-              {projects.reduce((sum, item) => sum + (item.lots?.length || 0), 0)} lotes
+              {projects.reduce((sum, item) => sum + item.totalLots, 0)} lotes
             </span>
             <button
               className="flex h-10 w-10 items-center justify-center rounded-full border border-[#DCDAD2] bg-white/90 text-[#1E3D2B] shadow-[0_8px_18px_rgba(24,18,14,.08)] transition hover:border-[#355E3B] hover:bg-[#FBFAF6]"
@@ -917,7 +1180,7 @@ function LotsPage() {
                 <div>
                   <div className="font-['Playfair_Display'] text-xl text-[#1E3D2B]">{project.name}</div>
                   <div className="mt-1 text-xs uppercase tracking-[0.18em] text-[#83867C]">
-                    {project.lots?.length ?? 0} propiedades
+                    {project.totalLots} propiedades
                   </div>
                 </div>
                 <div className="rounded-full bg-[#EDE3D3] px-3 py-1 text-[0.68rem] font-bold text-[#1E3D2B]">
@@ -934,8 +1197,8 @@ function LotsPage() {
                   <div className="mt-2 text-lg font-bold text-[#1E3D2B]">{project.reserved}</div>
                 </div>
                 <div className="rounded-2xl bg-[#FBFAF6] p-3">
-                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Valor</div>
-                  <div className="mt-2 text-lg font-bold text-[#1E3D2B]">{compactCurrency(project.inventoryValue)}</div>
+                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Disponible</div>
+                  <div className="mt-2 text-lg font-bold text-[#1E3D2B]">{project.available}</div>
                 </div>
               </div>
               <div className="mt-4 flex gap-2">
@@ -969,8 +1232,9 @@ function LotsPage() {
               Elige el método que mejor se adapte a tu flujo de trabajo
             </p>
             <div className="mt-8 grid gap-5 sm:grid-cols-2">
+              {/* ── Carga Manual ── */}
               <div
-                className="relative cursor-pointer overflow-hidden rounded-[16px] border-2 border-[#DCDAD2] bg-[#FBFAF6] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#355E3B] hover:shadow-[0_8px_24px_rgba(45,90,71,.15)]"
+                className="relative flex cursor-pointer flex-col overflow-hidden rounded-[16px] border-2 border-[#DCDAD2] bg-[#FBFAF6] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#355E3B] hover:shadow-[0_8px_24px_rgba(45,90,71,.15)]"
                 onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
               >
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#355E3B]" />
@@ -981,30 +1245,38 @@ function LotsPage() {
                 <div className="mb-5 text-[0.76rem] leading-relaxed text-[#83867C]">
                   Sube la imagen del plano y construye la matriz de lotes manualmente. Define secciones, columnas y estado de cada unidad.
                 </div>
-                <button className="pointer-events-none w-full rounded-[9px] bg-[#355E3B] px-4 py-2.5 text-[0.8rem] font-bold text-white">
+                <button className="pointer-events-none mb-3 w-full rounded-[9px] bg-[#355E3B] px-4 py-2.5 text-[0.8rem] font-bold text-white">
                   Abrir editor →
                 </button>
               </div>
 
+              {/* ── Carga CAD ── */}
               <div
-                className="relative cursor-pointer overflow-hidden rounded-[16px] border-2 border-[#DCDAD2] bg-[#FBFAF6] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#1E3D2B] hover:shadow-[0_8px_24px_rgba(27,47,69,.15)]"
-                onClick={() => showToast("Carga CAD automática próximamente")}
+                className="relative flex cursor-pointer flex-col overflow-hidden rounded-[16px] border-2 border-[#DCDAD2] bg-[#FBFAF6] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#4A6FA5] hover:shadow-[0_8px_24px_rgba(74,111,165,.15)]"
+                role="button"
+                tabIndex={0}
+                aria-label="Importar CAD, próximamente"
+                onClick={() => showToast("La importación de archivos CAD estará disponible próximamente.", "info")}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    showToast("La importación de archivos CAD estará disponible próximamente.", "info");
+                  }
+                }}
               >
-                <div className="absolute right-3 top-3 rounded-[8px] bg-[#1E3D2B] px-2 py-0.5 text-[0.58rem] font-extrabold uppercase tracking-[0.5px] text-white">
-                  Nuevo
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#1E3D2B]" />
-                <div className="mx-auto mb-3 flex h-[62px] w-[62px] items-center justify-center rounded-[15px] bg-[rgba(27,47,69,0.08)] text-[1.8rem]">
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#4A6FA5]" />
+                <div className="mx-auto mb-3 flex h-[62px] w-[62px] items-center justify-center rounded-[15px] bg-[#E8EEF7] text-[1.8rem]">
                   📐
                 </div>
-                <div className="mb-2 font-['Playfair_Display'] text-[1.05rem] text-[#1E3D2B]">Carga Automática CAD</div>
-                <div className="mb-5 text-[0.76rem] leading-relaxed text-[#83867C]">
-                  Sube archivos CAD (.dwg, .dxf, .shp, .kml) y el sistema detecta y genera los lotes automáticamente con sus coordenadas reales.
+                <div className="mb-2 font-['Playfair_Display'] text-[1.05rem] text-[#1E3D2B]">Importar CAD</div>
+                <div className="mb-5 flex-1 text-[0.76rem] leading-relaxed text-[#83867C]">
+                  Sube un archivo DWG o DXF del plano técnico y el sistema extrae automáticamente la estructura de lotes.
                 </div>
-                <button className="pointer-events-none w-full rounded-[9px] bg-[#1E3D2B] px-4 py-2.5 text-[0.8rem] font-bold text-white">
-                  Subir archivo CAD →
+                <button className="pointer-events-none w-full rounded-[9px] bg-[#4A6FA5] px-4 py-2.5 text-[0.8rem] font-bold text-white">
+                  Próximamente
                 </button>
               </div>
+
             </div>
           </div>
         </section>
@@ -1034,7 +1306,7 @@ function LotsPage() {
               <div className="mb-1 text-[0.62rem] font-bold uppercase tracking-[0.5px] text-[#83867C]" style={{ marginBottom: 6, fontSize: ".7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#83867C" }}>Nombre del fraccionamiento</div>
               <input
                 className="w-full rounded-[8px] border-[1.5px] border-[#DCDAD2] bg-white px-3 py-2 text-[0.84rem] text-[#1E3D2B] outline-none"
-                style={{ width: "100%", borderRadius: 8, border: "1.5px solid #DCDAD2", background: "white", padding: "8px 12px", fontSize: ".84rem", color: "#1E3D2B", outline: "none", fontFamily: "inherit" }}
+                style={{ width: "100%", borderRadius: 8, border: "1.5px solid #DCDAD2", background: "white", padding: "8px 12px", fontSize: ".84rem", color: "#1E3D2B", outline: "none", fontFamily: "var(--font-body)" }}
                 placeholder="Ej. Residencial Las Palmas"
                 value={draftProject.name === "Nuevo Fraccionamiento" ? "" : draftProject.name}
                 onChange={(e) => setDraftProject((prev) => ({ ...prev, name: e.target.value || "Nuevo Fraccionamiento" }))}
@@ -1044,21 +1316,21 @@ function LotsPage() {
               <div className="lot-upload-code">IMG</div>
               <div>
                 <div className="lot-upload-drop-title">Seleccionar imagen del plano</div>
-                <div className="lot-upload-drop-sub">JPG, PNG o WEBP</div>
+                <div className="lot-upload-drop-sub">JPG, PNG, WEBP, HEIC o HEIF</div>
               </div>
               <div className="lot-upload-formats">
-                {["JPG", "PNG", "WEBP"].map((ext) => (
+                {["JPG", "PNG", "WEBP", "HEIC", "HEIF"].map((ext) => (
                   <span key={ext}>{ext}</span>
                 ))}
               </div>
               <div className="lot-upload-cta">Buscar archivo</div>
               <input
                 type="file"
-                accept="image/*"
+                accept={MAP_IMAGE_ACCEPT}
                 className="hidden"
-                onChange={(event) => {
+                onChange={async (event) => {
                   const file = event.target.files?.[0];
-                  if (file && updateMap(file)) {
+                  if (file && await updateMap(file)) {
                     setDraftProject((previous) => ({ ...previous, mode: "editor" }));
                   }
                   event.target.value = "";
@@ -1080,6 +1352,13 @@ function LotsPage() {
           </div>
         </section>
       )}
+      <GuideModal
+        open={showImportGuide}
+        onClose={() => setShowImportGuide(false)}
+        title={activeGuide.title}
+        subtitle={activeGuide.subtitle}
+        steps={activeGuide.steps}
+      />
     </div>
   );
 }

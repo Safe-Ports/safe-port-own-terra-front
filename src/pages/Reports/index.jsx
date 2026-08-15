@@ -1,60 +1,50 @@
 import { useMemo, useState } from "react";
+import GuideModal from "@/components/shared/GuideModal";
 import { useQuery } from "@tanstack/react-query";
 import {
   HiOutlineMagnifyingGlass, HiOutlinePrinter, HiOutlineUserCircle,
-  HiOutlineExclamationTriangle, HiOutlineCheckCircle,
+  HiOutlineExclamationTriangle, HiOutlineCheckCircle, HiOutlineArrowDownTray,
+  HiOutlineEnvelope,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
+import { SkeletonRows } from "@/components/ui/Skeleton";
+import { useLandsGuide } from "@/context/LandsGuideContext";
 import { clientService } from "@/services/clientService";
 import { currency, compactCurrency } from "@/services/formatters";
 
 /* ── helpers ─────────────────────────────────────────────────── */
 const fmtD = iso => !iso ? "—" : new Date(`${iso}T12:00:00`).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
 const fmtDLong = iso => !iso ? "—" : new Date(`${iso}T12:00:00`).toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" });
-const ESTADO_LABEL = { pending: "Pendiente", paid: "Pagado", overdue: "Vencido", partial: "Parcial" };
+const ESTADO_LABEL = { pending: "Pendiente", paid: "Pagado", overdue: "Vencido", partial: "Parcial", cancelled: "Cancelado" };
 const TYPE_LABEL   = { sale: "Compraventa", rent: "Arrendamiento", reserve: "Reserva" };
 const STATUS_LABEL = { active: "Activo", paid: "Pagado", cancelled: "Cancelado", default: "Mora" };
 
-/* ── OwnTerra logo (SVG inline) ──────────────────────────────── */
-function OwnTerraLogo({ size = 44 }) {
+/* ── Logotipo oficial de OwnTerra Lands ──────────────────────── */
+function OwnTerraLogo({ width = 142, className = "" }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 64 64" fill="none">
-      {/* círculo de fondo claro */}
-      <circle cx="32" cy="32" r="30" fill="#F3F0E4" stroke="#2A5020" strokeWidth="1.5"/>
-      {/* hoja izquierda */}
-      <path d="M14 22c0-5 4-9 9-9 .5 3-1 7-5 8.5-1.5.5-4 1.5-4 .5z" fill="#2A5020" opacity="0.9"/>
-      {/* hoja derecha pequeña */}
-      <path d="M40 18c2-3 5-3 6-1-.5 2-3 4-5 3.5-.5-.1-1.3-1-1-2.5z" fill="#2A5020" opacity="0.7"/>
-      {/* casita */}
-      <path d="M24 36l8-6 8 6v10h-5v-6h-6v6h-5V36z" fill="#2A5020"/>
-      {/* segunda casita (más alta) */}
-      <path d="M40 32l5-4 5 4v14h-3v-7h-4v7h-3V32z" fill="#2A5020"/>
-      {/* colinas */}
-      <path d="M10 50 Q22 42 32 50 Q42 42 54 50 L54 56 L10 56 Z" fill="#2A5020" opacity="0.85"/>
-      <path d="M8 54 Q24 48 32 54 Q40 48 56 54 L56 58 L8 58 Z" fill="#2A5020" opacity="0.9"/>
-    </svg>
+    <img
+      src="/ownterra_land.png"
+      alt="OwnTerra Lands"
+      className={className}
+      style={{
+        display: "block",
+        width,
+        height: "auto",
+        objectFit: "contain",
+        mixBlendMode: "multiply",
+        flexShrink: 0,
+      }}
+    />
   );
 }
 
 /* ── OwnTerra brand wordmark (para footer) ───────────────────── */
 function OwnTerraWordmark() {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <OwnTerraLogo size={26} />
-      <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1rem",
-        fontWeight: 700, color: "var(--navy)", lineHeight: 1 }}>
-        Own<span style={{ color: "var(--forest)" }}>Terra</span>
-        <div style={{ fontSize: ".5rem", letterSpacing: ".22em", color: "var(--mu)",
-          fontFamily: "'Inter',sans-serif", fontWeight: 600, textTransform: "uppercase", marginTop: 2 }}>
-          Ecosistem
-        </div>
-      </div>
-    </div>
-  );
+  return <OwnTerraLogo width={104} />;
 }
 
 /* ── Lista de clientes (izquierda) ───────────────────────────── */
-const AV_COLORS = ["#2A5020", "#7B5C38", "#1B2B18", "#2A5020", "#6B4E2A"];
+const AV_COLORS = ["#355E3B", "#2A5020", "#1E3D2B", "#4A7C5A", "#6FAF6B"];
 function Avatar({ name = "?", size = 32 }) {
   const col = AV_COLORS[(name.charCodeAt(0) || 0) % AV_COLORS.length];
   const init = name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
@@ -67,7 +57,7 @@ function Avatar({ name = "?", size = 32 }) {
   );
 }
 
-function ClientList({ clients, selectedId, onSelect, search, onSearch }) {
+function ClientList({ clients, selectedId, onSelect, search, onSearch, loading }) {
   return (
     <aside style={{
       width: 280, flexShrink: 0, background: "var(--sf)",
@@ -88,23 +78,26 @@ function ClientList({ clients, selectedId, onSelect, search, onSearch }) {
             style={{ width: "100%", padding: "7px 10px 7px 30px",
               border: "1.5px solid var(--bd)", borderRadius: 10,
               fontSize: ".8rem", background: "var(--sf2)",
-              fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+              fontFamily: "var(--font-body)", outline: "none", boxSizing: "border-box" }} />
         </div>
       </div>
       <div style={{ overflowY: "auto", flex: 1 }}>
-        {clients.length === 0 && (
+        {loading && (
+          <div style={{ padding: "12px" }}><SkeletonRows rows={6} /></div>
+        )}
+        {!loading && clients.length === 0 && (
           <div style={{ padding: "24px 14px", textAlign: "center", fontSize: ".8rem", color: "var(--mu)" }}>
             Sin resultados.
           </div>
         )}
-        {clients.map(c => (
+        {!loading && clients.map(c => (
           <button key={c.id} onClick={() => onSelect(c.id)}
             style={{
               width: "100%", display: "flex", alignItems: "center", gap: 10,
               padding: "10px 14px", border: "none", cursor: "pointer",
               background: selectedId === c.id ? "var(--tan-lt)" : "transparent",
               borderLeft: selectedId === c.id ? "3px solid var(--forest)" : "3px solid transparent",
-              fontFamily: "inherit", textAlign: "left",
+              fontFamily: "var(--font-body)", textAlign: "left",
             }}>
             <Avatar name={c.name} size={32} />
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -131,7 +124,7 @@ function EmptyReport() {
       minHeight: 500, gap: 14, boxShadow: "var(--sh)",
     }}>
       <HiOutlineUserCircle style={{ fontSize: "3.4rem", color: "var(--mu)", opacity: 0.5 }} />
-      <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.3rem", color: "var(--tx)" }}>
+      <div style={{ fontFamily: "var(--font-title)", fontSize: "1.3rem", color: "var(--tx)" }}>
         Selecciona un cliente
       </div>
       <div style={{ fontSize: ".88rem", color: "var(--mu)", maxWidth: 320, lineHeight: 1.5 }}>
@@ -288,7 +281,7 @@ function PaymentBehaviorChart({ payments }) {
           <div style={{ fontWeight: 700, marginBottom: 5, color: "var(--tan-lt)",
             textTransform: "capitalize" }}>{data[hover].fullLabel}</div>
           {[
-            ["Programado", data[hover].due,     "#A09080"],
+            ["Programado", data[hover].due,     "#94A3B8"],
             ["Pagado",     data[hover].paid,    "#2A5020"],
             ["Vencido",    data[hover].overdue, "#C0392B"],
           ].map(([l, v, c]) => (
@@ -306,6 +299,9 @@ function PaymentBehaviorChart({ payments }) {
 
 /* ── ClientReport (rediseñado: documento profesional) ────────── */
 function ClientReport({ clientId }) {
+  const { showToast } = useAppContext();
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
   const { data: client } = useQuery({
     queryKey: ["client-detail", clientId],
     queryFn: () => clientService.get(clientId),
@@ -338,6 +334,36 @@ function ClientReport({ clientId }) {
   const progress   = totalContracted > 0 ? Math.round((totalPaid / totalContracted) * 100) : 0;
 
   const handlePrint = () => window.print();
+  const downloadPdf = async () => {
+    setDownloadingPdf(true);
+    try {
+      const blob = await clientService.statementPdf(clientId);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `estado_cuenta_${String(client?.name || "cliente").replace(/\s+/g, "_").toLowerCase()}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      showToast("Estado de cuenta descargado");
+    } catch {
+      showToast("No se pudo descargar el estado de cuenta");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+  const sendPdf = async () => {
+    setSendingEmail(true);
+    try {
+      await clientService.sendStatement(clientId);
+      showToast("Estado de cuenta enviado por correo");
+    } catch {
+      showToast("No se pudo enviar el estado de cuenta");
+    } finally {
+      setSendingEmail(false);
+    }
+  };
 
   if (!client) return (
     <div style={{ flex: 1, padding: 40, textAlign: "center", color: "var(--mu)" }}>Cargando…</div>
@@ -349,12 +375,18 @@ function ClientReport({ clientId }) {
   return (
     <div style={{ flex: 1, minWidth: 0 }}>
       {/* botón flotante de imprimir */}
-      <div className="no-print" style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
+      <div className="no-print" style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+        <button className="btn-s" onClick={sendPdf} disabled={sendingEmail || !client.email}>
+          <HiOutlineEnvelope style={{ fontSize: "1rem" }}/> {sendingEmail ? "Enviando..." : "Enviar por correo"}
+        </button>
+        <button className="btn-s" onClick={downloadPdf} disabled={downloadingPdf}>
+          <HiOutlineArrowDownTray style={{ fontSize: "1rem" }}/> {downloadingPdf ? "Descargando..." : "Descargar PDF"}
+        </button>
         <button onClick={handlePrint} style={{
           display: "flex", alignItems: "center", gap: 6, padding: "9px 18px",
           borderRadius: 12, border: "none", cursor: "pointer",
           background: "var(--navy)", color: "#fff", fontWeight: 700,
-          fontSize: ".82rem", fontFamily: "inherit",
+          fontSize: ".82rem", fontFamily: "var(--font-body)",
           boxShadow: "0 4px 14px rgba(27,43,24,.25)",
         }}>
           <HiOutlinePrinter style={{ fontSize: "1rem" }}/> Imprimir reporte
@@ -371,19 +403,15 @@ function ClientReport({ clientId }) {
 
         {/* ─── HEADER ─── */}
         <div style={{ display: "flex", alignItems: "flex-start", gap: 18, marginBottom: 26 }}>
-          <OwnTerraLogo size={64} />
+          <OwnTerraLogo width={150} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.55rem",
-              fontWeight: 700, color: "var(--navy)", lineHeight: 1 }}>
-              Own<span style={{ color: "var(--forest)" }}>Terra</span>
-            </div>
-            <div style={{ marginTop: 14 }}>
-              <div style={{ fontSize: "1.35rem", fontFamily: "'Playfair Display',serif",
+            <div style={{ marginTop: 4 }}>
+              <div style={{ fontSize: "1.35rem", fontFamily: "var(--font-title)",
                 fontWeight: 700, color: "var(--tx)", letterSpacing: "0.02em",
                 textTransform: "uppercase", lineHeight: 1.1 }}>
                 Reporte financiero del cliente
               </div>
-              <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.45rem",
+              <div style={{ fontFamily: "var(--font-title)", fontSize: "1.45rem",
                 fontWeight: 600, color: "var(--forest)", marginTop: 4, lineHeight: 1.1 }}>
                 {client.name}
               </div>
@@ -483,16 +511,16 @@ function ClientReport({ clientId }) {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
               {[
-                { val: cntPaid,    lbl: "Al corriente", bg: "#D5ECC0", border: "#2A5020", color: "#2A5020" },
-                { val: cntPending, lbl: "Por vencer",   bg: "#F4ECD8", border: "#A88B58", color: "#7B5C38" },
-                { val: cntOverdue, lbl: "Vencidas",     bg: cntOverdue > 0 ? "#FCE0DC" : "#EDE8DF", border: cntOverdue > 0 ? "#C0392B" : "#A09080", color: cntOverdue > 0 ? "#C0392B" : "var(--mu)" },
+                { val: cntPaid,    lbl: "Al corriente", bg: "rgba(111,175,107,.14)", border: "rgba(111,175,107,.4)", color: "var(--mid)" },
+                { val: cntPending, lbl: "Por vencer",   bg: "var(--sf2)", border: "var(--bd)", color: "var(--tx2)" },
+                { val: cntOverdue, lbl: "Vencidas",     bg: cntOverdue > 0 ? "#FBE7E4" : "var(--sf2)", border: cntOverdue > 0 ? "var(--danger)" : "var(--bd)", color: cntOverdue > 0 ? "var(--danger)" : "var(--muted)" },
               ].map((c, i) => (
                 <div key={i} style={{
                   background: c.bg, border: `1.5px solid ${c.border}`, borderRadius: 10,
                   padding: "10px 6px", textAlign: "center",
                 }}>
-                  <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.4rem",
-                    fontWeight: 700, color: c.color, lineHeight: 1 }}>{c.val}</div>
+                  <div style={{ fontFamily: "var(--font-body)", fontSize: "1.4rem",
+                    fontWeight: 800, color: c.color, lineHeight: 1 }}>{c.val}</div>
                   <div style={{ fontSize: ".64rem", fontWeight: 700, color: c.color,
                     marginTop: 4, textTransform: "uppercase", letterSpacing: ".05em" }}>{c.lbl}</div>
                 </div>
@@ -631,9 +659,11 @@ function ClientReport({ clientId }) {
 
 /* ══ PAGE ════════════════════════════════════════════════════════ */
 export default function ReportsPage() {
-  const { clients } = useAppContext();
-  const [search, setSearch]   = useState("");
+  const { clients, clientsLoading } = useAppContext();
+  const [search, setSearch]     = useState("");
   const [selectedId, setSelectedId] = useState(null);
+  const [showGuide, setShowGuide]   = useState(false);
+  useLandsGuide(() => setShowGuide(true));
 
   const filteredClients = useMemo(() => {
     const s = search.trim().toLowerCase();
@@ -648,18 +678,18 @@ export default function ReportsPage() {
       <style>{`
         /* ── Estilos exclusivos del reporte ── */
         .rp-table th {
-          background: #F4ECD8;
-          color: #2A5020 !important;
+          background: var(--sf2);
+          color: var(--deep) !important;
           font-size: .65rem !important;
           padding: 8px 10px !important;
           font-weight: 800 !important;
           letter-spacing: .08em !important;
-          border-bottom: 1.5px solid var(--tan-lt) !important;
+          border-bottom: 1px solid var(--line-soft) !important;
         }
         .rp-table td {
           padding: 8px 10px !important;
           font-size: .8rem;
-          border-bottom: 1px solid #F0EBE0 !important;
+          border-bottom: 1px solid var(--line-soft) !important;
         }
         .rp-table tr:last-child td { border-bottom: none !important; }
 
@@ -672,9 +702,10 @@ export default function ReportsPage() {
           text-transform: uppercase;
           letter-spacing: .05em;
         }
-        .rp-badge-active  { background:#D5ECC0; color:#2A5020; border:1px solid #2A5020; }
-        .rp-badge-pending { background:#F4ECD8; color:#7B5C38; border:1px solid #A88B58; }
-        .rp-badge-overdue { background:#FCE0DC; color:#C0392B; border:1px solid #C0392B; }
+        /* verde = al corriente/pagado · neutro = pendiente/por vencer · rojo = vencido */
+        .rp-badge-active  { background:rgba(111,175,107,.16); color:var(--mid); border:1px solid rgba(111,175,107,.4); }
+        .rp-badge-pending { background:var(--sf2); color:var(--tx2); border:1px solid var(--bd); }
+        .rp-badge-overdue { background:#FBE7E4; color:var(--danger); border:1px solid var(--danger); }
 
         .rp-pill {
           font-size: .62rem;
@@ -683,9 +714,9 @@ export default function ReportsPage() {
           border-radius: 99px;
           letter-spacing: .03em;
         }
-        .rp-pill-paid    { background:#D5ECC0; color:#2A5020; }
-        .rp-pill-pending { background:#EDE8DF; color:#3A3228; }
-        .rp-pill-overdue { background:#FCE0DC; color:#C0392B; }
+        .rp-pill-paid    { background:rgba(111,175,107,.16); color:var(--mid); }
+        .rp-pill-pending { background:var(--sf2); color:var(--tx2); }
+        .rp-pill-overdue { background:#FBE7E4; color:var(--danger); }
 
         /* Print rules */
         @media print {
@@ -714,10 +745,25 @@ export default function ReportsPage() {
             onSelect={setSelectedId}
             search={search}
             onSearch={setSearch}
+            loading={clientsLoading}
           />
         </div>
         {selectedId ? <ClientReport clientId={selectedId} /> : <EmptyReport />}
       </div>
+      <GuideModal
+        open={showGuide}
+        onClose={() => setShowGuide(false)}
+        title="Estado de cuenta"
+        subtitle="Reportes financieros profesionales por cliente con historial de pagos."
+        steps={[
+          { title: "Seleccionar cliente", text: "Busca y selecciona un cliente de la lista izquierda para generar su estado de cuenta. Puedes buscar por nombre, correo o teléfono." },
+          { title: "Comportamiento de pago", text: "La gráfica de los últimos 12 meses muestra en verde los meses con pago puntual y en rojo los vencidos. Ideal para evaluar al cliente." },
+          { title: "Resumen financiero", text: "Muestra el total contratado, lo ya pagado, el saldo pendiente y el progreso porcentual de cada contrato del cliente." },
+          { title: "Plan de pagos detallado", text: "Tabla completa con cada cuota: número, fecha de vencimiento, monto, estado y fecha de pago aplicado." },
+          { title: "Descargar PDF", text: "El botón de descarga genera el estado de cuenta en formato A4 listo para imprimir o enviar por correo." },
+          { title: "Enviar por correo", text: "El botón de correo envía automáticamente el estado de cuenta al email registrado del cliente." },
+        ]}
+      />
     </>
   );
 }

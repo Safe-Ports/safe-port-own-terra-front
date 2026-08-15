@@ -1,4 +1,5 @@
 import { useMemo, useState, useRef, useEffect } from "react";
+import GuideModal from "@/components/shared/GuideModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   HiDocumentArrowUp, HiOutlineFolder, HiFolderOpen, HiOutlineFolderPlus,
@@ -7,9 +8,13 @@ import {
   HiOutlineArrowRight, HiOutlineMagnifyingGlass,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
+import EmptyState from "@/components/ui/EmptyState";
+import { SkeletonRows } from "@/components/ui/Skeleton";
+import { useLandsGuide } from "@/context/LandsGuideContext";
 import { folderService } from "@/services/folderService";
 import { documentService, filenameForDocument } from "@/services/documentService";
-import { getUserErrorMessage } from "@/services/errors";
+import useEscapeKey from "@/hooks/useEscapeKey";
+
 
 /* ── helpers ────────────────────────────────────────────────────────────── */
 const CAT_LABEL = {
@@ -118,6 +123,7 @@ function FolderNode({ node, folders, activeId, onSelect, onAddChild, onRename, o
 
 /* ── MoveModal ──────────────────────────────────────────────────────────── */
 function MoveModal({ folders, doc, onMove, onClose }) {
+  useEscapeKey(onClose);
   const [expanded, setExpanded] = useState({});
 
   function Tree({ parentId = null, depth = 0 }) {
@@ -180,7 +186,9 @@ function MoveModal({ folders, doc, onMove, onClose }) {
 
 /* ── main page ──────────────────────────────────────────────────────────── */
 export default function DocumentsPage() {
-  const { documents, openDocumentUpload, openDocumentPreview, downloadDocument, deleteDocument, showToast } = useAppContext();
+  const { documents, documentsLoading, openDocumentUpload, openDocumentPreview, downloadDocument, deleteDocument, showToast, showError } = useAppContext();
+  const [showGuide, setShowGuide] = useState(false);
+  useLandsGuide(() => setShowGuide(true));
   const qc = useQueryClient();
 
   const { data: folders = [] } = useQuery({
@@ -192,22 +200,22 @@ export default function DocumentsPage() {
   const createFolder = useMutation({
     mutationFn: folderService.create,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["document-folders"] }); showToast("Carpeta creada"); },
-    onError: (e) => showToast(getUserErrorMessage(e, "Error al crear carpeta")),
+    onError: (e) => showError(e, "Error al crear carpeta"),
   });
   const renameFolder = useMutation({
     mutationFn: ({ id, name }) => folderService.update(id, { name }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["document-folders"] }); showToast("Carpeta renombrada"); },
-    onError: (e) => showToast(getUserErrorMessage(e, "Error al renombrar la carpeta")),
+    onError: (e) => showError(e, "Error al renombrar la carpeta"),
   });
   const deleteFolder = useMutation({
     mutationFn: folderService.delete,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["document-folders"] }); qc.invalidateQueries({ queryKey: ["documents"] }); showToast("Carpeta eliminada"); },
-    onError: (e) => showToast(getUserErrorMessage(e, "Error al eliminar la carpeta")),
+    onError: (e) => showError(e, "Error al eliminar la carpeta"),
   });
   const moveDoc = useMutation({
     mutationFn: ({ id, folderId }) => documentService.move(id, folderId),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["documents"] }); qc.invalidateQueries({ queryKey: ["document-folders"] }); showToast("Archivo movido"); },
-    onError: (e) => showToast(getUserErrorMessage(e, "Error al mover el archivo")),
+    onError: (e) => showError(e, "Error al mover el archivo"),
   });
 
   const [activeId,    setActiveId]    = useState("all");
@@ -217,6 +225,7 @@ export default function DocumentsPage() {
   const [delDoc,      setDelDoc]      = useState(null);
   const [newIn,       setNewIn]       = useState(null);   // parentId | "__root__"
   const [newDraft,    setNewDraft]    = useState("");
+  useEscapeKey(() => setDelDoc(null), Boolean(delDoc));
 
   const handleAddChild = (parentId) => { setNewIn(parentId); setNewDraft(""); };
   const handleCreate   = (parentId) => {
@@ -271,7 +280,7 @@ export default function DocumentsPage() {
         }
         .doc-sidebar-label {
           font-size:.56rem; font-weight:600; letter-spacing:.14em;
-          text-transform:uppercase; color:#83867C; font-family:'JetBrains Mono',monospace;
+          text-transform:uppercase; color:#83867C; font-family: var(--font-body);
           padding:14px 16px 6px;
         }
         .doc-sidebar-item {
@@ -279,12 +288,12 @@ export default function DocumentsPage() {
           padding:11px 16px; border:none; border-left:3px solid transparent; cursor:pointer;
           background:transparent; color:#43453F; font-size:.82rem; text-align:left;
           border-bottom:1px solid rgba(67,69,63,.08); transition:background .14s;
-          font-family:'Outfit',sans-serif;
+          font-family: var(--font-body);
         }
         .doc-sidebar-item:hover { background:#F1EEE6; }
         .doc-sidebar-item.active { background:rgba(111,175,107,.08); color:#1E3D2B; font-weight:600; border-left-color:#6FAF6B; }
         .doc-sidebar-item .count {
-          margin-left:auto; font-size:.7rem; font-weight:500; font-family:'JetBrains Mono',monospace;
+          margin-left:auto; font-size:.7rem; font-weight:500; font-family: var(--font-body);
           color:#83867C; background:none; padding:0;
         }
         .doc-sidebar-item.active .count { color:#2F6A38; }
@@ -295,14 +304,14 @@ export default function DocumentsPage() {
           padding:11px 16px; border-left:3px solid transparent; cursor:pointer;
           color:#43453F; font-size:.82rem; position:relative;
           border-bottom:1px solid rgba(67,69,63,.08); transition:background .14s;
-          font-family:'Outfit',sans-serif;
+          font-family: var(--font-body);
         }
         .doc-folder-row:hover { background:#F1EEE6; }
         .doc-folder-row.active { background:rgba(111,175,107,.08); color:#1E3D2B; font-weight:600; border-left-color:#6FAF6B; }
         .doc-folder-chevron { width:13px; font-size:.58rem; color:#83867C; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
         .doc-folder-icon { width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:rgba(111,175,107,.12); font-size:.95rem; flex-shrink:0; }
         .doc-folder-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; font-size:.82rem; }
-        .doc-folder-count { font-size:.7rem; font-weight:500; font-family:'JetBrains Mono',monospace; color:#83867C; flex-shrink:0; }
+        .doc-folder-count { font-size:.7rem; font-weight:500; font-family: var(--font-body); color:#83867C; flex-shrink:0; }
         .doc-folder-row.active .doc-folder-count { color:#2F6A38; }
         .doc-folder-menu-btn {
           opacity:0; background:none; border:none; cursor:pointer;
@@ -320,19 +329,19 @@ export default function DocumentsPage() {
         .doc-folder-menu button {
           display:flex; align-items:center; gap:9px; width:100%;
           padding:8px 11px; background:none; border:none; cursor:pointer; border-radius:8px;
-          font-size:.78rem; color:#43453F; text-align:left; font-family:'Outfit',sans-serif;
+          font-size:.78rem; color:#43453F; text-align:left; font-family: var(--font-body);
         }
         .doc-folder-menu button:hover { background:#F1EEE6; }
         .doc-folder-menu button.danger { color:#C0392B; }
         .doc-folder-rename {
           flex:1; font-size:.8rem; padding:4px 8px; border-radius:8px;
-          border:1px solid #6FAF6B; outline:none; color:#1E3D2B; background:var(--sf); font-family:'Outfit',sans-serif;
+          border:1px solid #6FAF6B; outline:none; color:#1E3D2B; background:var(--sf); font-family: var(--font-body);
         }
         .doc-add-folder-btn {
           display:flex; align-items:center; gap:7px; width:calc(100% - 24px); margin:10px 12px;
           padding:9px 11px; border-radius:11px; border:1px dashed rgba(67,69,63,.18); background:transparent;
           color:var(--mid); font-size:.78rem; font-weight:600; cursor:pointer; justify-content:center;
-          font-family:'Outfit',sans-serif;
+          font-family: var(--font-body);
         }
         .doc-add-folder-btn:hover { background:rgba(111,175,107,.06); border-color:#6FAF6B; }
         .doc-new-folder-row { display:flex; gap:6px; padding:8px 12px; align-items:center; }
@@ -349,12 +358,12 @@ export default function DocumentsPage() {
         .doc-main-body { padding:18px 20px; }
         .doc-breadcrumb {
           display:flex; align-items:center; gap:4px;
-          font-size:.66rem; color:#83867C; margin-bottom:4px; font-family:'JetBrains Mono',monospace;
+          font-size:.66rem; color:#83867C; margin-bottom:4px; font-family: var(--font-body);
         }
         .doc-breadcrumb span { cursor:pointer; }
         .doc-breadcrumb span:last-child { color:#43453F; font-weight:600; cursor:default; }
         .doc-page-title {
-          font-family:'Playfair Display',serif; font-size:1.35rem; font-weight:600; color:#1E3D2B; line-height:1.15;
+          font-family: var(--font-title); font-size:1.35rem; font-weight:600; color:#1E3D2B; line-height:1.15;
         }
         .doc-actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
         .doc-empty {
@@ -369,7 +378,7 @@ export default function DocumentsPage() {
         .doc-row-btn:hover { opacity:1; background:rgba(111,175,107,.1); }
         .doc-row-btn.danger { color:#C0392B; }
         .doc-row-btn.danger:hover { background:#FDECEA; }
-        .doc-count { font-size:.68rem; color:#83867C; margin-top:12px; font-family:'JetBrains Mono',monospace; }
+        .doc-count { font-size:.68rem; color:#83867C; margin-top:12px; font-family: var(--font-body); }
 
         /* move modal tree */
         .move-tree-row {
@@ -387,12 +396,12 @@ export default function DocumentsPage() {
         /* confirm modal */
         .modal-overlay { position:fixed; inset:0; background:rgba(20,30,22,.45); backdrop-filter:blur(6px); z-index:9000; display:flex; align-items:center; justify-content:center; }
         .modal-box { background:#FBFAF6; border:1px solid var(--bd); border-radius:22px; padding:24px; width:100%; box-shadow:0 24px 60px rgba(0,0,0,.22); }
-        .modal-title { font-family:'Playfair Display',serif; font-weight:600; font-size:1.15rem; margin-bottom:8px; color:#1E3D2B; }
+        .modal-title { font-family: var(--font-title); font-weight:600; font-size:1.15rem; margin-bottom:8px; color:#1E3D2B; }
 
         /* header chip + buscador pill + tarjetas de documento (idéntico a usr-row del Vault) */
         .doc-dhead-ico { width:44px; height:44px; border-radius:13px; display:flex; align-items:center; justify-content:center; background:rgba(111,175,107,.12); font-size:1.25rem; flex-shrink:0; }
         .doc-search { display:flex; align-items:center; gap:8px; background:var(--bg2); border:1px solid rgba(67,69,63,.1); border-radius:11px; padding:8px 12px; margin-bottom:14px; }
-        .doc-search input { border:none; background:none; outline:none; width:100%; font-size:.82rem; color:var(--tx); font-family:'Outfit',sans-serif; }
+        .doc-search input { border:none; background:none; outline:none; width:100%; font-size:.82rem; color:var(--tx); font-family: var(--font-body); }
         .doc-search svg { color:#83867C; flex-shrink:0; font-size:.95rem; }
         .doc-rows { display:flex; flex-direction:column; gap:8px; }
         .doc-card-row { display:flex; align-items:center; gap:12px; padding:11px 14px; border:1px solid rgba(67,69,63,.1); border-radius:13px; background:var(--sf); transition:border-color .15s; }
@@ -400,7 +409,7 @@ export default function DocumentsPage() {
         .doc-card-ico { width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:var(--bg2); color:var(--mid); font-size:1rem; flex-shrink:0; }
         .doc-card-info { flex:1; min-width:0; }
         .doc-card-name { font-size:.82rem; font-weight:600; color:#1E3D2B; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-        .doc-card-meta { font-size:.69rem; color:#83867C; font-family:'JetBrains Mono',monospace; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .doc-card-meta { font-size:.69rem; color:#83867C; font-family: var(--font-body); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
       `}</style>
 
       <div className="doc-layout">
@@ -507,7 +516,17 @@ export default function DocumentsPage() {
           </label>
 
           {/* documentos (tarjetas) */}
-          {filtered.length === 0 ? (
+          {documentsLoading ? (
+            <SkeletonRows rows={6} />
+          ) : documents.length === 0 ? (
+            <EmptyState
+              icon="📁"
+              title="Aún no hay documentos"
+              description="Sube contratos, comprobantes o identificaciones y organízalos en carpetas."
+              ctaLabel="Subir documento"
+              onCta={() => openDocumentUpload({})}
+            />
+          ) : filtered.length === 0 ? (
             <div className="doc-empty">
               {search ? "Sin resultados para esa búsqueda." : "Esta carpeta está vacía."}
               {!search && (
@@ -584,6 +603,20 @@ export default function DocumentsPage() {
           </div>
         </div>
       )}
+      <GuideModal
+        open={showGuide}
+        onClose={() => setShowGuide(false)}
+        title="Bóveda de documentos"
+        subtitle="Almacén centralizado de archivos organizado por carpetas jerárquicas."
+        steps={[
+          { title: "Navegar carpetas", text: "El árbol de la izquierda muestra todas tus carpetas. Haz clic en una para ver sus documentos. Las subcarpetas se crean con el ícono '+'." },
+          { title: "Subir documentos", text: "Selecciona la carpeta destino y pulsa 'Subir'. El documento queda vinculado a esa carpeta y puede asignarse una categoría (contrato, identificación, escritura, etc.)." },
+          { title: "Buscar archivos", text: "La barra de búsqueda filtra documentos por nombre dentro de la carpeta activa. Para buscar en todas las carpetas selecciona 'Todos los archivos'." },
+          { title: "Mover documentos", text: "Haz clic en el menú de opciones (⋮) de cualquier documento para moverlo a otra carpeta o eliminarlo." },
+          { title: "Descargar documentos", text: "El ícono de descarga en cada archivo descarga el documento original en su formato (PDF, imagen, etc.)." },
+          { title: "Sin carpeta", text: "La sección 'Sin carpeta' agrupa todos los archivos que no han sido organizados en ninguna carpeta. Úsala para mover archivos pendientes de clasificar." },
+        ]}
+      />
     </>
   );
 }

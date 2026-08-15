@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import GuideModal from "@/components/shared/GuideModal";
 import { useQuery } from "@tanstack/react-query";
 import { dashboardService } from "@/services/dashboardService";
 import { paymentService } from "@/services/paymentService";
@@ -7,7 +8,7 @@ import EcoLayout from "./EcoLayout";
 
 const APP_META = {
   lands: { name: "OwnTerra Lands", short: "Lands", handle: "terra.lands", icon: "eco-g-lands", cls: "ic-lands", color: "#6FAF6B", live: true },
-  neighb: { name: "OwnTerra Neighborhoods", short: "Neighborhoods", handle: "terra.neighborhoods", icon: "eco-g-neighb", cls: "ic-neighb", color: "#355E3B", live: false },
+  neighb: { name: "OwnTerra Properties", short: "Properties", handle: "terra.properties", icon: "eco-g-neighb", cls: "ic-neighb", color: "#355E3B", live: false },
   homes: { name: "OwnTerra Homes", short: "Homes", handle: "terra.homes", icon: "eco-g-homes", cls: "ic-homes", color: "#A7CBA1", live: false },
 };
 
@@ -49,7 +50,7 @@ function BarChart({ labels, revenue }) {
       {pts.map(([x, y], i) => (
         <circle key={i} cx={x} cy={y} r={i === pts.length - 1 ? 4.4 : 3.4} fill="#fff" stroke="#6FAF6B" strokeWidth="2.4" />
       ))}
-      <g fill="#83867C" fontSize="11" fontFamily="'Outfit',sans-serif" textAnchor="middle">
+      <g fill="#83867C" fontSize="11" fontFamily="Inter, system-ui, sans-serif" textAnchor="middle">
         {labels.map((l, i) => <text key={i} x={pad + i * step} y={H + 18}>{l}</text>)}
       </g>
     </svg>
@@ -58,8 +59,8 @@ function BarChart({ labels, revenue }) {
 
 function EcosystemFinanzas() {
   const navigate = useNavigate();
-  const [period, setPeriod] = useState("month");
-  const [appFilter, setAppFilter] = useState("all");
+  const [period, setPeriod]       = useState("month");
+  const [showGuide, setShowGuide] = useState(false);
 
   const { data: stats } = useQuery({
     queryKey: ["dashboard-stats", period],
@@ -74,15 +75,13 @@ function EcosystemFinanzas() {
 
   const cobrar = (app) => APP_META[app]?.live && navigate("/pagos");
 
-  const shownOverdue = appFilter === "all" ? overdueItems : overdueItems.filter(() => appFilter === "lands");
-
   const periodLabel = { month: "Este mes", quarter: "Este trimestre", year: "Este año" };
 
   return (
-    <EcoLayout active="fin" title="Estados Financieros" subtitle="Tesorería y cobranza consolidada del ecosistema">
+    <EcoLayout active="fin" title="Estados Financieros" subtitle="Tesorería y cobranza de OwnTerra Lands" onGuide={() => setShowGuide(true)}>
 
       <div className="section-head">
-        <h3>Tesorería del ecosistema</h3>
+        <h3>Tesorería de OwnTerra Lands</h3>
         <div className="seg" style={{ marginLeft: "auto" }}>
           {["month", "quarter", "year"].map((p) => (
             <span key={p} className={period === p ? "on" : ""} onClick={() => setPeriod(p)}>{periodLabel[p]}</span>
@@ -95,7 +94,7 @@ function EcosystemFinanzas() {
         <div className="kpi">
           <div className="kpi-head"><span className="kpi-label">Ingresos del periodo</span></div>
           <div className="kpi-val">{stats ? fmtK(stats.revenue) : "—"}</div>
-          <div className="kpi-foot">{periodLabel[period]} · todas las apps</div>
+          <div className="kpi-foot">{periodLabel[period]} · OwnTerra Lands</div>
         </div>
         <div className="kpi">
           <div className="kpi-head"><span className="kpi-label">Tasa de cobranza</span></div>
@@ -151,12 +150,10 @@ function EcosystemFinanzas() {
                 ["Nuevos clientes", stats.new_clients],
                 ["Nuevos prospectos", stats.new_leads],
                 ["Tasa de cobranza", `${(stats.collection_rate * 100).toFixed(1)}%`],
-                ["Comisiones pagadas", fmtK(stats.commissions_paid)],
-                ["Comisiones pendientes", fmtK(stats.commissions_pending)],
               ].map(([label, val]) => (
                 <div key={label} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, borderBottom: "1px solid var(--border)", paddingBottom: 10 }}>
                   <span style={{ color: "var(--text2)" }}>{label}</span>
-                  <b style={{ color: "var(--deep)", fontFamily: "'JetBrains Mono',monospace" }}>{val}</b>
+                  <b style={{ color: "var(--deep)", fontFamily: "var(--font-body)" }}>{val}</b>
                 </div>
               ))}
             </div>
@@ -166,27 +163,17 @@ function EcosystemFinanzas() {
         </div>
       </div>
 
-      {/* Cobranza vencida consolidada */}
+      {/* Cobranza vencida */}
       <div className="md-card" style={{ marginBottom: 30, marginTop: 16 }}>
         <div className="md-card-head" style={{ marginBottom: 14 }}>
           <div>
-            <div className="md-card-title">Cobranza vencida · todas las apps</div>
-            <div className="md-card-sub">prioriza y entra a la app a cobrar</div>
+            <div className="md-card-title">Cobranza vencida · OwnTerra Lands</div>
+            <div className="md-card-sub">Prioriza los pagos en mora</div>
           </div>
           <span className="sh-link" style={{ cursor: "pointer" }} onClick={() => navigate("/pagos")}>Ver toda la cartera →</span>
         </div>
 
-        <div className="usr-fil-row" style={{ marginBottom: 6 }}>
-          <span className="usr-fil-lbl">App:</span>
-          <button className={`usr-fil ${appFilter === "all" ? "on" : ""}`} onClick={() => setAppFilter("all")}>Todas</button>
-          {Object.entries(APP_META).map(([k, a]) => (
-            <button key={k} className={`usr-fil ${appFilter === k ? "on" : ""}`} onClick={() => setAppFilter(k)}>
-              <span className="usr-fil-dot" style={{ background: a.color }} />{a.short}
-            </button>
-          ))}
-        </div>
-
-        {shownOverdue.length ? shownOverdue.map((o) => (
+        {overdueItems.length ? overdueItems.map((o) => (
           <div key={o.id} className="md-row">
             <span className="md-row-ico" style={{ background: "#FDECEA" }}>💳</span>
             <div className="md-row-info">
@@ -204,6 +191,18 @@ function EcosystemFinanzas() {
           <div className="md-empty">Sin pagos vencidos. 🎉</div>
         )}
       </div>
+      <GuideModal
+        open={showGuide}
+        onClose={() => setShowGuide(false)}
+        title="Estados financieros"
+        subtitle="Tesorería y cobranza respaldada por la operación de OwnTerra Lands."
+        steps={[
+          { title: "KPIs del período", text: "Muestra ingresos totales, tasa de cobranza, pagos vencidos y ventas del período seleccionado en OwnTerra Lands." },
+          { title: "Cambiar período", text: "Selecciona 'Este mes', 'Este trimestre' o 'Este año' para ajustar el período de análisis de todos los indicadores y tablas." },
+          { title: "Cartera vencida", text: "La tabla de cobranza vencida muestra todos los pagos con más de 1 día de mora, ordenados por urgencia y días vencidos." },
+          { title: "Cobrar desde aquí", text: "El botón 'Cobrar' junto a cada pago vencido abre la pantalla de pagos para registrar el cobro." },
+        ]}
+      />
     </EcoLayout>
   );
 }

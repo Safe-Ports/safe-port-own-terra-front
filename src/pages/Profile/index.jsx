@@ -1,15 +1,20 @@
+import { useState } from "react";
 import { HiArrowLeftOnRectangle, HiBuildingOffice2, HiCog6Tooth, HiShieldCheck } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
+import { useLandsGuide } from "@/context/LandsGuideContext";
 import { useDashboardQuery } from "@/hooks/queries/useAppQueries";
 import { orgService } from "@/services/orgService";
+import GuideModal from "@/components/shared/GuideModal";
 import { compactCurrency } from "@/services/formatters";
 
 function ProfilePage() {
   const navigate = useNavigate();
   const { currentUser, logout } = useAppContext();
   const { data } = useDashboardQuery();
+  const [showGuide, setShowGuide] = useState(false);
+  useLandsGuide(() => setShowGuide(true));
 
   const { data: org } = useQuery({
     queryKey: ["organization"],
@@ -23,7 +28,7 @@ function ProfilePage() {
           <div className="flex h-16 w-16 items-center justify-center rounded-[26px] bg-[linear-gradient(135deg,#6FAF6B,#8B6A46)] text-xl font-black text-[#1E3D2B]">
             {currentUser?.initials || "OT"}
           </div>
-          <div>
+          <div className="flex-1">
             <div className="font-['Playfair_Display'] text-[2rem] leading-none">{currentUser?.name}</div>
             <div className="mt-2 text-sm text-white/62">{currentUser?.email}</div>
           </div>
@@ -91,6 +96,18 @@ function ProfilePage() {
         <HiArrowLeftOnRectangle className="text-lg" />
         Cerrar sesión
       </button>
+      <GuideModal
+        open={showGuide}
+        onClose={() => setShowGuide(false)}
+        title="Mi perfil"
+        subtitle="Información personal, estadísticas y accesos rápidos."
+        steps={[
+          { title: "Estadísticas personales", text: "Los 2 indicadores en tu tarjeta de perfil muestran el total de clientes en el sistema y el monto de cobranza aplicada en la plataforma." },
+          { title: "Información de la organización", text: "La tarjeta inferior muestra el nombre de tu organización, el dominio y el plan activo. Para editar esta información ve a Configuración." },
+          { title: "Ir a configuración", text: "El botón 'Configuración' te lleva directamente al panel de administración de organización y usuarios del equipo." },
+          { title: "Cerrar sesión", text: "El botón rojo al final cierra tu sesión activa de forma segura. Tendrás que ingresar de nuevo con tu correo y contraseña." },
+        ]}
+      />
     </div>
   );
 }

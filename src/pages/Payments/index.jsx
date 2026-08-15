@@ -1,20 +1,31 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import GuideModal from "@/components/shared/GuideModal";
 import {
   HiOutlinePlus, HiOutlinePencil, HiOutlineTrash, HiOutlineCalendar,
   HiOutlineXMark, HiOutlineMagnifyingGlass, HiOutlineChevronDown,
   HiOutlineFunnel, HiOutlineEllipsisVertical,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
+import { useLandsGuide } from "@/context/LandsGuideContext";
 import { expenseService, CAT_LABEL, CAT_STYLE } from "@/services/expenseService";
-import { getUserErrorMessage } from "@/services/errors";
+
+import FieldError from "@/components/shared/FieldError";
+import { useFieldErrors } from "@/hooks/useFieldErrors";
+import useEscapeKey from "@/hooks/useEscapeKey";
+
+const reqText = (label) => (v) => (!v || !String(v).trim() ? `${label} es obligatorio.` : "");
+const reqNum = (label) => (v) => (v === "" || v == null || isNaN(Number(v)) || Number(v) <= 0 ? `Ingresa un ${label} válido (> 0).` : "");
+const EGRESO_RULES = { concepto: reqText("El concepto"), monto: reqNum("monto") };
+const COBRO_RULES = { clientId: reqText("El cliente"), contractId: reqText("El contrato"), cuota: reqNum("número de cuota"), amount: reqNum("monto") };
 import { currency, relativeDays } from "@/services/formatters";
 import Avatar from "@/components/Avatar";
 import Button from "@/components/Button";
 import Input from "@/components/Input";
 
 /* ── helpers ─────────────────────────────────────────────────── */
-const ESTADO_LABEL = { pending: "Pendiente", paid: "Pagado", overdue: "Vencido" };
+const ESTADO_LABEL = { pending: "Pendiente", paid: "Pagado", overdue: "Vencido", partial: "Parcial", cancelled: "Cancelado" };
 const fmtD = iso => !iso ? "—" : new Date(iso).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
 
 function badgeCls(iso, status) {
@@ -124,7 +135,7 @@ function BarChart({ data }) {
 function SmartFilterBar({ search, onSearch, estado, onEstado, periodo, onPeriodo, desde, onDesde, hasta, onHasta, estadoOptions }) {
   const sel = { appearance: "none", border: "1.5px solid var(--bd)", borderRadius: 10,
     fontSize: ".82rem", fontWeight: 600, background: "#fff", color: "var(--tx)",
-    cursor: "pointer", fontFamily: "inherit", outline: "none" };
+    cursor: "pointer", fontFamily: "var(--font-body)", outline: "none" };
   return (
     <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 14,
       background: "var(--sf)", border: "1px solid rgba(67,69,63,.1)", borderRadius: 18,
@@ -164,7 +175,7 @@ function SmartFilterBar({ search, onSearch, estado, onEstado, periodo, onPeriodo
         <span style={{ fontSize: ".72rem", fontWeight: 700, color: "var(--mu)" }}>Desde</span>
         <input type="date" value={desde} onChange={e => onDesde(e.target.value)}
           style={{ border: "1.5px solid var(--bd)", borderRadius: 10, padding: "6px 10px",
-            fontSize: ".8rem", background: "#fff", fontFamily: "inherit", outline: "none", cursor: "pointer" }} />
+            fontSize: ".8rem", background: "#fff", fontFamily: "var(--font-body)", outline: "none", cursor: "pointer" }} />
       </div>
 
       {/* Hasta */}
@@ -172,7 +183,7 @@ function SmartFilterBar({ search, onSearch, estado, onEstado, periodo, onPeriodo
         <span style={{ fontSize: ".72rem", fontWeight: 700, color: "var(--mu)" }}>Hasta</span>
         <input type="date" value={hasta} onChange={e => onHasta(e.target.value)}
           style={{ border: "1.5px solid var(--bd)", borderRadius: 10, padding: "6px 10px",
-            fontSize: ".8rem", background: "#fff", fontFamily: "inherit", outline: "none", cursor: "pointer" }} />
+            fontSize: ".8rem", background: "#fff", fontFamily: "var(--font-body)", outline: "none", cursor: "pointer" }} />
       </div>
 
       {/* Limpiar */}
@@ -194,7 +205,7 @@ function Pagination({ total, page, limit, onPage, onLimit }) {
     width: 30, height: 30, borderRadius: 8, border: "1px solid var(--bd)",
     background: disabled ? "var(--sf2)" : "#fff", color: disabled ? "var(--mu)" : "var(--tx)",
     cursor: disabled ? "default" : "pointer", display: "flex", alignItems: "center",
-    justifyContent: "center", fontSize: ".8rem", fontFamily: "inherit", fontWeight: 700,
+    justifyContent: "center", fontSize: ".8rem", fontFamily: "var(--font-body)", fontWeight: 700,
   });
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -213,7 +224,7 @@ function Pagination({ total, page, limit, onPage, onLimit }) {
       </div>
       <select value={limit} onChange={e => { onLimit(Number(e.target.value)); onPage(1); }}
         style={{ border: "1px solid var(--bd)", borderRadius: 8, padding: "5px 8px",
-          fontSize: ".75rem", background: "#fff", fontFamily: "inherit", outline: "none", cursor: "pointer" }}>
+          fontSize: ".75rem", background: "#fff", fontFamily: "var(--font-body)", outline: "none", cursor: "pointer" }}>
         {[10, 25, 50].map(n => <option key={n} value={n}>{n} por página</option>)}
       </select>
     </div>
@@ -289,7 +300,7 @@ function PagoTable({ rows, isEgreso, historial, onPagar, onRecordar, onEdit, onD
               {!historial && (
                 <td>
                   <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                    {status !== "paid" && (
+                    {status !== "paid" && status !== "cancelled" && (
                       <button onClick={() => onPagar(r)} className={isEgreso ? "btn-s" : "btn-p"} style={{ padding: "6px 12px", fontSize: ".74rem", whiteSpace: "nowrap" }}>
                         {isEgreso ? "Pagar" : "Cobrar"}
                       </button>
@@ -322,6 +333,7 @@ function PagoTable({ rows, isEgreso, historial, onPagar, onRecordar, onEdit, onD
 
 /* ── Modal egreso ────────────────────────────────────────────── */
 function EgresoModal({ initial, onClose, onSave }) {
+  useEscapeKey(onClose);
   const [form, setForm] = useState({
     concepto:    initial?.concepto    || "",
     categoria:   initial?.categoria   || "servicios",
@@ -330,7 +342,9 @@ function EgresoModal({ initial, onClose, onSave }) {
     recurrencia: initial?.recurrencia || "",
     notes:       initial?.notes       || "",
   });
-  const set = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
+  const fe = useFieldErrors();
+  const set = k => e => { const v = e.target.value; setForm(p => ({ ...p, [k]: v })); fe.clear(k); };
+  const save = () => { if (fe.validate(form, EGRESO_RULES)) onSave(form); };
   return (
     <div className="modal-overlay">
       <div className="modal-box" style={{ maxWidth: 440 }}>
@@ -344,14 +358,16 @@ function EgresoModal({ initial, onClose, onSave }) {
         </div>
         <div className="modal-body">
           <div className="fg"><label className="fl">Concepto</label>
-            <input className="fi" value={form.concepto} onChange={set("concepto")} placeholder="Nómina junio, CFE…" /></div>
+            <input {...fe.fieldProps("concepto")} value={form.concepto} onChange={set("concepto")} placeholder="Nómina junio, CFE…" />
+            <FieldError msg={fe.errors.concepto} /></div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div className="fg"><label className="fl">Categoría</label>
               <select className="fi" value={form.categoria} onChange={set("categoria")}>
                 {Object.entries(CAT_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select></div>
             <div className="fg"><label className="fl">Monto</label>
-              <input className="fi" type="number" value={form.monto} onChange={set("monto")} placeholder="0" /></div>
+              <input {...fe.fieldProps("monto")} type="number" value={form.monto} onChange={set("monto")} placeholder="0" />
+              <FieldError msg={fe.errors.monto} /></div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div className="fg"><label className="fl">Fecha límite</label>
@@ -369,7 +385,7 @@ function EgresoModal({ initial, onClose, onSave }) {
         </div>
         <div className="modal-foot">
           <Button variant="secondary" style={{ flex: 1 }} onClick={onClose}>Cancelar</Button>
-          <Button variant="primary" style={{ flex: 2 }} onClick={() => onSave(form)}>
+          <Button variant="primary" style={{ flex: 2 }} onClick={save}>
             {initial ? "Guardar cambios" : "Guardar egreso"}
           </Button>
         </div>
@@ -380,11 +396,14 @@ function EgresoModal({ initial, onClose, onSave }) {
 
 /* ── Modal cobro ─────────────────────────────────────────────── */
 function CobroModal({ clients, contracts, onClose, onSave }) {
+  useEscapeKey(onClose);
   const [form, setForm] = useState({
     clientId: "", contractId: "", cuota: "", amount: "",
     paid_date: new Date().toISOString().split("T")[0], notes: "",
   });
-  const set = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
+  const fe = useFieldErrors();
+  const set = k => e => { const v = e.target.value; setForm(p => ({ ...p, [k]: v })); fe.clear(k); };
+  const save = () => { if (fe.validate(form, COBRO_RULES)) onSave(form); };
   const filtContracts = contracts.filter(c => !form.clientId || String(c.client?.id) === form.clientId);
   return (
     <div className="modal-overlay">
@@ -399,20 +418,24 @@ function CobroModal({ clients, contracts, onClose, onSave }) {
         </div>
         <div className="modal-body">
           <div className="fg"><label className="fl">Cliente</label>
-            <select className="fi" value={form.clientId} onChange={set("clientId")}>
+            <select {...fe.fieldProps("clientId")} value={form.clientId} onChange={set("clientId")}>
               <option value="">— Seleccionar —</option>
               {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select></div>
+            </select>
+            <FieldError msg={fe.errors.clientId} /></div>
           <div className="fg"><label className="fl">Contrato / Lote</label>
-            <select className="fi" value={form.contractId} onChange={set("contractId")}>
+            <select {...fe.fieldProps("contractId")} value={form.contractId} onChange={set("contractId")}>
               <option value="">— Seleccionar —</option>
               {filtContracts.map(c => <option key={c.id} value={c.id}>{c.contract_number}</option>)}
-            </select></div>
+            </select>
+            <FieldError msg={fe.errors.contractId} /></div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div className="fg"><label className="fl">N° cuota</label>
-              <input className="fi" type="number" value={form.cuota} onChange={set("cuota")} placeholder="1" /></div>
+              <input {...fe.fieldProps("cuota")} type="number" value={form.cuota} onChange={set("cuota")} placeholder="1" />
+              <FieldError msg={fe.errors.cuota} /></div>
             <div className="fg"><label className="fl">Monto</label>
-              <input className="fi" type="number" value={form.amount} onChange={set("amount")} placeholder="0" /></div>
+              <input {...fe.fieldProps("amount")} type="number" value={form.amount} onChange={set("amount")} placeholder="0" />
+              <FieldError msg={fe.errors.amount} /></div>
           </div>
           <div className="fg"><label className="fl">Fecha de cobro</label>
             <input className="fi" type="date" value={form.paid_date} onChange={set("paid_date")} /></div>
@@ -421,7 +444,83 @@ function CobroModal({ clients, contracts, onClose, onSave }) {
         </div>
         <div className="modal-foot">
           <Button variant="secondary" style={{ flex: 1 }} onClick={onClose}>Cancelar</Button>
-          <Button variant="primary" style={{ flex: 2 }} onClick={() => onSave(form)}>Registrar cobro</Button>
+          <Button variant="primary" style={{ flex: 2 }} onClick={save}>Registrar cobro</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Modal abono / cobro de cuota ────────────────────────────── */
+function AbonoModal({ payment, onClose, onConfirm, busy }) {
+  useEscapeKey(onClose);
+  const total   = Number(payment.amount || 0);
+  const abonado = Number(payment.amount_paid || 0);
+  const saldo   = Math.max(total - abonado, 0);
+  const [monto, setMonto] = useState(saldo ? String(saldo) : "");
+  const [err, setErr]     = useState("");
+
+  const val       = Number(monto);
+  // Sin tope mínimo/máximo: solo exigimos un monto positivo (permite abono parcial,
+  // saldar la cuota completa o incluso registrar de más).
+  const invalid   = monto === "" || isNaN(val) || val <= 0;
+  const restante  = Math.max(saldo - (isNaN(val) ? 0 : val), 0);
+  const esParcial = !invalid && val < saldo - 0.001;
+
+  const confirm = () => {
+    if (invalid) { setErr("Ingresa un monto mayor a $0."); return; }
+    onConfirm(Number(val.toFixed(2)));
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-box" style={{ maxWidth: 420 }}>
+        <div className="modal-hd">
+          <div className="modal-ico">💰</div>
+          <div style={{ flex: 1 }}>
+            <div className="modal-title" style={{ fontSize: "1.3rem" }}>Registrar cobro</div>
+            <div className="modal-sub">
+              {payment.client?.name || "Cliente"} · Cuota {payment.installment_n ?? "—"}
+              {payment.contract?.contract_number ? ` · ${payment.contract.contract_number}` : ""}
+            </div>
+          </div>
+          <button className="modal-close" onClick={onClose}><HiOutlineXMark /></button>
+        </div>
+        <div className="modal-body">
+          <div style={{ background: "var(--sf2)", borderRadius: 12, padding: "12px 14px", marginBottom: 14, fontSize: ".82rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: abonado > 0 ? 6 : 0 }}>
+              <span style={{ color: "var(--mu)" }}>Monto de la cuota</span>
+              <span style={{ fontWeight: 700 }}>{currency(total)}</span>
+            </div>
+            {abonado > 0 && (
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, color: "#2f5fa8" }}>
+                  <span>Ya abonado</span><span style={{ fontWeight: 700 }}>−{currency(abonado)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 6, borderTop: "1px solid rgba(67,69,63,.1)" }}>
+                  <span style={{ color: "var(--mu)" }}>Saldo pendiente</span>
+                  <span style={{ fontWeight: 800, color: "var(--earth)" }}>{currency(saldo)}</span>
+                </div>
+              </>
+            )}
+          </div>
+          <div className="fg">
+            <label className="fl">Monto a cobrar ahora</label>
+            <input className={`fi ${err ? "is-invalid" : ""}`} type="number" min="0" step="0.01"
+              value={monto} onChange={e => { setMonto(e.target.value); setErr(""); }} autoFocus />
+            <FieldError msg={err} />
+            {!err && !invalid && (
+              <div style={{ marginTop: 6, fontSize: ".76rem", fontWeight: 600, color: esParcial ? "#2f5fa8" : "#2F6A38" }}>
+                {esParcial ? `Abono parcial · quedará un saldo de ${currency(restante)}` : "Salda la cuota completa"}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="modal-foot">
+          <Button variant="secondary" style={{ flex: 1 }} onClick={onClose} disabled={busy}>Cancelar</Button>
+          <Button variant="primary" style={{ flex: 2 }} onClick={confirm} disabled={busy}>
+            {busy ? "Registrando…" : esParcial ? "Registrar abono" : "Registrar cobro"}
+          </Button>
         </div>
       </div>
     </div>
@@ -430,6 +529,7 @@ function CobroModal({ clients, contracts, onClose, onSave }) {
 
 /* ── Modal selector tipo ─────────────────────────────────────── */
 function TipoModal({ onSelect, onClose }) {
+  useEscapeKey(onClose);
   return (
     <div className="modal-overlay">
       <div className="modal-box" style={{ maxWidth: 400 }}>
@@ -449,7 +549,7 @@ function TipoModal({ onSelect, onClose }) {
             <button key={type} onClick={() => onSelect(type)} style={{
               display: "flex", alignItems: "center", gap: 14, padding: "16px 18px",
               border: `2px solid ${border}`, borderRadius: 16, background: bg,
-              cursor: "pointer", textAlign: "left", fontFamily: "inherit", width: "100%",
+              cursor: "pointer", textAlign: "left", fontFamily: "var(--font-body)", width: "100%",
             }}>
               <span style={{ fontSize: "1.8rem" }}>{icon}</span>
               <div>
@@ -468,17 +568,25 @@ function TipoModal({ onSelect, onClose }) {
 const INIT_PERIOD = "todo";
 const { desde: INIT_DESDE, hasta: INIT_HASTA } = getDateRange(INIT_PERIOD); // "", ""
 
-const ESTADO_IN  = [["all","Todos los estados"],["pending","Pendiente"],["overdue","Vencido"],["paid","Pagado"]];
+const ESTADO_IN  = [["all","Todos los estados"],["pending","Pendiente"],["overdue","Vencido"],["partial","Parcial"],["paid","Pagado"],["cancelled","Cancelado"]];
 const ESTADO_EG  = [["all","Todos los estados"],["pending","Pendiente"],["overdue","Vencido"],["paid","Pagado"]];
 const ESTADO_AL  = [["all","Todas las alertas"],["roja","Urgentes"],["amarilla","Próximas"]];
 
 export default function PaymentsPage() {
-  const { payments, clients, contracts, quickPay, sendReminder, showToast } = useAppContext();
+  const { payments, clients, contracts, quickPay, sendReminder, showToast, showError } = useAppContext();
   const qc = useQueryClient();
+  const navigate = useNavigate();
 
-  const [tab,     setTab]     = useState("ingresos");
-  const [modal,   setModal]   = useState(null);
-  const [editing, setEditing] = useState(null);
+  const [tab,       setTab]       = useState("amort");
+  const [amortFilter,  setAmortFilter]  = useState("all");   // all | ok | soon | late
+  const [amortSearch,  setAmortSearch]  = useState("");
+  const [amortProject, setAmortProject] = useState("");
+  const [modal,     setModal]     = useState(null);
+  const [editing,   setEditing]   = useState(null);
+  const [abono,     setAbono]     = useState(null);   // cuota (payment) en cobro/abono
+  const [abonoBusy, setAbonoBusy] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
+  useLandsGuide(() => setShowGuide(true));
   const [page,    setPage]    = useState(1);
   const [limit,   setLimit]   = useState(10);
 
@@ -516,12 +624,12 @@ export default function PaymentsPage() {
   const createExpense = useMutation({
     mutationFn: expenseService.create,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["expenses"] }); setModal(null); showToast("Egreso registrado"); },
-    onError: e => showToast(getUserErrorMessage(e, "Error al guardar egreso")),
+    onError: e => showError(e, "Error al guardar egreso"),
   });
   const updateExpense = useMutation({
     mutationFn: ({ id, data }) => expenseService.update(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["expenses"] }); setModal(null); setEditing(null); showToast("Egreso actualizado"); },
-    onError: e => showToast(getUserErrorMessage(e, "Error al actualizar egreso")),
+    onError: e => showError(e, "Error al actualizar egreso"),
   });
   const deleteExpense = useMutation({
     mutationFn: expenseService.delete,
@@ -554,10 +662,14 @@ export default function PaymentsPage() {
   const egAll = useMemo(() => applyFilters(egresosNorm,  F), [egresosNorm,  search, estado, desde, hasta]);
 
   /* ── KPIs respetan desde/hasta ── */
+  // "cancelled" queda fuera de ambos KPIs (dinero que no entrará); "partial" aporta
+  // lo ya abonado a Cobrado y el remanente a Por cobrar, igual que el backend.
+  const inCobradoAmt   = ingresos
+    .filter(p => (p.status === "paid" || p.status === "partial") && inRange(p.due_date, desde, hasta))
+    .reduce((s, p) => s + (Number(p.amount_paid ?? (p.status === "paid" ? p.amount : 0)) || 0), 0);
+  const inPendienteArr = ingresos.filter(p => ["pending", "overdue", "partial"].includes(p.status) && inRange(p.due_date, desde, hasta));
   const inCobrado      = ingresos.filter(p => p.status === "paid" && inRange(p.due_date, desde, hasta));
-  const inPendienteArr = ingresos.filter(p => p.status !== "paid" && inRange(p.due_date, desde, hasta));
-  const inCobradoAmt   = inCobrado.reduce((s, p) => s + Number(p.amount || 0), 0);
-  const inPendienteAmt = inPendienteArr.reduce((s, p) => s + Number(p.amount || 0), 0);
+  const inPendienteAmt = inPendienteArr.reduce((s, p) => s + Math.max(Number(p.amount || 0) - Number(p.amount_paid || 0), 0), 0);
   const monthlyData    = useMemo(() => getMonthlyData(ingresos, expenses), [ingresos, expenses]);
 
   /* ── alertas ── */
@@ -607,167 +719,275 @@ export default function PaymentsPage() {
   const estadoOptions = isIn ? ESTADO_IN : isEg ? ESTADO_EG : ESTADO_AL;
 
   /* ── handlers ── */
-  const handlePagar = r => isEg ? markPaidExpense.mutate(r.id) : quickPay(r.id, Number(r.amount));
+  const handlePagar = r => isEg ? markPaidExpense.mutate(r.id) : setAbono(r);
+  const confirmAbono = async (amount) => {
+    setAbonoBusy(true);
+    const ok = await quickPay(abono.id, amount);
+    setAbonoBusy(false);
+    if (ok) setAbono(null);
+  };
   const handleSaveEgreso = form => {
     const body = { concepto: form.concepto, categoria: form.categoria, monto: Number(form.monto),
       due_date: form.due_date, recurrencia: form.recurrencia || null, notes: form.notes || null };
     editing ? updateExpense.mutate({ id: editing.id, data: body }) : createExpense.mutate(body);
   };
 
+  /* ── KPIs extra: mora + egresos operativos ── */
+  const moraArr    = ingresos.filter(p => p.status === "overdue");
+  const moraAmt    = moraArr.reduce((s, p) => s + Math.max(Number(p.amount || 0) - Number(p.amount_paid || 0), 0), 0);
+  const moraCount  = new Set(moraArr.map(p => p.client?.id).filter(Boolean)).size;
+  const egresosMesAmt = expenses.filter(e => e.status === "paid").reduce((s, e) => s + Number(e.monto || 0), 0);
+  const flujoNeto  = inCobradoAmt - egresosMesAmt;
+
+  /* ── Amortización por contrato (progreso "24/84") ── */
+  const amortRows = useMemo(() => {
+    const byContract = {};
+    for (const p of payments) {
+      const cid = p.contract?.id || p.contract_id;
+      if (cid) (byContract[cid] ||= []).push(p);
+    }
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return contracts
+      .filter(c => c.status === "active" && (c.total_months || c.payments_summary?.total || 0) > 0)
+      .map(c => {
+        const ps = c.payments_summary || {};
+        const total = c.total_months || ps.total || 0;
+        const mine = byContract[c.id] || [];
+        const next = mine
+          .filter(p => p.status === "pending" || p.status === "overdue")
+          .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))[0];
+        const hasOverdue = (ps.overdue || 0) > 0 || mine.some(p => p.status === "overdue");
+        let estado = "ok";
+        if (hasOverdue) estado = "late";
+        else if (next) {
+          const days = Math.ceil((new Date(`${next.due_date}T12:00:00`) - today) / 86400000);
+          if (days >= 0 && days <= 5) estado = "soon";
+        }
+        return {
+          id: c.id,
+          cli: c.client?.name || "—",
+          prop: [c.lot?.code, c.lot?.inmueble_name].filter(Boolean).join(" · ") || c.contract_number,
+          proj: c.lot?.inmueble_name || "",
+          paid: ps.paid || 0, total,
+          cuota: Number(c.monthly_payment || 0),
+          venc: next?.due_date || null,
+          estado, nextPayment: next, contract: c,
+        };
+      });
+  }, [contracts, payments]);
+
+  const amortProjects = useMemo(
+    () => [...new Set(amortRows.map(r => r.proj).filter(Boolean))].sort(),
+    [amortRows],
+  );
+  const amortFiltered = useMemo(() => amortRows.filter(r =>
+    (amortFilter === "all" || r.estado === amortFilter) &&
+    (!amortProject || r.proj === amortProject) &&
+    (!amortSearch || `${r.cli} ${r.prop}`.toLowerCase().includes(amortSearch.toLowerCase()))
+  ), [amortRows, amortFilter, amortProject, amortSearch]);
+
+  const AMORT_EST = { ok: "Al día", soon: "Próximo", late: "Atrasado" };
+
+  /* WhatsApp: link wa.me con mensaje pre-escrito (gratis, sin API). */
+  const waLink = (r) => {
+    let d = (clients.find(c => c.id === r.contract.client?.id)?.phone || "").replace(/\D/g, "");
+    if (!d) return null;
+    if (d.length === 10) d = "52" + d;            // MX sin lada país
+    const first = (r.cli || "").split(" ")[0];
+    const msg = `Hola ${first}, te recordamos tu cuota de ${currency(r.cuota)}${r.venc ? ` con vencimiento el ${fmtD(r.venc)}` : ""}. ¡Gracias por tu pago! — OwnTerra`;
+    return `https://wa.me/${d}?text=${encodeURIComponent(msg)}`;
+  };
+
+  const egPageRows = paginate(egAll, page, limit);
+
   return (
     <>
       <style>{`
-        .pv2-tabs { display:flex;gap:3px;background:#EDE9DF;border:1px solid rgba(67,69,63,.1);border-radius:12px;padding:4px;width:fit-content; }
-        .pv2-tab  { padding:8px 18px;border-radius:9px;border:none;background:transparent;font-size:.82rem;font-weight:600;cursor:pointer;color:var(--mu);font-family:inherit;display:flex;align-items:center;gap:6px;transition:all .15s; }
-        .pv2-tab.act-in { background:rgba(111,175,107,.18); color:#2F6A38; }
-        .pv2-tab.act-eg { background:rgba(67,69,63,.1); color:#43453F; }
-        .pv2-tab.act-al { background:#FDECEA; color:#C0392B; }
-        .pv2-subtabs { display:flex;background:var(--sf2);border-radius:10px;padding:3px;width:fit-content; }
-        .pv2-subtab  { padding:6px 16px;border-radius:8px;border:none;background:transparent;font-size:.78rem;font-weight:600;cursor:pointer;color:var(--mu);font-family:inherit; }
-        .pv2-subtab.act { background:var(--sf);color:var(--tx);box-shadow:0 1px 3px rgba(30,61,43,.1); }
-        .pv2-wrap { background:var(--sf);border:1px solid rgba(67,69,63,.1);border-radius:22px;overflow:hidden;box-shadow:0 12px 30px rgba(30,61,43,.06); }
-        .pv2-sect-hd { font-size:.6rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--mu);padding:14px 18px 8px;border-bottom:1px solid rgba(67,69,63,.08);display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace; }
-        .pv2-pill { padding:6px 13px;border-radius:30px;border:1px solid rgba(67,69,63,.12);background:var(--sf);font-size:.72rem;font-weight:600;color:var(--tx2);cursor:pointer;font-family:inherit;transition:all .15s; }
-        .pv2-pill:hover { border-color:var(--leaf); }
-        .pv2-pill.act-g { background:rgba(111,175,107,.15);color:#2F6A38;border-color:rgba(111,175,107,.4); }
-        .pv2-pill.act-r { background:#FDECEA;color:#C0392B;border-color:#F2C4BE; }
-        .pv2-pill.act-e { background:rgba(67,69,63,.1);color:#43453F;border-color:rgba(67,69,63,.18); }
-        .al-row { display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid rgba(67,69,63,.08); }
-        .al-row:last-child { border-bottom:none; }
-        .al-row:hover { background:var(--sf2); }
-        .al-badge { width:34px;height:34px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.95rem; }
-        .al-badge.roja { background:#FDECEA; }
-        .al-badge.amarilla { background:#FEF3E2; }
-        .al-tipo { font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:3px 8px;border-radius:30px;font-family:'JetBrains Mono',monospace; }
-        .al-tipo.ingreso { background:rgba(111,175,107,.14);color:#2F6A38; }
-        .al-tipo.egreso  { background:rgba(67,69,63,.1);color:#43453F; }
-        .al-action { margin-left:auto;padding:7px 15px;border-radius:9px;border:1px solid rgba(67,69,63,.18);cursor:pointer;font-size:.74rem;font-weight:600;white-space:nowrap;font-family:inherit;transition:all .15s; }
-        .al-action.cobrar { background:rgba(111,175,107,.13);color:#2F6A38;border-color:rgba(111,175,107,.3); }
-        .al-action.cobrar:hover { background:rgba(111,175,107,.2); }
-        .al-action.pagar  { background:var(--sf);color:var(--tx2); }
-        .al-action.pagar:hover { background:var(--sf2); }
-        .al-action.recordar { background:#FEF3E2;color:#9D6B18;border-color:#F0DCB8; }
+        .cf-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+        .cf-h1{font-family:var(--font-title);font-size:27px;color:var(--deep);letter-spacing:-.5px;margin:0}
+        .cf-sub{color:var(--mu);font-size:13px;margin-top:3px}
+        .cf-top-actions{display:flex;gap:10px;flex-wrap:wrap}
+        .cf-btn{display:inline-flex;align-items:center;gap:7px;padding:10px 16px;border-radius:12px;font-size:13.5px;font-weight:600;cursor:pointer;border:1px solid transparent;font-family:var(--font-body)}
+        .cf-btn-primary{background:var(--mid);color:var(--sf);border-color:var(--mid)}
+        .cf-btn-primary:hover{background:var(--deep)}
+        .cf-btn-ghost{background:var(--sf);color:var(--danger);border-color:var(--bd)}
+        .cf-btn-ghost:hover{border-color:var(--danger)}
+        .cf-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+        .cf-kpi{background:var(--sf);border:1px solid var(--bd);border-left:3px solid var(--bd);border-radius:18px;box-shadow:var(--sh);padding:16px 18px}
+        .cf-kpi.income{border-left-color:var(--leaf)}.cf-kpi.due{border-left-color:var(--mid)}.cf-kpi.mora{border-left-color:var(--danger)}.cf-kpi.exp{border-left-color:#C98A2B}
+        .cf-kpi .lbl{font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}
+        .cf-kpi .val{margin-top:8px;font-size:1.55rem;font-weight:800;color:var(--deep);line-height:1}
+        .cf-kpi.income .val{color:var(--mid)}.cf-kpi.mora .val{color:var(--danger)}.cf-kpi.exp .val{color:#b0791f}
+        .cf-kpi .foot{margin-top:6px;font-size:11.5px;color:var(--mu)}
+        .cf-panel{background:var(--sf);border:1px solid var(--bd);border-radius:20px;box-shadow:var(--sh);overflow:hidden}
+        .cf-tabs{display:flex;gap:2px;border-bottom:1px solid var(--line-soft);padding:0 8px}
+        .cf-tab{padding:14px 18px;border:0;background:none;cursor:pointer;font-family:var(--font-body);font-size:13.5px;font-weight:600;color:var(--mu);border-bottom:2px solid transparent;margin-bottom:-1px}
+        .cf-tab.on{color:var(--deep);border-bottom-color:var(--mid)}
+        .cf-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 18px;border-bottom:1px solid var(--line-soft)}
+        .cf-search{flex:1;min-width:200px;display:flex;align-items:center;gap:8px;height:40px;padding:0 13px;background:var(--sf2);border:1px solid var(--bd);border-radius:11px;color:var(--mu)}
+        .cf-search input{border:0;background:none;outline:0;flex:1;color:var(--tx);font-family:var(--font-body);font-size:13.5px}
+        .cf-field{height:40px;padding:0 12px;border:1px solid var(--bd);border-radius:11px;background:var(--sf2);color:var(--tx2);font-family:var(--font-body);font-size:13px;cursor:pointer}
+        .cf-pills{display:flex;gap:7px;flex-wrap:wrap}
+        .cf-pill{padding:7px 14px;border-radius:30px;border:1px solid var(--bd);background:var(--sf);color:var(--tx2);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--font-body)}
+        .cf-pill:hover{border-color:var(--leaf)}
+        .cf-pill.on{background:var(--deep);color:var(--sf);border-color:var(--deep)}
+        .cf-pill.on.ok{background:rgba(111,175,107,.16);color:var(--mid);border-color:rgba(111,175,107,.4)}
+        .cf-pill.on.soon{background:#FBF0DC;color:#9a6c18;border-color:#e6cf9a}
+        .cf-pill.on.late{background:#FBE7E4;color:var(--danger);border-color:#f0c5bd}
+        .cf-tbl-wrap{overflow-x:auto}
+        .cf-tbl{width:100%;border-collapse:collapse}
+        .cf-tbl thead th{text-align:left;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--mu);font-weight:700;padding:11px 18px;border-bottom:1px solid var(--line-soft)}
+        .cf-tbl tbody td{padding:13px 18px;border-bottom:1px solid var(--line-soft);font-size:13.5px;vertical-align:middle}
+        .cf-tbl tbody tr:last-child td{border-bottom:0}
+        .cf-tbl tbody tr:hover{background:var(--sf2)}
+        .cf-cli{font-weight:700;color:var(--deep)}.cf-prop{font-size:12px;color:var(--mu);margin-top:2px}
+        .cf-prog{display:flex;align-items:center;gap:10px;min-width:170px}
+        .cf-bar{flex:1;height:7px;border-radius:30px;background:var(--sf2);overflow:hidden;min-width:80px}
+        .cf-bar>i{display:block;height:100%;border-radius:30px;background:var(--mid)}
+        .cf-bar.late>i{background:var(--danger)}.cf-bar.soon>i{background:#C98A2B}
+        .cf-prog-n{font-size:12px;font-weight:700;color:var(--tx2);white-space:nowrap}
+        .cf-amt{font-weight:700;color:var(--deep);white-space:nowrap}
+        .cf-venc.late{color:var(--danger);font-weight:700}
+        .cf-badge{display:inline-block;padding:3px 11px;border-radius:30px;font-size:11px;font-weight:700}
+        .cf-badge.ok{background:rgba(111,175,107,.16);color:var(--mid)}
+        .cf-badge.soon{background:#FBF0DC;color:#9a6c18}
+        .cf-badge.late{background:#FBE7E4;color:var(--danger)}
+        .cf-acts{display:flex;gap:6px;justify-content:flex-end}
+        .cf-ico{width:32px;height:32px;border-radius:9px;border:1px solid var(--bd);background:var(--sf);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--tx2);text-decoration:none;font-size:14px}
+        .cf-ico:hover{border-color:var(--leaf);background:var(--sf2)}
+        .cf-ico.wa{color:#1DA851;border-color:rgba(29,168,81,.4)}
+        .cf-ico.pay{color:var(--mid);border-color:rgba(111,175,107,.4)}
+        .cf-empty{padding:40px;text-align:center;color:var(--mu);font-size:13.5px}
+        .cf-neto{display:flex;gap:20px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--line-soft)}
+        .cf-neto div{font-size:12.5px;color:var(--mu)}.cf-neto b{display:block;font-size:1.1rem;font-weight:800;margin-top:2px;color:var(--deep)}
+        @media(max-width:800px){.cf-kpis{grid-template-columns:repeat(2,1fr)}}
       `}</style>
 
-      {/* ── KPIs + gráfica ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 2fr", gap: 12, marginBottom: 20 }}>
-        <div className="kpi k1">
-          <div className="kpi-lbl">Cobrado — {PERIODO_LABEL[periodo]}</div>
-          <div className="kpi-val" style={{ fontSize: "1.35rem", color: "var(--forest)" }}>{currency(inCobradoAmt)}</div>
-          <div className="kpi-sub">{inCobrado.length} cobro{inCobrado.length !== 1 ? "s" : ""} aplicado{inCobrado.length !== 1 ? "s" : ""}</div>
+      <div className="cf-top">
+        <div>
+          <h1 className="cf-h1">Control Financiero</h1>
+          <div className="cf-sub">Gestión de amortizaciones y flujo de caja</div>
         </div>
-        <div className="kpi k2">
-          <div className="kpi-lbl">Pendiente — {PERIODO_LABEL[periodo]}</div>
-          <div className="kpi-val" style={{ fontSize: "1.35rem", color: "var(--earth)" }}>{currency(inPendienteAmt)}</div>
-          <div className="kpi-sub">{inPendienteArr.length} cuota{inPendienteArr.length !== 1 ? "s" : ""} por cobrar</div>
-        </div>
-        <div className="kpi" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div className="kpi-lbl" style={{ margin: 0 }}>Tendencia — últimos 6 meses</div>
-            <div style={{ display: "flex", gap: 12 }}>
-              {[["var(--forest)", "Ingresos"], ["#43453F", "Egresos"]].map(([c, l]) => (
-                <div key={l} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: ".68rem", color: "var(--mu)" }}>
-                  <div style={{ width: 8, height: 8, background: c, borderRadius: 2, flexShrink: 0 }} />{l}
-                </div>
-              ))}
-            </div>
-          </div>
-          <div style={{ display: "flex", flex: 1, alignItems: "flex-end" }}>
-            <BarChart data={monthlyData} />
-          </div>
+        <div className="cf-top-actions">
+          <button className="cf-btn cf-btn-ghost" onClick={() => { setEditing(null); setModal("egreso"); }}>⊖ Registrar egreso</button>
+          <button className="cf-btn cf-btn-primary" onClick={() => setModal("cobro")}>＋ Registrar pago</button>
         </div>
       </div>
 
-      {/* ── Tabs + botón ── */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, gap: 10, flexWrap: "wrap" }}>
-        <div className="pv2-tabs">
-          <button className={`pv2-tab${tab === "ingresos" ? " act-in" : ""}`} onClick={() => switchTab("ingresos")}>💰 Ingresos</button>
-          <button className={`pv2-tab${tab === "egresos"  ? " act-eg" : ""}`} onClick={() => switchTab("egresos") }>💸 Egresos</button>
-          <button className={`pv2-tab${tab === "alertas"  ? " act-al" : ""}`} onClick={() => switchTab("alertas") }>
-            🔔 Alertas
-            {alertasRojas > 0 && <span style={{ background: "var(--danger)", color: "#fff", borderRadius: 99, padding: "1px 6px", fontSize: ".65rem" }}>{alertasRojas}</span>}
-          </button>
-        </div>
-        <button className="btn-p" onClick={() => setModal("tipo")} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <HiOutlinePlus /> Nuevo pago
-        </button>
+      <div className="cf-kpis">
+        <div className="cf-kpi income"><div className="lbl">Ingresos del mes</div><div className="val">{currency(inCobradoAmt)}</div><div className="foot">{inCobrado.length} cobros aplicados</div></div>
+        <div className="cf-kpi due"><div className="lbl">Por cobrar</div><div className="val">{currency(inPendienteAmt)}</div><div className="foot">{inPendienteArr.length} cuotas pendientes</div></div>
+        <div className="cf-kpi mora"><div className="lbl">Pagos atrasados</div><div className="val">{currency(moraAmt)}</div><div className="foot">{moraCount} cliente{moraCount === 1 ? "" : "s"} en mora</div></div>
+        <div className="cf-kpi exp"><div className="lbl">Egresos operativos</div><div className="val">{currency(egresosMesAmt)}</div><div className="foot">flujo neto {currency(flujoNeto)}</div></div>
       </div>
 
-      {/* ── Filter bar (todas las tabs) ── */}
-      <SmartFilterBar
-        search={search}   onSearch={v => { setSearch(v); setPage(1); }}
-        estado={estado}   onEstado={v => { setEstado(v); setPage(1); }}
-        periodo={periodo} onPeriodo={handlePeriodo}
-        desde={desde}     onDesde={handleDesde}
-        hasta={hasta}     onHasta={handleHasta}
-        estadoOptions={estadoOptions}
-      />
+      <div className="cf-panel">
+        <div className="cf-tabs">
+          <button className={`cf-tab ${tab === "amort" ? "on" : ""}`} onClick={() => setTab("amort")}>Amortizaciones de Lotes</button>
+          <button className={`cf-tab ${tab === "egresos" ? "on" : ""}`} onClick={() => { setTab("egresos"); setEstado("all"); setSearch(""); setPage(1); }}>Registro de Egresos</button>
+        </div>
 
-      {/* ══ INGRESOS / EGRESOS ══ */}
-      {(isIn || isEg) && (
-        <>
-          <div className="pv2-wrap">
-            <div className="pv2-sect-hd">
-              {sectionHd()}
-              <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: ".7rem", color: "#bbb", marginLeft: 4 }}>
-                ({allRows.length})
-              </span>
-            </div>
-            {allRows.length === 0 ? (
-              <div style={{ padding: "36px 0", textAlign: "center", color: "var(--mu)", fontSize: ".83rem" }}>
-                Sin registros para estos filtros.
+        {tab === "amort" && (
+          <>
+            <div className="cf-toolbar">
+              <label className="cf-search"><span>🔎</span><input value={amortSearch} onChange={e => setAmortSearch(e.target.value)} placeholder="Buscar cliente o lote…" /></label>
+              <select className="cf-field" value={amortProject} onChange={e => setAmortProject(e.target.value)}>
+                <option value="">Todos los proyectos</option>
+                {amortProjects.map(pj => <option key={pj} value={pj}>{pj}</option>)}
+              </select>
+              <div className="cf-pills">
+                {[["all", "Todos", ""], ["ok", "Al día", "ok"], ["soon", "Próximos", "soon"], ["late", "Atrasados", "late"]].map(([f, lbl, cls]) => (
+                  <button key={f} className={`cf-pill ${cls} ${amortFilter === f ? "on" : ""}`} onClick={() => setAmortFilter(f)}>{lbl}</button>
+                ))}
               </div>
+            </div>
+            {amortFiltered.length === 0 ? (
+              <div className="cf-empty">Sin contratos para este filtro.</div>
             ) : (
-              <PagoTable
-                rows={pageRows}
-                isEgreso={isEg}
-                historial={estado === "paid"}
-                onPagar={handlePagar}
-                onRecordar={p => sendReminder(p)}
-                onEdit={e => { setEditing(e); setModal("egreso"); }}
-                onDelete={id => window.confirm("¿Eliminar este egreso?") && deleteExpense.mutate(id)}
-              />
-            )}
-            <Pagination total={allRows.length} page={page} limit={limit} onPage={setPage} onLimit={v => { setLimit(v); setPage(1); }} />
-          </div>
-        </>
-      )}
-
-      {/* ══ ALERTAS ══ */}
-      {tab === "alertas" && (
-        <div className="pv2-wrap">
-          <div className="pv2-sect-hd">
-            Alertas activas
-            <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: ".7rem", color: "#bbb", marginLeft: 4 }}>({filtAlertas.length})</span>
-          </div>
-          {filtAlertas.length === 0 ? (
-            <div style={{ padding: "36px 0", textAlign: "center", color: "var(--mu)", fontSize: ".83rem" }}>Sin alertas activas. 🎉</div>
-          ) : filtAlertas.map((a, i) => (
-            <div key={i} className="al-row">
-              <div className={`al-badge ${a.urgencia}`}>{a.urgencia === "roja" ? "🔴" : "🟡"}</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-                  <span className={`al-tipo ${a.tipo}`}>{a.tipo}</span>
-                  <span style={{ fontWeight: 700, fontSize: ".85rem", color: "var(--tx)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {a.titulo}
-                  </span>
-                </div>
-                <div style={{ fontSize: ".75rem", color: "var(--mu)" }}>{a.detalle} · <em>{a.hace}</em></div>
+              <div className="cf-tbl-wrap">
+                <table className="cf-tbl">
+                  <thead><tr>
+                    <th>Cliente / Propiedad</th><th>Progreso (meses)</th><th>Cuota mensual</th><th>Vencimiento</th><th>Estado</th><th style={{ textAlign: "right" }}>Acciones</th>
+                  </tr></thead>
+                  <tbody>
+                    {amortFiltered.map(r => {
+                      const pct = r.total ? Math.min(Math.round(r.paid / r.total * 100), 100) : 0;
+                      const link = waLink(r);
+                      return (
+                        <tr key={r.id}>
+                          <td><div className="cf-cli">{r.cli}</div><div className="cf-prop">{r.prop}</div></td>
+                          <td><div className="cf-prog"><div className={`cf-bar ${r.estado}`}><i style={{ width: `${pct}%` }} /></div><span className="cf-prog-n">{r.paid}/{r.total}</span></div></td>
+                          <td className="cf-amt">{currency(r.cuota)}</td>
+                          <td className={`cf-venc ${r.estado === "late" ? "late" : ""}`}>{r.venc ? fmtD(r.venc) : "—"}</td>
+                          <td><span className={`cf-badge ${r.estado}`}>{AMORT_EST[r.estado]}</span></td>
+                          <td><div className="cf-acts">
+                            <button className="cf-ico pay" title="Registrar pago" onClick={() => r.nextPayment ? setAbono(r.nextPayment) : setModal("cobro")}>＄</button>
+                            {link ? <a className="cf-ico wa" href={link} target="_blank" rel="noreferrer" title="Recordatorio por WhatsApp">✆</a>
+                                  : <button className="cf-ico" title="Sin teléfono del cliente" disabled style={{ opacity: .4, cursor: "default" }}>✆</button>}
+                            <button className="cf-ico" title="Historial de amortización" onClick={() => navigate("/reportes")}>☰</button>
+                          </div></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-              <button className={`al-action ${a.tipo === "ingreso" ? "cobrar" : "pagar"}`}
-                onClick={() => a.tipo === "egreso" ? markPaidExpense.mutate(a.raw.id) : quickPay(a.raw.id, Number(a.raw.amount))}>
-                {a.tipo === "ingreso" ? "Cobrar" : "Pagar"}
-              </button>
-            </div>
-          ))}
-          {filtAlertas.length > 0 && <Pagination total={filtAlertas.length} page={page} limit={limit} onPage={setPage} onLimit={v => { setLimit(v); setPage(1); }} />}
-        </div>
-      )}
+            )}
+          </>
+        )}
 
-      {/* ── Modales ── */}
+        {tab === "egresos" && (
+          <>
+            <div className="cf-neto">
+              <div>Ingresos del mes<b style={{ color: "var(--mid)" }}>{currency(inCobradoAmt)}</b></div>
+              <div>Egresos<b style={{ color: "var(--danger)" }}>−{currency(egresosMesAmt)}</b></div>
+              <div>Flujo neto<b style={{ color: flujoNeto >= 0 ? "var(--mid)" : "var(--danger)" }}>{currency(flujoNeto)}</b></div>
+            </div>
+            <div className="cf-toolbar">
+              <label className="cf-search"><span>🔎</span><input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Buscar egreso…" /></label>
+              <select className="cf-field" value={estado} onChange={e => { setEstado(e.target.value); setPage(1); }}>
+                {ESTADO_EG.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+            </div>
+            {egAll.length === 0 ? (
+              <div className="cf-empty">Sin egresos para estos filtros.</div>
+            ) : (
+              <div style={{ padding: "6px 6px 10px" }}>
+                <PagoTable
+                  rows={egPageRows}
+                  isEgreso
+                  historial={estado === "paid"}
+                  onPagar={r => markPaidExpense.mutate(r.id)}
+                  onRecordar={() => {}}
+                  onEdit={e => { setEditing(e); setModal("egreso"); }}
+                  onDelete={id => window.confirm("¿Eliminar este egreso?") && deleteExpense.mutate(id)}
+                />
+                <Pagination total={egAll.length} page={page} limit={limit} onPage={setPage} onLimit={v => { setLimit(v); setPage(1); }} />
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+
       {modal === "tipo"   && <TipoModal onSelect={t => setModal(t)} onClose={() => setModal(null)} />}
       {modal === "egreso" && <EgresoModal initial={editing} onClose={() => { setModal(null); setEditing(null); }} onSave={handleSaveEgreso} />}
       {modal === "cobro"  && <CobroModal clients={clients} contracts={contracts} onClose={() => setModal(null)} onSave={() => setModal(null)} />}
+      {abono && <AbonoModal payment={abono} busy={abonoBusy} onClose={() => setAbono(null)} onConfirm={confirmAbono} />}
+      <GuideModal
+        open={showGuide}
+        onClose={() => setShowGuide(false)}
+        title="Centro de pagos"
+        subtitle="Gestión de cobranza a clientes y egresos operativos."
+        steps={[
+          { title: "Ingresos", text: "Lista de todos los cobros a clientes: cuotas de contratos, enganches y pagos especiales. Filtra por estado (pendiente, pagado, vencido) y por período." },
+          { title: "Egresos", text: "Registro de gastos operativos de la empresa (nómina, servicios, mantenimiento, etc.). Puedes marcarlos como pagados cuando se aplican." },
+          { title: "Alertas de pago", text: "Tab rojo con cobros vencidos o que vencen en 7 días. Desde aquí puedes cobrar directamente o enviar recordatorios." },
+          { title: "Registrar cobro o egreso", text: "Pulsa '+ Registrar' para abrir el formulario. Selecciona si es un cobro de cliente o un egreso operativo e ingresa los datos." },
+          { title: "Tendencia mensual", text: "La gráfica muestra los últimos 6 meses de ingresos vs egresos. Úsala para detectar meses de alta cobranza o gastos anómalos." },
+          { title: "Filtros", text: "Combina búsqueda por texto, estado del pago y rango de fechas para encontrar cualquier movimiento en el historial." },
+        ]}
+      />
     </>
   );
 }

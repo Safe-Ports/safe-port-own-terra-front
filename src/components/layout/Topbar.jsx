@@ -1,6 +1,6 @@
-import { HiArrowLeftOnRectangle, HiBars3, HiCalendarDays, HiMagnifyingGlass, HiSun } from "react-icons/hi2";
-import { useNavigate } from "react-router-dom";
+import { HiBars3, HiMagnifyingGlass } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
+import CoreTopbarActions from "./CoreTopbarActions";
 
 const titleMap = {
   "/dashboard": "Dashboard",
@@ -32,25 +32,8 @@ const subtitleMap = {
   "/configuracion": "Configuración del espacio Lands",
 };
 
-function Topbar({ pathname }) {
-  const navigate = useNavigate();
-  const {
-    openModal,
-    toggleSidebar,
-    currentUser,
-    showToast,
-    startNewProject,
-    draftProject,
-    saveFrac,
-    openContractCreate,
-    notificationCount,
-    markAllNotificationsRead,
-    logout,
-  } = useAppContext();
-  const draftLotCount = draftProject.sections.reduce((sum, section) => sum + section.lots.length, 0);
-  const handleLogout = () => {
-    if (window.confirm("¿Cerrar sesión?")) logout();
-  };
+function Topbar({ pathname, onGuide }) {
+  const { openModal, toggleSidebar } = useAppContext();
 
   return (
     <header className="topbar">
@@ -72,26 +55,7 @@ function Topbar({ pathname }) {
           <span className="tb-shortcut">⌘K</span>
         </button>
 
-        <button className="topbar-core-link" onClick={() => navigate("/ecosistema/mi-dia")}>
-          <HiSun />
-          <span>Mi Día</span>
-        </button>
-
-        <button className="topbar-core-link" onClick={() => navigate("/ecosistema/agenda")}>
-          <HiCalendarDays />
-          <span>Calendario</span>
-        </button>
-
-
-        <div className="topbar-user">
-          <div className="topbar-role">{currentUser?.role || "Usuario"}</div>
-          <div className="topbar-name">{currentUser?.name || "Perfil"}</div>
-        </div>
-
-        <button className="topbar-logout" onClick={handleLogout} title="Cerrar sesión">
-          <HiArrowLeftOnRectangle />
-          <span>Cerrar sesión</span>
-        </button>
+        <CoreTopbarActions onGuide={onGuide} />
       </div>
     </header>
   );

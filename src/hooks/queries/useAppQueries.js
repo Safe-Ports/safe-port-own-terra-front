@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
-import { deriveAlerts } from "@/services/selectors";
 import { dashboardService } from "@/services/dashboardService";
 
 export function useDashboardQuery() {
@@ -60,20 +59,11 @@ export function useProjectsQuery() {
         id: inmueble.id,
         name: inmueble.name,
         createdAt: inmueble.created_at,
-        lots: Array.from({ length: inmueble.total_lots || 0 }),
+        totalLots: inmueble.total_lots ?? 0,
         available: inmueble.available_lots ?? 0,
         sold: inmueble.sold_lots ?? 0,
         reserved: inmueble.reserved_lots ?? 0,
-        inventoryValue: 0,
+        mapImageUrl: inmueble.image_url ?? "",
       })),
-  });
-}
-
-export function useAlertsQuery() {
-  const { payments, contracts, documents, clients } = useAppContext();
-
-  return useQuery({
-    queryKey: ["alerts", payments, contracts, documents, clients],
-    queryFn: () => deriveAlerts({ payments, contracts, documents, clients }),
   });
 }

@@ -1,0 +1,161 @@
+/* ============================================================================
+   OwnTerra · Primitivos de UI (Fase 0 — Fundación)
+   Todo se construye sobre los tokens de :root (index.css). Sirven para:
+   - Densidad/jerarquía consistente (page-head, card).
+   - Estados de carga (skeleton) que reemplazan spinners.
+   Adoptar estas clases al tocar cada página va matando los estilos inline.
+   ========================================================================== */
+
+/* ── Encabezado de página / sección (compacto, jerárquico) ────────────────── */
+.ot-page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 20px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.ot-page-heading {
+  min-width: 0;
+}
+
+.ot-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 8px;
+  padding: 4px 11px;
+  border-radius: 30px;
+  border: 1px solid rgba(111, 175, 107, 0.28);
+  background: rgba(111, 175, 107, 0.12);
+  color: var(--deep);
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.ot-eyebrow::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--leaf);
+}
+
+.ot-page-title {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: clamp(22px, 3vw, 30px);
+  line-height: 1.05;
+  letter-spacing: -0.5px;
+  color: var(--deep);
+  text-wrap: balance;
+}
+
+.ot-page-sub {
+  margin: 6px 0 0;
+  max-width: 60ch;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ot-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── Tarjeta de superficie (reemplaza el inline background:#fff;border;radius) ─ */
+.ot-card {
+  background: var(--sf);
+  border: 1px solid var(--bd);
+  border-radius: 18px;
+  box-shadow: var(--sh);
+}
+
+.ot-card-pad {
+  padding: 18px;
+}
+
+/* ── Estado vacío COMPACTO (dentro de una tarjeta/sección) ────────────────── */
+.ot-empty-inline {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 16px;
+  color: var(--muted);
+}
+
+.ot-empty-inline__ico {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  background: rgba(111, 175, 107, 0.14);
+  color: var(--leaf);
+}
+
+.ot-empty-inline__title {
+  color: var(--deep);
+  font-weight: 600;
+  font-size: 13.5px;
+}
+
+.ot-empty-inline__sub {
+  margin-top: 2px;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+/* ── Skeletons (carga) — reemplazan spinners "Cargando…" ──────────────────── */
+.ot-skel {
+  position: relative;
+  overflow: hidden;
+  background: var(--sf2);
+  border-radius: 8px;
+}
+
+.ot-skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.55),
+    transparent
+  );
+  animation: ot-skel-shimmer 1.3s ease-in-out infinite;
+}
+
+.ot-skel--text {
+  height: 0.72em;
+  border-radius: 5px;
+  margin: 0.28em 0;
+}
+
+.ot-skel--circle {
+  border-radius: 50%;
+}
+
+@keyframes ot-skel-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Respeta la preferencia de menos movimiento: sin shimmer, solo el bloque. */
+@media (prefers-reduced-motion: reduce) {
+  .ot-skel::after {
+    animation: none;
+  }
+}

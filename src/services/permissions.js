@@ -5,14 +5,14 @@ export const GLOBAL_ROLES = {
 
 export const APP_CATALOG = [
   { key: "core", name: "Ecosistema Core", icon: "eco-brand", cls: "ic-lands", roles: ["admin", "manager", "viewer"], defaultRole: "viewer", desc: "Panel central, clientes, equipo y configuración." },
-  { key: "lands", name: "OwnTerra Lands", icon: "eco-g-lands", cls: "ic-lands", roles: ["seller", "manager", "collections", "viewer"], defaultRole: "seller", desc: "Lotes, fraccionamientos, ventas y cobranza.", vertical: true },
-  { key: "homes", name: "OwnTerra Homes", icon: "eco-g-homes", cls: "ic-homes", roles: ["seller", "manager", "viewer"], defaultRole: "seller", desc: "Casas, desarrollos y pipeline residencial.", vertical: true },
-  { key: "neighb", name: "Neighborhoods", icon: "eco-g-neighb", cls: "ic-neighb", roles: ["seller", "manager", "viewer"], defaultRole: "seller", desc: "Departamentos y comunidades.", vertical: true },
+  { key: "lands", name: "OwnTerra Lands", icon: "eco-g-lands", cls: "ic-lands", roles: ["seller", "manager", "collections", "viewer"], defaultRole: "seller", desc: "Lotes, fraccionamientos, ventas y cobranza.", vertical: true, live: true },
+  { key: "homes", name: "OwnTerra Homes", icon: "eco-g-homes", cls: "ic-homes", roles: ["seller", "manager", "viewer"], defaultRole: "seller", desc: "Casas, desarrollos y pipeline residencial.", vertical: true, live: false },
+  { key: "neighb", name: "Properties", icon: "eco-g-neighb", cls: "ic-neighb", roles: ["seller", "manager", "viewer"], defaultRole: "seller", desc: "Propiedades y comunidades.", vertical: true, live: false },
   { key: "vault", name: "OwnTerra Vault", icon: "eco-n-vault", cls: "ic-lands", roles: ["admin", "editor", "viewer"], defaultRole: "viewer", desc: "Documentos, expedientes y permisos de lectura." },
   { key: "finanzas", name: "Finanzas", icon: "eco-n-chart", cls: "ic-lands", roles: ["admin", "collections", "viewer"], defaultRole: "viewer", desc: "Cobranza, reportes y estados financieros." },
 ];
 
-export const VERTICAL_APP_CATALOG = APP_CATALOG.filter((app) => app.vertical);
+export const VERTICAL_APP_CATALOG = APP_CATALOG.filter((app) => app.vertical && app.live);
 
 export const APP_ROLE_LABEL = {
   admin: "Administrador",
@@ -28,6 +28,7 @@ export const FEATURE_LABEL = {
   "core.team": "Equipo y permisos",
   "core.finance": "Estados financieros",
   "core.vault": "OwnTerra Vault",
+  "core.forms": "Formularios del Core",
   "core.config": "Configuración",
   "lands.read": "OwnTerra Lands",
   "lands.write": "Edición de Lands",
@@ -38,7 +39,7 @@ export const FEATURE_LABEL = {
   "lands.reports": "Reportes Lands",
 };
 
-const ADMIN_ROLES = new Set(["admin", "owner", "superadmin"]);
+const ADMIN_ROLES = new Set(["admin", "superadmin"]);
 const VENDOR_ROLES = new Set(["vendor", "vendedor", "seller"]);
 
 export function defaultPermissionsFor(appKey, role) {
@@ -107,6 +108,7 @@ export function canUseFeature(user, feature) {
     "core.team": () => hasPermission(user, "core.users") || hasPermission(user, "core.write"),
     "core.finance": () => hasPermission(user, "core.finance"),
     "core.vault": () => hasPermission(user, "core.vault"),
+    "core.forms": () => true,
     "core.config": () => hasPermission(user, "core.write"),
     "lands.read": () => canAccessApp(user, "lands"),
     "lands.write": () => hasPermission(user, "lands.write") || hasPermission(user, "lands.sales"),

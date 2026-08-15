@@ -12,7 +12,7 @@ function EcoSprite() {
         </g>
         <circle cx="36.5" cy="20.5" r="2.6" fill="#fff" />
       </symbol>
-      {/* NEIGHBORHOODS */}
+      {/* PROPERTIES (internal key: neighb) */}
       <symbol id="eco-g-neighb" viewBox="0 0 56 56">
         <g fill="#fff">
           <rect x="13" y="24" width="10" height="18" rx="2" />
@@ -49,6 +49,7 @@ function EcoSprite() {
       <symbol id="eco-n-shield" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" /><path d="M9 12l2 2 4-4" /></g></symbol>
       <symbol id="eco-n-gear" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2" /></g></symbol>
       <symbol id="eco-n-sun" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></g></symbol>
+      <symbol id="eco-n-forms" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v2h6V3"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></g></symbol>
       <symbol id="eco-brand" viewBox="0 0 24 24"><path d="M3 21L12 3L21 21" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" /><path d="M7 15H17" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" /><circle cx="12" cy="10" r="1.6" fill="#fff" /></symbol>
     </svg>
   );

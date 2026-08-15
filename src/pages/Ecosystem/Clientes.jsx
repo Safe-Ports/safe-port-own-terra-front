@@ -1,15 +1,18 @@
 import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import GuideModal from "@/components/shared/GuideModal";
+import PhoneInput from "@/components/shared/PhoneInput";
 import { clientService } from "@/services/clientService";
 import { documentService, filenameForDocument } from "@/services/documentService";
 import { userService } from "@/services/userService";
 import { useAppContext } from "@/context/AppContext";
-import { getUserErrorMessage } from "@/services/errors";
+import useEscapeKey from "@/hooks/useEscapeKey";
+
 import EcoLayout from "./EcoLayout";
 
 const APPS = [
   { key: "lands", name: "OwnTerra Lands", handle: "terra.lands", icon: "eco-g-lands", cls: "ic-lands", color: "#6FAF6B", live: true, desc: "Lotificación y venta de terrenos." },
-  { key: "neighb", name: "OwnTerra Neighborhoods", handle: "terra.neighborhoods", icon: "eco-g-neighb", cls: "ic-neighb", color: "#355E3B", live: false, desc: "Departamentos y fraccionamientos." },
+  { key: "neighb", name: "OwnTerra Properties", handle: "terra.properties", icon: "eco-g-neighb", cls: "ic-neighb", color: "#355E3B", live: false, desc: "Propiedades y comunidades." },
   { key: "homes", name: "OwnTerra Homes", handle: "terra.homes", icon: "eco-g-homes", cls: "ic-homes", color: "#A7CBA1", live: false, desc: "Construcción y desarrollos." },
 ];
 const APP_BY_KEY = Object.fromEntries(APPS.map((a) => [a.key, a]));
@@ -22,19 +25,21 @@ const emailOk = (value = "") => !value.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.te
 
 const TYPE_LABEL = { buyer: "Comprador", lead: "Prospecto", tenant: "Arrendatario" };
 const STATUS_LABEL = { active: "Activo", overdue: "Vencido", closed: "Cerrado", pending: "Pendiente" };
+const ACCOUNT_HEALTH_LABEL = { current: "Al corriente", overdue: "Con atraso" };
 const STAGE_LABEL = { new: "Nuevo", contacted: "Contactado", visited: "Visitado", quoted: "Cotizado", reserved: "Apartado", won: "Ganado", lost: "Perdido" };
-
 const FileIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"><path d="M6 2h7l5 5v15H6z" /><path d="M13 2v5h5" /></svg>);
 const DownloadIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12" /><path d="M7 11l5 5 5-5" /><path d="M5 21h14" /></svg>);
 
 function EcosystemClientes() {
   const qc = useQueryClient();
-  const { downloadDocument, exportAppData, showToast } = useAppContext();
+  const { downloadDocument, exportAppData, showToast, showError } = useAppContext();
   const [selectedId, setSelectedId] = useState(null);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState("contracts");
   const [appFilter, setAppFilter] = useState("all");
-  const [modal, setModal] = useState(null);
+  const [modal, setModal]             = useState(null);
+  const [showGuide, setShowGuide]     = useState(false);
+  useEscapeKey(() => setModal(null), Boolean(modal));
 
   // Client list
   const { data: clientsData, isLoading } = useQuery({
@@ -42,6 +47,20 @@ function EcosystemClientes() {
     queryFn: () => clientService.list({ limit: 100 }),
   });
   const clients = clientsData?.items ?? [];
+  const clientAppQueries = useQueries({
+    queries: clients.map((client) => ({
+      queryKey: ["client-apps", String(client.id)],
+      queryFn: () => clientService.getApps(client.id),
+      staleTime: 60_000,
+    })),
+  });
+  const appAssignmentsLoading = clientAppQueries.some((queryResult) => queryResult.isPending);
+  const appsByClientId = new Map(
+    clients.map((client, index) => [
+      String(client.id),
+      new Set(clientAppQueries[index]?.data?.apps ?? []),
+    ])
+  );
 
   const { data: usersData } = useQuery({
     queryKey: ["users", "eco-client-vendors"],
@@ -92,7 +111,7 @@ function EcosystemClientes() {
       setModal(null);
       showToast("Documento de identidad subido");
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al subir documento")),
+    onError: (err) => showError(err, "Error al subir documento"),
   });
 
   const createClientMutation = useMutation({
@@ -107,9 +126,9 @@ function EcosystemClientes() {
         notes: draft.notes || undefined,
       });
 
-      const appKeys = Object.entries(draft.apps)
-        .filter(([, enabled]) => enabled)
-        .map(([key]) => key);
+      const appKeys = APPS
+        .filter((app) => app.live && draft.apps[app.key])
+        .map((app) => app.key);
       await Promise.all(appKeys.map((appKey) => clientService.assignApp(created.id, appKey)));
       return created;
     },
@@ -120,7 +139,40 @@ function EcosystemClientes() {
       setModal(null);
       showToast("Cliente creado en el Core");
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al crear cliente")),
+    onError: (err) => showError(err, "Error al crear cliente"),
+  });
+
+  const updateClientMutation = useMutation({
+    mutationFn: async ({ clientId, draft }) => {
+      await clientService.update(clientId, {
+        name: draft.name,
+        email: draft.email || undefined,
+        phone: draft.phone || undefined,
+        seller_id: draft.seller_id || undefined,
+        notes: draft.notes || undefined,
+      });
+      if (draft.pipeline_stage) {
+        await clientService.updateStage(clientId, draft.pipeline_stage);
+      }
+
+      const desiredApps = new Set(APPS.filter((app) => app.live && draft.apps?.[app.key]).map((app) => app.key));
+      const operations = APPS.filter((app) => app.live).flatMap((app) => {
+        const hasApp = assignedApps.has(app.key);
+        const wantsApp = desiredApps.has(app.key);
+        if (wantsApp && !hasApp) return [clientService.assignApp(clientId, app.key)];
+        if (!wantsApp && hasApp) return [clientService.removeApp(clientId, app.key)];
+        return [];
+      });
+      await Promise.all(operations);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      qc.invalidateQueries({ queryKey: ["client-detail"] });
+      qc.invalidateQueries({ queryKey: ["client-apps"] });
+      setModal(null);
+      showToast("Cliente actualizado en el Core");
+    },
+    onError: (err) => showError(err, "Error al actualizar cliente"),
   });
 
   // App assignment mutations (persist to backend)
@@ -130,7 +182,7 @@ function EcosystemClientes() {
       qc.invalidateQueries({ queryKey: ["client-apps"] });
       showToast("Acceso de cliente actualizado");
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al asignar app")),
+    onError: (err) => showError(err, "Error al asignar app"),
   });
 
   const removeAppMutation = useMutation({
@@ -139,13 +191,15 @@ function EcosystemClientes() {
       qc.invalidateQueries({ queryKey: ["client-apps"] });
       showToast("Acceso de cliente removido");
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al remover app")),
+    onError: (err) => showError(err, "Error al remover app"),
   });
 
   const selected = detail || clients.find((c) => String(c.id) === effectiveSelectedId) || null;
 
   const toggleApp = (appKey) => {
     if (!effectiveSelectedId) return;
+    const app = APP_BY_KEY[appKey];
+    if (!app?.live) return;
     const isOn = assignedApps.has(appKey);
     if (isOn) {
       removeAppMutation.mutate({ clientId: effectiveSelectedId, appKey });
@@ -163,15 +217,11 @@ function EcosystemClientes() {
 
   const selectClient = (id) => { setSelectedId(String(id)); setTab("contracts"); setAppFilter("all"); };
 
-  // For the list, derive app presence from client type (quick heuristic for dots)
-  const presentIn = (client, key) => {
-    if (String(client.id) === effectiveSelectedId) return assignedApps.has(key);
-    return key === "lands" && (client.type === "buyer" || client.type === "tenant");
-  };
+  const presentIn = (client, key) => appsByClientId.get(String(client.id))?.has(key) ?? false;
   const appCount = (key) => clients.filter((c) => presentIn(c, key)).length;
   const multiAppCount = clients.filter((c) => APPS.filter((a) => presentIn(c, a.key)).length > 1).length;
 
-  const associatedApps = APPS.filter((a) => assignedApps.has(a.key));
+  const associatedApps = APPS.filter((a) => a.live && assignedApps.has(a.key));
   const appsActivas = associatedApps.length;
 
   const byFilter = (item) => appFilter === "all" || item.app === appFilter;
@@ -185,6 +235,7 @@ function EcosystemClientes() {
     if (type === "client") {
       setModal({
         type,
+        mode: "create",
         draft: {
           first_name: "",
           last_name: "",
@@ -203,6 +254,26 @@ function EcosystemClientes() {
       setModal({ type, draft: { name: "", category: IDENTITY_CATEGORIES[0], file: null } });
     }
   };
+  const openEditClient = () => {
+    if (!selected) return;
+    const nameParts = selected.name.trim().split(/\s+/);
+    setModal({
+      type: "client",
+      mode: "edit",
+      clientId: selected.id,
+      draft: {
+        first_name: nameParts.shift() || "",
+        last_name: nameParts.join(" "),
+        email: selected.email || "",
+        phone: selected.phone || "",
+        type: selected.type || "lead",
+        pipeline_stage: selected.pipeline_stage || "new",
+        seller_id: selected.seller?.id || "",
+        notes: selected.notes || "",
+        apps: Object.fromEntries(APPS.map((app) => [app.key, app.live && assignedApps.has(app.key)])),
+      },
+    });
+  };
   const setDraft = (patch) => setModal((m) => ({ ...m, draft: { ...m.draft, ...patch } }));
 
   const saveDraft = () => {
@@ -214,7 +285,11 @@ function EcosystemClientes() {
         showToast("Ingresa un correo válido");
         return;
       }
-      createClientMutation.mutate({ ...draft, name: fullName });
+      if (modal.mode === "edit") {
+        updateClientMutation.mutate({ clientId: modal.clientId, draft: { ...draft, name: fullName } });
+      } else {
+        createClientMutation.mutate({ ...draft, name: fullName });
+      }
     } else if (type === "document") {
       if (!draft.file) {
         showToast("Selecciona un archivo para subir");
@@ -235,12 +310,20 @@ function EcosystemClientes() {
   }
 
   return (
-    <EcoLayout active="users" title="Clientes del ecosistema" subtitle="Identidad única · presencia en todas las apps">
+    <EcoLayout active="users" title="Clientes del ecosistema" subtitle="Identidad única · presencia en todas las apps" onGuide={() => setShowGuide(true)}>
 
       <div className="section-head">
         <h3>Directorio central de clientes</h3>
         <div className="usr-list-bar" style={{ marginBottom: 0 }}>
           <button className="usr-btn-ghost" onClick={() => exportAppData("clients", "xlsx")}>Exportar clientes</button>
+          <button
+            type="button"
+            className="usr-btn-ghost"
+            disabled
+            title="Disponible cuando el backend publique el endpoint de importación"
+          >
+            Importar clientes · Próximamente
+          </button>
           <button className="usr-add-btn" onClick={() => openAdd("client")}>Nuevo cliente</button>
         </div>
       </div>
@@ -248,9 +331,9 @@ function EcosystemClientes() {
       {/* KPIs */}
       <div className="kpi-row" style={{ marginBottom: 22 }}>
         <div className="kpi"><div className="kpi-head"><span className="kpi-label">Clientes en el core</span></div><div className="kpi-val">{clients.length}</div><div className="kpi-foot">Identidad única compartida</div></div>
-        <div className="kpi"><div className="kpi-head"><span className="kpi-label">En OwnTerra Lands</span></div><div className="kpi-val">{appCount("lands")}</div><div className="kpi-foot">Con acceso a la app</div></div>
-        <div className="kpi"><div className="kpi-head"><span className="kpi-label">En Neighborhoods</span></div><div className="kpi-val">{appCount("neighb")}</div><div className="kpi-foot">Pre-asignados</div></div>
-        <div className="kpi"><div className="kpi-head"><span className="kpi-label">Multi-app</span></div><div className="kpi-val">{multiAppCount}</div><div className="kpi-foot">Presentes en 2+ apps</div></div>
+        <div className="kpi"><div className="kpi-head"><span className="kpi-label">En OwnTerra Lands</span></div><div className="kpi-val">{appAssignmentsLoading ? "—" : appCount("lands")}</div><div className="kpi-foot">Con acceso asignado</div></div>
+        <div className="kpi"><div className="kpi-head"><span className="kpi-label">En Properties</span></div><div className="kpi-val">{appAssignmentsLoading ? "—" : appCount("neighb")}</div><div className="kpi-foot">Con acceso asignado</div></div>
+        <div className="kpi"><div className="kpi-head"><span className="kpi-label">Multi-app</span></div><div className="kpi-val">{appAssignmentsLoading ? "—" : multiAppCount}</div><div className="kpi-foot">Asignados en 2+ apps</div></div>
       </div>
 
       <div className="usr-layout">
@@ -271,8 +354,11 @@ function EcosystemClientes() {
                   <span className="usr-name" style={{ display: "block" }}>{c.name}</span>
                   <span className="usr-mail" style={{ display: "block" }}>{c.email || "—"}</span>
                 </span>
+                <span className={`usr-chip ${c.account_health === "overdue" ? "closed" : "active"}`}>
+                  {ACCOUNT_HEALTH_LABEL[c.account_health] || c.account_health || "Sin adeudos"}
+                </span>
                 <span className="usr-dots">
-                  {APPS.map((a) => (<span key={a.key} className={`usr-dot ${presentIn(c, a.key) ? `on-${a.key}` : ""}`} title={`${a.name}: ${presentIn(c, a.key) ? "asignado" : "sin acceso"}`} />))}
+                  {APPS.map((a) => (<span key={a.key} className={`usr-dot ${presentIn(c, a.key) ? `on-${a.key}` : ""}`} title={`${a.name}: ${appAssignmentsLoading ? "consultando acceso" : presentIn(c, a.key) ? "asignado" : "sin acceso"}`} />))}
                 </span>
               </button>
             ))}
@@ -294,20 +380,26 @@ function EcosystemClientes() {
                     id: {String(selected.id).slice(0, 8)}… · {selected.email || "—"} · {selected.phone || "—"}
                   </div>
                 </div>
-                <span className="usr-d-type">{TYPE_LABEL[selected.type] || selected.type}</span>
+                <div className="usr-list-bar" style={{ margin: 0, marginLeft: "auto" }}>
+                  <span className={`usr-chip ${selected.account_health === "overdue" ? "closed" : "active"}`}>
+                    {ACCOUNT_HEALTH_LABEL[selected.account_health] || selected.account_health || "Sin adeudos"}
+                  </span>
+                  <span className="usr-d-type">{TYPE_LABEL[selected.type] || selected.type}</span>
+                  <button className="usr-add-btn" onClick={openEditClient}>Editar cliente</button>
+                </div>
               </div>
 
               <div className="usr-d-body">
                 <div className="usr-d-intro">
                   Activa las <b>aplicaciones del ecosistema</b> a las que este cliente tiene acceso. El cliente mantiene
-                  una <b>identidad única</b>; cada app lo cruza sin duplicarlo. Puedes pre-asignar apps aún no lanzadas.
+                  una <b>identidad única</b>; cada app lo cruza sin duplicarlo.
                 </div>
 
                 {APPS.map((app) => {
-                  const isOn = assignedApps.has(app.key);
+                  const isOn = app.live && assignedApps.has(app.key);
                   const isPending = assignAppMutation.isPending || removeAppMutation.isPending;
                   return (
-                    <div key={app.key} className={`usr-app-block ${isOn ? "is-on" : ""}`}>
+                    <div key={app.key} className={`usr-app-block ${isOn ? "is-on" : ""} ${!app.live ? "is-coming-soon" : ""}`}>
                       <div className="usr-app-top" style={{ marginBottom: 0 }}>
                         <span className={`usr-app-ico app-icon ${app.cls}`}><svg><use href={`#${app.icon}`} /></svg></span>
                         <div style={{ minWidth: 0 }}>
@@ -318,8 +410,9 @@ function EcosystemClientes() {
                           className={`usr-switch ${isOn ? "on" : ""}`}
                           role="switch"
                           aria-checked={isOn}
+                          aria-disabled={!app.live || isPending}
                           aria-label={`${isOn ? "Quitar acceso a" : "Asignar"} ${app.name}`}
-                          disabled={isPending}
+                          disabled={!app.live || isPending}
                           onClick={() => toggleApp(app.key)}
                         />
                       </div>
@@ -443,10 +536,10 @@ function EcosystemClientes() {
           <div className="usr-modal">
             <div className="usr-modal-head">
               <div>
-                <div className="usr-modal-title">{modal.type === "client" ? "Nuevo cliente" : "Documento de identidad"}</div>
+                <div className="usr-modal-title">{modal.type === "client" ? (modal.mode === "edit" ? "Editar cliente" : "Nuevo cliente") : "Documento de identidad"}</div>
                 <div className="usr-modal-sub">
                   {modal.type === "client"
-                    ? "Identidad única del Core con acceso opcional a OwnTerra Lands."
+                    ? (modal.mode === "edit" ? "Actualiza la identidad y sus accesos del ecosistema." : "Identidad única del Core con acceso opcional a OwnTerra Lands.")
                     : `Para ${selected.name} · se guarda en el core`}
                 </div>
               </div>
@@ -472,13 +565,13 @@ function EcosystemClientes() {
                     </div>
                     <div className="usr-field">
                       <label className="usr-field-lbl">Telefono</label>
-                      <input className="usr-input" value={modal.draft.phone} onChange={(e) => setDraft({ phone: e.target.value })} />
+                      <PhoneInput inputClassName="usr-input" value={modal.draft.phone} onChange={(v) => setDraft({ phone: v })} />
                     </div>
                   </div>
                   <div className="usr-field-row">
                     <div className="usr-field">
                       <label className="usr-field-lbl">Tipo</label>
-                      <select className="usr-select" value={modal.draft.type} onChange={(e) => setDraft({ type: e.target.value })}>
+                      <select className="usr-select" value={modal.draft.type} disabled={modal.mode === "edit"} onChange={(e) => setDraft({ type: e.target.value })}>
                         {Object.entries(TYPE_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                       </select>
                     </div>
@@ -498,9 +591,9 @@ function EcosystemClientes() {
                   </div>
                   <div className="usr-sec-label">Acceso a apps</div>
                   {APPS.map((app) => {
-                    const isOn = !!modal.draft.apps[app.key];
+                    const isOn = app.live && !!modal.draft.apps[app.key];
                     return (
-                      <div key={app.key} className={`usr-app-block ${isOn ? "is-on" : ""}`}>
+                      <div key={app.key} className={`usr-app-block ${isOn ? "is-on" : ""} ${!app.live ? "is-coming-soon" : ""}`}>
                         <div className="usr-app-top" style={{ marginBottom: 0 }}>
                           <span className={`usr-app-ico app-icon ${app.cls}`}><svg><use href={`#${app.icon}`} /></svg></span>
                           <div style={{ minWidth: 0 }}>
@@ -511,6 +604,9 @@ function EcosystemClientes() {
                             className={`usr-switch ${isOn ? "on" : ""}`}
                             role="switch"
                             aria-checked={isOn}
+                            aria-disabled={!app.live}
+                            aria-label={`${isOn ? "Quitar acceso a" : "Asignar"} ${app.name}`}
+                            disabled={!app.live}
                             onClick={() => setDraft({ apps: { ...modal.draft.apps, [app.key]: !isOn } })}
                           />
                         </div>
@@ -546,13 +642,28 @@ function EcosystemClientes() {
             </div>
             <div className="usr-modal-foot">
               <button className="usr-btn-ghost" onClick={() => setModal(null)}>Cancelar</button>
-              <button className="usr-btn-primary" onClick={saveDraft} disabled={uploadDocMutation.isPending || createClientMutation.isPending}>
-                {uploadDocMutation.isPending || createClientMutation.isPending ? "Guardando…" : "✓ Guardar"}
+              <button className="usr-btn-primary" onClick={saveDraft} disabled={uploadDocMutation.isPending || createClientMutation.isPending || updateClientMutation.isPending}>
+                {uploadDocMutation.isPending || createClientMutation.isPending || updateClientMutation.isPending ? "Guardando…" : "✓ Guardar"}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      <GuideModal
+        open={showGuide}
+        onClose={() => setShowGuide(false)}
+        title="Clientes del ecosistema"
+        subtitle="Identidad única de cliente reutilizable en todas las apps verticales."
+        steps={[
+          { title: "Buscar clientes", text: "La barra de búsqueda filtra por nombre o correo. Haz clic en un cliente para ver su ficha completa con contratos, apps asignadas y documentos." },
+          { title: "Crear cliente", text: "Pulsa 'Nuevo cliente' para registrar una identidad en el core y, si corresponde, asignarle acceso a OwnTerra Lands." },
+          { title: "Asignar acceso a apps", text: "Desde la ficha del cliente puedes activar o desactivar su acceso a OwnTerra Lands. Las aplicaciones próximas permanecen bloqueadas." },
+          { title: "Editar cliente", text: "El ícono de edición en la ficha permite modificar nombre, correo, teléfono, vendedor asignado y etapa del pipeline." },
+          { title: "Importar clientes", text: "La importación masiva estará disponible cuando el backend publique el endpoint correspondiente." },
+          { title: "Exportar directorio", text: "'Exportar clientes' descarga el directorio completo en formato Excel con todos los datos de cada cliente." },
+        ]}
+      />
     </EcoLayout>
   );
 }

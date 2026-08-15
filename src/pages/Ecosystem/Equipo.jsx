@@ -1,10 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import EcoLayout from "./EcoLayout";
+import GuideModal from "@/components/shared/GuideModal";
+import { SkeletonRows } from "@/components/ui/Skeleton";
+import InlineError from "@/components/shared/InlineError";
+import FieldError from "@/components/shared/FieldError";
+import PhoneInput from "@/components/shared/PhoneInput";
+import { useFieldErrors } from "@/hooks/useFieldErrors";
 import { userService } from "@/services/userService";
 import { useAppContext } from "@/context/AppContext";
-import { getUserErrorMessage } from "@/services/errors";
-import { GLOBAL_ROLES, VERTICAL_APP_CATALOG, defaultPermissionsFor } from "@/services/permissions";
+import { parseApiError } from "@/errors/parseApiError";
+import { GLOBAL_ROLES, VERTICAL_APP_CATALOG } from "@/services/permissions";
+import useEscapeKey from "@/hooks/useEscapeKey";
 
 const ROLE_LABEL = Object.fromEntries(Object.entries(GLOBAL_ROLES).map(([key, value]) => [key, value.label]));
 const APP_LABEL = Object.fromEntries(VERTICAL_APP_CATALOG.map((app) => [app.key, app]));
@@ -14,7 +21,7 @@ const blankDraft = {
   email: "",
   phone: "",
   role: "vendor",
-  password: "Temporal123",
+  password: "",
   apps: {},
   is_active: true,
 };
@@ -24,14 +31,20 @@ const emailOk = (value = "") => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
 function EcosystemEquipo() {
   const qc = useQueryClient();
-  const { showToast } = useAppContext();
+  const { showToast, showError } = useAppContext();
   const [query, setQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [selectedId, setSelectedId] = useState(null);
-  const [modal, setModal] = useState(null);
+  const [modal, setModal]         = useState(null);
+  const [showGuide, setShowGuide] = useState(false);
   const [accessDraft, setAccessDraft] = useState(null);
   const [confirmAccessSave, setConfirmAccessSave] = useState(false);
-  const [formError, setFormError] = useState("");
+  const [formError, setFormError] = useState(null);
+  useEscapeKey(
+    () => confirmAccessSave ? setConfirmAccessSave(false) : setModal(null),
+    Boolean(modal || confirmAccessSave),
+  );
+  const fe = useFieldErrors();
 
   const { data, isLoading } = useQuery({
     queryKey: ["users", "eco-team"],
@@ -55,6 +68,9 @@ function EcosystemEquipo() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return users.filter((u) => {
+      // "Eliminar" un integrante lo desactiva (is_active=False) para conservar su
+      // historial; NO se borra de la BD. Aquí lo tratamos como eliminado: no se lista.
+      if (!u.is_active) return false;
       const roleOk = roleFilter === "all" || u.role === roleFilter;
       const textOk = !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
       return roleOk && textOk;
@@ -87,8 +103,6 @@ function EcosystemEquipo() {
             app_key: app.key,
             role,
             is_active: true,
-            permissions: defaultPermissionsFor(app.key, role),
-            metadata: { scope: "vertical" },
           });
         }));
       }
@@ -98,10 +112,10 @@ function EcosystemEquipo() {
       qc.invalidateQueries({ queryKey: ["users"] });
       setSelectedId(String(created.id));
       setModal(null);
-      setFormError("");
+      setFormError(null);
       showToast("Integrante creado");
     },
-    onError: (err) => setFormError(getUserErrorMessage(err, "Error al crear el integrante")),
+    onError: (err) => setFormError(parseApiError(err, "Error al crear el integrante")),
   });
 
   const updateMutation = useMutation({
@@ -110,10 +124,10 @@ function EcosystemEquipo() {
       qc.invalidateQueries({ queryKey: ["users"] });
       setSelectedId(String(updated.id));
       setModal(null);
-      setFormError("");
+      setFormError(null);
       showToast("Integrante actualizado");
     },
-    onError: (err) => setFormError(getUserErrorMessage(err, "Error al actualizar el integrante")),
+    onError: (err) => setFormError(parseApiError(err, "Error al actualizar el integrante")),
   });
 
   const accessMutation = useMutation({
@@ -131,8 +145,6 @@ function EcosystemEquipo() {
             app_key: app.key,
             role,
             is_active: true,
-            permissions: defaultPermissionsFor(app.key, role),
-            metadata: { scope: "vertical" },
           });
         }
         return null;
@@ -145,21 +157,23 @@ function EcosystemEquipo() {
       setConfirmAccessSave(false);
       showToast("Accesos actualizados");
     },
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al actualizar accesos")),
+    onError: (err) => showError(err, "Error al actualizar accesos"),
   });
 
   const resetPasswordMutation = useMutation({
     mutationFn: (id) => userService.resetPassword(id),
     onSuccess: () => showToast("Contraseña restablecida"),
-    onError: (err) => showToast(getUserErrorMessage(err, "Error al restablecer contraseña")),
+    onError: (err) => showError(err, "Error al restablecer contraseña"),
   });
 
   const openCreate = () => {
-    setFormError("");
+    setFormError(null);
+    fe.clearAll();
     setModal({ mode: "create", draft: blankDraft });
   };
   const openEdit = (user) => {
-    setFormError("");
+    setFormError(null);
+    fe.clearAll();
     setModal({
       mode: "edit",
       userId: user.id,
@@ -177,19 +191,13 @@ function EcosystemEquipo() {
 
   const saveDraft = () => {
     const draft = modal.draft;
-    setFormError("");
-    if (!draft.name.trim()) {
-      setFormError("El nombre es obligatorio");
-      return;
-    }
-    if (!emailOk(draft.email)) {
-      setFormError("Ingresa un correo válido");
-      return;
-    }
-    if (modal.mode === "create" && draft.password.trim().length < 8) {
-      setFormError("La contraseña temporal debe tener al menos 8 caracteres");
-      return;
-    }
+    setFormError(null);
+    fe.clearAll();
+    const fieldErrs = {};
+    if (!draft.name.trim()) fieldErrs.name = "El nombre es obligatorio.";
+    if (modal.mode !== "edit" && !emailOk(draft.email)) fieldErrs.email = "Ingresa un correo electrónico válido.";
+    if (modal.mode === "create" && draft.password.trim().length < 8) fieldErrs.password = "La contraseña temporal debe tener al menos 8 caracteres.";
+    if (Object.keys(fieldErrs).length) { fe.setErrors(fieldErrs); return; }
     if (modal.mode === "create") {
       createMutation.mutate(draft);
       return;
@@ -236,20 +244,22 @@ function EcosystemEquipo() {
   if (isLoading) {
     return (
       <EcoLayout active="team" title="Equipo del core" subtitle="Usuarios, vendedores y permisos por app">
-        <div className="usr-empty" style={{ padding: 40 }}>Cargando equipo...</div>
+        <SkeletonRows rows={5} />
       </EcoLayout>
     );
   }
 
   return (
-    <EcoLayout active="team" title="Equipo del core" subtitle="Usuarios internos · acceso a OwnTerra Lands">
+    <EcoLayout active="team" title="Equipo del core" subtitle="Usuarios internos · acceso a OwnTerra Lands" onGuide={() => setShowGuide(true)}>
       <div className="ag-hero">
         <div>
           <div className="ag-kicker">Ecosistema Core</div>
           <h2>Equipo y vendedores</h2>
           <p>Administra usuarios internos desde el Core. Los vendedores con acceso a Lands se usan como responsables de clientes, lotes, contratos y cobranza.</p>
         </div>
-        <button className="ag-primary" onClick={openCreate}>Nuevo integrante</button>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button className="ag-primary" onClick={openCreate}>Nuevo integrante</button>
+        </div>
       </div>
 
       <div className="kpi-row" style={{ marginBottom: 22 }}>
@@ -285,7 +295,7 @@ function EcosystemEquipo() {
                   <span className="usr-name" style={{ display: "block" }}>{u.name}</span>
                   <span className="usr-mail" style={{ display: "block" }}>{u.email}</span>
                 </span>
-                <span className={`usr-chip ${u.is_active ? "active" : "closed"}`}>{ROLE_LABEL[u.role] || u.role}</span>
+                <span className="usr-chip active">{ROLE_LABEL[u.role] || u.role}</span>
               </button>
             ))}
             {filtered.length === 0 && <div className="usr-empty">Sin integrantes para este filtro.</div>}
@@ -385,11 +395,12 @@ function EcosystemEquipo() {
               <button className="usr-modal-close" onClick={() => setModal(null)}>x</button>
             </div>
             <div className="usr-modal-body">
-              {formError && <div className="usr-error">{formError}</div>}
+              <InlineError error={formError} onDismiss={() => setFormError(null)} />
               <div className="usr-field-row">
                 <div className="usr-field">
                   <label className="usr-field-lbl">Nombre</label>
-                  <input className="usr-input" value={modal.draft.name} onChange={(e) => setDraft({ name: e.target.value })} />
+                  <input {...fe.fieldProps("name", "usr-input")} value={modal.draft.name} onChange={(e) => { setDraft({ name: e.target.value }); fe.clear("name"); }} />
+                  <FieldError msg={fe.errors.name} />
                 </div>
                 <div className="usr-field">
                   <label className="usr-field-lbl">Rol</label>
@@ -401,16 +412,18 @@ function EcosystemEquipo() {
               </div>
               <div className="usr-field">
                 <label className="usr-field-lbl">Correo</label>
-                <input className="usr-input" type="email" disabled={modal.mode === "edit"} value={modal.draft.email} onChange={(e) => setDraft({ email: e.target.value })} />
+                <input {...fe.fieldProps("email", "usr-input")} type="email" disabled={modal.mode === "edit"} value={modal.draft.email} onChange={(e) => { setDraft({ email: e.target.value }); fe.clear("email"); }} />
+                <FieldError msg={fe.errors.email} />
               </div>
               <div className="usr-field">
                 <label className="usr-field-lbl">Teléfono</label>
-                <input className="usr-input" value={modal.draft.phone} onChange={(e) => setDraft({ phone: e.target.value })} />
+                <PhoneInput inputClassName="usr-input" value={modal.draft.phone} onChange={(v) => setDraft({ phone: v })} />
               </div>
               {modal.mode === "create" && (
                 <div className="usr-field">
                   <label className="usr-field-lbl">Contraseña temporal</label>
-                  <input className="usr-input" value={modal.draft.password} onChange={(e) => setDraft({ password: e.target.value })} />
+                  <input {...fe.fieldProps("password", "usr-input")} value={modal.draft.password} onChange={(e) => { setDraft({ password: e.target.value }); fe.clear("password"); }} />
+                  <FieldError msg={fe.errors.password} />
                 </div>
               )}
               {modal.mode === "create" && modal.draft.role === "vendor" && (
@@ -487,6 +500,20 @@ function EcosystemEquipo() {
           </div>
         </div>
       )}
+      <GuideModal
+        open={showGuide}
+        onClose={() => setShowGuide(false)}
+        title="Equipo y vendedores"
+        subtitle="Gestión de usuarios internos con acceso al ecosistema OwnTerra."
+        steps={[
+          { title: "Roles disponibles", text: "Admin: acceso completo incluyendo configuración y gestión de usuarios. Vendor: acceso a operaciones comerciales sin configuración administrativa." },
+          { title: "Crear nuevo integrante", text: "Pulsa 'Nuevo integrante', ingresa nombre, correo, rol y una contraseña temporal de al menos 8 caracteres." },
+          { title: "Asignar apps", text: "Desde la ficha de cada usuario puedes activar o desactivar su acceso a OwnTerra Lands." },
+          { title: "Restablecer contraseña", text: "Si un usuario olvidó su contraseña, usa el botón de restablecer en su ficha para generar una nueva contraseña temporal." },
+          { title: "Filtrar por rol", text: "Las pestañas superiores permiten ver todos los usuarios, solo admins, o solo vendedores de Lands." },
+          { title: "Vendedores en Lands", text: "Los usuarios con rol Vendor aparecen en los selectores de vendedor al crear contratos, lotes y clientes en OwnTerra Lands." },
+        ]}
+      />
     </EcoLayout>
   );
 }
