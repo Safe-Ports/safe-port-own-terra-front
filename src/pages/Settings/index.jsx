@@ -6,6 +6,7 @@ import { orgService } from "@/services/orgService";
 import { billingService } from "@/services/billingService";
 import { SkeletonRows } from "@/components/ui/Skeleton";
 import GuideModal from "@/components/shared/GuideModal";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import Button from "@/components/Button";
 import FieldError from "@/components/shared/FieldError";
 import { useFieldErrors } from "@/hooks/useFieldErrors";
@@ -64,9 +65,12 @@ function SettingsPage() {
     queryFn: orgService.get,
   });
 
+  // Solo activos: dar de baja a alguien lo desactiva (no lo borra), y seguir
+  // listándolo aquí como "Inactivo" confundía. Se filtra en el servidor para que
+  // los inactivos tampoco consuman sitio en la página.
   const { data: usersData, isLoading: usersLoading } = useQuery({
-    queryKey: ["users"],
-    queryFn: () => orgService.listUsers({ limit: 50 }),
+    queryKey: ["users", "active"],
+    queryFn: () => orgService.listUsers({ limit: 50, is_active: true }),
   });
 
   const users = usersData?.items || [];
@@ -89,7 +93,10 @@ function SettingsPage() {
     } else if (billing === "cancelled") {
       showToast("Pago cancelado. Tu plan no cambió.");
     }
-    window.history.replaceState({}, "", "/configuracion");
+    // Limpia solo la query, conservando la ruta actual: esta página se sirve en dos
+    // (/configuracion y /ecosistema/configuracion) y fijar una sacaría al usuario
+    // del shell en el que estaba.
+    window.history.replaceState({}, "", window.location.pathname);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -185,14 +192,74 @@ function SettingsPage() {
     }
   };
 
-  const handleDeleteUser = async (id, name) => {
-    if (!window.confirm(`¿Eliminar usuario ${name}?`)) return;
+  // Baja de un usuario. El backend la rechaza (409 OT-USER-3030) mientras tenga
+  // clientes, contratos o lotes asignados, así que el mismo diálogo pasa entonces a
+  // un paso de traspaso: elegir destinatario, reasignar y reintentar la baja.
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [pendingData, setPendingData] = useState(null); // cifras del 409
+  const [transferTo, setTransferTo] = useState("");
+
+  const closeDeleteDialog = () => {
+    setUserToDelete(null);
+    setPendingData(null);
+    setTransferTo("");
+  };
+
+  // Candidatos a recibir la cartera: activos, distintos del que se da de baja y con
+  // acceso a los datos que van a moverse. Contratos y lotes viven en Lands, así que
+  // ofrecer a alguien sin ese acceso solo lleva al 400 del backend (OT-USER-1005):
+  // quedaría como responsable de registros que no puede abrir.
+  const needsLands = (pendingData?.contracts || 0) > 0 || (pendingData?.inventory_units || 0) > 0;
+  const transferCandidates = users.filter((u) => {
+    if (!u.is_active || u.id === userToDelete?.id) return false;
+    if (u.role === "admin") return true;
+    return !needsLands || (u.app_keys || []).includes("lands");
+  });
+
+  const deleteAndFinish = async () => {
+    await orgService.deleteUser(userToDelete.id);
+    await queryClient.invalidateQueries({ queryKey: ["users"] });
+    showToast("Usuario eliminado");
+    closeDeleteDialog();
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
+    setDeleting(true);
     try {
-      await orgService.deleteUser(id);
-      await queryClient.invalidateQueries({ queryKey: ["users"] });
-      showToast("Usuario eliminado");
+      await deleteAndFinish();
     } catch (err) {
-      showError(err, "Error al eliminar usuario");
+      // Tiene cartera asignada: en vez de un toast sin salida, ofrecemos traspasarla.
+      if (err?.response?.data?.error?.code === "OT-USER-3030") {
+        setPendingData(err.response.data.error.details || {});
+      } else {
+        showError(err, "Error al eliminar usuario");
+      }
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const confirmTransferAndDelete = async () => {
+    if (!userToDelete || !transferTo) return;
+    setDeleting(true);
+    try {
+      const moved = await orgService.transferData(userToDelete.id, transferTo);
+      // El traspaso cambia el vendedor de contratos, clientes y lotes. Sin invalidar
+      // sus caches, esas pantallas siguen mostrando al vendedor anterior hasta 5
+      // minutos (staleTime global en pwa/queryClient.js).
+      await Promise.all(
+        [["contracts"], ["clients"], ["client"], ["lots"], ["payments"], ["dashboard"]]
+          .map((key) => queryClient.invalidateQueries({ queryKey: key }))
+      );
+      const total = (moved?.clients || 0) + (moved?.contracts || 0) + (moved?.inventory_units || 0);
+      showToast(`${total} registro${total === 1 ? "" : "s"} transferido${total === 1 ? "" : "s"}`);
+      await deleteAndFinish();
+    } catch (err) {
+      showError(err, "Error al transferir los datos");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -402,10 +469,11 @@ function SettingsPage() {
                       <td style={{ whiteSpace: "nowrap" }}>
                         {user.id !== currentUser?.id && (
                           <>
-                            <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => handleResetPassword(user.id, user.name)}>
+                            <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} aria-label={`Restablecer contraseña de ${user.name}`} onClick={() => handleResetPassword(user.id, user.name)}>
                               🔑 Reset
                             </button>{" "}
-                            <button className="btn-dan" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => handleDeleteUser(user.id, user.name)}>
+                            {/* El botón es solo un emoji: sin aria-label no tiene nombre accesible. */}
+                            <button className="btn-dan" style={{ padding: "4px 10px", fontSize: ".7rem" }} aria-label={`Eliminar ${user.name}`} onClick={() => setUserToDelete({ id: user.id, name: user.name })}>
                               🗑
                             </button>
                           </>
@@ -426,6 +494,79 @@ function SettingsPage() {
           )}
         </div>
       </div>
+      {/* Paso 1: confirmar la baja. */}
+      <ConfirmDialog
+        open={!!userToDelete && !pendingData}
+        danger
+        title={`¿Eliminar usuario ${userToDelete?.name || ""}?`}
+        subtitle="Usuarios del equipo"
+        confirmLabel="Eliminar usuario"
+        busy={deleting}
+        onCancel={closeDeleteDialog}
+        onConfirm={confirmDeleteUser}
+      >
+        <p className="text-sm text-[#5A4E41]">
+          Perderá el acceso de inmediato y dejará de aparecer en esta lista. No se borra
+          nada: queda desactivado y su actividad se conserva para auditoría.
+        </p>
+        <p className="mt-2 text-sm text-[#83867C]">
+          Si todavía tiene clientes, contratos o lotes asignados, te pediremos a quién
+          traspasarlos antes de completar la baja.
+        </p>
+      </ConfirmDialog>
+
+      {/* Paso 2: solo si el backend rechazó la baja por cartera asignada. */}
+      <ConfirmDialog
+        open={!!userToDelete && !!pendingData}
+        title={`Traspasar la cartera de ${userToDelete?.name || ""}`}
+        subtitle="Antes de darlo de baja"
+        icon="↹"
+        confirmLabel="Traspasar y eliminar"
+        busy={deleting}
+        confirmDisabled={!transferTo || transferCandidates.length === 0}
+        onCancel={closeDeleteDialog}
+        onConfirm={confirmTransferAndDelete}
+      >
+        <p className="text-sm text-[#5A4E41]">
+          Todavía tiene registros a su nombre. Se reasignarán a la persona que elijas y
+          después se completará la baja.
+        </p>
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          {[
+            ["Clientes", pendingData?.clients],
+            ["Contratos", pendingData?.contracts],
+            ["Lotes", pendingData?.inventory_units],
+          ].map(([label, value]) => (
+            <div key={label} className="price-c">
+              <div className="pc-l">{label}</div>
+              <div className="pc-v">{value ?? 0}</div>
+            </div>
+          ))}
+        </div>
+        <label className="mt-4 block text-sm font-semibold text-[#5A4E41]">
+          Traspasar a
+          {transferCandidates.length === 0 ? (
+            <p className="mt-1 text-sm font-normal text-[#83867C]">
+              {needsLands
+                ? "Ningún otro usuario activo tiene acceso a Lands, donde viven esos contratos y lotes. Dale acceso a alguien desde Equipo y vuelve a intentarlo."
+                : "No hay otro usuario activo que pueda recibir la cartera. Crea o activa uno antes de dar de baja a este."}
+            </p>
+          ) : (
+            <select
+              className="fi mt-1"
+              value={transferTo}
+              onChange={(e) => setTransferTo(e.target.value)}
+            >
+              <option value="">Selecciona un usuario...</option>
+              {transferCandidates.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name} · {u.role === "admin" ? "Administrador" : "Vendedor"}
+                </option>
+              ))}
+            </select>
+          )}
+        </label>
+      </ConfirmDialog>
       <GuideModal
         open={showGuide}
         onClose={() => setShowGuide(false)}

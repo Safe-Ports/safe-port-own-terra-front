@@ -500,6 +500,14 @@ export const ERROR_CATALOG = {
     "name": "USER_INACTIVE_TARGET",
     "severity": "warning"
   },
+  "OT-USER-1005": {
+    "action": "Dale acceso a la app correspondiente antes de transferirle la cartera.",
+    "domain": "USER",
+    "http_status": 400,
+    "message": "El usuario destino no tiene acceso a esos datos.",
+    "name": "USER_TARGET_NO_APP_ACCESS",
+    "severity": "warning"
+  },
   "OT-USER-2001": {
     "action": "Pide a otro administrador que la realice.",
     "domain": "USER",

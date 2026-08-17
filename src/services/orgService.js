@@ -21,4 +21,9 @@ export const orgService = {
 
   deleteUser: (id) =>
     api.delete(`/users/${id}`),
+
+  // Reasigna clientes, contratos y lotes de un usuario a otro. Devuelve cuántos
+  // movió de cada tipo. Requisito para dar de baja a alguien con cartera.
+  transferData: (id, toUserId) =>
+    api.post(`/users/${id}/transfer-data`, { to_user_id: toUserId }).then((r) => r.data),
 };

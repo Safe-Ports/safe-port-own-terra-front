@@ -16,6 +16,7 @@ const EcosystemEquipo = lazyWithRetry(() => import("@/pages/Ecosystem/Equipo"));
 const EcosystemFormularios = lazyWithRetry(() => import("@/pages/Ecosystem/Formularios"));
 const EcosystemFormEditor = lazyWithRetry(() => import("@/pages/Ecosystem/Formularios/Editor"));
 const EcosystemFormRespuestas = lazyWithRetry(() => import("@/pages/Ecosystem/Formularios/Respuestas"));
+const EcosystemConfiguracion = lazyWithRetry(() => import("@/pages/Ecosystem/Configuracion"));
 const DashboardPage = lazyWithRetry(() => import("@/pages/Dashboard"));
 const LotsPage = lazyWithRetry(() => import("@/pages/Lots"));
 const FracsPage = lazyWithRetry(() => import("@/pages/Fracs"));
@@ -73,6 +74,9 @@ function AppRouter() {
           <Route path="/ecosistema/formularios/nuevo" element={<RequireFeature feature="core.forms"><EcosystemFormEditor /></RequireFeature>} />
           <Route path="/ecosistema/formularios/:id/editar" element={<RequireFeature feature="core.forms"><EcosystemFormEditor /></RequireFeature>} />
           <Route path="/ecosistema/formularios/:id/respuestas" element={<RequireFeature feature="core.forms"><EcosystemFormRespuestas /></RequireFeature>} />
+          {/* Misma página que /configuracion, servida con el shell del Core para
+              quien entra desde el Ecosistema (ver Ecosystem/Configuracion.jsx). */}
+          <Route path="/ecosistema/configuracion" element={<RequireFeature feature="core.config"><EcosystemConfiguracion /></RequireFeature>} />
           <Route element={<AppShell />}>
             <Route path="/dashboard" element={<RequireFeature app="lands"><DashboardPage /></RequireFeature>} />
             <Route path="/lotes" element={<RequireFeature app="lands"><LotsPage /></RequireFeature>} />

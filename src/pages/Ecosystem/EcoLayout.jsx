@@ -67,7 +67,7 @@ function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
 
           <div className="nav-group">
             <div className="nav-label">Sistema</div>
-            {navItem("config", "Configuración", "eco-n-gear", () => navigate("/configuracion"), !canUseFeature("core.config"))}
+            {navItem("config", "Configuración", "eco-n-gear", () => goTo("/ecosistema/configuracion"), !canUseFeature("core.config"))}
           </div>
 
           <div style={{ marginTop: "auto" }} />

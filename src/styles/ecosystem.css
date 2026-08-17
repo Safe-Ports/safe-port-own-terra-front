@@ -16,7 +16,14 @@
   font-family: var(--font-body);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;
   position:fixed;inset:0;z-index:0;
 }
-.eco-root *,.eco-root *::before,.eco-root *::after{box-sizing:border-box;margin:0;padding:0}
+/* Reset universal del Core. Las páginas embebidas del sistema de diseño de Lands
+   (.lands-embed, p. ej. Configuración) quedan fuera: sí dependen de sus márgenes y
+   paddings, y este reset se los borraba. El :where() no aporta especificidad, así
+   que para todo lo demás la regla pesa exactamente igual que antes.
+   El box-sizing lo cubre el preflight de Tailwind en index.css. */
+.eco-root *:where(:not(.lands-embed, .lands-embed *)),
+.eco-root *:where(:not(.lands-embed, .lands-embed *))::before,
+.eco-root *:where(:not(.lands-embed, .lands-embed *))::after{box-sizing:border-box;margin:0;padding:0}
 
 /* mesh gradient backdrop */
 .eco-root .main::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
@@ -781,19 +788,6 @@
 .eco-root .ag-now-line{position:absolute;left:0;right:0;height:0;border-top:2px solid #C0392B}
 .eco-root .ag-now-line::before{content:"";position:absolute;left:-4px;top:-4px;width:8px;height:8px;border-radius:50%;background:#C0392B}
 .eco-root .ag-timegrid-day .ag-timegrid-daylabels,.eco-root .ag-timegrid-day .ag-timegrid-days{max-width:100%}
-
-/* ───── AGENDA: POPOVER DE CREACIÓN RÁPIDA ───── */
-.eco-root .ag-quickcreate{z-index:60;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-sm);box-shadow:0 20px 50px rgba(0,0,0,.22);padding:16px;animation:eco-fadeUp .15s ease both}
-.eco-root .ag-quickcreate form{display:flex;flex-direction:column;gap:10px}
-.eco-root .ag-quickcreate-slot{font-family: var(--font-body);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)}
-.eco-root .ag-quickcreate-title{height:38px;border:1px solid var(--border2);border-radius:10px;background:var(--surface);color:var(--deep);padding:0 11px;outline:none;font-family: var(--font-body);font-size:14px}
-.eco-root .ag-quickcreate-title:focus{border-color:var(--leaf);box-shadow:0 0 0 4px rgba(111,175,107,.12)}
-.eco-root .ag-quickcreate-row{display:flex;gap:8px}
-.eco-root .ag-quickcreate-row select{flex:1;min-width:0;height:34px;border:1px solid var(--border2);border-radius:9px;background:var(--surface);color:var(--text2);padding:0 8px;outline:none;font-family: var(--font-body);font-size:12px}
-.eco-root .ag-quickcreate-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:2px}
-.eco-root .ag-quickcreate-more{border:0;background:transparent;color:var(--mid);font-family: var(--font-body);font-size:12px;font-weight:700;cursor:pointer;padding:6px 0}
-.eco-root .ag-quickcreate-more:hover{color:var(--deep);text-decoration:underline}
-.eco-root .ag-quickcreate .ag-primary{padding:8px 16px;font-size:12.5px}
 
 /* ───── FORMULARIOS DEL ECOSISTEMA ───── */
 .eco-root .fom-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-bottom:24px}

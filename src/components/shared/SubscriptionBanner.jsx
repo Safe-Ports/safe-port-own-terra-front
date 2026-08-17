@@ -27,13 +27,20 @@ function SubscriptionBanner() {
   let dest = "/planes"; // por defecto, la página de planes (suscribir/renovar)
   let cta = "Ver planes";
 
+  // Configuración vive en dos rutas, una por shell (Core y Lands). El banner sale
+  // en ambos, así que manda a la del shell donde está el usuario para no moverlo
+  // de app al gestionar el pago.
+  const settingsPath = window.location.pathname.startsWith("/ecosistema")
+    ? "/ecosistema/configuracion"
+    : "/configuracion";
+
   if (["cancelled", "unpaid"].includes(sub.status)) {
     tone = "error";
     msg = "Tu suscripción expiró. Renueva para poder crear y editar.";
   } else if (sub.status === "past_due") {
     tone = "warn";
     msg = "Tu último pago falló. Actualiza tu método de pago para no perder el acceso.";
-    dest = "/configuracion"; // para gestionar la tarjeta en el portal
+    dest = settingsPath; // para gestionar la tarjeta en el portal
     cta = "Actualizar pago";
   } else if (sub.status === "active" && sub.cancel_at_period_end) {
     tone = "warn";
