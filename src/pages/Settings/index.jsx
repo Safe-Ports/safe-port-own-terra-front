@@ -178,8 +178,8 @@ function SettingsPage() {
 
   const handleResetPassword = async (id, name) => {
     try {
-      await orgService.resetPassword(id);
-      showToast(`Contraseña restablecida para ${name}`);
+      const data = await orgService.resetPassword(id);
+      showToast(data?.message || `Contraseña restablecida para ${name}`);
     } catch (err) {
       showError(err, "Error al restablecer contraseña");
     }

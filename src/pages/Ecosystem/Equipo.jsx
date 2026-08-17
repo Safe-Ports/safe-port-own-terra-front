@@ -162,7 +162,7 @@ function EcosystemEquipo() {
 
   const resetPasswordMutation = useMutation({
     mutationFn: (id) => userService.resetPassword(id),
-    onSuccess: () => showToast("Contraseña restablecida"),
+    onSuccess: (data) => showToast(data?.message || "Contraseña restablecida"),
     onError: (err) => showError(err, "Error al restablecer contraseña"),
   });
 
