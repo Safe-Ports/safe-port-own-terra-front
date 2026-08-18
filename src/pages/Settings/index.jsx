@@ -297,6 +297,10 @@ function SettingsPage() {
                   ["Teléfono", org.phone || "—"],
                   ["RFC / Tax ID", org.tax_id || "—"],
                   ["Dirección", org.address || "—"],
+                  // Congelada en el build por los scripts de deploy. Sirve para
+                  // confirmar qué versión está sirviendo el navegador (soporte,
+                  // rollback) sin abrir la consola.
+                  ["Versión de la app", __APP_VERSION__],
                 ].map(([label, value]) => (
                   <div key={label} className="d-row">
                     <span className="d-lbl">{label}</span>

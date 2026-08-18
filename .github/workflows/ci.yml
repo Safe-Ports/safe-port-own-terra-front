@@ -1,0 +1,42 @@
+name: CI
+
+# Corre en cada PR y en cada push a las ramas que se despliegan. La regla que hace
+# útil esto: en GitHub, marcar "test" como required status check en la protección de
+# la rama main, para que un PR con tests rojos no se pueda mergear.
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+concurrency:
+  # Un push nuevo sobre la misma rama cancela la corrida anterior: no tiene sentido
+  # gastar minutos validando un commit que ya quedó atrás.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Instalar dependencias
+        # `npm ci` (no `npm install`): instala exactamente el package-lock, igual
+        # que hacen los scripts de deploy.
+        run: npm ci
+
+      - name: Tests
+        run: npm test
+
+      - name: Build
+        # El build es parte de la validación: rompe ante imports inexistentes o
+        # sintaxis inválida que los tests no tocan. VITE_API_URL es obligatoria en
+        # modo producción (ver vite.config.js); aquí solo necesita ser válida.
+        env:
+          VITE_API_URL: https://ci.invalid/api/v1
+        run: npm run build
