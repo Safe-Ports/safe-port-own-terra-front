@@ -104,7 +104,7 @@ function DayColumn({ day, items, isToday, onSlotClick, onEventClick }) {
               type="button"
               className="ag-slot"
               style={{ height: HOUR_HEIGHT / 2 }}
-              onClick={(e) => onSlotClick(day.key, time, e.currentTarget.getBoundingClientRect())}
+              onClick={() => onSlotClick(day.key, time)}
               aria-label={`Crear evento ${time}`}
             />
           );

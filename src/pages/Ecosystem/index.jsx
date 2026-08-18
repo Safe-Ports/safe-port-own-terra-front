@@ -124,6 +124,7 @@ function EcosystemHub() {
           </div>
         </div>
 
+
       </div>
 
       {/* PANEL FINANCIERO */}

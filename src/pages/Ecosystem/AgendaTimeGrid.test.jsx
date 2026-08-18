@@ -9,11 +9,7 @@ describe("AgendaTimeGrid", () => {
     const onSlotClick = vi.fn();
     render(<AgendaTimeGrid view="day" days={[day]} appointments={[]} onSlotClick={onSlotClick} onEventClick={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Crear evento 10:30" }));
-    expect(onSlotClick).toHaveBeenCalledWith(
-      "2026-07-14",
-      "10:30",
-      expect.objectContaining({ top: expect.any(Number), left: expect.any(Number) })
-    );
+    expect(onSlotClick).toHaveBeenCalledWith("2026-07-14", "10:30");
   });
 
   it("opens an existing event without creating a new one", () => {

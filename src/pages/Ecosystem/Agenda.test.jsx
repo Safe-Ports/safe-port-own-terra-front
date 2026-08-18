@@ -111,13 +111,17 @@ describe("AgendaPage", () => {
     expect(screen.queryByText("Nuevo evento", { selector: "h3" })).not.toBeInTheDocument();
   });
 
-  it("abre el popover de creación rápida al hacer clic en una celda vacía de la rejilla", async () => {
+  it("abre el formulario completo con la celda clicada ya cargada", async () => {
     server.use(http.get(`${API}/appointments`, () => HttpResponse.json([])));
     renderAgenda();
     await waitFor(() => expect(screen.getByText("Sin eventos para este día")).toBeInTheDocument());
 
     fireEvent.click(screen.getAllByRole("button", { name: "Crear evento 10:30" })[0]);
-    expect(screen.getByPlaceholderText("Añadir título")).toBeInTheDocument();
+
+    // El mismo modal que el botón "Nuevo evento", no un popover aparte...
+    expect(screen.getByText("Nuevo evento", { selector: "h3" })).toBeInTheDocument();
+    // ...y la hora de la celda llega precargada, que es lo que aportaba el popover.
+    expect(screen.getByLabelText(/Hora/)).toHaveValue("10:30");
   });
 
   it("edita un evento existente al hacer clic en su bloque en la rejilla", async () => {

@@ -10,7 +10,6 @@ import { useFieldErrors } from "@/hooks/useFieldErrors";
 import useEscapeKey from "@/hooks/useEscapeKey";
 import EcoLayout from "./EcoLayout";
 import AgendaTimeGrid from "./AgendaTimeGrid";
-import AgendaQuickCreate from "./AgendaQuickCreate";
 import ConnectCalendarModal from "./ConnectCalendarModal";
 import {
   APP_META,
@@ -52,16 +51,14 @@ function AgendaPage() {
   const [selectedDate, setSelectedDate] = useState(toDateKey(today));
   const [showGuide, setShowGuide] = useState(false);
   const [view, setView] = useState("week");
-  const [quickCreate, setQuickCreate] = useState(null);
 
   useEffect(() => {
     clearCalendarAlerts();
   }, []);
 
-  // Un popover de creación rápida anclado a una celda ya no aplica si el
-  // usuario navega a otra semana/día/mes o cambia de vista.
+  // La tira de "todo el día" desplegada pertenece al rango que se estaba viendo:
+  // al navegar a otra semana/día/mes o cambiar de vista, vuelve a colapsarse.
   useEffect(() => {
-    setQuickCreate(null);
     setShowAllDay(false);
   }, [view, visibleMonth, selectedDate]);
 
@@ -345,7 +342,7 @@ function AgendaPage() {
               view={view}
               days={visibleRange.days}
               appointments={visibleAppointments}
-              onSlotClick={(date, time, anchorRect) => setQuickCreate({ date, time, anchorRect })}
+              onSlotClick={(date, time) => openCreate(date, time)}
               onEventClick={(item) => openEdit(item)}
             />
           )}
@@ -415,17 +412,6 @@ function AgendaPage() {
 
         </aside>
       </div>
-
-      {quickCreate ? (
-        <AgendaQuickCreate
-          date={quickCreate.date}
-          time={quickCreate.time}
-          anchorRect={quickCreate.anchorRect}
-          onClose={() => setQuickCreate(null)}
-          onSubmit={(body) => createMutation.mutateAsync(body)}
-          onMore={(date, time) => { setQuickCreate(null); openCreate(date, time); }}
-        />
-      ) : null}
 
       {showModal ? (
         <div className="ag-modal-backdrop" onClick={() => { setShowModal(false); setEditingId(null); }}>

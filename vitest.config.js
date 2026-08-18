@@ -5,6 +5,9 @@ import path from "node:path";
 export default defineConfig({
   plugins: [react()],
   resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
+  // Mismo define que vite.config.js: este archivo no lo hereda, y sin él cualquier
+  // componente que muestre la versión rompe en tests con "__APP_VERSION__ is not defined".
+  define: { __APP_VERSION__: JSON.stringify("test") },
   test: {
     environment: "jsdom",
     setupFiles: ["./src/test/setup.js"],

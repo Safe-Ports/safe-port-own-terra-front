@@ -16,6 +16,12 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
+  // Versión desplegada, congelada en el build. La pasan los scripts de deploy:
+  // el tag de git en prod (v1.1.0) y rama-commit en dev. En `npm run dev` queda
+  // "dev". Es lo que permite confirmar qué build está sirviendo Cloudflare.
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.APP_VERSION || "dev"),
+  },
   // Genera source maps solo cuando vamos a subirlos (no se exponen en el sitio:
   // el plugin de Sentry los borra del dist tras subirlos).
   build: {
