@@ -8,7 +8,10 @@ const POLL_MS = 10_000
 // Revisión de fondo del punto rojo, con el panel cerrado — antes era una sola vez
 // (2s tras montar o cerrar el panel), así que si soporte respondía mientras el
 // usuario seguía navegando la app sin volver a tocar el widget, nunca se enteraba.
-const UNREAD_POLL_MS = 30_000
+// 5s: se siente prácticamente instantáneo sin convertir el widget en una fuente de
+// tráfico constante — la corre CADA usuario con sesión abierta, en cualquier
+// pantalla, todo el tiempo, la mayoría sin tocar soporte nunca.
+const UNREAD_POLL_MS = 5_000
 
 const STATUS_LABELS = {
   open: 'Abierto',
@@ -75,7 +78,7 @@ const IconImage = () => (
 
 // ── Views ──────────────────────────────────────────────────────────────────
 
-function MenuView({ onSelect }) {
+function MenuView({ onSelect, unreadCount }) {
   return (
     <div className="sp-body">
       <div className="sp-menu-welcome">
@@ -102,8 +105,15 @@ function MenuView({ onSelect }) {
       <button className="sp-menu-item" onClick={() => onSelect('list')}>
         <span className="sp-menu-item-ico"><IconList /></span>
         <span>
-          <span className="sp-menu-item-label">Mis tickets</span>
-          <span className="sp-menu-item-sub">Ver estado de tus solicitudes</span>
+          <span className="sp-menu-item-label">
+            Mis tickets
+            {unreadCount > 0 && <span className="sp-unread-dot" style={{ marginLeft: 6 }} />}
+          </span>
+          <span className="sp-menu-item-sub">
+            {unreadCount > 0
+              ? `${unreadCount} respuesta${unreadCount === 1 ? '' : 's'} nueva${unreadCount === 1 ? '' : 's'} de soporte`
+              : 'Ver estado de tus solicitudes'}
+          </span>
         </span>
         <span className="sp-menu-arrow">›</span>
       </button>
@@ -461,7 +471,11 @@ export default function SupportWidget() {
   const [isOpen, setIsOpen] = useState(false)
   const [view, setView] = useState('menu')  // menu | create | connecting | list | thread
   const [activeTicketId, setActiveTicketId] = useState(() => localStorage.getItem(TICKET_KEY))
-  const [unreadDot, setUnreadDot] = useState(false)
+  // Los tickets con unread_count > 0 detectados por la revisión de fondo — no solo
+  // un booleano: al abrir el widget, esto es lo que permite llevar al usuario
+  // directo al ticket (o a la lista) en vez de a un menú genérico que no dice nada
+  // de si hay algo nuevo.
+  const [unreadTickets, setUnreadTickets] = useState([])
 
   const botFetch = useCallback(async (path, options = {}) => {
     const isFormData = options.body instanceof FormData
@@ -487,7 +501,7 @@ export default function SupportWidget() {
     if (isOpen || !currentUser) return
     const check = () => {
       botFetch('/support/tickets/mine')
-        .then(tickets => setUnreadDot(tickets.some(t => t.unread_count > 0)))
+        .then(tickets => setUnreadTickets(tickets.filter(t => t.unread_count > 0)))
         .catch(() => {})
     }
     const initial = setTimeout(check, 2000)
@@ -517,6 +531,26 @@ export default function SupportWidget() {
     setView('menu')
   }
 
+  // Al abrir el widget con algo sin leer, lleva directo a eso — no al menú genérico.
+  // Antes, ver el punto rojo y luego un menú de opciones sin ninguna pista dejaba al
+  // usuario sin saber si era de un ticket o de otra cosa.
+  function handleToggle() {
+    setIsOpen(prevOpen => {
+      const next = !prevOpen
+      if (next && unreadTickets.length > 0) {
+        if (unreadTickets.length === 1) {
+          const t = unreadTickets[0]
+          setActiveTicketId(t.id)
+          localStorage.setItem(TICKET_KEY, t.id)
+          setView('thread')
+        } else {
+          setView('list')
+        }
+      }
+      return next
+    })
+  }
+
   const HEAD = {
     menu:         { title: 'Soporte OwnTerra', sub: null },
     create:       { title: 'Crear ticket', sub: null },
@@ -531,9 +565,9 @@ export default function SupportWidget() {
   return (
     <>
       {/* Botón flotante — toggle */}
-      <button className="sp-btn" onClick={() => setIsOpen(o => !o)} aria-label="Soporte">
+      <button className="sp-btn" onClick={handleToggle} aria-label="Soporte">
         <IconChat />
-        {unreadDot && !isOpen && <span className="sp-btn-dot" />}
+        {unreadTickets.length > 0 && !isOpen && <span className="sp-btn-dot" />}
       </button>
 
       {/* Panel */}
@@ -554,7 +588,7 @@ export default function SupportWidget() {
             </button>
           </div>
 
-          {view === 'menu'       && <MenuView onSelect={handleMenuSelect} />}
+          {view === 'menu'       && <MenuView onSelect={handleMenuSelect} unreadCount={unreadTickets.length} />}
           {view === 'create'     && <CreateView botFetch={botFetch} onCreated={handleCreated} />}
           {view === 'agent-chat' && <AgentChatView botFetch={botFetch} onCreated={handleCreated} />}
           {view === 'list'       && <ListView botFetch={botFetch} onSelectTicket={handleSelectTicket} />}

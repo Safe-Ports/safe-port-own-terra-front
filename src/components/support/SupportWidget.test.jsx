@@ -17,6 +17,8 @@ describe("SupportWidget: el punto rojo revisa mensajes no leídos de forma conti
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     mockCurrentUser = { token: "tok" };
+    // jsdom no implementa scrollIntoView; ThreadView lo llama al recibir mensajes.
+    Element.prototype.scrollIntoView = vi.fn();
   });
 
   afterEach(() => {
@@ -82,5 +84,55 @@ describe("SupportWidget: el punto rojo revisa mensajes no leídos de forma conti
       await vi.advanceTimersByTimeAsync(35_000);
     });
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("con exactamente UN ticket sin leer, abrir el widget lleva directo al hilo — no a un menú que no dice nada", async () => {
+    // Queja real: "cuando abro el chat me aparecen las opciones pero nunca sé si es
+    // de algún ticket o algo". El punto rojo por sí solo no contesta esa pregunta —
+    // hay que llevar al usuario directo a lo que causó el ping.
+    const ticket = { id: "ticket-abc123", status: "open", unread_count: 1, description: "algo" };
+    const fetchMock = vi.fn((url) => {
+      if (url.includes("/messages/read")) return Promise.resolve({ ok: true, json: async () => ({}) });
+      if (url.includes("/messages")) return Promise.resolve({ ok: true, json: async () => [] });
+      if (url.endsWith(`/support/tickets/${ticket.id}`)) return Promise.resolve({ ok: true, json: async () => ticket });
+      return Promise.resolve({ ok: true, json: async () => [ticket] }); // /support/tickets/mine
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<SupportWidget />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000); // la revisión de fondo detecta el ticket
+    });
+
+    const toggle = screen.getByRole("button", { name: /soporte/i });
+    await act(async () => {
+      toggle.click();
+    });
+
+    await waitFor(() => expect(screen.queryByText(/¿Cómo podemos ayudarte\?/i)).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Tu ticket fue creado/i)).toBeInTheDocument());
+  });
+
+  it("con VARIOS tickets sin leer, abrir el widget lleva a la lista — no a un hilo al azar ni al menú", async () => {
+    const tickets = [
+      { id: "t1", status: "open", unread_count: 1, description: "Problema uno", created_at: "2026-01-01" },
+      { id: "t2", status: "open", unread_count: 2, description: "Problema dos", created_at: "2026-01-02" },
+    ];
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => tickets });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<SupportWidget />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+
+    const toggle = screen.getByRole("button", { name: /soporte/i });
+    await act(async () => {
+      toggle.click();
+    });
+
+    await waitFor(() => expect(screen.queryByText(/¿Cómo podemos ayudarte\?/i)).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Problema uno")).toBeInTheDocument());
+    expect(screen.getByText("Problema dos")).toBeInTheDocument();
   });
 });
