@@ -166,14 +166,19 @@ export const TOUR_LANDS_INICIO = {
         "colocando los lotes, así que sirve cualquier plano legible.",
     },
     {
-      target: "body",
-      placement: "center",
-      title: "Sigue tú",
+      target: '[data-tour="frac-guardar-inicial"]',
+      title: "Esto sí crea tu fraccionamiento",
+      // Ver el comentario de TOUR_LANDS_SELECTOR: la acción real es el botón de la
+      // app, no este globo. Este paso en particular importa más que los otros: es el
+      // único que de verdad escribe algo en el servidor antes del tablero — si le dan
+      // clic al "Entendido" de aquí en vez de al botón real, el tour se queda
+      // esperando en silencio una pantalla que nunca llega a existir.
+      locale: { last: "Entendido, ya le doy clic" },
       content:
-        "Escribe el nombre, elige el plano (opcional) y dale clic a \"Guardar y " +
-        "continuar\". Eso sí crea tu fraccionamiento — el resto (secciones, lotes) lo " +
-        "agregas después, en el tablero que aparece justo ahí, y ahí retomo el " +
-        "tutorial para terminar juntos.",
+        "Con el nombre (y el plano, si lo subiste) listos, dale clic al botón " +
+        "\"Guardar y continuar\" de la pantalla (no a este mensaje). Eso crea tu " +
+        "fraccionamiento de verdad — el resto (secciones, lotes) lo agregas después, " +
+        "en el tablero que se abre justo ahí, y ahí retomo el tutorial.",
     },
   ],
 };

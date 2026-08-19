@@ -1324,6 +1324,7 @@ function LotsPage() {
               </div>
               <button
                 className="lot-upload-secondary"
+                data-tour="frac-guardar-inicial"
                 disabled={creatingFrac}
                 onClick={async () => {
                   if (creatingFrac) return;
