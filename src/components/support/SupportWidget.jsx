@@ -5,6 +5,10 @@ import './support.css'
 const BOT_URL = import.meta.env.VITE_BOT_API_URL || 'http://localhost:8001'
 const TICKET_KEY = 'sp_support_ticket_id'
 const POLL_MS = 10_000
+// Revisión de fondo del punto rojo, con el panel cerrado — antes era una sola vez
+// (2s tras montar o cerrar el panel), así que si soporte respondía mientras el
+// usuario seguía navegando la app sin volver a tocar el widget, nunca se enteraba.
+const UNREAD_POLL_MS = 30_000
 
 const STATUS_LABELS = {
   open: 'Abierto',
@@ -476,15 +480,19 @@ export default function SupportWidget() {
     return res.json()
   }, [currentUser?.token])
 
-  // Punto rojo cuando el panel está cerrado
+  // Punto rojo cuando el panel está cerrado — revisión continua (no solo una vez),
+  // para que se vea aunque el usuario siga navegando la app sin volver a tocar el
+  // widget en el momento exacto en que soporte responde.
   useEffect(() => {
     if (isOpen || !currentUser) return
-    const timer = setTimeout(() => {
+    const check = () => {
       botFetch('/support/tickets/mine')
         .then(tickets => setUnreadDot(tickets.some(t => t.unread_count > 0)))
         .catch(() => {})
-    }, 2000)
-    return () => clearTimeout(timer)
+    }
+    const initial = setTimeout(check, 2000)
+    const interval = setInterval(check, UNREAD_POLL_MS)
+    return () => { clearTimeout(initial); clearInterval(interval) }
   }, [isOpen, currentUser, botFetch])
 
   function handleMenuSelect(action) {
