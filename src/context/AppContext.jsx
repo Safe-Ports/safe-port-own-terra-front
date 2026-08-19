@@ -322,6 +322,7 @@ export function AppProvider({ children }) {
       role: data.user.role,
       apps: data.user.apps || data.user.user_apps || [],
       permissions: data.user.permissions || [],
+      tours_seen: data.user.tours_seen || [],
       organization: data.organization,
       remember,
     });
