@@ -25,6 +25,9 @@ function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
 
   const navItem = (key, label, icon, onClick, disabled) => (
     <button
+      // Ancla para el tutorial guiado (src/tours/definitions.js): se apoya en esta
+      // clave, no en las clases CSS, que cambian con cualquier rediseño.
+      data-tour={`nav-${key}`}
       className={`nav-item ${active === key ? "active" : ""}`}
       onClick={disabled ? () => showToast("Tu usuario no tiene acceso a esta sección", "warning") : onClick}
       style={disabled ? { opacity: 0.5, cursor: "default" } : undefined}

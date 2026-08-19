@@ -33,7 +33,7 @@ function SalesPage() {
     <div className="card">
       <div className="card-hd">
         <div className="card-title">📄 Repositorio de Contratos</div>
-        <button className="btn-p" onClick={() => openContractCreate()}>+ Generar Contrato</button>
+        <button className="btn-p" data-tour="contrato-generar" onClick={() => openContractCreate()}>+ Generar Contrato</button>
       </div>
       <div className="card-body" style={{ padding: 0 }}>
         <table className="tbl">

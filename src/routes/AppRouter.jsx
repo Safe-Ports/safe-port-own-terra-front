@@ -4,6 +4,7 @@ import AppShell from "@/layouts/AppShell";
 import { useAppContext } from "@/context/AppContext";
 import { getDeniedMessage } from "@/services/permissions";
 import SupportWidget from "@/components/support/SupportWidget";
+import GuidedTour from "@/components/tour/GuidedTour";
 import { lazyWithRetry } from "@/routes/lazyWithRetry";
 
 const EcosystemHub = lazyWithRetry(() => import("@/pages/Ecosystem"));
@@ -96,6 +97,7 @@ function AppRouter() {
         </Routes>
       </Suspense>
       <SupportWidget />
+      <GuidedTour />
     </>
   );
 }

@@ -61,6 +61,7 @@ export function AppProvider({ children }) {
                 role: data.user.role,
                 apps: data.user.apps || data.user.user_apps || [],
                 permissions: data.user.permissions || [],
+                tours_seen: data.user.tours_seen || [],
                 organization: data.organization,
               }
             : prev
@@ -270,6 +271,23 @@ export function AppProvider({ children }) {
 
   // Muestra un error homologado (código + Ref + copiar). El reporte a Sentry lo hace el
   // interceptor de api.js, así que aquí solo presentamos. Dura más para dar tiempo a copiar.
+  // Marca un tutorial guiado como visto. La verdad vive en el servidor para que no
+  // reaparezca al cambiar de navegador; aquí actualizamos la sesión local de
+  // inmediato para que el tour no pueda relanzarse mientras vuelve la respuesta.
+  const markTourSeen = async (key) => {
+    setCurrentUser((prev) =>
+      prev && !(prev.tours_seen || []).includes(key)
+        ? { ...prev, tours_seen: [...(prev.tours_seen || []), key] }
+        : prev
+    );
+    try {
+      await api.post(`/auth/me/tours/${key}`);
+    } catch {
+      // Si falla, el usuario ya no verá el tour en esta sesión y volverá a verlo en
+      // la siguiente: preferible a interrumpirlo con un error por algo secundario.
+    }
+  };
+
   const showError = (error, fallbackMessage) => {
     const parsed = parseApiError(error, fallbackMessage);
     setToast({ kind: "error", ...parsed });
@@ -968,6 +986,7 @@ export function AppProvider({ children }) {
     resendVerification,
     forgotPassword,
     resetPassword,
+    markTourSeen,
     logout,
     saveClient,
     deleteClient,

@@ -76,7 +76,7 @@ function EcosystemHub() {
       <div className="section-head">
         <h3>Tus aplicaciones</h3>
       </div>
-      <div className="app-launcher">
+      <div className="app-launcher" data-tour="apps">
 
         <div className={`app-card ${!canAccessApp("lands") ? "is-disabled" : ""}`} style={{ "--glow": "rgba(111,175,107,.1)" }} onClick={openLands} role="button" tabIndex={0}
           onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && openLands()}>

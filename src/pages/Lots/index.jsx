@@ -669,7 +669,7 @@ function LotsPage() {
             </>
           )}
           <div className="flex-1" />
-          <div className="lots-editor-legend">
+          <div className="lots-editor-legend" data-tour="frac-leyenda">
             <span>
               <span className="lots-legend-mark available" />
               Disponible
@@ -694,6 +694,7 @@ function LotsPage() {
           )}
           <button
             className="lots-editor-btn lots-editor-primary"
+            data-tour="frac-guardar"
             onClick={async () => {
               if (saving) return;
               setSaving(true);
@@ -767,7 +768,7 @@ function LotsPage() {
                   {totalDraftLots} lotes · {draftProject.sections.length} sec
                 </div>
               </div>
-              <div className="lots-section-form">
+              <div className="lots-section-form" data-tour="frac-nombre">
                 <div className="lots-section-name" style={{ flex: 1 }}>
                   <div className="lots-builder-label">Nombre del fraccionamiento</div>
                   <input
@@ -778,7 +779,7 @@ function LotsPage() {
                   />
                 </div>
               </div>
-              <div className="lots-section-form" style={importedByFile ? { opacity: 0.5 } : undefined}>
+              <div className="lots-section-form" data-tour="frac-secciones" style={importedByFile ? { opacity: 0.5 } : undefined}>
                 <div className="lots-section-name">
                   <div className="lots-builder-label">
                     Nombre de sección *
@@ -816,6 +817,7 @@ function LotsPage() {
                 </div>
                 <button
                   type="button"
+                  data-tour="frac-agregar"
                   onClick={addSection}
                   disabled={importedByFile}
                   className="lots-add-section"
@@ -829,7 +831,7 @@ function LotsPage() {
                   Lotes importados por archivo. Para agregar uno olvidado, usa el <b>+</b> de la sección abajo.
                 </div>
               )}
-              <div className="lots-excel-row">
+              <div className="lots-excel-row" data-tour="frac-excel">
                 <div>
                   <span className="lots-excel-title">Llenar con Excel o CSV</span>
                   <span className="lots-excel-sub">
@@ -878,7 +880,7 @@ function LotsPage() {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-5">
+                <div className="space-y-5" data-tour="frac-matriz">
                   {draftProject.sections.map((section) => (
                     <SectionGrid
                       key={section.id}
@@ -1235,6 +1237,7 @@ function LotsPage() {
               {/* ── Carga Manual ── */}
               <div
                 className="relative flex cursor-pointer flex-col overflow-hidden rounded-[16px] border-2 border-[#DCDAD2] bg-[#FBFAF6] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#355E3B] hover:shadow-[0_8px_24px_rgba(45,90,71,.15)]"
+                data-tour="frac-carga-manual"
                 onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
               >
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#355E3B]" />
@@ -1282,7 +1285,7 @@ function LotsPage() {
         </section>
       ) : (
         /* map-upload step */
-        <section className="lot-upload-shell">
+        <section className="lot-upload-shell" data-tour="frac-inicio">
           <div className="lot-upload-head">
             <div>
               <span className="lot-upload-kicker">Plano base</span>
@@ -1308,11 +1311,12 @@ function LotsPage() {
                 className="w-full rounded-[8px] border-[1.5px] border-[#DCDAD2] bg-white px-3 py-2 text-[0.84rem] text-[#1E3D2B] outline-none"
                 style={{ width: "100%", borderRadius: 8, border: "1.5px solid #DCDAD2", background: "white", padding: "8px 12px", fontSize: ".84rem", color: "#1E3D2B", outline: "none", fontFamily: "var(--font-body)" }}
                 placeholder="Ej. Residencial Las Palmas"
+                data-tour="frac-nombre-inicial"
                 value={draftProject.name === "Nuevo Fraccionamiento" ? "" : draftProject.name}
                 onChange={(e) => setDraftProject((prev) => ({ ...prev, name: e.target.value || "Nuevo Fraccionamiento" }))}
               />
             </div>
-            <label className="lot-upload-drop">
+            <label className="lot-upload-drop" data-tour="frac-plano">
               <div className="lot-upload-code">IMG</div>
               <div>
                 <div className="lot-upload-drop-title">Seleccionar imagen del plano</div>

@@ -60,14 +60,20 @@ function FieldError({ msg }) {
 
 const errorBorder = "1.8px solid var(--danger, #c0392b)";
 
-function SectionLabel({ children }) {
+function SectionLabel({ children, ...rest }) {
+  // ...rest reenvía props arbitrarios (p. ej. data-tour, usado por el tour guiado
+  // de contratos) al div real. Sin esto, cualquier prop que no sea `children` se
+  // descarta en silencio — nunca llega al DOM.
   return (
-    <div style={{
-      fontSize: ".62rem", fontWeight: 800, letterSpacing: ".14em",
-      textTransform: "uppercase", color: "var(--mu)",
-      borderBottom: "1px solid var(--line-soft)",
-      paddingBottom: 6, marginBottom: 12, marginTop: 4,
-    }}>
+    <div
+      {...rest}
+      style={{
+        fontSize: ".62rem", fontWeight: 800, letterSpacing: ".14em",
+        textTransform: "uppercase", color: "var(--mu)",
+        borderBottom: "1px solid var(--line-soft)",
+        paddingBottom: 6, marginBottom: 12, marginTop: 4,
+      }}
+    >
       {children}
     </div>
   );
@@ -584,7 +590,7 @@ function ContractModal() {
               🗑 Eliminar
             </button>
           )}
-          <button className="btn-p" onClick={handleSave} disabled={saving}>
+          <button className="btn-p" data-tour="contrato-guardar" onClick={handleSave} disabled={saving}>
             {saving ? "Guardando…" : editingContract ? "✓ Guardar cambios" : "✓ Registrar"}
           </button>
         </>
@@ -611,7 +617,7 @@ function ContractModal() {
         <FieldError msg={errors.number} />
       </div>
 
-      <div className="fr-row">
+      <div className="fr-row" data-tour="contrato-frac-lote">
         <div className="fg" style={{ flex: 1 }}>
           <label className="fl">
             Fraccionamiento
@@ -733,7 +739,7 @@ function ContractModal() {
         </div>
       </div>
 
-      <div className="fr-row">
+      <div className="fr-row" data-tour="contrato-cliente">
         <div className="fg" style={{ flex: 1 }}>
           <label className="fl">
             Cliente
@@ -752,7 +758,7 @@ function ContractModal() {
         </div>
       </div>
 
-      <div className="fr-row">
+      <div className="fr-row" data-tour="contrato-tipo">
         <div className="fg" style={{ flex: 1 }}>
           <label className="fl">Tipo de Contrato</label>
           <select className="fi" value={form.type} onChange={set("type")}>
@@ -793,7 +799,7 @@ function ContractModal() {
         </div>
       )}
 
-      <div className="fg">
+      <div className="fg" data-tour="contrato-vendedor">
         <label className="fl">Vendedor asignado</label>
         <SearchSelect
           value={form.seller_id}
@@ -812,7 +818,7 @@ function ContractModal() {
       {/* ── 2. Condiciones financieras ── */}
       <SectionLabel>Condiciones financieras</SectionLabel>
 
-      <div className="fr-row">
+      <div className="fr-row" data-tour="contrato-financiero">
         <div className="fg" style={{ flex: 1 }}>
           <label className="fl">
             Monto total ($)
@@ -877,7 +883,7 @@ function ContractModal() {
 
       {/* ── Sin calculadora activa: obligatoria para registrar la venta ── */}
       {noCalculator && (
-        <div style={{
+        <div data-tour="contrato-mensualidad" style={{
           border: "1px solid rgba(192,57,43,.45)", borderRadius: 16,
           padding: 14, marginBottom: 4, background: "rgba(192,57,43,.05)",
           boxShadow: "0 8px 18px rgba(192,57,43,.06)",
@@ -897,7 +903,7 @@ function ContractModal() {
 
       {/* ── Calculadora de financiamiento activa ── */}
       {useCalculator && activeCalc && (
-        <div style={{
+        <div data-tour="contrato-mensualidad" style={{
           border: "1px solid rgba(53,94,59,.45)", borderRadius: 16,
           padding: 14, marginBottom: 4,
           background: "linear-gradient(135deg, var(--tan-lt), var(--sf))",
@@ -959,7 +965,7 @@ function ContractModal() {
       </div>
 
       {/* ── 3. Documentos ── */}
-      <SectionLabel>Documentos</SectionLabel>
+      <SectionLabel data-tour="contrato-documentos">Documentos</SectionLabel>
 
       {editingContract && (
         <div style={{ marginBottom: 12 }}>

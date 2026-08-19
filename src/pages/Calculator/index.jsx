@@ -217,7 +217,7 @@ function CalculatorPage() {
 
       <div className="grid gap-4" style={{ gridTemplateColumns: "minmax(260px, 340px) 1fr" }}>
         {/* ── Lista ── */}
-        <div className="card" style={{ alignSelf: "start" }}>
+        <div className="card" style={{ alignSelf: "start" }} data-tour="calc-lista">
           <div className="card-hd">
             <div className="card-title">Guardadas</div>
           </div>
@@ -273,7 +273,7 @@ function CalculatorPage() {
 
         {/* ── Editor / estado vacío ── */}
         {!open ? (
-          <div className="card calc-empty">
+          <div className="card calc-empty" data-tour="calc-nueva">
             <div style={{ textAlign: "center", padding: 24 }}>
               <div style={{ fontSize: "2rem", marginBottom: 8 }}>🧮</div>
               <div style={{ fontWeight: 600, color: "var(--tx)", marginBottom: 4 }}>
@@ -286,7 +286,7 @@ function CalculatorPage() {
             </div>
           </div>
         ) : (
-        <div className="card">
+        <div className="card" data-tour="calc-editor">
           <div className="card-hd">
             <div className="card-title">{isEditing ? "Editar calculadora" : "Nueva calculadora"}</div>
             <div style={{ display: "flex", gap: 8 }}>
@@ -340,15 +340,15 @@ function CalculatorPage() {
             </div>
 
             <div style={{ display: "flex", gap: 10 }}>
-              <button type="button" className="btn-s" onClick={analyze}>🔍 Analizar fórmula</button>
-              <button type="button" className="btn-p" onClick={save} disabled={saving}>
+              <button type="button" className="btn-s" data-tour="calc-analizar" onClick={analyze}>🔍 Analizar fórmula</button>
+              <button type="button" className="btn-p" data-tour="calc-guardar" onClick={save} disabled={saving}>
                 {saving ? "Guardando…" : "💾 Guardar configuración"}
               </button>
             </div>
 
             {/* ── Modo prueba ── */}
             {vars.length > 0 && (
-              <div className="calc-panel">
+              <div className="calc-panel" data-tour="calc-prueba">
                 <div style={{ fontWeight: 600, fontSize: ".82rem", color: "var(--tx)", marginBottom: 10 }}>
                   Modo prueba — captura valores para ver la mensualidad
                 </div>

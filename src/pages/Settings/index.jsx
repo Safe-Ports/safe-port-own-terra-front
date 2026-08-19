@@ -315,6 +315,7 @@ function SettingsPage() {
         </div>
       </div>
 
+
       {/* Suscripción y facturación */}
       <div className="card">
         <div className="card-hd">

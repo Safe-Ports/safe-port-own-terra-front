@@ -868,13 +868,13 @@ export default function PaymentsPage() {
           <h1 className="cf-h1">Control Financiero</h1>
           <div className="cf-sub">Gestión de amortizaciones y flujo de caja</div>
         </div>
-        <div className="cf-top-actions">
+        <div className="cf-top-actions" data-tour="pagos-registrar">
           <button className="cf-btn cf-btn-ghost" onClick={() => { setEditing(null); setModal("egreso"); }}>⊖ Registrar egreso</button>
           <button className="cf-btn cf-btn-primary" onClick={() => setModal("cobro")}>＋ Registrar pago</button>
         </div>
       </div>
 
-      <div className="cf-kpis">
+      <div className="cf-kpis" data-tour="pagos-kpis">
         <div className="cf-kpi income"><div className="lbl">Ingresos del mes</div><div className="val">{currency(inCobradoAmt)}</div><div className="foot">{inCobrado.length} cobros aplicados</div></div>
         <div className="cf-kpi due"><div className="lbl">Por cobrar</div><div className="val">{currency(inPendienteAmt)}</div><div className="foot">{inPendienteArr.length} cuotas pendientes</div></div>
         <div className="cf-kpi mora"><div className="lbl">Pagos atrasados</div><div className="val">{currency(moraAmt)}</div><div className="foot">{moraCount} cliente{moraCount === 1 ? "" : "s"} en mora</div></div>
@@ -882,14 +882,14 @@ export default function PaymentsPage() {
       </div>
 
       <div className="cf-panel">
-        <div className="cf-tabs">
+        <div className="cf-tabs" data-tour="pagos-tabs">
           <button className={`cf-tab ${tab === "amort" ? "on" : ""}`} onClick={() => setTab("amort")}>Amortizaciones de Lotes</button>
           <button className={`cf-tab ${tab === "egresos" ? "on" : ""}`} onClick={() => { setTab("egresos"); setEstado("all"); setSearch(""); setPage(1); }}>Registro de Egresos</button>
         </div>
 
         {tab === "amort" && (
           <>
-            <div className="cf-toolbar">
+            <div className="cf-toolbar" data-tour="pagos-filtros">
               <label className="cf-search"><span>🔎</span><input value={amortSearch} onChange={e => setAmortSearch(e.target.value)} placeholder="Buscar cliente o lote…" /></label>
               <select className="cf-field" value={amortProject} onChange={e => setAmortProject(e.target.value)}>
                 <option value="">Todos los proyectos</option>

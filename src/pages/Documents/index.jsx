@@ -415,7 +415,7 @@ export default function DocumentsPage() {
       <div className="doc-layout">
 
         {/* ══ SIDEBAR ══════════════════════════════════════════════════ */}
-        <aside className="doc-sidebar">
+        <aside className="doc-sidebar" data-tour="docs-sidebar">
           <div className="doc-sidebar-label">Archivos</div>
 
           {[
@@ -498,7 +498,7 @@ export default function DocumentsPage() {
                 <option value="name">Nombre A-Z</option>
                 <option value="size">Tamaño</option>
               </select>
-              <button className="btn-p" style={{padding:"8px 14px",fontSize:".82rem",gap:6}}
+              <button className="btn-p" data-tour="docs-subir" style={{padding:"8px 14px",fontSize:".82rem",gap:6}}
                 onClick={() => openDocumentUpload({
                   folderId: activeId !== "all" && activeId !== "unfiled" ? activeId : undefined
                 })}>
@@ -510,7 +510,7 @@ export default function DocumentsPage() {
           <div className="doc-main-body">
 
           {/* buscador */}
-          <label className="doc-search">
+          <label className="doc-search" data-tour="docs-buscar">
             <HiOutlineMagnifyingGlass />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar documento…" />
           </label>

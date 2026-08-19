@@ -26,6 +26,7 @@ function CoreTopbarActions({ onGuide, className = "" }) {
         <button
           type="button"
           className="core-topbar-action"
+          data-tour="topbar-help"
           onClick={onGuide}
           aria-label="Abrir guías de esta sección"
           aria-haspopup="dialog"
