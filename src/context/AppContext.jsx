@@ -717,8 +717,16 @@ export function AppProvider({ children }) {
 
   // ── Fraccionamientos ──────────────────────────────────────────────────────
   const saveFrac = async ({ name, sections, mapUrl }) => {
+    // Referencia al inmueble YA creado en el servidor, para poder revertirlo si algo
+    // después falla (p. ej. el tope de lotes del plan) — "Crear fraccionamiento" es
+    // una sola acción para el usuario, así que si no se completa por entero, no debe
+    // quedar un fraccionamiento vacío a medias. inmueble.id vive en dos requests
+    // separados (crear inmueble, luego crear lotes) que el backend no puede envolver
+    // en una sola transacción; se corrige aquí como compensación.
+    let createdInmuebleId = null;
     try {
       const inmueble = await inmuebleService.create({ name: name || "Fraccionamiento" });
+      createdInmuebleId = inmueble.id;
       let mapUploadError = null;
       if (mapUrl) {
         try {
@@ -774,6 +782,19 @@ export function AppProvider({ children }) {
         showToast(`Fraccionamiento "${name || "Fraccionamiento"}" creado${draftLots.length > 0 ? ` con ${draftLots.length} lote${draftLots.length !== 1 ? "s" : ""}` : ""}`);
       }
     } catch (err) {
+      // El inmueble ya se había creado (createdInmuebleId) pero algo después falló —
+      // p. ej. el tope de lotes del plan — antes de que hubiera un solo lote real. Se
+      // archiva para que no quede un fraccionamiento vacío y roto en el portafolio ni
+      // cuente contra el tope del plan (el conteo de cuota ya excluye archivados). No
+      // afecta el error real que se le muestra al usuario abajo.
+      if (createdInmuebleId) {
+        try {
+          await inmuebleService.delete(createdInmuebleId);
+        } catch {
+          // Si ni la reversión funcionó, no hay más que hacer desde aquí — seguimos
+          // mostrando el error original, que es el que de verdad le importa al usuario.
+        }
+      }
       showError(err, "Error al crear el fraccionamiento");
     }
   };
