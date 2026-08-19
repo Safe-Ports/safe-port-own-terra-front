@@ -7,12 +7,12 @@ import { useLandsGuide } from "@/context/LandsGuideContext";
 import useEscapeKey from "@/hooks/useEscapeKey";
 import { useProjectsQuery } from "@/hooks/queries/useAppQueries";
 import { lotService } from "@/services/lotService";
-import { inmuebleService } from "@/services/inmuebleService";
 import { parseApiError } from "@/errors/parseApiError";
-import { MAP_IMAGE_ACCEPT, isSupportedMapImage, mapFileFromUrl, prepareMapImage } from "@/utils/mapImage";
+import { MAP_IMAGE_ACCEPT, isSupportedMapImage, prepareMapImage } from "@/utils/mapImage";
 import Button from "@/components/Button";
 import GuideModal from "@/components/shared/GuideModal";
 import LotImportFormatModal from "./LotImportFormatModal";
+import ImportResultsModal from "./ImportResultsModal";
 
 const LOT_COLORS = {
   available: { bg: "#dcfce7", border: "#86efac", text: "#15803d" },
@@ -31,7 +31,7 @@ const LOT_TEMPLATE_GUIDE = [
   ["Servicios opcionales", "Agua Potable, Energía Eléctrica, Drenaje, Gas Natural, Internet/Fibra y Pavimento. Activar con: sí, 1, yes, true, x o ✓."],
   ["Vendedor Asignado", "Opcional. Se busca por nombre exacto o parcial entre usuarios activos. Si hay ambigüedad queda sin asignar (advertencia)."],
   ["Archivos aceptados", "XLSX, XLS, CSV o TXT de hasta 10 MB."],
-  ["Importante", "El archivo se valida en el servidor. Los lotes se guardan en cuanto el archivo pasa la validación. No combines celdas ni dejes filas sin ID Lote."],
+  ["Importante", "El archivo se valida en el servidor y los lotes válidos quedan listos en el tablero, pero no se guardan hasta que pulses \"Crear fraccionamiento\". No combines celdas ni dejes filas sin ID Lote."],
 ];
 const LOT_IMPORT_GUIDE_STEPS = [
   {
@@ -68,7 +68,7 @@ const LOT_IMPORT_GUIDE_STEPS = [
   },
   {
     title: "Validación en servidor y errores",
-    text: "La validación ocurre en el servidor. Los lotes válidos se guardan inmediatamente. Si hay errores en filas individuales se muestran con el número de fila para que puedas corregirlos. Columnas no reconocidas se ignoran con una advertencia.",
+    text: "La validación ocurre en el servidor, pero nada se guarda todavía: los lotes válidos quedan listos en el tablero y se crean junto con el fraccionamiento al pulsar \"Crear fraccionamiento\". Si hay errores se muestran con el número de fila y la columna exacta para que puedas corregirlos. Columnas no reconocidas se ignoran con una advertencia.",
   },
 ];
 const LOT_SELECTOR_GUIDE = {
@@ -265,6 +265,7 @@ function LotsPage() {
   const [deletingFrac, setDeletingFrac] = useState(false);
   const [showImportGuide, setShowImportGuide] = useState(false);
   const [showFormatGuide, setShowFormatGuide] = useState(false);
+  const [showImportResults, setShowImportResults] = useState(false);
   useEscapeKey(() => {
     if (showDeleteFracConfirm) setShowDeleteFracConfirm(false);
     else if (lotEditDraft) setLotEditDraft(null);
@@ -364,50 +365,69 @@ function LotsPage() {
 
     setImportLoading(true);
     setImportSummary(null);
-    let mapUploadError = null;
 
     try {
-      let fracId = draftProject._editingFracId;
+      const fracId = draftProject._editingFracId;
 
-      // Para fraccionamiento nuevo: crear el inmueble primero y guardar los lotes manuales previos
+      // Fraccionamiento TODAVÍA sin crear: solo se PREVISUALIZA el archivo (dry_run) — el
+      // servidor valida cada fila con las mismas reglas de un import real (mismos errores
+      // por fila/columna) pero no toca la base de datos. Nada se crea hasta que el usuario
+      // le dé clic a "Crear fraccionamiento": los lotes válidos quedan en el tablero, igual
+      // que si los hubiera capturado a mano, y saveFrac los persiste junto con el inmueble.
       if (!fracId) {
-        const inmueble = await inmuebleService.create({ name: draftProject.name || "Fraccionamiento" });
-        fracId = inmueble.id;
+        const result = await lotService.importCsv(file, { dry_run: true });
 
-        if (draftProject.mapUrl) {
-          try {
-            const mapFile = await mapFileFromUrl(draftProject.mapUrl);
-            await inmuebleService.uploadMap(inmueble.id, mapFile);
-          } catch (error) {
-            mapUploadError = error;
-          }
+        const stagedLots = (result.preview_lots || []).map((lot, i) => ({
+          id: `import_${Date.now()}_${i}`,
+          code: lot.code,
+          status: lot.status || "available",
+          area: lot.area_m2 ?? "",
+          price: lot.price_contado ?? "",
+          priceFinanciado: lot.price_financiado ?? "",
+          frente: lot.frente_ml ?? "",
+          fondo: lot.fondo_ml ?? "",
+          servicios: lot.services || {},
+        }));
+
+        if (stagedLots.length > 0) {
+          setDraftProject((previous) => {
+            const already = previous.sections.find((s) => s.id === "sec_importados");
+            const sections = already
+              ? previous.sections.map((s) =>
+                  s.id === "sec_importados" ? { ...s, lots: [...s.lots, ...stagedLots] } : s
+                )
+              : [...previous.sections, { id: "sec_importados", name: "Importados", lots: stagedLots }];
+            return { ...previous, sections };
+          });
         }
 
-        const manualLots = draftProject.sections.flatMap((s) =>
-          s.lots.map((lot) => ({
-            code: lot.code,
-            section: s.name,
-            area_m2: lot.area ? Number(lot.area) : null,
-            frente_ml: lot.frente ? Number(lot.frente) : null,
-            fondo_ml: lot.fondo ? Number(lot.fondo) : null,
-            price_contado: lot.price ? Number(lot.price) : null,
-            price_financiado: lot.priceFinanciado ? Number(lot.priceFinanciado) : null,
-            services: lot.servicios ? Object.fromEntries(Object.entries(lot.servicios).filter(([, v]) => v)) : {},
-          }))
-        );
-        if (manualLots.length > 0) {
-          await lotService.bulkCreate({ inmueble_id: fracId, lots: manualLots });
+        setImportSummary({
+          fileName: file.name,
+          imported: stagedLots.length,
+          updated: 0,
+          failed: result.failed ?? 0,
+          errors: result.errors || [],
+          warnings: result.warnings || [],
+        });
+
+        if ((result.failed ?? 0) > 0 || (result.warnings?.length ?? 0) > 0) setShowImportResults(true);
+        if (stagedLots.length > 0) {
+          showToast(`${stagedLots.length} lotes listos, se crean junto con el fraccionamiento${result.failed ? ` · ${result.failed} con errores` : ""}`);
+        } else {
+          showToast("Ningún lote quedó listo: revisa los errores");
         }
+        return;
       }
 
-      // Enviar archivo al backend para validación e importación
+      // Fraccionamiento YA EXISTENTE (modo edición): aquí sí es correcto importar de una vez
+      // — el inmueble ya existe, no hay nada "prematuro" en guardar directo en él.
       const result = await lotService.importCsv(file, { fraccionamiento_id: fracId });
 
       // Nada fue importado y hay errores: mostrar sin actualizar la vista
       if (result.imported === 0 && result.failed > 0) {
         setImportSummary({ fileName: file.name, imported: 0, failed: result.failed, errors: result.errors, warnings: result.warnings });
-        setShowImportGuide(true);
-        showToast(result.errors[0]?.message || "No se importaron lotes: revisa los errores");
+        setShowImportResults(true);
+        showToast("No se importaron lotes: revisa los errores");
         return;
       }
 
@@ -456,17 +476,13 @@ function LotsPage() {
         warnings: result.warnings || [],
       });
 
-      if (mapUploadError) {
-        showError(mapUploadError, "Los lotes se importaron, pero el plano no pudo subirse");
-      } else {
-        showToast(`${result.imported} lotes importados${result.failed ? ` · ${result.failed} con errores` : ""}`);
-      }
-      if (result.failed > 0) setShowImportGuide(true);
+      showToast(`${result.imported} lotes importados${result.failed ? ` · ${result.failed} con errores` : ""}`);
+      if (result.failed > 0 || (result.warnings?.length ?? 0) > 0) setShowImportResults(true);
 
     } catch (err) {
       const msg = parseApiError(err, "Error al importar el archivo. Descarga la plantilla y verifica el formato.").message;
       setImportSummary({ fileName: file?.name ?? null, imported: 0, failed: 0, errors: [{ message: msg }], warnings: [] });
-      setShowImportGuide(true);
+      setShowImportResults(true);
       showError(err, "Error al importar el archivo. Descarga la plantilla y verifica el formato.");
     } finally {
       setImportLoading(false);
@@ -1062,6 +1078,11 @@ function LotsPage() {
       })()}
 
       <LotImportFormatModal open={showFormatGuide} onClose={() => setShowFormatGuide(false)} />
+      <ImportResultsModal
+        open={showImportResults}
+        onClose={() => setShowImportResults(false)}
+        summary={importSummary}
+      />
       <GuideModal
         open={showImportGuide}
         onClose={() => setShowImportGuide(false)}
