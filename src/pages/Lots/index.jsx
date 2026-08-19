@@ -31,7 +31,7 @@ const LOT_TEMPLATE_GUIDE = [
   ["Servicios opcionales", "Agua Potable, Energía Eléctrica, Drenaje, Gas Natural, Internet/Fibra y Pavimento. Activar con: sí, 1, yes, true, x o ✓."],
   ["Vendedor Asignado", "Opcional. Se busca por nombre exacto o parcial entre usuarios activos. Si hay ambigüedad queda sin asignar (advertencia)."],
   ["Archivos aceptados", "XLSX, XLS, CSV o TXT de hasta 10 MB."],
-  ["Importante", "El archivo se valida en el servidor y los lotes válidos quedan listos en el tablero, pero no se guardan hasta que pulses \"Crear fraccionamiento\". No combines celdas ni dejes filas sin ID Lote."],
+  ["Importante", "El fraccionamiento debe existir antes de subir el archivo (créalo primero con \"Guardar y continuar\"). El archivo se valida en el servidor y los lotes se guardan en cuanto pasa la validación. No combines celdas ni dejes filas sin ID Lote."],
 ];
 const LOT_IMPORT_GUIDE_STEPS = [
   {
@@ -68,7 +68,7 @@ const LOT_IMPORT_GUIDE_STEPS = [
   },
   {
     title: "Validación en servidor y errores",
-    text: "La validación ocurre en el servidor, pero nada se guarda todavía: los lotes válidos quedan listos en el tablero y se crean junto con el fraccionamiento al pulsar \"Crear fraccionamiento\". Si hay errores se muestran con el número de fila y la columna exacta para que puedas corregirlos. Columnas no reconocidas se ignoran con una advertencia.",
+    text: "La validación ocurre en el servidor y los lotes válidos se guardan de inmediato — el fraccionamiento ya existe para entonces. Si hay errores se muestran con el número de fila y la columna exacta para que puedas corregirlos. Columnas no reconocidas se ignoran con una advertencia.",
   },
 ];
 const LOT_SELECTOR_GUIDE = {
@@ -89,7 +89,7 @@ const LOT_SELECTOR_GUIDE = {
     },
     {
       title: "Excel y CSV",
-      text: "Para cargar lotes desde Excel o CSV entra primero a Carga Manual, selecciona una imagen o continúa sin plano, y después usa Plantilla y Subir dentro del tablero.",
+      text: "Para cargar lotes desde Excel o CSV entra primero a Carga Manual, guarda el nombre (y opcionalmente el plano), y después usa Plantilla y Subir dentro del tablero.",
     },
   ],
 };
@@ -99,15 +99,15 @@ const LOT_MAP_GUIDE = {
   steps: [
     {
       title: "Nombre del fraccionamiento",
-      text: "Escribe un nombre claro antes de continuar, por ejemplo Residencial Las Palmas. Este será el nombre visible en tu portafolio.",
+      text: "Escribe un nombre claro antes de guardar, por ejemplo Residencial Las Palmas. Este será el nombre visible en tu portafolio.",
     },
     {
       title: "Subir imagen del plano",
-      text: "Selecciona una imagen JPG, PNG o WEBP. La imagen se mostrará como referencia mientras construyes y revisas la matriz de lotes.",
+      text: "Selecciona una imagen JPG, PNG o WEBP. Se sube al guardar, y se mostrará como referencia mientras construyes y revisas la matriz de lotes.",
     },
     {
-      title: "Continuar sin plano",
-      text: "La imagen no es obligatoria. Pulsa Continuar para abrir el tablero y crear secciones manualmente o importar los lotes desde Excel o CSV.",
+      title: "Guardar y continuar",
+      text: "La imagen no es obligatoria. Pulsa \"Guardar y continuar\" para crear tu fraccionamiento (con o sin plano) y abrir el tablero, donde agregas los lotes a mano o desde Excel/CSV.",
     },
     {
       title: "Cambiar de método",
@@ -245,8 +245,7 @@ function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot, onDeleteL
 function LotsPage() {
   const navigate = useNavigate();
   const { data: projects = [] } = useProjectsQuery();
-  const { draftProject, setDraftProject, saveFrac, saveEditedFrac, deleteFrac, setSelectedFracId, showToast, showError } = useAppContext();
-  const isEditing = !!draftProject._editingFracId;
+  const { draftProject, setDraftProject, createFracDraft, saveEditedFrac, deleteFrac, setSelectedFracId, showToast, showError } = useAppContext();
 
   useEffect(() => {
     setDraftProject({ mode: "selector", name: "Nuevo Fraccionamiento", mapUrl: "", sections: [], cadProcessing: false });
@@ -257,6 +256,7 @@ function LotsPage() {
   // completamente el valor antes de capturar una nueva cantidad.
   const [sectionTotal, setSectionTotal] = useState("20");
   const [mapFileName, setMapFileName] = useState("");
+  const [creatingFrac, setCreatingFrac] = useState(false);
   const [lotEditDraft, setLotEditDraft] = useState(null);
   const [loadingEditId, setLoadingEditId] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -367,60 +367,11 @@ function LotsPage() {
     setImportSummary(null);
 
     try {
+      // Al llegar aquí el fraccionamiento YA EXISTE — se crea en un paso explícito
+      // anterior ("Guardar y continuar" en la pantalla de nombre+plano), antes de que
+      // el tablero sea siquiera alcanzable. Así que importar de una vez, directo al
+      // inmueble real, es correcto: no hay nada "prematuro" en guardarlo ahí.
       const fracId = draftProject._editingFracId;
-
-      // Fraccionamiento TODAVÍA sin crear: solo se PREVISUALIZA el archivo (dry_run) — el
-      // servidor valida cada fila con las mismas reglas de un import real (mismos errores
-      // por fila/columna) pero no toca la base de datos. Nada se crea hasta que el usuario
-      // le dé clic a "Crear fraccionamiento": los lotes válidos quedan en el tablero, igual
-      // que si los hubiera capturado a mano, y saveFrac los persiste junto con el inmueble.
-      if (!fracId) {
-        const result = await lotService.importCsv(file, { dry_run: true });
-
-        const stagedLots = (result.preview_lots || []).map((lot, i) => ({
-          id: `import_${Date.now()}_${i}`,
-          code: lot.code,
-          status: lot.status || "available",
-          area: lot.area_m2 ?? "",
-          price: lot.price_contado ?? "",
-          priceFinanciado: lot.price_financiado ?? "",
-          frente: lot.frente_ml ?? "",
-          fondo: lot.fondo_ml ?? "",
-          servicios: lot.services || {},
-        }));
-
-        if (stagedLots.length > 0) {
-          setDraftProject((previous) => {
-            const already = previous.sections.find((s) => s.id === "sec_importados");
-            const sections = already
-              ? previous.sections.map((s) =>
-                  s.id === "sec_importados" ? { ...s, lots: [...s.lots, ...stagedLots] } : s
-                )
-              : [...previous.sections, { id: "sec_importados", name: "Importados", lots: stagedLots }];
-            return { ...previous, sections };
-          });
-        }
-
-        setImportSummary({
-          fileName: file.name,
-          imported: stagedLots.length,
-          updated: 0,
-          failed: result.failed ?? 0,
-          errors: result.errors || [],
-          warnings: result.warnings || [],
-        });
-
-        if ((result.failed ?? 0) > 0 || (result.warnings?.length ?? 0) > 0) setShowImportResults(true);
-        if (stagedLots.length > 0) {
-          showToast(`${stagedLots.length} lotes listos, se crean junto con el fraccionamiento${result.failed ? ` · ${result.failed} con errores` : ""}`);
-        } else {
-          showToast("Ningún lote quedó listo: revisa los errores");
-        }
-        return;
-      }
-
-      // Fraccionamiento YA EXISTENTE (modo edición): aquí sí es correcto importar de una vez
-      // — el inmueble ya existe, no hay nada "prematuro" en guardar directo en él.
       const result = await lotService.importCsv(file, { fraccionamiento_id: fracId });
 
       // Nada fue importado y hay errores: mostrar sin actualizar la vista
@@ -647,6 +598,11 @@ function LotsPage() {
   };
 
   const totalDraftLots = draftProject.sections.reduce((sum, section) => sum + section.lots.length, 0);
+  // El fraccionamiento ya existe siempre en este punto (se crea explícitamente en
+  // "Guardar y continuar", antes de que el tablero sea alcanzable) — esto es solo para
+  // la ETIQUETA del botón: si todavía no hay ni un lote guardado, se siente más como
+  // "guardar lotes" que como "guardar cambios" a algo que ya tenía contenido.
+  const hasSavedLots = draftProject.sections.some((section) => section.lots.some((lot) => lot._backendId));
 
   // ── EDITOR: full-height split layout ──────────────────────────────
   if (draftProject.mode === "editor") {
@@ -657,33 +613,18 @@ function LotsPage() {
       >
         {/* Top bar */}
         <div className="lots-editor-topbar">
-          {isEditing ? (
-            <div className="flex items-center gap-2">
-              <button
-                className="lots-editor-btn"
-                onClick={() => { setDraftProject((p) => ({ ...p, _editingFracId: null })); navigate("/fraccionamientos"); }}
-              >
-                Cancelar
-              </button>
-              <span className="lots-editor-state">
-                <span className="lots-editor-dot warn" />
-                Editando: {draftProject.name}
-              </span>
-            </div>
-          ) : (
-            <>
-              <button
-                className="lots-editor-btn"
-                onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
-              >
-                Cambiar mapa
-              </button>
-              <div className="lots-editor-separator" />
-              {mapFileName && (
-                <div className="lots-editor-file"><span>MAP</span>{mapFileName}</div>
-              )}
-            </>
-          )}
+          <div className="flex items-center gap-2">
+            <button
+              className="lots-editor-btn"
+              onClick={() => { setDraftProject((p) => ({ ...p, _editingFracId: null })); navigate("/fraccionamientos"); }}
+            >
+              Cancelar
+            </button>
+            <span className="lots-editor-state">
+              <span className="lots-editor-dot warn" />
+              {hasSavedLots ? `Editando: ${draftProject.name}` : `Guardado: ${draftProject.name} — agrega tus lotes`}
+            </span>
+          </div>
           <div className="flex-1" />
           <div className="lots-editor-legend" data-tour="frac-leyenda">
             <span>
@@ -699,15 +640,13 @@ function LotsPage() {
               Apartado
             </span>
           </div>
-          {isEditing && (
-            <button
-              className="lots-editor-btn"
-              style={{ color: "#C0392B", borderColor: "#fca5a5" }}
-              onClick={() => setShowDeleteFracConfirm(true)}
-            >
-              Eliminar
-            </button>
-          )}
+          <button
+            className="lots-editor-btn"
+            style={{ color: "#C0392B", borderColor: "#fca5a5" }}
+            onClick={() => setShowDeleteFracConfirm(true)}
+          >
+            Eliminar
+          </button>
           <button
             className="lots-editor-btn lots-editor-primary"
             data-tour="frac-guardar"
@@ -719,15 +658,14 @@ function LotsPage() {
                   await Promise.all([...deletedLotIds].map((id) => lotService.delete(id)));
                   setDeletedLotIds(new Set());
                 }
-                if (isEditing) await saveEditedFrac(draftProject);
-                else await saveFrac(draftProject);
+                await saveEditedFrac(draftProject);
               } finally {
                 setSaving(false);
               }
             }}
             disabled={!draftProject.name?.trim() || saving}
           >
-            {saving ? "Guardando..." : isEditing ? "Guardar cambios" : "Crear fraccionamiento"}
+            {saving ? "Guardando..." : hasSavedLots ? "Guardar cambios" : "Guardar lotes"}
           </button>
         </div>
 
@@ -1355,23 +1293,42 @@ function LotsPage() {
                 className="hidden"
                 onChange={async (event) => {
                   const file = event.target.files?.[0];
-                  if (file && await updateMap(file)) {
-                    setDraftProject((previous) => ({ ...previous, mode: "editor" }));
-                  }
+                  // Solo se PREVISUALIZA (queda en draftProject.mapUrl como data URL) — el
+                  // clic en "Guardar y continuar" de abajo es lo único que crea algo de
+                  // verdad en el servidor.
+                  if (file) await updateMap(file);
                   event.target.value = "";
                 }}
               />
             </label>
+            {mapFileName && (
+              <div className="lots-editor-file" style={{ marginTop: 10 }}>
+                <span>MAP</span>{mapFileName} — listo, falta guardar
+              </div>
+            )}
             <div className="lot-upload-foot">
               <div>
-                <span>Sin plano</span>
-                <p>También puedes crear secciones y lotes manualmente.</p>
+                <span>{mapFileName ? "Nombre y plano listos" : "Sin plano"}</span>
+                <p>
+                  {mapFileName
+                    ? "Se guardan al pulsar el botón — después agregas los lotes."
+                    : "También puedes crear secciones y lotes manualmente, sin plano."}
+                </p>
               </div>
               <button
                 className="lot-upload-secondary"
-                onClick={() => setDraftProject((previous) => ({ ...previous, mode: "editor" }))}
+                disabled={creatingFrac}
+                onClick={async () => {
+                  if (creatingFrac) return;
+                  setCreatingFrac(true);
+                  try {
+                    await createFracDraft({ name: draftProject.name, mapUrl: draftProject.mapUrl });
+                  } finally {
+                    setCreatingFrac(false);
+                  }
+                }}
               >
-                Continuar
+                {creatingFrac ? "Guardando..." : "Guardar y continuar"}
               </button>
             </div>
           </div>

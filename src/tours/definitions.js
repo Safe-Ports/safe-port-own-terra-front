@@ -170,8 +170,10 @@ export const TOUR_LANDS_INICIO = {
       placement: "center",
       title: "Sigue tú",
       content:
-        "Escribe el nombre y elige el plano. En cuanto lo hagas aparece el tablero de " +
-        "lotes, y ahí retomo el tutorial para terminar juntos.",
+        "Escribe el nombre, elige el plano (opcional) y dale clic a \"Guardar y " +
+        "continuar\". Eso sí crea tu fraccionamiento — el resto (secciones, lotes) lo " +
+        "agregas después, en el tablero que aparece justo ahí, y ahí retomo el " +
+        "tutorial para terminar juntos.",
     },
   ],
 };
@@ -179,7 +181,8 @@ export const TOUR_LANDS_INICIO = {
 /**
  * Primer fraccionamiento, parte 2: nombrar y crear la primera sección. No tiene ruta
  * propia porque vive en la misma pantalla; se dispara cuando aparece su ancla, o sea
- * cuando el usuario ya subió el plano (o pulsó "Continuar" sin él).
+ * cuando el usuario le dio clic a "Guardar y continuar" (con o sin plano) — el
+ * fraccionamiento ya existe de verdad en ese momento, esto solo agrega sus lotes.
  *
  * A propósito NO incluye el paso de guardar: eso solo tiene sentido una vez que existe
  * al menos una sección con lotes, y ese es justo el trabajo del siguiente tour
@@ -260,9 +263,9 @@ export const TOUR_LANDS_MATRIZ = {
       // realidad no le dio clic al botón real.
       locale: { last: "Entendido, ya le doy clic" },
       content:
-        "Dale clic al botón verde \"Crear fraccionamiento\" (no a este mensaje). Al " +
-        "guardar, tu fraccionamiento queda listo para vender: ya puedes registrar " +
-        "clientes, apartar lotes y generar contratos con su plan de pagos.",
+        "Dale clic al botón verde \"Guardar lotes\" (no a este mensaje). Al guardar, " +
+        "tu fraccionamiento queda listo para vender: ya puedes registrar clientes, " +
+        "apartar lotes y generar contratos con su plan de pagos.",
     },
   ],
 };

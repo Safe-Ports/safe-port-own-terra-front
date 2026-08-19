@@ -716,17 +716,19 @@ export function AppProvider({ children }) {
   };
 
   // ── Fraccionamientos ──────────────────────────────────────────────────────
-  const saveFrac = async ({ name, sections, mapUrl }) => {
-    // Referencia al inmueble YA creado en el servidor, para poder revertirlo si algo
-    // después falla (p. ej. el tope de lotes del plan) — "Crear fraccionamiento" es
-    // una sola acción para el usuario, así que si no se completa por entero, no debe
-    // quedar un fraccionamiento vacío a medias. inmueble.id vive en dos requests
-    // separados (crear inmueble, luego crear lotes) que el backend no puede envolver
-    // en una sola transacción; se corrige aquí como compensación.
-    let createdInmuebleId = null;
+  // Primer paso del asistente ("Guardar y continuar" en la pantalla de nombre+plano):
+  // crea el inmueble DE VERDAD, de inmediato — a propósito, para que sea una acción
+  // explícita del usuario y no un efecto secundario de elegir un archivo (ese fue
+  // justo el bug reportado antes). Es una sola llamada atómica: si falla (p. ej. tope
+  // de fraccionamientos del plan), no se crea nada y no hay nada que revertir.
+  //
+  // A partir de aquí el fraccionamiento YA EXISTE, así que agregar lotes (a mano o por
+  // Excel) es una operación aparte y también atómica — sigue el mismo camino que editar
+  // un fraccionamiento ya existente (saveEditedFrac): si el tope de lotes la rechaza,
+  // el fraccionamiento (nombre + plano) se queda intacto, sin necesitar revertir nada.
+  const createFracDraft = async ({ name, mapUrl }) => {
     try {
-      const inmueble = await inmuebleService.create({ name: name || "Fraccionamiento" });
-      createdInmuebleId = inmueble.id;
+      const inmueble = await inmuebleService.create({ name: name?.trim() || "Fraccionamiento" });
       let mapUploadError = null;
       if (mapUrl) {
         try {
@@ -736,66 +738,20 @@ export function AppProvider({ children }) {
           mapUploadError = error;
         }
       }
-
-      const draftLots = sections.flatMap((section) =>
-        section.lots.map((lot) => ({
-          _draftStatus: lot.status || "available",
-          payload: {
-            inmueble_id: inmueble.id,
-            code: lot.code,
-            area_m2: lot.area ? Number(lot.area) : null,
-            frente_ml: lot.frente ? Number(lot.frente) : null,
-            fondo_ml: lot.fondo ? Number(lot.fondo) : null,
-            price_contado: lot.price ? Number(lot.price) : null,
-            price_financiado: lot.priceFinanciado ? Number(lot.priceFinanciado) : null,
-            services: lot.servicios
-              ? Object.fromEntries(Object.entries(lot.servicios).filter(([, v]) => v))
-              : {},
-          }
-        }))
-      );
-
-      if (draftLots.length > 0) {
-        const result = await lotService.bulkCreate({
-          inmueble_id: inmueble.id,
-          lots: draftLots.map((d) => d.payload),
-        });
-
-        // Set "reserved" status for lots that were marked reserved in the builder
-        // ("sold" requires a contract in the backend — skip those)
-        const reservedUpdates = (result.lot_ids || [])
-          .map((id, i) => ({ id, status: draftLots[i]?._draftStatus }))
-          .filter(({ status }) => status === "reserved");
-
-        await Promise.all(
-          reservedUpdates.map(({ id, status }) => lotService.update(id, { status }))
-        );
-      }
-
       await queryClient.invalidateQueries({ queryKey: ["inmuebles"] });
-      setSelectedFracId(String(inmueble.id));
-      setDraftProject(createEmptyDraftProject());
-      navigate("/fraccionamientos");
+      setDraftProject((previous) => ({
+        ...previous,
+        name: name?.trim() || "Fraccionamiento",
+        _editingFracId: inmueble.id,
+        mode: "editor",
+      }));
       if (mapUploadError) {
-        showError(mapUploadError, "No se pudo subir el plano");
+        showError(mapUploadError, "El fraccionamiento se guardó, pero el plano no pudo subirse — puedes intentarlo de nuevo desde el tablero.");
       } else {
-        showToast(`Fraccionamiento "${name || "Fraccionamiento"}" creado${draftLots.length > 0 ? ` con ${draftLots.length} lote${draftLots.length !== 1 ? "s" : ""}` : ""}`);
+        showToast(`Fraccionamiento "${name?.trim() || "Fraccionamiento"}" guardado — ahora agrega tus lotes`);
       }
     } catch (err) {
-      // El inmueble ya se había creado (createdInmuebleId) pero algo después falló —
-      // p. ej. el tope de lotes del plan — antes de que hubiera un solo lote real. Se
-      // archiva para que no quede un fraccionamiento vacío y roto en el portafolio ni
-      // cuente contra el tope del plan (el conteo de cuota ya excluye archivados). No
-      // afecta el error real que se le muestra al usuario abajo.
-      if (createdInmuebleId) {
-        try {
-          await inmuebleService.delete(createdInmuebleId);
-        } catch {
-          // Si ni la reversión funcionó, no hay más que hacer desde aquí — seguimos
-          // mostrando el error original, que es el que de verdad le importa al usuario.
-        }
-      }
-      showError(err, "Error al crear el fraccionamiento");
+      showError(err, "Error al guardar el fraccionamiento");
     }
   };
 
@@ -1031,7 +987,7 @@ export function AppProvider({ children }) {
     openClientReport,
     closeClientReport,
     sendClientMessage,
-    saveFrac,
+    createFracDraft,
     saveEditedFrac,
     deleteFrac,
     startNewProject,
