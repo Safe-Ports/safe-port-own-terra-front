@@ -1301,9 +1301,16 @@ function LotsPage() {
                 }}
               />
             </label>
-            {mapFileName && (
-              <div className="lots-editor-file" style={{ marginTop: 10 }}>
-                <span>MAP</span>{mapFileName} — listo, falta guardar
+            {mapFileName && draftProject.mapUrl && (
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10 }}>
+                <img
+                  src={draftProject.mapUrl}
+                  alt="Vista previa del plano"
+                  style={{ width: 90, height: 64, objectFit: "cover", borderRadius: 8, border: "1.5px solid #DCDAD2", flexShrink: 0 }}
+                />
+                <div className="lots-editor-file">
+                  <span>MAP</span>{mapFileName} — listo, falta guardar
+                </div>
               </div>
             )}
             <div className="lot-upload-foot">
