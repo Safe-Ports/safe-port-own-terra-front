@@ -228,6 +228,18 @@ function SearchSelect({ id, value, onChange, onBlur, options, placeholder, disab
   );
 }
 
+/**
+ * Nombres de variables de la calculadora sin un valor numérico válido en calcVars.
+ * Antes esto no existía: una variable vacía/inválida se mandaba como 0 en silencio
+ * (`Number(x) || 0`) al guardar el contrato, y el botón nunca revisaba nada — se
+ * podía congelar una mensualidad mal calculada sin ningún aviso.
+ */
+export function missingCalcVars(variables, calcVars) {
+  return (variables || []).filter(
+    (v) => calcVars[v] === "" || calcVars[v] == null || Number.isNaN(Number(calcVars[v]))
+  );
+}
+
 /* ── Reglas de validación ───────────────────────────────────── */
 function validate(form, isEditing) {
   const errs = {};
@@ -526,12 +538,30 @@ function ContractModal() {
     }
 
     // Si hay calculadora activa para una venta, adjunta id + variables para que el
-    // backend congele el snapshot de la fórmula usada.
+    // backend congele el snapshot de la fórmula usada. calcResult.error se queda
+    // vacío mientras falta una variable (a propósito, para no regañar mientras el
+    // usuario todavía está llenando el formulario), así que aquí se revisa aparte,
+    // justo antes de guardar.
+    if (useCalculator && activeCalc) {
+      const missing = missingCalcVars(activeCalc.variables, calcVars);
+      if (missing.length > 0) {
+        showToast(
+          `Falta el valor de ${missing.length === 1 ? "la variable" : "las variables"} "${missing.join('", "')}" de la calculadora`,
+          "warning"
+        );
+        return;
+      }
+      if (calcResult.error) {
+        showToast(calcResult.error, "warning");
+        return;
+      }
+    }
+
     const calcPayload = (useCalculator && activeCalc)
       ? {
           calculator_id: activeCalc.id,
           calculator_vars: Object.fromEntries(
-            (activeCalc.variables || []).map((v) => [v, Number(calcVars[v]) || 0])
+            (activeCalc.variables || []).map((v) => [v, Number(calcVars[v])])
           ),
         }
       : {};
