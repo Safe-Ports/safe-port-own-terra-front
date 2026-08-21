@@ -6,6 +6,7 @@ import EcoLayout from "../EcoLayout";
 import { SkeletonRows } from "@/components/ui/Skeleton";
 import { formService } from "@/services/formService";
 import { useAppContext } from "@/context/AppContext";
+import { isGlobalAdmin } from "@/services/permissions";
 
 const FormIco = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -61,7 +62,7 @@ function EcosystemFormularios() {
   const { showToast, showError, currentUser } = useAppContext();
   const [showGuide, setShowGuide] = useState(false);
 
-  const isAdmin = ["admin", "owner", "superadmin"].includes((currentUser?.role ?? "").toLowerCase());
+  const isAdmin = isGlobalAdmin(currentUser);
 
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ["form-templates"],

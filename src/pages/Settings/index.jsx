@@ -10,6 +10,7 @@ import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import Button from "@/components/Button";
 import FieldError from "@/components/shared/FieldError";
 import { useFieldErrors } from "@/hooks/useFieldErrors";
+import { GLOBAL_ROLES } from "@/services/permissions";
 
 const SUB_STATUS_LABELS = {
   trialing: "Prueba",
@@ -426,8 +427,7 @@ function SettingsPage() {
               <div className="fg" style={{ minWidth: 120 }}>
                 <label className="fl">Rol</label>
                 <select className="fi" value={newUser.role} onChange={(e) => setNewUser((p) => ({ ...p, role: e.target.value }))}>
-                  <option value="vendor">Vendedor</option>
-                  <option value="admin">Administrador</option>
+                  {Object.entries(GLOBAL_ROLES).map(([key, { label }]) => <option key={key} value={key}>{label}</option>)}
                 </select>
               </div>
               <div style={{ display: "flex", alignItems: "flex-end" }}>
@@ -565,7 +565,7 @@ function SettingsPage() {
               <option value="">Selecciona un usuario...</option>
               {transferCandidates.map((u) => (
                 <option key={u.id} value={u.id}>
-                  {u.name} · {u.role === "admin" ? "Administrador" : "Vendedor"}
+                  {u.name} · {GLOBAL_ROLES[u.role]?.label || u.role}
                 </option>
               ))}
             </select>

@@ -9,7 +9,7 @@ import EcoLayout from "./EcoLayout";
 const APP_META = {
   lands: { name: "OwnTerra Lands", short: "Lands", handle: "terra.lands", icon: "eco-g-lands", cls: "ic-lands", color: "#6FAF6B", live: true },
   neighb: { name: "OwnTerra Properties", short: "Properties", handle: "terra.properties", icon: "eco-g-neighb", cls: "ic-neighb", color: "#355E3B", live: false },
-  homes: { name: "OwnTerra Homes", short: "Homes", handle: "terra.homes", icon: "eco-g-homes", cls: "ic-homes", color: "#A7CBA1", live: false },
+  construct: { name: "Ownterra Construct", short: "Construct", handle: "terra.construct", icon: "eco-g-construct", cls: "ic-construct", color: "#B98C58", live: true },
 };
 
 function fmtK(n) {

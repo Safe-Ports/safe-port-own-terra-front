@@ -109,21 +109,20 @@ function EcosystemHub() {
           </div>
         </div>
 
-        <div className="app-card is-disabled" style={{ "--glow": "rgba(167,203,161,.14)", pointerEvents: "none", userSelect: "none" }} aria-disabled="true" tabIndex={-1}>
+        <div className="app-card is-disabled" style={{ "--glow": "rgba(217,168,103,.16)", pointerEvents: "none", userSelect: "none" }} aria-disabled="true" tabIndex={-1}>
           <div className="app-top">
-            <div className="app-icon ic-homes"><svg><use href="#eco-g-homes" /></svg></div>
+            <div className="app-icon ic-construct"><img src="/ownterra_construct.png" alt="" /></div>
             <span className="app-status st-soon">Próximamente</span>
           </div>
-          <div className="app-name">OwnTerra Homes</div>
-          <div className="app-handle">terra.homes</div>
-          <div className="app-desc">Construcción y desarrollos habitacionales: avance de obra, acabados, garantías y postventa.</div>
-          <div className="app-tags"><span className="atag">Avance de obra</span><span className="atag">Acabados</span><span className="atag">Postventa</span></div>
+          <div className="app-name">Ownterra Construct</div>
+          <div className="app-handle">terra.construct</div>
+          <div className="app-desc">ERP de construcción: cuantificación física con números generadores, presupuestos híbridos APU/Alzado y catálogo maestro de obra.</div>
+          <div className="app-tags"><span className="atag">Números generadores</span><span className="atag">APU / Alzado</span><span className="atag">Catálogo maestro</span></div>
           <div className="app-cta">
             <span className="app-open disabled">En desarrollo</span>
             <span className="app-arrow disabled">→</span>
           </div>
         </div>
-
 
       </div>
 

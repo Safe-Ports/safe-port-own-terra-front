@@ -31,6 +31,7 @@ const SettingsPage = lazyWithRetry(() => import("@/pages/Settings"));
 const ReportsPage = lazyWithRetry(() => import("@/pages/Reports"));
 const PricingPage = lazyWithRetry(() => import("@/pages/Pricing"));
 const AccessDenied = lazyWithRetry(() => import("@/pages/AccessDenied"));
+const ConstructPage = lazyWithRetry(() => import("@/pages/Construct"));
 
 function PageLoader() {
   return (
@@ -78,6 +79,7 @@ function AppRouter() {
           {/* Misma página que /configuracion, servida con el shell del Core para
               quien entra desde el Ecosistema (ver Ecosystem/Configuracion.jsx). */}
           <Route path="/ecosistema/configuracion" element={<RequireFeature feature="core.config"><EcosystemConfiguracion /></RequireFeature>} />
+          <Route path="/construccion/*" element={<RequireFeature app="construct"><ConstructPage /></RequireFeature>} />
           <Route element={<AppShell />}>
             <Route path="/dashboard" element={<RequireFeature app="lands"><DashboardPage /></RequireFeature>} />
             <Route path="/lotes" element={<RequireFeature app="lands"><LotsPage /></RequireFeature>} />

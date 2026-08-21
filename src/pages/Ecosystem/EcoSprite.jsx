@@ -28,17 +28,17 @@ function EcoSprite() {
           <rect x="37.6" y="33" width="2.6" height="2.6" rx=".6" />
         </g>
       </symbol>
-      {/* HOMES */}
-      <symbol id="eco-g-homes" viewBox="0 0 56 56">
-        <g fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M14 41 V30 H22 V23 H30 V41" />
-          <line x1="11" y1="41" x2="33" y2="41" />
-          <line x1="39" y1="13" x2="39" y2="41" />
-          <line x1="39" y1="16" x2="23" y2="16" />
-          <line x1="39" y1="16" x2="43" y2="16" />
-          <line x1="27" y1="16" x2="27" y2="21" />
+      {/* CONSTRUCT — cubo isométrico en wireframe con cara dorada (logo de marca) */}
+      <symbol id="eco-g-construct" viewBox="0 0 56 56">
+        <path d="M44 19 L44 37 L28 46 L28 28 Z" fill="#f2b900" />
+        <g fill="none" stroke="#1f2022" strokeWidth="2.6" strokeLinejoin="round" strokeLinecap="round">
+          <path d="M28 10 L44 19 L44 37 L28 46 L12 37 L12 19 Z" />
+          <path d="M28 28 L44 19 M28 28 L28 46 M28 28 L12 19" />
         </g>
-        <rect x="24.2" y="21" width="5.6" height="4.4" rx="1.2" fill="#fff" />
+        <g stroke="#1f2022" strokeWidth="2" strokeLinecap="round">
+          <line x1="36" y1="27" x2="36" y2="39" />
+          <line x1="30" y1="33" x2="42" y2="33" />
+        </g>
       </symbol>
       {/* nav */}
       <symbol id="eco-n-grid" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></g></symbol>
