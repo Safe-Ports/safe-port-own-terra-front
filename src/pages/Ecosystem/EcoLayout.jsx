@@ -58,15 +58,16 @@ function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
             <div className="nav-label">Núcleo central</div>
             {navItem("miday", "Mi Día", "eco-n-sun", () => goTo("/ecosistema/mi-dia"))}
             {navItem("agenda", "Agenda", "eco-n-calendar", () => goTo("/ecosistema/agenda"))}
-            {navItem("panel", "Panel General", "eco-n-grid", () => goTo("/ecosistema"))}
+            {navItem("panel", "Apps", "eco-n-grid", () => goTo("/ecosistema"))}
             {navItem("vault", "OwnTerra Vault", "eco-n-vault", () => goTo("/ecosistema/documentos"), !canUseFeature("core.vault"))}
             {navItem("formularios", "Formularios", "eco-n-forms", () => goTo("/ecosistema/formularios"))}
             {navItem("users", "Clientes del core", "eco-n-users", () => goTo("/ecosistema/clientes"), !canUseFeature("core.clients"))}
             {navItem("team", "Equipo", "eco-n-shield", () => goTo("/ecosistema/equipo"), !canUseFeature("core.team"))}
-            {navItem("fin", "Estados Financieros", "eco-n-chart", () => goTo("/ecosistema/finanzas"), !canUseFeature("core.finance"))}
+            {navItem("providers", "Proveedores", "eco-n-box", () => goTo("/ecosistema/proveedores"), !canUseFeature("core.providers"))}
           </div>
 
-          {/* Las apps (Lands / Properties / Homes) se acceden desde el Panel General. */}
+          {/* Las apps verticales (Lands / Properties / Construction / Finanzas)
+              tienen su propio shell y se acceden desde Apps. */}
 
           <div className="nav-group">
             <div className="nav-label">Sistema</div>

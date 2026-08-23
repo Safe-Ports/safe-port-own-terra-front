@@ -64,7 +64,12 @@ function SubscriptionBanner() {
 
   return (
     <div className={`sub-banner sub-banner--${tone}`} role="status">
-      <span className="sub-banner__msg">⚠️ {msg}</span>
+      <svg className="sub-banner__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M12 3.5 22 20.5H2L12 3.5Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+        <path d="M12 10v4.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <circle cx="12" cy="17.3" r="1" fill="currentColor" />
+      </svg>
+      <span className="sub-banner__msg">{msg}</span>
       {isAdmin ? (
         <button
           type="button"

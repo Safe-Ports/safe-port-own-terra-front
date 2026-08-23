@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import AppShell from "@/layouts/AppShell";
+import FinanceShell from "@/layouts/FinanceShell";
 import { useAppContext } from "@/context/AppContext";
 import { getDeniedMessage } from "@/services/permissions";
 import SupportWidget from "@/components/support/SupportWidget";
@@ -11,9 +12,15 @@ const EcosystemHub = lazyWithRetry(() => import("@/pages/Ecosystem"));
 const EcosystemClientes = lazyWithRetry(() => import("@/pages/Ecosystem/Clientes"));
 const EcosystemVault = lazyWithRetry(() => import("@/pages/Ecosystem/Vault"));
 const EcosystemDia = lazyWithRetry(() => import("@/pages/Ecosystem/Dia"));
-const EcosystemFinanzas = lazyWithRetry(() => import("@/pages/Ecosystem/Finanzas"));
+const FinanceDashboard = lazyWithRetry(() => import("@/pages/Finance/Dashboard"));
+const FinanceTransacciones = lazyWithRetry(() => import("@/pages/Finance/Transacciones"));
+const FinanceCuentasPorCobrar = lazyWithRetry(() => import("@/pages/Finance/CuentasPorCobrar"));
+const FinanceCuentasPorPagar = lazyWithRetry(() => import("@/pages/Finance/CuentasPorPagar"));
+const FinanceNomina = lazyWithRetry(() => import("@/pages/Finance/Nomina"));
+const FinanceReportes = lazyWithRetry(() => import("@/pages/Finance/Reportes"));
 const EcosystemAgenda = lazyWithRetry(() => import("@/pages/Ecosystem/Agenda"));
 const EcosystemEquipo = lazyWithRetry(() => import("@/pages/Ecosystem/Equipo"));
+const EcosystemProveedores = lazyWithRetry(() => import("@/pages/Ecosystem/Proveedores"));
 const EcosystemFormularios = lazyWithRetry(() => import("@/pages/Ecosystem/Formularios"));
 const EcosystemFormEditor = lazyWithRetry(() => import("@/pages/Ecosystem/Formularios/Editor"));
 const EcosystemFormRespuestas = lazyWithRetry(() => import("@/pages/Ecosystem/Formularios/Respuestas"));
@@ -68,9 +75,13 @@ function AppRouter() {
           <Route path="/ecosistema/clientes" element={<RequireFeature feature="core.clients"><EcosystemClientes /></RequireFeature>} />
           <Route path="/ecosistema/documentos" element={<RequireFeature feature="core.vault"><EcosystemVault /></RequireFeature>} />
           <Route path="/ecosistema/mi-dia" element={<EcosystemDia />} />
-          <Route path="/ecosistema/finanzas" element={<RequireFeature feature="core.finance"><EcosystemFinanzas /></RequireFeature>} />
+          {/* Finanzas dejó de ser una página del Core — es su propia app,
+              con shell propio (ver más abajo). Se deja el redirect por si
+              queda algún link viejo guardado. */}
+          <Route path="/ecosistema/finanzas" element={<Navigate to="/finanzas" replace />} />
           <Route path="/ecosistema/agenda" element={<EcosystemAgenda />} />
           <Route path="/ecosistema/equipo" element={<RequireFeature feature="core.team"><EcosystemEquipo /></RequireFeature>} />
+          <Route path="/ecosistema/proveedores" element={<RequireFeature feature="core.providers"><EcosystemProveedores /></RequireFeature>} />
           <Route path="/ecosistema/formularios" element={<RequireFeature feature="core.forms"><EcosystemFormularios /></RequireFeature>} />
           <Route path="/ecosistema/formularios/nuevo" element={<RequireFeature feature="core.forms"><EcosystemFormEditor /></RequireFeature>} />
           <Route path="/ecosistema/formularios/:id/editar" element={<RequireFeature feature="core.forms"><EcosystemFormEditor /></RequireFeature>} />
@@ -92,6 +103,14 @@ function AppRouter() {
             <Route path="/calculadora" element={<RequireFeature app="lands"><CalculatorPage /></RequireFeature>} />
             <Route path="/perfil" element={<ProfilePage />} />
             <Route path="/configuracion" element={<RequireFeature feature="core.config"><SettingsPage /></RequireFeature>} />
+          </Route>
+          <Route element={<FinanceShell />}>
+            <Route path="/finanzas" element={<RequireFeature app="finanzas"><FinanceDashboard /></RequireFeature>} />
+            <Route path="/finanzas/transacciones" element={<RequireFeature app="finanzas"><FinanceTransacciones /></RequireFeature>} />
+            <Route path="/finanzas/cuentas-por-cobrar" element={<RequireFeature app="finanzas"><FinanceCuentasPorCobrar /></RequireFeature>} />
+            <Route path="/finanzas/cuentas-por-pagar" element={<RequireFeature app="finanzas"><FinanceCuentasPorPagar /></RequireFeature>} />
+            <Route path="/finanzas/nomina" element={<RequireFeature app="finanzas"><FinanceNomina /></RequireFeature>} />
+            <Route path="/finanzas/reportes" element={<RequireFeature app="finanzas"><FinanceReportes /></RequireFeature>} />
           </Route>
           <Route path="*" element={<Navigate to="/ecosistema" replace />} />
         </Routes>

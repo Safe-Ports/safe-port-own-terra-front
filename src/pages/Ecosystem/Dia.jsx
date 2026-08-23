@@ -29,8 +29,8 @@ const TOUR_STEPS = [
     text: "Los botones 'Visita', 'Cobro' y 'Documento' en la barra de bienvenida te llevan directamente al módulo correspondiente sin buscar en el menú.",
   },
   {
-    title: "📊 Panel General",
-    text: "Vista de métricas globales: ingresos, actividad reciente y estadísticas del negocio. Ideal para revisiones semanales o presentaciones de resultados.",
+    title: "📊 Apps",
+    text: "El lanzador de aplicaciones del ecosistema — OwnTerra Lands, Finanzas y las que se vayan sumando.",
   },
   {
     title: "🔒 OwnTerra Vault",

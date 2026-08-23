@@ -10,6 +10,8 @@ import {
 import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
 import { expenseService, CAT_LABEL, CAT_STYLE } from "@/services/expenseService";
+import { employeeService } from "@/services/employeeService";
+import { providerService } from "@/services/providerService";
 
 import FieldError from "@/components/shared/FieldError";
 import { useFieldErrors } from "@/hooks/useFieldErrors";
@@ -341,10 +343,31 @@ function EgresoModal({ initial, onClose, onSave }) {
     due_date:    initial?.due_date    || new Date().toISOString().split("T")[0],
     recurrencia: initial?.recurrencia || "",
     notes:       initial?.notes       || "",
+    employee_id: initial?.employee_id || "",
+    provider_id: initial?.provider_id || "",
   });
   const fe = useFieldErrors();
   const set = k => e => { const v = e.target.value; setForm(p => ({ ...p, [k]: v })); fe.clear(k); };
-  const save = () => { if (fe.validate(form, EGRESO_RULES)) onSave(form); };
+
+  const { data: employees } = useQuery({
+    queryKey: ["employees", "egreso-modal"],
+    queryFn: () => employeeService.list({ limit: 100 }).then(r => r.items),
+    enabled: form.categoria === "nomina",
+  });
+  const { data: providers } = useQuery({
+    queryKey: ["providers", "egreso-modal"],
+    queryFn: () => providerService.list({ limit: 100 }).then(r => r.items),
+    enabled: form.categoria === "proveedores",
+  });
+
+  const save = () => {
+    if (!fe.validate(form, EGRESO_RULES)) return;
+    onSave({
+      ...form,
+      employee_id: form.categoria === "nomina" ? (form.employee_id || null) : null,
+      provider_id: form.categoria === "proveedores" ? (form.provider_id || null) : null,
+    });
+  };
   return (
     <div className="modal-overlay">
       <div className="modal-box" style={{ maxWidth: 440 }}>
@@ -369,6 +392,20 @@ function EgresoModal({ initial, onClose, onSave }) {
               <input {...fe.fieldProps("monto")} type="number" value={form.monto} onChange={set("monto")} placeholder="0" />
               <FieldError msg={fe.errors.monto} /></div>
           </div>
+          {form.categoria === "nomina" && (
+            <div className="fg"><label className="fl">Colaborador (opcional)</label>
+              <select className="fi" value={form.employee_id} onChange={set("employee_id")}>
+                <option value="">Sin asignar</option>
+                {(employees || []).map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+              </select></div>
+          )}
+          {form.categoria === "proveedores" && (
+            <div className="fg"><label className="fl">Proveedor (opcional)</label>
+              <select className="fi" value={form.provider_id} onChange={set("provider_id")}>
+                <option value="">Sin asignar</option>
+                {(providers || []).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select></div>
+          )}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div className="fg"><label className="fl">Fecha límite</label>
               <input className="fi" type="date" value={form.due_date} onChange={set("due_date")} /></div>
@@ -728,7 +765,8 @@ export default function PaymentsPage() {
   };
   const handleSaveEgreso = form => {
     const body = { concepto: form.concepto, categoria: form.categoria, monto: Number(form.monto),
-      due_date: form.due_date, recurrencia: form.recurrencia || null, notes: form.notes || null };
+      due_date: form.due_date, recurrencia: form.recurrencia || null, notes: form.notes || null,
+      employee_id: form.employee_id || null, provider_id: form.provider_id || null };
     editing ? updateExpense.mutate({ id: editing.id, data: body }) : createExpense.mutate(body);
   };
 

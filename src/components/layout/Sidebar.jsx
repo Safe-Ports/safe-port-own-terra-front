@@ -38,7 +38,7 @@ function Logo() {
   return (
     <div className="sb-logo">
       <div className="sb-logo-mark">
-        <img src="/ownterra_land.png" alt="" />
+        <img src="/icons/app-lands.png" alt="" />
       </div>
     </div>
   );

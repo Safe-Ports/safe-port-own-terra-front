@@ -64,7 +64,7 @@ function CoreTopbarActions({ onGuide, className = "" }) {
         onClick={() => navigate("/perfil")}
         aria-label={`Ver perfil de ${currentUser?.name || "usuario"}`}
       >
-        <Avatar name={currentUser?.name || "Usuario"} size={28} />
+        <Avatar name={currentUser?.name || "Usuario"} src={currentUser?.avatar_url} size={28} />
         <span className="core-profile-copy">
           <strong>Perfil</strong>
           <small>{currentUser?.name?.split(" ")[0] || "Usuario"}</small>

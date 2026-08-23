@@ -51,7 +51,7 @@ describe("Configuración en el shell del Core", () => {
     await waitFor(() => expect(screen.getByText("🏢 Organización")).toBeInTheDocument());
 
     // ...dentro del shell del Core: su nav es el del Ecosistema.
-    expect(screen.getByRole("button", { name: /Panel General/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Apps/ })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /Mi Día/ }).length).toBeGreaterThan(0);
 
     // Y NO el de Lands (que trae Lotes / Fraccionamientos / Pagos).
