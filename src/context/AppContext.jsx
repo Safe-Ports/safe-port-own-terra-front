@@ -59,6 +59,8 @@ export function AppProvider({ children }) {
                 initials: data.user.initials || data.user.name.slice(0, 2).toUpperCase(),
                 email: data.user.email,
                 role: data.user.role,
+                color: data.user.color,
+                avatar_url: data.user.avatar_url,
                 apps: data.user.apps || data.user.user_apps || [],
                 permissions: data.user.permissions || [],
                 tours_seen: data.user.tours_seen || [],
@@ -288,6 +290,12 @@ export function AppProvider({ children }) {
     }
   };
 
+  // Aplica cambios locales al usuario en sesión (ej. tras subir un avatar) sin
+  // esperar a que vuelva /auth/me — mismo patrón que markTourSeen.
+  const updateCurrentUser = (partial) => {
+    setCurrentUser((prev) => (prev ? { ...prev, ...partial } : prev));
+  };
+
   const showError = (error, fallbackMessage) => {
     const parsed = parseApiError(error, fallbackMessage);
     setToast({ kind: "error", ...parsed });
@@ -320,6 +328,8 @@ export function AppProvider({ children }) {
       initials: data.user.initials || data.user.name.slice(0, 2).toUpperCase(),
       email: data.user.email,
       role: data.user.role,
+      color: data.user.color,
+      avatar_url: data.user.avatar_url,
       apps: data.user.apps || data.user.user_apps || [],
       permissions: data.user.permissions || [],
       tours_seen: data.user.tours_seen || [],
@@ -965,6 +975,7 @@ export function AppProvider({ children }) {
     forgotPassword,
     resetPassword,
     markTourSeen,
+    updateCurrentUser,
     logout,
     saveClient,
     deleteClient,

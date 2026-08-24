@@ -66,17 +66,15 @@ export const TOUR_ECOSISTEMA = {
         "fraccionamientos: ahí vive tu operación diaria. Las demás llegarán después.",
     },
     {
-      target: '[data-tour="nav-miday"]',
-      placement: "right",
+      target: '[data-tour="app-miday"]',
       title: "Mi Día",
       content:
         "Tu punto de partida cada mañana: las citas de hoy, los pagos por cobrar y lo " +
         "que requiere tu atención, todo en una pantalla.",
     },
     {
-      target: '[data-tour="nav-agenda"]',
-      placement: "right",
-      title: "Agenda",
+      target: '[data-tour="app-agenda"]',
+      title: "Calendario",
       content:
         "Tu calendario personal. Solo tú ves tus eventos, y puedes suscribirlo a Google " +
         "Calendar para tenerlo en el teléfono.",

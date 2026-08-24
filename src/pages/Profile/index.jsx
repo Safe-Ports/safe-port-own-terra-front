@@ -1,19 +1,25 @@
-import { useState } from "react";
-import { HiArrowLeftOnRectangle, HiBuildingOffice2, HiCog6Tooth, HiShieldCheck } from "react-icons/hi2";
+import { useRef, useState } from "react";
+import { HiArrowLeftOnRectangle, HiBuildingOffice2, HiCamera, HiCog6Tooth, HiShieldCheck } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
 import { useDashboardQuery } from "@/hooks/queries/useAppQueries";
 import { orgService } from "@/services/orgService";
+import { userService } from "@/services/userService";
 import GuideModal from "@/components/shared/GuideModal";
 import { compactCurrency } from "@/services/formatters";
 
+const AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp"];
+const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
+
 function ProfilePage() {
   const navigate = useNavigate();
-  const { currentUser, logout } = useAppContext();
+  const { currentUser, logout, showToast, showError, updateCurrentUser } = useAppContext();
   const { data } = useDashboardQuery();
   const [showGuide, setShowGuide] = useState(false);
+  const fileInputRef = useRef(null);
+  const qc = useQueryClient();
   useLandsGuide(() => setShowGuide(true));
 
   const { data: org } = useQuery({
@@ -21,13 +27,56 @@ function ProfilePage() {
     queryFn: orgService.get,
   });
 
+  const uploadAvatar = useMutation({
+    mutationFn: (file) => userService.uploadAvatar(currentUser.id, file),
+    onSuccess: (updated) => {
+      updateCurrentUser({ avatar_url: updated.avatar_url });
+      qc.invalidateQueries({ queryKey: ["users"] });
+      showToast("Foto de perfil actualizada");
+    },
+    onError: (err) => showError(err, "Error al subir la foto de perfil"),
+  });
+
+  const handleAvatarPick = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!AVATAR_TYPES.includes(file.type)) {
+      showToast("Formato no permitido — usa PNG, JPG o WEBP", "warning");
+      return;
+    }
+    if (file.size > AVATAR_MAX_BYTES) {
+      showToast("La imagen no puede superar 5 MB", "warning");
+      return;
+    }
+    uploadAvatar.mutate(file);
+  };
+
   return (
     <div className="space-y-4">
       <section className="rounded-[30px] border border-[#DCDAD2] bg-[linear-gradient(160deg,#1A3428,#11120F)] p-5 text-[#E9E5DB] shadow-[0_28px_60px_rgba(13,15,12,.28)]">
         <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-[26px] bg-[linear-gradient(135deg,#6FAF6B,#8B6A46)] text-xl font-black text-[#1E3D2B]">
-            {currentUser?.initials || "OT"}
-          </div>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadAvatar.isPending}
+            title="Cambiar foto de perfil"
+            className="group relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[26px] bg-[linear-gradient(135deg,#6FAF6B,#8B6A46)] text-xl font-black text-[#1E3D2B]"
+          >
+            {currentUser?.avatar_url ? (
+              <img src={currentUser.avatar_url} alt="" className="h-full w-full object-cover" />
+            ) : (
+              currentUser?.initials || "OT"
+            )}
+            <span className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity group-hover:opacity-100">
+              {uploadAvatar.isPending ? (
+                <span className="text-[0.6rem] font-semibold text-white">Subiendo…</span>
+              ) : (
+                <HiCamera className="text-lg text-white" />
+              )}
+            </span>
+          </button>
+          <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleAvatarPick} />
           <div className="flex-1">
             <div className="font-['Playfair_Display'] text-[2rem] leading-none">{currentUser?.name}</div>
             <div className="mt-2 text-sm text-white/62">{currentUser?.email}</div>

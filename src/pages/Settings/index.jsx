@@ -276,21 +276,12 @@ function SettingsPage() {
             <div className="text-sm text-[#83867C]">Cargando...</div>
           ) : org ? (
             <div>
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4" style={{ marginBottom: 16 }}>
-                {[
-                  ["Usuarios", org.stats.total_users],
-                  ["Lotes", org.stats.total_lots],
-                  ["Clientes", org.stats.total_clients],
-                  ["Contratos", org.stats.total_contracts],
-                ].map(([label, value]) => (
-                  <div key={label} className="price-c">
-                    <div className="pc-l">{label}</div>
-                    <div className="pc-v">{value}</div>
-                  </div>
-                ))}
-              </div>
+              {/* Solo datos de la organización en sí — nada de negocio de una
+                  vertical (lotes, clientes, contratos son de Lands y ya se ven
+                  en su propio Dashboard; aquí no aportan, solo confunden). */}
               <div className="grid gap-3 md:grid-cols-2">
                 {[
+                  ["Usuarios", org.stats.total_users],
                   ["Nombre", org.name],
                   ["Plan", org.plan],
                   ["Estado suscripción", org.subscription_status],

@@ -4,7 +4,6 @@ import GuideModal from "@/components/shared/GuideModal";
 import PhoneInput from "@/components/shared/PhoneInput";
 import { clientService } from "@/services/clientService";
 import { documentService, filenameForDocument } from "@/services/documentService";
-import { userService } from "@/services/userService";
 import { useAppContext } from "@/context/AppContext";
 import useEscapeKey from "@/hooks/useEscapeKey";
 
@@ -14,6 +13,7 @@ const APPS = [
   { key: "lands", name: "OwnTerra Lands", handle: "terra.lands", icon: "eco-g-lands", cls: "ic-lands", color: "#6FAF6B", live: true, desc: "Lotificación y venta de terrenos." },
   { key: "neighb", name: "OwnTerra Properties", handle: "terra.properties", icon: "eco-g-neighb", cls: "ic-neighb", color: "#355E3B", live: false, desc: "Propiedades y comunidades." },
   { key: "construct", name: "Ownterra Construct", handle: "terra.construct", icon: "eco-g-construct", cls: "ic-construct", color: "#B98C58", live: true, desc: "Cuantificación y presupuestos de obra." },
+  { key: "homes", name: "OwnTerra Construction", handle: "terra.construction", icon: "eco-g-homes", cls: "ic-homes", color: "#A7CBA1", live: false, desc: "Construcción y desarrollos." },
 ];
 const APP_BY_KEY = Object.fromEntries(APPS.map((a) => [a.key, a]));
 
@@ -61,12 +61,6 @@ function EcosystemClientes() {
       new Set(clientAppQueries[index]?.data?.apps ?? []),
     ])
   );
-
-  const { data: usersData } = useQuery({
-    queryKey: ["users", "eco-client-vendors"],
-    queryFn: () => userService.list({ role: "vendor", limit: 100 }),
-  });
-  const vendors = usersData?.items ?? [];
 
   // Auto-select first client
   const effectiveSelectedId = selectedId ?? (clients[0]?.id ? String(clients[0].id) : null);
@@ -122,7 +116,6 @@ function EcosystemClientes() {
         phone: draft.phone || undefined,
         type: draft.type,
         pipeline_stage: draft.pipeline_stage,
-        seller_id: draft.seller_id || undefined,
         notes: draft.notes || undefined,
       });
 
@@ -148,7 +141,6 @@ function EcosystemClientes() {
         name: draft.name,
         email: draft.email || undefined,
         phone: draft.phone || undefined,
-        seller_id: draft.seller_id || undefined,
         notes: draft.notes || undefined,
       });
       if (draft.pipeline_stage) {
@@ -243,7 +235,6 @@ function EcosystemClientes() {
           phone: "",
           type: "lead",
           pipeline_stage: "new",
-          seller_id: "",
           notes: "",
           apps: { lands: true, neighb: false, construct: false },
         },
@@ -268,7 +259,6 @@ function EcosystemClientes() {
         phone: selected.phone || "",
         type: selected.type || "lead",
         pipeline_stage: selected.pipeline_stage || "new",
-        seller_id: selected.seller?.id || "",
         notes: selected.notes || "",
         apps: Object.fromEntries(APPS.map((app) => [app.key, app.live && assignedApps.has(app.key)])),
       },
@@ -581,13 +571,6 @@ function EcosystemClientes() {
                         {Object.entries(STAGE_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                       </select>
                     </div>
-                  </div>
-                  <div className="usr-field">
-                    <label className="usr-field-lbl">Vendedor responsable en Lands</label>
-                    <select className="usr-select" value={modal.draft.seller_id} onChange={(e) => setDraft({ seller_id: e.target.value })}>
-                      <option value="">Sin asignar</option>
-                      {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
-                    </select>
                   </div>
                   <div className="usr-sec-label">Acceso a apps</div>
                   {APPS.map((app) => {

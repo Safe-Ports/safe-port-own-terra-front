@@ -1993,12 +1993,19 @@ textarea.is-invalid {
 
 /* ── Página de planes a pantalla completa (upsell dedicado) ──────────────── */
 .pricing-page {
+  /* Paleta teal del ecosistema (misma prueba que el Hub), local a esta pantalla:
+     no toca --deep/--forest/--forest-hi globales, que siguen en verde para Lands. */
+  --deep: #07393C;
+  --forest: #2C666E;
+  --forest-hi: #48A9A6;
+  --tan-lt: #D8EFEC;
+
   position: fixed;
   inset: 0;
   z-index: 200;
   overflow-y: auto;
   background:
-    radial-gradient(1200px 600px at 50% -10%, #EAF3E6 0%, rgba(234,243,230,0) 60%),
+    radial-gradient(1200px 600px at 50% -10%, #E1F1EF 0%, rgba(225,241,239,0) 60%),
     linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
 }
 .pricing-topbar {
@@ -2057,7 +2064,7 @@ textarea.is-invalid {
 .pp-card:hover { transform: translateY(-3px); box-shadow: var(--sh2); }
 .pp-card--rec {
   border: 1.5px solid var(--forest-hi);
-  background: linear-gradient(180deg, #F3F8F0 0%, var(--cream) 60%);
+  background: linear-gradient(180deg, #EAF5F4 0%, var(--cream) 60%);
   box-shadow: var(--sh2);
 }
 .pp-ribbon {
@@ -2148,8 +2155,8 @@ textarea.is-invalid {
   color: var(--deep); font-weight: 800; font-size: 0.92rem;
   background: var(--sf2); vertical-align: bottom;
 }
-.pp-matrix thead th.is-rec { background: #EAF3E6; }
-.pp-matrix td.is-rec { background: rgba(234, 243, 230, 0.45); }
+.pp-matrix thead th.is-rec { background: #E1F1EF; }
+.pp-matrix td.is-rec { background: rgba(72, 169, 166, 0.12); }
 .pp-matrix tbody tr:last-child th, .pp-matrix tbody tr:last-child td { border-bottom: none; }
 .pp-mx-feature {
   text-align: left !important; color: var(--tx2); font-weight: 700;
@@ -2193,26 +2200,36 @@ textarea.is-invalid {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  padding: 10px 18px;
+  padding: 12px 22px;
+  font-family: var(--font-body);
   font-size: 0.86rem;
   font-weight: 600;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  color: var(--deep);
+  border-bottom: 1px solid var(--line-soft);
 }
-.sub-banner--warn { background: #fef3c7; color: #92400e; }
-.sub-banner--error { background: #fee2e2; color: #991b1b; }
+.sub-banner--warn  { background: linear-gradient(90deg, #FAF1DD, #F5E9D2); }
+.sub-banner--error { background: linear-gradient(90deg, #FBEAE6, #F6DCD7); }
+.sub-banner__icon { width: 18px; height: 18px; flex-shrink: 0; }
+.sub-banner--warn  .sub-banner__icon { color: #B8791A; }
+.sub-banner--error .sub-banner__icon { color: var(--danger); }
 .sub-banner__msg { flex: 1; min-width: 200px; }
-.sub-banner__hint { font-weight: 500; opacity: 0.85; }
+.sub-banner__hint { font-weight: 500; color: var(--muted); }
 .sub-banner__btn {
   border: none;
   border-radius: 999px;
-  padding: 6px 16px;
+  padding: 7px 18px;
+  font-family: var(--font-body);
   font-weight: 700;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  background: rgba(0, 0, 0, 0.82);
-  color: #fff;
+  color: var(--cream);
+  box-shadow: 0 4px 12px rgba(30, 61, 43, 0.22);
+  transition: transform 0.15s ease, filter 0.15s ease;
 }
-.sub-banner__btn:hover { background: #000; }
+.sub-banner__btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.sub-banner--warn  .sub-banner__btn { background: linear-gradient(140deg, var(--mid), var(--deep)); }
+.sub-banner--error .sub-banner__btn { background: linear-gradient(140deg, #C0392B, #96281F); box-shadow: 0 4px 12px rgba(150, 40, 31, 0.28); }
 
 /* Skeleton de carga (placeholder animado) */
 .skeleton-line {
