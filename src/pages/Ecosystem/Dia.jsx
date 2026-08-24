@@ -9,7 +9,7 @@ import EcoLayout from "./EcoLayout";
 import TasksBoard from "./TasksBoard";
 import OnboardingChecklist from "@/components/shared/OnboardingChecklist";
 import GuideModal from "@/components/shared/GuideModal";
-import { useLandsOverdue, LandsOverdueKpi, LandsOverdueCard } from "./verticals/LandsMiDia";
+import { useLandsOverdue, LandsAlertStrip } from "./verticals/LandsMiDia";
 
 const TOUR_STEPS = [
   {
@@ -184,8 +184,8 @@ function EcosystemDia() {
       {/* Onboarding: se muestra solo si faltan pasos y no se cerró */}
       <OnboardingChecklist />
 
-      {/* KPIs — genéricos siempre; cada vertical suma las suyas si aplica */}
-      <div className="md-kpis" style={!hasLands ? { gridTemplateColumns: "repeat(2, 1fr)" } : undefined}>
+      {/* KPIs — genéricos, el vistazo rápido de hoy */}
+      <div className="md-kpis" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
         <div className="md-kpi">
           <span className="md-kpi-ico"><svg><use href="#eco-n-calendar" /></svg></span>
           <div className="md-kpi-body">
@@ -202,63 +202,51 @@ function EcosystemDia() {
             <div className="md-kpi-sub">Sin terminar en tu tablero</div>
           </div>
         </div>
-        {hasLands && (
-          <LandsOverdueKpi overdueItems={overdueItems} totalOverdue={totalOverdue} onReview={() => navigate("/pagos")} />
-        )}
       </div>
 
-      <div className="md-grid" style={!hasLands ? { gridTemplateColumns: "1fr" } : undefined}>
-        {/* AGENDA DEL DÍA */}
-        <div className="md-card">
-          <div className="md-card-head">
-            <div>
-              <div className="md-card-title">{showingUpcoming ? "Próximas citas" : "Agenda del día"}</div>
-              <div className="md-card-sub">
-                {showingUpcoming ? "sin citas hoy · mostrando las siguientes" : "visitas, llamadas y firmas"}
-              </div>
+      {/* AGENDA DEL DÍA — lo más "de hoy", a todo lo ancho */}
+      <div className="md-card">
+        <div className="md-card-head">
+          <div>
+            <div className="md-card-title">{showingUpcoming ? "Próximas citas" : "Agenda del día"}</div>
+            <div className="md-card-sub">
+              {showingUpcoming ? "sin citas hoy · mostrando las siguientes" : "visitas, llamadas y firmas"}
             </div>
-            <button className="sh-link" onClick={() => navigate("/ecosistema/agenda")}>Ver agenda completa →</button>
           </div>
-          {agendaAppts.length ? agendaAppts.map((a) => {
-            const appKey = a.app_key || "lands";
-            const appOk = !!APP_META[appKey];
-            return (
-              <div key={a.id} className={`md-visit ${a.status === "confirmed" ? "is-active" : ""}`}>
-                <div className="md-time">
-                  <b>{toTime(a.scheduled_at)}</b>
-                  <span>{showingUpcoming ? toDateLabel(a.scheduled_at) : "HRS"}</span>
-                </div>
-                <div className="md-st">
-                  <span className={`md-sdot ${a.status}`}>{a.status === "confirmed" ? "✓" : ""}</span>
-                </div>
-                <div className="md-info">
-                  <div className="md-name">{a.title || a.contact_name || "—"}</div>
-                  <div className="md-meta">{a.client_name || ""}{a.notes ? ` · ${a.notes}` : ""}</div>
-                </div>
-                {appOk && <AppTag app={appKey} />}
-              </div>
-            );
-          }) : (
-            <div className="md-empty-state" style={{ padding: "24px 0", textAlign: "center", color: "var(--text3)", fontSize: 13 }}>
-              Sin citas para hoy.{" "}
-              <button className="sh-link" style={{ fontSize: 13 }} onClick={() => navigate("/ecosistema/agenda")}>
-                Agendar →
-              </button>
-            </div>
-          )}
-          <div className="md-legend">
-            <span className="md-legend-item"><span className="md-legend-dot" style={{ background: "#6FAF6B" }}>✓</span>Confirmada</span>
-            <span className="md-legend-item"><span className="md-legend-dot" style={{ background: "#1E3D2B" }} />En curso</span>
-            <span className="md-legend-item"><span className="md-legend-dot" style={{ background: "transparent", border: "2px solid var(--border2)" }} />Pendiente</span>
-          </div>
+          <button className="sh-link" onClick={() => navigate("/ecosistema/agenda")}>Ver agenda completa →</button>
         </div>
-
-        {/* Widgets por vertical (las tareas ahora viven en el tablero full-width de abajo) */}
-        {hasLands && (
-          <div className="md-side">
-            <LandsOverdueCard overdueItems={overdueItems} onSeeAll={() => navigate("/pagos")} />
+        {agendaAppts.length ? agendaAppts.map((a) => {
+          const appKey = a.app_key || "lands";
+          const appOk = !!APP_META[appKey];
+          return (
+            <div key={a.id} className={`md-visit ${a.status === "confirmed" ? "is-active" : ""}`}>
+              <div className="md-time">
+                <b>{toTime(a.scheduled_at)}</b>
+                <span>{showingUpcoming ? toDateLabel(a.scheduled_at) : "HRS"}</span>
+              </div>
+              <div className="md-st">
+                <span className={`md-sdot ${a.status}`}>{a.status === "confirmed" ? "✓" : ""}</span>
+              </div>
+              <div className="md-info">
+                <div className="md-name">{a.title || a.contact_name || "—"}</div>
+                <div className="md-meta">{a.client_name || ""}{a.notes ? ` · ${a.notes}` : ""}</div>
+              </div>
+              {appOk && <AppTag app={appKey} />}
+            </div>
+          );
+        }) : (
+          <div className="md-empty-state" style={{ padding: "24px 0", textAlign: "center", color: "var(--text3)", fontSize: 13 }}>
+            Sin citas para hoy.{" "}
+            <button className="sh-link" style={{ fontSize: 13 }} onClick={() => navigate("/ecosistema/agenda")}>
+              Agendar →
+            </button>
           </div>
         )}
+        <div className="md-legend">
+          <span className="md-legend-item"><span className="md-legend-dot" style={{ background: "#6FAF6B" }}>✓</span>Confirmada</span>
+          <span className="md-legend-item"><span className="md-legend-dot" style={{ background: "#1E3D2B" }} />En curso</span>
+          <span className="md-legend-item"><span className="md-legend-dot" style={{ background: "transparent", border: "2px solid var(--border2)" }} />Pendiente</span>
+        </div>
       </div>
 
       <GuideModal
@@ -271,6 +259,10 @@ function EcosystemDia() {
 
       {/* TABLERO DE TAREAS (personal) */}
       <TasksBoard />
+
+      {/* Avisos por vertical — al final, como franja compacta, no como
+          protagonista al lado de la agenda. */}
+      {hasLands && <LandsAlertStrip overdueItems={overdueItems} totalOverdue={totalOverdue} onReview={() => navigate("/pagos")} />}
     </EcoLayout>
   );
 }

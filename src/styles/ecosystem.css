@@ -510,7 +510,8 @@
 
 /* ───── MI DÍA (cockpit consolidado del ecosistema) ───── */
 .eco-root .md-grid{display:grid;grid-template-columns:1.55fr 1fr;gap:16px;margin-bottom:16px;align-items:start}
-.eco-root .md-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;animation:eco-fadeUp .5s ease both}
+.eco-root .md-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;
+  margin-bottom:20px;animation:eco-fadeUp .5s ease both}
 .eco-root .md-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
 .eco-root .md-card-title{font-family: var(--font-title);font-size:16px;color:var(--deep)}
 .eco-root .md-card-sub{font-size:11px;color:var(--text3);font-family: var(--font-body)}
@@ -585,6 +586,17 @@
 .eco-root .md-kpi-cta{margin-top:7px;font-size:11px;font-weight:600;padding:5px 11px;border-radius:9px;cursor:pointer;
   background:var(--surface);color:#C0392B;border:1px solid #F2C4BE;font-family: var(--font-body)}
 .eco-root .md-kpi-cta:hover{background:#FDECEA}
+
+/* ── franja de avisos por vertical (al final de Mi Día) ── */
+.eco-root .md-alert{display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:var(--radius-sm);
+  margin-top:16px;background:rgba(192,57,43,.05);border:1px solid rgba(192,57,43,.22);animation:eco-fadeUp .5s ease both}
+.eco-root .md-alert.ok{background:var(--surface);border-color:var(--border)}
+.eco-root .md-alert-ico{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;background:rgba(192,57,43,.12);color:#C0392B}
+.eco-root .md-alert.ok .md-alert-ico{background:rgba(72,169,166,.12);color:var(--mid)}
+.eco-root .md-alert-ico svg{width:17px;height:17px}
+.eco-root .md-alert-text{flex:1;font-size:13px;color:var(--text2)}
+.eco-root .md-alert-text b{color:var(--deep)}
 
 /* ── agenda: estados / timeline ── */
 .eco-root .md-st{position:relative;width:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center;align-self:stretch}
