@@ -50,9 +50,9 @@ describe("Configuración en el shell del Core", () => {
     // La página de configuración se pintó...
     await waitFor(() => expect(screen.getByText("🏢 Organización")).toBeInTheDocument());
 
-    // ...dentro del shell del Core: su nav es el del Ecosistema.
-    expect(screen.getByRole("button", { name: /Apps/ })).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: /Mi Día/ }).length).toBeGreaterThan(0);
+    // ...dentro del shell del Ecosistema: su nav son los 3 renglones fijos.
+    expect(screen.getByRole("button", { name: /Hub de aplicaciones/ })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Equipo/ }).length).toBeGreaterThan(0);
 
     // Y NO el de Lands (que trae Lotes / Fraccionamientos / Pagos).
     expect(screen.queryByRole("link", { name: /Fraccionamientos/ })).not.toBeInTheDocument();
