@@ -1993,12 +1993,19 @@ textarea.is-invalid {
 
 /* ── Página de planes a pantalla completa (upsell dedicado) ──────────────── */
 .pricing-page {
+  /* Paleta teal del ecosistema (misma prueba que el Hub), local a esta pantalla:
+     no toca --deep/--forest/--forest-hi globales, que siguen en verde para Lands. */
+  --deep: #07393C;
+  --forest: #2C666E;
+  --forest-hi: #48A9A6;
+  --tan-lt: #D8EFEC;
+
   position: fixed;
   inset: 0;
   z-index: 200;
   overflow-y: auto;
   background:
-    radial-gradient(1200px 600px at 50% -10%, #EAF3E6 0%, rgba(234,243,230,0) 60%),
+    radial-gradient(1200px 600px at 50% -10%, #E1F1EF 0%, rgba(225,241,239,0) 60%),
     linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
 }
 .pricing-topbar {
@@ -2057,7 +2064,7 @@ textarea.is-invalid {
 .pp-card:hover { transform: translateY(-3px); box-shadow: var(--sh2); }
 .pp-card--rec {
   border: 1.5px solid var(--forest-hi);
-  background: linear-gradient(180deg, #F3F8F0 0%, var(--cream) 60%);
+  background: linear-gradient(180deg, #EAF5F4 0%, var(--cream) 60%);
   box-shadow: var(--sh2);
 }
 .pp-ribbon {
@@ -2148,8 +2155,8 @@ textarea.is-invalid {
   color: var(--deep); font-weight: 800; font-size: 0.92rem;
   background: var(--sf2); vertical-align: bottom;
 }
-.pp-matrix thead th.is-rec { background: #EAF3E6; }
-.pp-matrix td.is-rec { background: rgba(234, 243, 230, 0.45); }
+.pp-matrix thead th.is-rec { background: #E1F1EF; }
+.pp-matrix td.is-rec { background: rgba(72, 169, 166, 0.12); }
 .pp-matrix tbody tr:last-child th, .pp-matrix tbody tr:last-child td { border-bottom: none; }
 .pp-mx-feature {
   text-align: left !important; color: var(--tx2); font-weight: 700;
