@@ -24,7 +24,7 @@ export function LandsOverdueKpi({ overdueItems, totalOverdue, onReview }) {
   return (
     <div className="md-kpi danger">
       {overdueItems.length > 0 && <span className="md-kpi-badge">Urgente</span>}
-      <span className="md-kpi-ico">⚠️</span>
+      <span className="md-kpi-ico"><svg><use href="#eco-n-warning" /></svg></span>
       <div className="md-kpi-body">
         <div className="md-kpi-label">Pagos vencidos</div>
         <div className="md-kpi-val">{overdueItems.length}</div>
@@ -44,7 +44,7 @@ export function LandsOverdueCard({ overdueItems, onSeeAll }) {
       </div>
       {overdueItems.slice(0, 4).map((o) => (
         <div key={o.id} className="md-row">
-          <span className="md-row-ico" style={{ background: "#FDECEA" }}>💳</span>
+          <span className="md-row-ico" style={{ background: "#FDECEA" }}><svg><use href="#eco-n-card" /></svg></span>
           <div className="md-row-info">
             <div className="md-row-name">{o.client?.name || "—"}</div>
             <div className="md-row-meta">

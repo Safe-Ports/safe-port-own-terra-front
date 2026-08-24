@@ -148,8 +148,8 @@ function EcosystemDia() {
   // específico de una vertical (ni siquiera condicionado) — eso vive en las
   // tarjetas de abajo, no aquí.
   const quickActions = [
-    { ico: "📅", label: "Visita", to: "/ecosistema/agenda" },
-    { ico: "📄", label: "Documento", to: "/ecosistema/documentos" },
+    { ico: "eco-n-calendar", label: "Visita", to: "/ecosistema/agenda" },
+    { ico: "eco-n-doc", label: "Documento", to: "/ecosistema/documentos" },
   ];
 
   return (
@@ -174,7 +174,7 @@ function EcosystemDia() {
           <div className="md-qa">
             {quickActions.map((q) => (
               <button key={q.label} className="md-qa-btn" onClick={() => navigate(q.to)}>
-                <span>{q.ico}</span>{q.label}
+                <svg><use href={`#${q.ico}`} /></svg>{q.label}
               </button>
             ))}
           </div>
@@ -187,7 +187,7 @@ function EcosystemDia() {
       {/* KPIs — genéricos siempre; cada vertical suma las suyas si aplica */}
       <div className="md-kpis" style={!hasLands ? { gridTemplateColumns: "repeat(2, 1fr)" } : undefined}>
         <div className="md-kpi">
-          <span className="md-kpi-ico">📅</span>
+          <span className="md-kpi-ico"><svg><use href="#eco-n-calendar" /></svg></span>
           <div className="md-kpi-body">
             <div className="md-kpi-label">Citas hoy</div>
             <div className="md-kpi-val">{totalAppts}</div>
@@ -195,7 +195,7 @@ function EcosystemDia() {
           </div>
         </div>
         <div className="md-kpi">
-          <span className="md-kpi-ico">📊</span>
+          <span className="md-kpi-ico"><svg><use href="#eco-n-chart" /></svg></span>
           <div className="md-kpi-body">
             <div className="md-kpi-label">Tareas pendientes</div>
             <div className="md-kpi-val">{openTasks}</div>

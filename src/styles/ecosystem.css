@@ -533,7 +533,8 @@
 
 .eco-root .md-row{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--border)}
 .eco-root .md-row:last-child{border-bottom:none}
-.eco-root .md-row-ico{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px}
+.eco-root .md-row-ico{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;color:#C0392B}
+.eco-root .md-row-ico svg{width:16px;height:16px}
 .eco-root .md-row-info{flex:1;min-width:0}
 .eco-root .md-row-name{font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .eco-root .md-row-meta{font-size:11px;color:var(--text3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -562,6 +563,7 @@
 .eco-root .md-qa-btn{display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:11px;border:1px solid var(--border2);
   background:var(--surface);color:var(--text2);font-size:12.5px;font-weight:500;cursor:pointer;transition:all .15s;font-family: var(--font-body)}
 .eco-root .md-qa-btn:hover{background:var(--surface2);transform:translateY(-1px);border-color:var(--leaf)}
+.eco-root .md-qa-btn svg{width:15px;height:15px;color:var(--mid)}
 
 /* ── KPIs con icono en círculo ── */
 .eco-root .md-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:18px}
@@ -570,8 +572,9 @@
 .eco-root .md-kpi:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(7,57,60,.08)}
 .eco-root .md-kpi.danger{background:rgba(192,57,43,.04);border-color:rgba(192,57,43,.25)}
 .eco-root .md-kpi-ico{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  background:rgba(72,169,166,.12);font-size:21px;flex-shrink:0}
-.eco-root .md-kpi.danger .md-kpi-ico{background:rgba(192,57,43,.1)}
+  background:rgba(72,169,166,.12);color:var(--mid);font-size:21px;flex-shrink:0}
+.eco-root .md-kpi-ico svg{width:22px;height:22px}
+.eco-root .md-kpi.danger .md-kpi-ico{background:rgba(192,57,43,.1);color:#C0392B}
 .eco-root .md-kpi-body{min-width:0}
 .eco-root .md-kpi-label{font-size:12px;color:var(--text3);font-weight:500}
 .eco-root .md-kpi-val{font-family: var(--font-title);font-size:28px;color:var(--deep);line-height:1;margin-top:4px}
