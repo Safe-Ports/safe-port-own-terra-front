@@ -20,8 +20,6 @@ export function useLandsOverdue(enabled) {
   return { overdueItems, totalOverdue };
 }
 
-export const LANDS_QUICK_ACTION = { ico: "💰", label: "Cobro", to: "/pagos" };
-
 export function LandsOverdueKpi({ overdueItems, totalOverdue, onReview }) {
   return (
     <div className="md-kpi danger">

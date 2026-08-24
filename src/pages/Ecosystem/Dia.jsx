@@ -9,7 +9,7 @@ import EcoLayout from "./EcoLayout";
 import TasksBoard from "./TasksBoard";
 import OnboardingChecklist from "@/components/shared/OnboardingChecklist";
 import GuideModal from "@/components/shared/GuideModal";
-import { useLandsOverdue, LANDS_QUICK_ACTION, LandsOverdueKpi, LandsOverdueCard } from "./verticals/LandsMiDia";
+import { useLandsOverdue, LandsOverdueKpi, LandsOverdueCard } from "./verticals/LandsMiDia";
 
 const TOUR_STEPS = [
   {
@@ -26,7 +26,7 @@ const TOUR_STEPS = [
   },
   {
     title: "⚡ Acciones rápidas",
-    text: "Los botones 'Visita', 'Cobro' y 'Documento' en la barra de bienvenida te llevan directamente al módulo correspondiente sin buscar en el menú.",
+    text: "Los botones 'Visita' y 'Documento' en la barra de bienvenida te llevan directamente al módulo correspondiente sin buscar en el menú.",
   },
   {
     title: "📊 Apps",
@@ -144,10 +144,11 @@ function EcosystemDia() {
         ? `Llevas ${done} de ${totalAppts} citas. ¡Tú puedes con el resto! 🚀`
         : "Sin citas para hoy. Buen momento para planificar. 📋";
 
-  // Genéricas siempre; "Cobro" solo se suma si el usuario tiene Lands.
+  // Acciones rápidas: solo lo genuinamente cotidiano para cualquier rol. Nada
+  // específico de una vertical (ni siquiera condicionado) — eso vive en las
+  // tarjetas de abajo, no aquí.
   const quickActions = [
     { ico: "📅", label: "Visita", to: "/ecosistema/agenda" },
-    ...(hasLands ? [LANDS_QUICK_ACTION] : []),
     { ico: "📄", label: "Documento", to: "/ecosistema/documentos" },
   ];
 
