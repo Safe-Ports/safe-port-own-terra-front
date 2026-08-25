@@ -272,6 +272,20 @@ function FracsPage() {
     sold: lots.filter((lot) => lot.status === "sold").length,
   }), [lots]);
 
+  // Dona de inventario: paleta monocromática (claro→profundo = disponible→vendido,
+  // se lee como una progresión hacia "resuelto") en vez de 4 cajas sueltas.
+  const inventoryDonut = useMemo(() => {
+    const total = stats.total || 1;
+    const availablePct = (stats.available / total) * 100;
+    const reservedPct = (stats.reserved / total) * 100;
+    const availableEnd = availablePct;
+    const reservedEnd = availableEnd + reservedPct;
+    return {
+      gradient: `conic-gradient(var(--frac-donut-available) 0% ${availableEnd}%, var(--frac-donut-reserved) ${availableEnd}% ${reservedEnd}%, var(--frac-donut-sold) ${reservedEnd}% 100%)`,
+      availablePct: Math.round(availablePct),
+    };
+  }, [stats]);
+
   const monthly = calcMonthly(cotPrecioF, cotEnganche, cotTasa, cotPlazo);
   const financed = Math.max(0, Number(cotPrecioF) - Number(cotEnganche));
   const quoteTotal = monthly > 0 ? monthly * Number(cotPlazo) + Number(cotEnganche) : 0;
@@ -524,11 +538,31 @@ function FracsPage() {
           </div>
         </div>
 
-        <div className="frac-kpis">
-          <article className="frac-kpi deep"><span>Total lotes</span><strong>{stats.total}</strong><small>{sections.length} secciones</small></article>
-          <article className="frac-kpi available"><span>Disponibles</span><strong>{stats.available}</strong><small>{stats.total ? Math.round((stats.available / stats.total) * 100) : 0}% inventario</small></article>
-          <article className="frac-kpi reserved"><span>Apartados</span><strong>{stats.reserved}</strong><small>seguimiento activo</small></article>
-          <article className="frac-kpi sold"><span>Vendidos</span><strong>{stats.sold}</strong><small>cerrados</small></article>
+        <div className="frac-donut-card">
+          <div className="frac-donut" style={{ background: inventoryDonut.gradient }}>
+            <div className="frac-donut-center">
+              <strong>{stats.total}</strong>
+              <small>Total lotes</small>
+            </div>
+          </div>
+          <div className="frac-donut-legend">
+            <div className="frac-donut-row">
+              <span className="frac-donut-dot" style={{ background: "var(--frac-donut-available)" }} />
+              <span className="frac-donut-label">Disponibles<small>{inventoryDonut.availablePct}% del inventario</small></span>
+              <span className="frac-donut-val">{stats.available}</span>
+            </div>
+            <div className="frac-donut-row">
+              <span className="frac-donut-dot" style={{ background: "var(--frac-donut-reserved)" }} />
+              <span className="frac-donut-label">Apartados<small>Seguimiento activo</small></span>
+              <span className="frac-donut-val">{stats.reserved}</span>
+            </div>
+            <div className="frac-donut-row">
+              <span className="frac-donut-dot" style={{ background: "var(--frac-donut-sold)" }} />
+              <span className="frac-donut-label">Vendidos<small>Cerrados</small></span>
+              <span className="frac-donut-val">{stats.sold}</span>
+            </div>
+            <div className="frac-donut-foot">{sections.length} secciones</div>
+          </div>
         </div>
 
         <div className="frac-filters">
