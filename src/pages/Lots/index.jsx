@@ -1132,7 +1132,12 @@ function LotsPage() {
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
                   {project.mapImageUrl ? (
-                    <img src={project.mapImageUrl} alt="" className="frac-map-thumb" />
+                    <img
+                      src={project.mapImageUrl}
+                      alt=""
+                      className="frac-map-thumb"
+                      style={{ width: 52, height: 52, minWidth: 52, minHeight: 52, objectFit: "cover" }}
+                    />
                   ) : (
                     <div className="frac-map-thumb-empty" title="Sin plano">
                       <HiMap className="text-lg" />
