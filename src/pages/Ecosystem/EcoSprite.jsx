@@ -22,10 +22,6 @@ function EcoSprite() {
           <line x1="30" y1="33" x2="42" y2="33" />
         </g>
       </symbol>
-      {/* HOMES (ahora "OwnTerra Construction") — logo de grúa */}
-      <symbol id="eco-g-homes" viewBox="0 0 247 267">
-        <image href="/icons/app-construction.png" width="247" height="267" />
-      </symbol>
       {/* FINANZAS — logo de gráfica ascendente */}
       <symbol id="eco-g-finanzas" viewBox="0 0 274 300">
         <image href="/icons/app-finanzas.png" width="274" height="300" />

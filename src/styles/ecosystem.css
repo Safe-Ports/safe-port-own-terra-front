@@ -141,7 +141,6 @@
    fondo de gradiente verde. */
 .eco-root .ic-lands   {background:linear-gradient(150deg,#ffffff,#eef2ea);--shadow:rgba(78,123,67,.25);}
 .eco-root .ic-neighb  {background:linear-gradient(150deg,#ffffff,#eef2ea);--shadow:rgba(7,57,60,.25);}
-.eco-root .ic-homes   {background:linear-gradient(150deg,#ffffff,#eef2ea);--shadow:rgba(72,169,166,.25);}
 .eco-root .ic-finanzas{background:linear-gradient(150deg,#ffffff,#eaf0f7);--shadow:rgba(64,105,153,.25);}
 .eco-root .app-icon.ic-construct {background:none;box-shadow:none;width:190px;height:190px;}
 .eco-root .app-icon.ic-construct::before {content:none;}
@@ -269,7 +268,6 @@
 .eco-root .usr-dot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--border2)}
 .eco-root .usr-dot.on-lands{background:#48A9A6;border-color:#48A9A6}
 .eco-root .usr-dot.on-neighb{background:#2C666E;border-color:#2C666E}
-.eco-root .usr-dot.on-homes{background:#7FC4C1;border-color:#7FC4C1}
 .eco-root .usr-dot.on-construct{background:#f2b900;border-color:#f2b900}
 
 .eco-root .usr-d-head{display:flex;align-items:center;gap:14px;padding:20px;border-bottom:1px solid var(--border)}
