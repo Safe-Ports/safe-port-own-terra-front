@@ -182,7 +182,7 @@ a {
 
 .sb-logo-nm {
   font-family: var(--font-title);
-  font-size: 1.18rem;
+  font-size: clamp(1.05rem, 1.3vw, 1.28rem);
   color: #fff;
   line-height: 1.05;
 }
@@ -232,7 +232,7 @@ a {
   padding: 9px 12px;
   border-radius: 11px;
   cursor: pointer;
-  transition: all 0.18s;
+  transition: background .3s cubic-bezier(.2,.8,.2,1), border-color .3s cubic-bezier(.2,.8,.2,1), color .3s cubic-bezier(.2,.8,.2,1);
   color: rgba(233, 229, 219, 0.72);
   font-size: 0.8rem;
   font-weight: 500;
@@ -267,11 +267,16 @@ a {
   justify-content: center;
   flex-shrink: 0;
   background: rgba(255, 255, 255, 0.05);
+  transition: transform .35s cubic-bezier(.2,.8,.2,1), background .3s cubic-bezier(.2,.8,.2,1);
 }
 
 .sb-ico svg {
   width: 15px;
   height: 15px;
+}
+
+.sb-btn:hover .sb-ico {
+  transform: scale(1.08) rotate(-3deg);
 }
 
 .sb-btn.active .sb-ico {
@@ -314,7 +319,7 @@ a {
   cursor: pointer;
   color: rgba(255, 255, 255, 0.3);
   font-size: 0.76rem;
-  transition: all 0.14s;
+  transition: background .28s cubic-bezier(.2,.8,.2,1), color .28s cubic-bezier(.2,.8,.2,1);
 }
 
 .sb-foot-item:hover {
@@ -385,7 +390,7 @@ a {
 
 .topbar-title {
   font-family: var(--font-title);
-  font-size: 1.25rem;
+  font-size: clamp(1.19rem, 1.6vw, 1.5rem);
   color: var(--tx);
   letter-spacing: -0.01em;
   line-height: 1.1;
@@ -429,7 +434,7 @@ a {
   font-size: 0.78rem;
   font-weight: 600;
   line-height: 1;
-  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s;
+  transition: background .3s cubic-bezier(.2,.8,.2,1), border-color .3s cubic-bezier(.2,.8,.2,1), color .3s cubic-bezier(.2,.8,.2,1), transform .3s cubic-bezier(.2,.8,.2,1);
 }
 
 .core-topbar-action:hover,
@@ -516,7 +521,7 @@ a {
   cursor: pointer;
   font-size: 0.76rem;
   font-weight: 600;
-  transition: all 0.15s;
+  transition: background .28s cubic-bezier(.2,.8,.2,1), border-color .28s cubic-bezier(.2,.8,.2,1), color .28s cubic-bezier(.2,.8,.2,1);
 }
 
 .topbar-logout:hover {
@@ -544,7 +549,7 @@ a {
   cursor: pointer;
   font-size: 0.76rem;
   font-weight: 700;
-  transition: all 0.15s;
+  transition: background .28s cubic-bezier(.2,.8,.2,1), border-color .28s cubic-bezier(.2,.8,.2,1);
   white-space: nowrap;
 }
 
@@ -587,7 +592,7 @@ a {
   border-radius: 11px;
   padding: 8px 12px;
   width: 280px;
-  transition: all 0.15s;
+  transition: background .28s cubic-bezier(.2,.8,.2,1), border-color .28s cubic-bezier(.2,.8,.2,1);
   color: var(--tx2);
   font-size: 0.78rem;
   cursor: pointer;
@@ -734,7 +739,7 @@ a {
   gap: 12px;
   padding: 16px 18px;
   border-bottom: 1px solid #E7E4DB;
-  background: #F1EEE6;
+  background: color-mix(in srgb, var(--forest) 6%, #fff);
 }
 
 .card-title {
@@ -742,7 +747,7 @@ a {
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #83867C;
+  color: color-mix(in srgb, var(--forest) 55%, #8a8d84);
 }
 
 .card-body {
@@ -768,7 +773,7 @@ a {
   color: var(--deep);
   cursor: pointer;
   text-align: left;
-  transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+  transition: border-color .32s cubic-bezier(.2,.8,.2,1), background .32s cubic-bezier(.2,.8,.2,1), box-shadow .32s cubic-bezier(.2,.8,.2,1), transform .32s cubic-bezier(.2,.8,.2,1);
 }
 
 .reports-tabs button:hover {
@@ -840,7 +845,7 @@ a {
   color: var(--deep);
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+  transition: background .3s cubic-bezier(.2,.8,.2,1), border-color .3s cubic-bezier(.2,.8,.2,1), box-shadow .3s cubic-bezier(.2,.8,.2,1);
 }
 
 .reports-segmented button:hover {
@@ -962,7 +967,7 @@ textarea.is-invalid {
   font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all .28s cubic-bezier(.2,.8,.2,1);
 }
 
 .tb-s {
@@ -1126,9 +1131,11 @@ textarea.is-invalid {
 
 .pc-v {
   margin-top: 8px;
-  font-family: var(--font-title);
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
   font-size: 1.2rem;
-  color: #1E3D2B;
+  color: var(--forest);
 }
 
 .pc-v.r {
@@ -1178,6 +1185,22 @@ textarea.is-invalid {
   box-shadow: var(--sh);
   position: relative;
   overflow: hidden;
+  transition: transform .4s cubic-bezier(.2,.8,.2,1), box-shadow .4s cubic-bezier(.2,.8,.2,1), border-color .4s cubic-bezier(.2,.8,.2,1);
+}
+
+/* Color por categoría: cada variante k1-k4 declara un único --tone (mismo
+   valor que ya pintaba su barra superior); el hover deriva de ahí el brillo,
+   la sombra y el borde con color-mix() — mismo criterio que Ecosistema y
+   Properties, en vez de un box-shadow gris genérico para las cuatro. */
+.kpi.k1 { --tone: #4E9A30; }
+.kpi.k2 { --tone: #6B4E2A; }
+.kpi.k3 { --tone: #43453F; }
+.kpi.k4 { --tone: var(--danger); }
+
+.kpi:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--tone, var(--forest)) 40%, var(--bd));
+  box-shadow: 0 16px 32px color-mix(in srgb, var(--tone, var(--forest)) 18%, transparent);
 }
 
 .kpi::before {
@@ -1422,7 +1445,7 @@ textarea.is-invalid {
   color: var(--tx2);
   background: var(--sf);
   white-space: nowrap;
-  transition: all 0.15s;
+  transition: border-color .25s cubic-bezier(.2,.8,.2,1);
   font-family: var(--font-body);
 }
 
@@ -1450,7 +1473,7 @@ textarea.is-invalid {
   border-bottom: 1px solid rgba(67, 69, 63, 0.08);
   border-left: 3px solid transparent;
   cursor: pointer;
-  transition: background 0.14s;
+  transition: background .25s cubic-bezier(.2,.8,.2,1);
 }
 
 .cl-item:hover {
@@ -1570,7 +1593,7 @@ textarea.is-invalid {
 
 .cl-det-nm {
   font-family: var(--font-title);
-  font-size: 1.25rem;
+  font-size: clamp(1.05rem, 1.6vw, 1.25rem);
   color: var(--deep);
   line-height: 1.1;
 }
@@ -1689,7 +1712,7 @@ textarea.is-invalid {
   color: var(--tan-dk);
   border: 1px solid var(--tan);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background .3s cubic-bezier(.2,.8,.2,1), color .3s cubic-bezier(.2,.8,.2,1);
   white-space: nowrap;
 }
 
@@ -1733,7 +1756,7 @@ textarea.is-invalid {
     font-weight: 600;
     border: none;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: filter .3s cubic-bezier(.2,.8,.2,1);
     box-shadow: 0 6px 16px rgba(30, 61, 43, 0.22);
   }
 
@@ -1754,7 +1777,7 @@ textarea.is-invalid {
     font-weight: 600;
     border: 1px solid #D9D7CF;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: background .3s cubic-bezier(.2,.8,.2,1), border-color .3s cubic-bezier(.2,.8,.2,1);
   }
 
   .btn-s:hover {
@@ -1775,7 +1798,7 @@ textarea.is-invalid {
     font-weight: 600;
     border: 1px solid rgba(111, 175, 107, 0.30);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: background .3s cubic-bezier(.2,.8,.2,1), border-color .3s cubic-bezier(.2,.8,.2,1);
     font-family: var(--font-body);
   }
 
@@ -1861,7 +1884,7 @@ textarea.is-invalid {
   color: #83867C;
   font-size: 0.68rem;
   font-weight: 700;
-  transition: all 0.18s ease;
+  transition: all .32s cubic-bezier(.2,.8,.2,1);
 }
 
 .mobile-bottom-nav__item.is-active {
@@ -1941,7 +1964,7 @@ textarea.is-invalid {
 
 .modal-title {
   font-family: var(--font-title);
-  font-size: 1.22rem;
+  font-size: clamp(1.05rem, 1.6vw, 1.22rem);
   line-height: 1.1;
   color: var(--deep);
 }
@@ -1965,7 +1988,7 @@ textarea.is-invalid {
   color: var(--tx2);
   font-size: 0.8rem;
   font-weight: 800;
-  transition: all 0.15s;
+  transition: background .28s cubic-bezier(.2,.8,.2,1), border-color .28s cubic-bezier(.2,.8,.2,1), color .28s cubic-bezier(.2,.8,.2,1);
 }
 
 .modal-close:hover {
@@ -2019,21 +2042,21 @@ textarea.is-invalid {
   border: 1px solid var(--bd); background: var(--cream);
   width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
   font-size: 1rem; color: var(--tx2); box-shadow: var(--sh);
-  transition: background 0.15s ease, transform 0.15s ease;
+  transition: background .28s cubic-bezier(.2,.8,.2,1), transform .28s cubic-bezier(.2,.8,.2,1);
 }
 .pricing-close:hover { background: var(--sf2); transform: scale(1.05); }
 .pricing-body { max-width: 1080px; margin: 0 auto; padding: 12px 24px 64px; }
 .pricing-empty { text-align: center; color: var(--mu); margin-top: 20px; }
 
 /* En la página completa, agranda el encabezado de los planes */
-.pricing-body .pp-title { font-size: 2.1rem; }
+.pricing-body .pp-title { font-size: clamp(1.7rem, 3.2vw, 2.1rem); }
 .pricing-body .pp-sub { font-size: 1rem; }
 
 /* ── Planes / Pricing (estilo SaaS elegante, paleta OwnTerra) ─────────────── */
 .pp { padding: 8px 0 4px; }
 .pp-head { text-align: center; margin-bottom: 26px; }
 .pp-title {
-  font-size: 1.5rem; font-weight: 800; color: var(--deep);
+  font-size: clamp(1.3rem, 2vw, 1.5rem); font-weight: 800; color: var(--deep);
   letter-spacing: -0.01em; margin: 0 0 6px;
 }
 .pp-sub { color: var(--mu); font-size: 0.92rem; margin: 0 0 16px; }
@@ -2059,7 +2082,7 @@ textarea.is-invalid {
   position: relative; display: flex; flex-direction: column;
   background: var(--cream); border: 1px solid var(--bd); border-radius: 18px;
   padding: 26px 24px; box-shadow: var(--sh);
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  transition: transform .38s cubic-bezier(.2,.8,.2,1), box-shadow .38s cubic-bezier(.2,.8,.2,1);
 }
 .pp-card:hover { transform: translateY(-3px); box-shadow: var(--sh2); }
 .pp-card--rec {
@@ -2084,7 +2107,7 @@ textarea.is-invalid {
 .pp-cta {
   border: none; border-radius: 12px; padding: 12px 18px;
   font-weight: 800; font-size: 0.9rem; cursor: pointer; width: 100%;
-  background: var(--forest); color: #fff; transition: background 0.15s ease, opacity 0.15s ease;
+  background: var(--forest); color: #fff; transition: background .3s cubic-bezier(.2,.8,.2,1), opacity .3s cubic-bezier(.2,.8,.2,1);
 }
 .pp-cta:hover:not(:disabled) { background: var(--deep); }
 .pp-cta:disabled { opacity: 0.55; cursor: default; }
@@ -2225,7 +2248,7 @@ textarea.is-invalid {
   cursor: pointer;
   color: var(--cream);
   box-shadow: 0 4px 12px rgba(30, 61, 43, 0.22);
-  transition: transform 0.15s ease, filter 0.15s ease;
+  transition: transform .3s cubic-bezier(.2,.8,.2,1), filter .3s cubic-bezier(.2,.8,.2,1);
 }
 .sub-banner__btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
 .sub-banner--warn  .sub-banner__btn { background: linear-gradient(140deg, var(--mid), var(--deep)); }
@@ -2683,7 +2706,7 @@ textarea.is-invalid {
 
 .ll-tagline {
   font-family: var(--font-title);
-  font-size: 2.6rem;
+  font-size: clamp(2rem, 3vw, 2.6rem);
   color: #fff;
   line-height: 1.2;
   margin-bottom: 18px;
@@ -2742,7 +2765,7 @@ textarea.is-invalid {
 
 .lf-title {
   font-family: var(--font-title);
-  font-size: 1.85rem;
+  font-size: clamp(1.5rem, 2.4vw, 1.85rem);
   color: var(--tx);
   margin-bottom: 6px;
 }
@@ -3073,7 +3096,7 @@ textarea.is-invalid {
   font-size: 0.92rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.18s;
+  transition: all .35s cubic-bezier(.2,.8,.2,1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3167,7 +3190,7 @@ textarea.is-invalid {
   font-size: 0.74rem;
   font-weight: 800;
   cursor: pointer;
-  transition: transform 0.16s, border-color 0.16s, background 0.16s, box-shadow 0.16s;
+  transition: transform .35s cubic-bezier(.2,.8,.2,1), border-color .35s cubic-bezier(.2,.8,.2,1), background .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s cubic-bezier(.2,.8,.2,1);
 }
 
 .lots-editor-btn:hover:not(:disabled) {
@@ -3478,7 +3501,7 @@ textarea.is-invalid {
   font-size: 0.74rem;
   font-weight: 800;
   cursor: pointer;
-  transition: transform 0.16s, filter 0.16s, box-shadow 0.16s;
+  transition: transform .35s cubic-bezier(.2,.8,.2,1), filter .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s cubic-bezier(.2,.8,.2,1);
 }
 
 .lots-add-section:hover,
@@ -3604,7 +3627,7 @@ textarea.is-invalid {
   margin: 0;
   color: var(--deep);
   font-family: var(--font-title);
-  font-size: 1.45rem;
+  font-size: clamp(1.2rem, 2vw, 1.45rem);
   line-height: 1.1;
 }
 
@@ -3638,7 +3661,7 @@ textarea.is-invalid {
     linear-gradient(135deg, rgba(111, 175, 107, 0.08), rgba(251, 250, 246, 0.96));
   padding: 20px;
   cursor: pointer;
-  transition: border-color 0.16s, background 0.16s, box-shadow 0.16s, transform 0.16s;
+  transition: border-color .38s cubic-bezier(.2,.8,.2,1), background .38s cubic-bezier(.2,.8,.2,1), box-shadow .38s cubic-bezier(.2,.8,.2,1), transform .38s cubic-bezier(.2,.8,.2,1);
 }
 
 .lot-upload-drop:hover {
@@ -3714,7 +3737,7 @@ textarea.is-invalid {
   background: var(--sf);
   color: var(--deep);
   cursor: pointer;
-  transition: background 0.16s, border-color 0.16s, transform 0.16s;
+  transition: background .3s cubic-bezier(.2,.8,.2,1), border-color .3s cubic-bezier(.2,.8,.2,1), transform .3s cubic-bezier(.2,.8,.2,1);
 }
 
 .lot-upload-secondary:hover {

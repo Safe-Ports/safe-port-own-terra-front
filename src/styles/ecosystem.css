@@ -76,7 +76,7 @@
 .eco-root .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 38px;height:66px;
   background:rgba(251,250,246,.7);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);
   flex-shrink:0;position:relative;z-index:2}
-.eco-root .topbar-title{font-family: var(--font-title);font-size:20px;color:var(--deep);letter-spacing:-.3px}
+.eco-root .topbar-title{font-family: var(--font-title);font-size:clamp(19px,1.6vw,24px);color:var(--deep);letter-spacing:-.3px;line-height:1.1}
 .eco-root .topbar-sub{font-size:12px;color:var(--text3)}
 .eco-root .topbar-right{display:flex;align-items:center;gap:10px}
 .eco-root .eco-topbar-heading{display:flex;align-items:center;gap:12px;min-width:0}
@@ -106,10 +106,10 @@
 
 /* ───── APP LAUNCHER ───── */
 .eco-root .section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px}
-.eco-root .section-head h3{font-family: var(--font-title);font-size:19px;color:var(--deep);letter-spacing:-.2px}
-.eco-root .section-head .sh-link{font-size:12px;color:var(--mid);text-decoration:none;font-weight:500}
+.eco-root .section-head h3{font-family: var(--font-title);font-size:clamp(18px,1.8vw,23px);color:var(--deep);letter-spacing:-.2px;line-height:1.1}
+.eco-root .section-head .sh-link{font-size:12px;color:var(--mid);text-decoration:none;font-weight:500;transition:color .3s cubic-bezier(.2,.8,.2,1)}
 .eco-root .section-head .sh-link:hover{color:var(--deep)}
-.eco-root .sh-link{border:0;background:transparent;color:var(--mid);font:inherit;font-size:12px;font-weight:600;text-decoration:none;cursor:pointer;font-family: var(--font-body)}
+.eco-root .sh-link{border:0;background:transparent;color:var(--mid);font:inherit;font-size:12px;font-weight:600;text-decoration:none;cursor:pointer;font-family: var(--font-body);transition:color .3s cubic-bezier(.2,.8,.2,1)}
 .eco-root .sh-link:hover{color:var(--deep)}
 
 .eco-root .app-launcher{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:30px}
@@ -118,16 +118,29 @@
   animation:eco-fadeUp .5s ease both}
 .eco-root .app-card:nth-child(2){animation-delay:.07s}
 .eco-root .app-card:nth-child(3){animation-delay:.14s}
-.eco-root .app-card::after{content:'';position:absolute;inset:0;border-radius:inherit;opacity:0;transition:opacity .22s;
+.eco-root .app-card::after{content:'';position:absolute;inset:0;border-radius:inherit;opacity:0;transition:opacity .3s cubic-bezier(.2,.8,.2,1);
   background:radial-gradient(420px 200px at 100% 0%,var(--glow),transparent 70%)}
 .eco-root .app-card:hover{transform:translateY(-5px);box-shadow:0 18px 40px rgba(7,57,60,.12);border-color:var(--border2)}
 .eco-root .app-card:hover::after{opacity:1}
+/* Color por categoría: cada card del lanzador Core trae su --tone (color de
+   marca de esa app) desde el JSX; todo lo demás (glow, halo del hover, tinte
+   del borde) se deriva de esa única variable con color-mix(), en vez de que
+   cada card declare su propio rgba a mano — mismo criterio que usa Properties
+   con --journey. Los cards de "Aplicaciones Verticales" no traen --tone a
+   propósito: mantienen el tratamiento neutro documentado más abajo. */
+.eco-root .app-launcher:not(.vertical-launcher) .app-card{
+  --glow: color-mix(in srgb, var(--tone, var(--leaf)) 16%, transparent);
+}
+.eco-root .app-launcher:not(.vertical-launcher) .app-card:hover{
+  border-color: color-mix(in srgb, var(--tone, var(--leaf)) 45%, var(--border2));
+}
 .eco-root .app-card.is-disabled{cursor:default}
 .eco-root .app-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;position:relative;z-index:1}
 
 .eco-root .app-icon{width:64px;height:64px;border-radius:20px;display:flex;align-items:center;justify-content:center;
-  position:relative;flex-shrink:0;box-shadow:0 10px 22px var(--shadow);transition:transform .25s}
-.eco-root .app-card:hover .app-icon{transform:scale(1.06) rotate(-2deg)}
+  position:relative;flex-shrink:0;box-shadow:0 10px 22px var(--shadow);
+  transition:transform .4s cubic-bezier(.2,.8,.2,1),box-shadow .4s cubic-bezier(.2,.8,.2,1)}
+.eco-root .app-card:hover .app-icon{transform:scale(1.06) rotate(-2deg);box-shadow:0 16px 32px var(--shadow)}
 .eco-root .app-icon svg{width:38px;height:38px;position:relative;z-index:1}
 
 /* Logos de marca a todo color en el lanzador de apps: mucho más grandes que el
@@ -161,7 +174,7 @@
   border-radius:30px;font-family: var(--font-body)}
 .eco-root .st-active{background:rgba(72,169,166,.14);color:#07393C;border:1px solid rgba(72,169,166,.3)}
 .eco-root .st-soon{background:var(--bg2);color:var(--text3);border:1px solid var(--border2)}
-.eco-root .app-name{font-family: var(--font-title);font-size:19px;color:var(--deep);margin-bottom:5px;position:relative;z-index:1}
+.eco-root .app-name{font-family: var(--font-title);font-size:clamp(17px,1.5vw,21px);color:var(--deep);margin-bottom:5px;position:relative;z-index:1;letter-spacing:-.01em}
 .eco-root .app-handle{font-size:11px;color:var(--leaf);font-family: var(--font-body);margin-bottom:12px;position:relative;z-index:1}
 .eco-root .app-desc{font-size:12.5px;color:var(--text3);line-height:1.6;margin-bottom:18px;position:relative;z-index:1;min-height:60px}
 .eco-root .app-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;position:relative;z-index:1}
@@ -170,11 +183,11 @@
 .eco-root .app-cta{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1;
   padding-top:16px;border-top:1px solid var(--border)}
 .eco-root .app-open{font-size:12px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;
-  color:var(--mid);display:flex;align-items:center;gap:6px;transition:gap .2s}
+  color:var(--mid);display:flex;align-items:center;gap:6px;transition:gap .35s cubic-bezier(.2,.8,.2,1)}
 .eco-root .app-card:hover .app-open{gap:10px}
 .eco-root .app-open.disabled{color:var(--text3)}
 .eco-root .app-arrow{width:30px;height:30px;border-radius:50%;background:var(--deep);color:var(--cream);
-  display:flex;align-items:center;justify-content:center;font-size:14px;transition:transform .2s}
+  display:flex;align-items:center;justify-content:center;font-size:14px;transition:transform .35s cubic-bezier(.2,.8,.2,1)}
 .eco-root .app-card:hover .app-arrow{transform:translateX(3px)}
 .eco-root .app-arrow.disabled{background:var(--bg2);color:var(--text3)}
 

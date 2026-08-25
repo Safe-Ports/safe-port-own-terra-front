@@ -1,4 +1,8 @@
 import { useEffect, useState } from "react";
+import {
+  HiArrowsRightLeft, HiBuildingOffice2, HiCheck, HiCreditCard,
+  HiExclamationTriangle, HiKey, HiTrash, HiUserGroup,
+} from "react-icons/hi2";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
@@ -268,7 +272,7 @@ function SettingsPage() {
       {/* Organización */}
       <div className="card">
         <div className="card-hd">
-          <div className="card-title">🏢 Organización</div>
+          <div className="card-title"><HiBuildingOffice2 /> Organización</div>
         </div>
         <div className="card-body">
           {orgLoading ? (
@@ -310,7 +314,7 @@ function SettingsPage() {
       {/* Suscripción y facturación */}
       <div className="card">
         <div className="card-hd">
-          <div className="card-title">💳 Suscripción y facturación</div>
+          <div className="card-title"><HiCreditCard /> Suscripción y facturación</div>
           {subscription && (
             <span className={`pc-chip ${SUB_STATUS_CHIP[subscription.status] || "pending"}`}>
               {SUB_STATUS_LABELS[subscription.status] || subscription.status}
@@ -349,12 +353,12 @@ function SettingsPage() {
 
               {subscription.cancel_at_period_end && (
                 <div className="text-sm" style={{ color: "var(--warn, #b45309)", marginBottom: 12 }}>
-                  ⚠️ La suscripción se cancelará el {fmtDate(subscription.current_period_end)} y no se renovará.
+                  <HiExclamationTriangle /> La suscripción se cancelará el {fmtDate(subscription.current_period_end)} y no se renovará.
                 </div>
               )}
               {subscription.status === "past_due" && (
                 <div className="text-sm" style={{ color: "var(--warn, #b45309)", marginBottom: 12 }}>
-                  ⚠️ Tu último pago falló. Actualiza tu método de pago para no perder el acceso.
+                  <HiExclamationTriangle /> Tu último pago falló. Actualiza tu método de pago para no perder el acceso.
                 </div>
               )}
 
@@ -389,7 +393,7 @@ function SettingsPage() {
       {/* Usuarios */}
       <div className="card">
         <div className="card-hd">
-          <div className="card-title">👥 Usuarios del equipo</div>
+          <div className="card-title"><HiUserGroup /> Usuarios del equipo</div>
           {isAdmin && (
             <button className="btn-p" onClick={() => setShowForm((v) => !v)}>
               {showForm ? "Cancelar" : "+ Nuevo usuario"}
@@ -423,7 +427,7 @@ function SettingsPage() {
               </div>
               <div style={{ display: "flex", alignItems: "flex-end" }}>
                 <button className="btn-p" onClick={handleCreateUser} disabled={creating}>
-                  {creating ? "Creando..." : "✓ Crear"}
+                  {creating ? "Creando..." : <><HiCheck /> Crear</>}
                 </button>
               </div>
             </div>
@@ -466,11 +470,11 @@ function SettingsPage() {
                         {user.id !== currentUser?.id && (
                           <>
                             <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} aria-label={`Restablecer contraseña de ${user.name}`} onClick={() => handleResetPassword(user.id, user.name)}>
-                              🔑 Reset
+                              <HiKey /> Reset
                             </button>{" "}
-                            {/* El botón es solo un emoji: sin aria-label no tiene nombre accesible. */}
+                            {/* El botón es solo un ícono: sin aria-label no tiene nombre accesible. */}
                             <button className="btn-dan" style={{ padding: "4px 10px", fontSize: ".7rem" }} aria-label={`Eliminar ${user.name}`} onClick={() => setUserToDelete({ id: user.id, name: user.name })}>
-                              🗑
+                              <HiTrash />
                             </button>
                           </>
                         )}
@@ -516,7 +520,7 @@ function SettingsPage() {
         open={!!userToDelete && !!pendingData}
         title={`Traspasar la cartera de ${userToDelete?.name || ""}`}
         subtitle="Antes de darlo de baja"
-        icon="↹"
+        icon={<HiArrowsRightLeft />}
         confirmLabel="Traspasar y eliminar"
         busy={deleting}
         confirmDisabled={!transferTo || transferCandidates.length === 0}

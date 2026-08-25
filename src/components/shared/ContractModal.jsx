@@ -606,7 +606,7 @@ function ContractModal() {
   return (
     <Modal
       open={ui.contractModal}
-      icon="📄"
+      icon={<HiOutlineDocument />}
       title={editingContract ? "Editar Contrato" : contractDraft?.type === "reserve" ? "Registrar Apartado" : "Generar Contrato"}
       subtitle={contractDraft?.type === "reserve" ? "Registra la reserva del lote con el cliente" : "Vincula lote y cliente"}
       onClose={() => { resetContractDraft(); closeModal("contractModal"); setErrors({}); }}

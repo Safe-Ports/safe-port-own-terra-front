@@ -39,7 +39,7 @@ function EcosystemHub() {
       <p className="gallery-section-sub">Los productos principales del ecosistema</p>
       <div className="app-launcher" data-tour="apps">
 
-        <div className={`app-card ${!canAccessApp("lands") ? "is-disabled" : ""}`} style={{ "--glow": "rgba(111,175,107,.1)" }} onClick={openLands} role="button" tabIndex={0}
+        <div className={`app-card ${!canAccessApp("lands") ? "is-disabled" : ""}`} style={{ "--tone": "#6FAF6B" }} onClick={openLands} role="button" tabIndex={0}
           onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && openLands()}>
           <div className="app-top">
             <div className="app-icon ic-lands"><svg><use href="#eco-g-lands" /></svg></div>
@@ -55,7 +55,7 @@ function EcosystemHub() {
           </div>
         </div>
 
-        <div className="app-card is-disabled" style={{ "--glow": "rgba(53,94,59,.1)", userSelect: "none" }} aria-disabled="true" tabIndex={-1}>
+        <div className="app-card is-disabled" style={{ "--tone": "#355E3B", userSelect: "none" }} aria-disabled="true" tabIndex={-1}>
           <div className="app-top">
             <div className="app-icon ic-neighb"><svg><use href="#eco-g-neighb" /></svg></div>
             <span className="app-status st-soon">Próximamente</span>
@@ -70,7 +70,7 @@ function EcosystemHub() {
           </div>
         </div>
 
-        <div className="app-card is-disabled" style={{ "--glow": "rgba(167,203,161,.14)", userSelect: "none" }} aria-disabled="true" tabIndex={-1}>
+        <div className="app-card is-disabled" style={{ "--tone": "#A7CBA1", userSelect: "none" }} aria-disabled="true" tabIndex={-1}>
           <div className="app-top">
             <div className="app-icon ic-homes"><svg><use href="#eco-g-homes" /></svg></div>
             <span className="app-status st-soon">Próximamente</span>

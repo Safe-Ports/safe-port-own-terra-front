@@ -1,4 +1,5 @@
 import { createPortal } from "react-dom";
+import { HiCheckCircle, HiExclamationTriangle } from "react-icons/hi2";
 import useEscapeKey from "@/hooks/useEscapeKey";
 
 const BD = "#E7E4DB";
@@ -39,7 +40,7 @@ export default function ImportResultsModal({ open, onClose, summary }) {
             className="guide-icon"
             style={{ background: errors.length ? ERR : "#355E3B", color: "white", fontSize: "1rem", minWidth: 40, height: 40 }}
           >
-            {errors.length ? "!" : "✓"}
+            {errors.length ? <HiExclamationTriangle className="h-5 w-5" /> : <HiCheckCircle className="h-5 w-5" />}
           </div>
           <div className="guide-head-text">
             <div className="guide-title">Resultado de la importación</div>

@@ -61,7 +61,7 @@ function ProfilePage() {
             onClick={() => fileInputRef.current?.click()}
             disabled={uploadAvatar.isPending}
             title="Cambiar foto de perfil"
-            className="group relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[26px] bg-[linear-gradient(135deg,#6FAF6B,#8B6A46)] text-xl font-black text-[#1E3D2B]"
+            className="group relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[26px] bg-[linear-gradient(135deg,#6FAF6B,#8B6A46)] text-xl font-black text-forest"
           >
             {currentUser?.avatar_url ? (
               <img src={currentUser.avatar_url} alt="" className="h-full w-full object-cover" />
@@ -78,7 +78,7 @@ function ProfilePage() {
           </button>
           <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleAvatarPick} />
           <div className="flex-1">
-            <div className="font-['Playfair_Display'] text-[2rem] leading-none">{currentUser?.name}</div>
+            <div className="font-display text-[2rem] leading-none">{currentUser?.name}</div>
             <div className="mt-2 text-sm text-white/62">{currentUser?.email}</div>
           </div>
         </div>
@@ -97,7 +97,7 @@ function ProfilePage() {
       {org && (
         <section className="rounded-[28px] border border-[#DCDAD2] bg-white/88 p-4 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
           <div className="flex items-center gap-2">
-            <HiBuildingOffice2 className="text-xl text-[#1E3D2B]" />
+            <HiBuildingOffice2 className="text-xl text-forest" />
             <div className="text-sm font-bold uppercase tracking-[0.22em] text-[#83867C]">Organización</div>
           </div>
           <div className="mt-4 space-y-2">
@@ -119,7 +119,7 @@ function ProfilePage() {
 
       <section className="rounded-[28px] border border-[#DCDAD2] bg-white/88 p-4 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
         <div className="flex items-center gap-2">
-          <HiShieldCheck className="text-xl text-[#1E3D2B]" />
+          <HiShieldCheck className="text-xl text-forest" />
           <div className="text-sm font-bold uppercase tracking-[0.22em] text-[#83867C]">Acceso rápido</div>
         </div>
         <div className="mt-4 space-y-3">
@@ -127,11 +127,11 @@ function ProfilePage() {
             className="flex w-full items-center gap-3 rounded-[22px] border border-[#E7E4DB] bg-[#FBFAF6] p-4 text-left"
             onClick={() => navigate("/configuracion")}
           >
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#EFE4D5] text-[#1E3D2B]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#EFE4D5] text-forest">
               <HiCog6Tooth className="text-lg" />
             </div>
             <div>
-              <div className="text-sm font-semibold text-[#1E3D2B]">Configuración</div>
+              <div className="text-sm font-semibold text-forest">Configuración</div>
               <div className="mt-1 text-xs text-[#43453F]">Gestionar organización y usuarios del equipo</div>
             </div>
           </button>

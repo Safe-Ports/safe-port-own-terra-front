@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { HiChevronLeft, HiChevronRight } from "react-icons/hi2";
+import { HiChevronLeft, HiChevronRight, HiCube, HiMap, HiPencil, HiXMark } from "react-icons/hi2";
 import * as XLSX from "xlsx";
 import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
@@ -174,7 +174,7 @@ function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot, onDeleteL
           title="Eliminar sección"
           className="flex h-[22px] w-[22px] items-center justify-center rounded-[5px] border border-[#DCDAD2] bg-[#F1EEE6] text-[0.8rem] font-black text-[#C0392B]"
         >
-          ✕
+          <HiXMark />
         </button>
       </div>
       {/* Lot grid — 6 columnas */}
@@ -1079,7 +1079,7 @@ function LotsPage() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <div className="text-[0.7rem] font-bold uppercase tracking-[0.24em] text-[#6FAF6B]">Inventario táctil</div>
-            <h1 className="mt-2 font-['Playfair_Display'] text-[1.9rem] leading-none">Lotes y proyectos</h1>
+            <h1 className="mt-2 font-display text-[1.9rem] leading-none">Lotes y proyectos</h1>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/8 px-3 py-2 text-right">
             <div className="text-[0.64rem] uppercase tracking-[0.18em] text-white/45">Activos</div>
@@ -1139,7 +1139,7 @@ function LotsPage() {
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="font-['Playfair_Display'] text-xl text-[#1E3D2B]">{project.name}</div>
+                  <div className="font-display text-xl text-forest">{project.name}</div>
                   <div className="mt-1 text-xs uppercase tracking-[0.18em] text-[#83867C]">
                     {project.totalLots} propiedades
                   </div>
@@ -1177,7 +1177,13 @@ function LotsPage() {
                   onClick={() => openProjectEditor(project)}
                   disabled={loadingEditId === project.id}
                 >
-                  {loadingEditId === project.id ? "Cargando..." : "✏ Editar lotes"}
+                  {loadingEditId === project.id ? (
+                    "Cargando..."
+                  ) : (
+                    <span className="inline-flex items-center justify-center gap-1.5">
+                      <HiPencil className="h-[0.9em] w-[0.9em]" /> Editar lotes
+                    </span>
+                  )}
                 </button>
               </div>
             </article>
@@ -1188,7 +1194,7 @@ function LotsPage() {
       {draftProject.mode === "selector" ? (
         <section className="rounded-[28px] border border-[#DCDAD2] bg-white/88 p-8 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
           <div className="mx-auto max-w-[660px] text-center">
-            <h2 className="font-['Playfair_Display'] text-[1.65rem] text-[#1E3D2B]">Carga de Lotes</h2>
+            <h2 className="font-display text-[1.65rem] text-forest">Carga de Lotes</h2>
             <p className="mx-auto mt-2 max-w-[420px] text-[0.84rem] leading-relaxed text-[#83867C]">
               Elige el método que mejor se adapte a tu flujo de trabajo
             </p>
@@ -1201,9 +1207,9 @@ function LotsPage() {
               >
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#355E3B]" />
                 <div className="mx-auto mb-3 flex h-[62px] w-[62px] items-center justify-center rounded-[15px] bg-[#D4EAE0] text-[1.8rem]">
-                  🗺️
+                  <HiMap className="h-[1.8rem] w-[1.8rem] text-[#355E3B]" />
                 </div>
-                <div className="mb-2 font-['Playfair_Display'] text-[1.05rem] text-[#1E3D2B]">Carga Manual</div>
+                <div className="mb-2 font-display text-[1.05rem] text-forest">Carga Manual</div>
                 <div className="mb-5 text-[0.76rem] leading-relaxed text-[#83867C]">
                   Sube la imagen del plano y construye la matriz de lotes manualmente. Define secciones, columnas y estado de cada unidad.
                 </div>
@@ -1228,9 +1234,9 @@ function LotsPage() {
               >
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#4A6FA5]" />
                 <div className="mx-auto mb-3 flex h-[62px] w-[62px] items-center justify-center rounded-[15px] bg-[#E8EEF7] text-[1.8rem]">
-                  📐
+                  <HiCube className="h-[1.8rem] w-[1.8rem] text-[#4A6FA5]" />
                 </div>
-                <div className="mb-2 font-['Playfair_Display'] text-[1.05rem] text-[#1E3D2B]">Importar CAD</div>
+                <div className="mb-2 font-display text-[1.05rem] text-forest">Importar CAD</div>
                 <div className="mb-5 flex-1 text-[0.76rem] leading-relaxed text-[#83867C]">
                   Sube un archivo DWG o DXF del plano técnico y el sistema extrae automáticamente la estructura de lotes.
                 </div>

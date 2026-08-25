@@ -1,4 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  HiChatBubbleLeftRight,
+  HiCheck,
+  HiDocumentText,
+  HiEnvelope,
+  HiExclamationTriangle,
+  HiGlobeAlt,
+  HiLink,
+  HiLockClosed,
+  HiMagnifyingGlass,
+  HiPhone,
+  HiPrinter,
+  HiTrash,
+  HiUser,
+  HiUserGroup,
+} from "react-icons/hi2";
 import GuideModal from "@/components/shared/GuideModal";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -80,14 +96,14 @@ function ClientModal() {
   return (
     <Modal
       open={ui.clientModal}
-      icon="👤"
+      icon={<HiUser />}
       title={editingClient ? "Editar cliente" : "Vincular o crear cliente"}
       subtitle={editingClient ? "Identidad del ecosistema" : "Identidad única del ecosistema"}
       onClose={() => closeModal("clientModal")}
       footer={
         <>
           <Button variant="secondary" onClick={() => closeModal("clientModal")}>Cancelar</Button>
-          {editingClient && <Button variant="danger" onClick={() => deleteClient(editingClient.id)}>🗑 Eliminar</Button>}
+          {editingClient && <Button variant="danger" onClick={() => deleteClient(editingClient.id)}><HiTrash /> Eliminar</Button>}
           <Button
             variant="primary"
             onClick={() => saveClient({
@@ -97,28 +113,28 @@ function ClientModal() {
               linkClientId: dupe?.id,
             })}
           >
-            {dupe ? "🔗 Vincular a Lands" : "✓ Guardar"}
+            {dupe ? <><HiLink /> Vincular a Lands</> : <><HiCheck /> Guardar</>}
           </Button>
         </>
       }
     >
       {!editingClient && (
         <div style={{ display: "flex", gap: 8, alignItems: "flex-start", background: "rgba(111,175,107,.1)", border: "1px solid rgba(111,175,107,.3)", borderRadius: 12, padding: "10px 12px", marginBottom: 14, fontSize: ".76rem", color: "#2F6A38", lineHeight: 1.5 }}>
-          <span>🌐</span>
+          <span><HiGlobeAlt /></span>
           <span>Se registra en el <b>ecosistema</b> como identidad única y se le da acceso a Lands. Si el correo o teléfono ya existe en el core, se <b>vincula</b> en lugar de duplicar.</span>
         </div>
       )}
 
       {dupe && (
         <div style={{ display: "flex", gap: 8, alignItems: "center", background: "rgba(201,168,76,.14)", border: "1px solid rgba(201,168,76,.4)", borderRadius: 12, padding: "10px 12px", marginBottom: 14, fontSize: ".76rem", color: "#8A6D1E", lineHeight: 1.5 }}>
-          <span>⚠️</span>
+          <span><HiExclamationTriangle /></span>
           <span>Ya existe en el core: <b>{dupe.name}</b>. Al guardar se <b>vinculará</b> a Lands en vez de crear un duplicado.</span>
         </div>
       )}
 
       {editingClient && (
         <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", background: "var(--sf2)", border: "1px solid var(--bd)", borderRadius: 12, padding: "9px 12px", marginBottom: 14, fontSize: ".74rem", color: "var(--mu)" }}>
-          <span>🌐 La identidad se sincroniza con el ecosistema.</span>
+          <span><HiGlobeAlt /> La identidad se sincroniza con el ecosistema.</span>
           <button type="button" onClick={() => { closeModal("clientModal"); navigate("/ecosistema/clientes"); }} style={{ color: "var(--forest)", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
             Editar en el core →
           </button>
@@ -272,7 +288,7 @@ function ClientsPage() {
               </div>
             </div>
             <div className="cl-src">
-              <span style={{ color: "var(--mu)" }}>🔍</span>
+              <span style={{ color: "var(--mu)" }}><HiMagnifyingGlass /></span>
               <input type="text" placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
           </div>
@@ -286,7 +302,7 @@ function ClientsPage() {
               <SkeletonRows rows={6} />
             ) : clients.length === 0 ? (
               <EmptyState
-                icon="👥"
+                icon={<HiUserGroup />}
                 title="Aún no tienes clientes"
                 description="Da de alta tu primer cliente para gestionar sus contratos, pagos y documentos."
                 ctaLabel="Nuevo cliente"
@@ -359,9 +375,9 @@ function ClientsPage() {
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                  <a href={`tel:${selected.phone}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DCDAD2", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}>📞</a>
-                  <a href={`mailto:${selected.email}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DCDAD2", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}>✉️</a>
-                  <a href={`https://wa.me/${(selected.phone || "").replace(/\D/g,"")}`} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DCDAD2", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}>💬</a>
+                  <a href={`tel:${selected.phone}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DCDAD2", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiPhone /></a>
+                  <a href={`mailto:${selected.email}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DCDAD2", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiEnvelope /></a>
+                  <a href={`https://wa.me/${(selected.phone || "").replace(/\D/g,"")}`} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DCDAD2", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiChatBubbleLeftRight /></a>
                   <Button variant="secondary" style={{ padding: "6px 14px", fontSize: ".76rem" }} onClick={() => { setEditingClient(selected); openModal("clientModal"); }}>
                     Editar
                   </Button>
@@ -373,7 +389,7 @@ function ClientsPage() {
                 {eco && (
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", background: "rgba(111,175,107,.09)", border: "1px solid rgba(111,175,107,.28)", borderRadius: 12, padding: "9px 13px", marginBottom: 14 }}>
                     <span style={{ fontSize: ".72rem", fontWeight: 800, color: "#2F6A38", display: "flex", alignItems: "center", gap: 6 }}>
-                      🌐 Identidad del ecosistema
+                      <HiGlobeAlt /> Identidad del ecosistema
                     </span>
                     <span style={{ fontFamily: "var(--font-body)", fontSize: ".64rem", color: "var(--mu)" }}>{eco.coreId}</span>
                     {eco.multiApp && (
@@ -498,16 +514,16 @@ function ClientsPage() {
                 {/* Actions */}
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
                   <Button variant="primary" style={{ padding: "8px 15px", fontSize: ".78rem" }} onClick={() => openContractCreate({ clientId: selected.id })}>
-                    📄 Nuevo Contrato
+                    <HiDocumentText /> Nuevo Contrato
                   </Button>
                   {selected.type === "lead" && (
                     <Button variant="primary" style={{ padding: "8px 15px", fontSize: ".78rem" }} onClick={() => openContractCreate({ clientId: selected.id, type: "reserve" })}>
-                      🔒 Registrar Apartado
+                      <HiLockClosed /> Registrar Apartado
                     </Button>
                   )}
                   {selected.type !== "lead" && (
                     <Button variant="primary" style={{ padding: "8px 15px", fontSize: ".78rem" }} onClick={() => openClientReport(selected.id)}>
-                      🖨 Estado de Cuenta
+                      <HiPrinter /> Estado de Cuenta
                     </Button>
                   )}
                 </div>
@@ -517,7 +533,7 @@ function ClientsPage() {
             </>
           ) : (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", flexDirection: "column", gap: 12, color: "var(--mu)", padding: 40, textAlign: "center" }}>
-              <div style={{ fontSize: "2.8rem", opacity: 0.18 }}>👤</div>
+              <div style={{ fontSize: "2.8rem", opacity: 0.18 }}><HiUser /></div>
               <div style={{ fontFamily: "var(--font-title)", fontSize: "1rem", color: "var(--tx)", opacity: 0.35 }}>Selecciona un cliente</div>
               <div style={{ fontSize: ".78rem", maxWidth: 190, lineHeight: 1.5 }}>Elige un cliente de la lista para ver su expediente completo</div>
             </div>

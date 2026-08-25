@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { HiMap, HiBookmark, HiSquares2X2 } from "react-icons/hi2";
 import GuideModal from "@/components/shared/GuideModal";
 import PhoneInput from "@/components/shared/PhoneInput";
 import { Link, useNavigate } from "react-router-dom";
@@ -308,7 +309,7 @@ function FracsPage() {
   if (!fracs.length) {
     return (
       <EmptyState
-        icon="▦"
+        icon={<HiSquares2X2 />}
         title="Sin fraccionamientos creados"
         description="Carga un plano, arma la matriz de lotes y crea tu primer proyecto desde la seccion Carga de Lotes."
         action={<Link className="mobile-primary-button" to="/lotes">Ir a Carga de Lotes</Link>}
@@ -342,7 +343,7 @@ function FracsPage() {
                 <span className="frac-gallery-thumb">
                   {frac.image_url
                     ? <img src={frac.image_url} alt={`Plano de ${frac.name}`} loading="lazy" />
-                    : <span className="frac-gallery-thumb-empty">🗺️</span>}
+                    : <span className="frac-gallery-thumb-empty"><HiMap /></span>}
                 </span>
                 <span className="frac-gallery-body">
                   <span className="frac-gallery-name">{frac.name}</span>
@@ -738,7 +739,7 @@ function FracsPage() {
                   ) : selectedLot.status === "available" ? (
                     <div className="frac-apartar">
                       <button className="frac-apartar-cta" onClick={() => { setApartarOpen((v) => !v); if (!apartarOpen) setApartarUntil(toLocalInput(new Date(Date.now() + 7 * 86400000))); }}>
-                        {apartarOpen ? "Cancelar" : "🔖 Apartar lote"}
+                        {apartarOpen ? "Cancelar" : <><HiBookmark style={{ display: "inline", verticalAlign: "-2px" }} /> Apartar lote</>}
                       </button>
                     </div>
                   ) : null}
