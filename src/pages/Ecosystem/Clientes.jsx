@@ -11,8 +11,7 @@ import EcoLayout from "./EcoLayout";
 
 const APPS = [
   { key: "lands", name: "OwnTerra Lands", handle: "terra.lands", icon: "eco-g-lands", cls: "ic-lands", color: "#6FAF6B", live: true, desc: "Lotificación y venta de terrenos." },
-  { key: "neighb", name: "OwnTerra Properties", handle: "terra.properties", icon: "eco-g-neighb", cls: "ic-neighb", color: "#355E3B", live: false, desc: "Propiedades y comunidades." },
-  { key: "homes", name: "OwnTerra Construction", handle: "terra.construction", icon: "eco-g-homes", cls: "ic-homes", color: "#A7CBA1", live: false, desc: "Construcción y desarrollos." },
+  { key: "properties", name: "OwnTerra Properties", handle: "terra.properties", icon: "eco-g-neighb", cls: "ic-neighb", color: "#0A3D62", live: true, desc: "Propiedades, propietarios y unidades rentables." },
 ];
 const APP_BY_KEY = Object.fromEntries(APPS.map((a) => [a.key, a]));
 
@@ -235,7 +234,7 @@ function EcosystemClientes() {
           type: "lead",
           pipeline_stage: "new",
           notes: "",
-          apps: { lands: true, neighb: false, homes: false },
+          apps: { lands: true, properties: false },
         },
       });
     } else if (type === "contract") {
@@ -321,7 +320,7 @@ function EcosystemClientes() {
       <div className="kpi-row" style={{ marginBottom: 22 }}>
         <div className="kpi"><div className="kpi-head"><span className="kpi-label">Clientes en el core</span></div><div className="kpi-val">{clients.length}</div><div className="kpi-foot">Identidad única compartida</div></div>
         <div className="kpi"><div className="kpi-head"><span className="kpi-label">En OwnTerra Lands</span></div><div className="kpi-val">{appAssignmentsLoading ? "—" : appCount("lands")}</div><div className="kpi-foot">Con acceso asignado</div></div>
-        <div className="kpi"><div className="kpi-head"><span className="kpi-label">En Properties</span></div><div className="kpi-val">{appAssignmentsLoading ? "—" : appCount("neighb")}</div><div className="kpi-foot">Con acceso asignado</div></div>
+        <div className="kpi"><div className="kpi-head"><span className="kpi-label">En Properties</span></div><div className="kpi-val">{appAssignmentsLoading ? "—" : appCount("properties")}</div><div className="kpi-foot">Con acceso asignado</div></div>
         <div className="kpi"><div className="kpi-head"><span className="kpi-label">Multi-app</span></div><div className="kpi-val">{appAssignmentsLoading ? "—" : multiAppCount}</div><div className="kpi-foot">Asignados en 2+ apps</div></div>
       </div>
 

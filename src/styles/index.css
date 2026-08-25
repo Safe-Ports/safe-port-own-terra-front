@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -172,6 +172,24 @@ a {
   box-shadow: 0 6px 16px rgba(111, 175, 107, 0.35);
   overflow: hidden;
   padding: 8px 10px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.sb-logo-mark:hover {
+  transform: translateY(-2px);
+  border-color: rgba(167, 203, 161, 0.65);
+  box-shadow: 0 10px 24px rgba(111, 175, 107, 0.42);
+}
+
+.sb-logo-mark:focus-visible {
+  outline: 3px solid rgba(167, 203, 161, 0.78);
+  outline-offset: 4px;
+}
+
+.sb-logo-mark:active {
+  transform: translateY(0);
 }
 
 .sb-logo-mark img {

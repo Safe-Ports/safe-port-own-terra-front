@@ -10,7 +10,7 @@ function EcoSprite() {
       <symbol id="eco-g-neighb" viewBox="0 0 282 303">
         <image href="/icons/app-properties.png" width="282" height="303" />
       </symbol>
-      {/* HOMES (ahora "OwnTerra Construction") — logo de grúa */}
+      {/* CONSTRUCTION (internal key: homes) — logo oficial de grúa */}
       <symbol id="eco-g-homes" viewBox="0 0 247 267">
         <image href="/icons/app-construction.png" width="247" height="267" />
       </symbol>

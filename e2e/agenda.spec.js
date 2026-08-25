@@ -46,7 +46,7 @@ test.describe("Agenda — vista de calendario", () => {
     await page.goto("/ecosistema/agenda");
 
     await expect(page.getByText("Visita con Ana").first()).toBeVisible();
-    await expect(page.getByText("eventos programados")).toBeVisible();
+    await expect(page.getByText("1 evento programado")).toBeVisible();
   });
 
   test("cambia entre las vistas Semana, Día y Mes", async ({ page }) => {
@@ -65,14 +65,14 @@ test.describe("Agenda — vista de calendario", () => {
     await expect(page.locator(".ag-timegrid-week")).toBeVisible();
   });
 
-  test("crea un evento con el popover rápido al hacer clic en una celda vacía", async ({ page }) => {
+  test("crea un evento desde una celda vacía con la hora precargada", async ({ page }) => {
     const getCreated = await mockAppointments(page, { items: [] });
     await page.goto("/ecosistema/agenda");
     await expect(page.getByText("Sin eventos para este día")).toBeVisible();
 
     await page.getByRole("button", { name: "Crear evento 11:00" }).first().click();
-    await page.getByPlaceholder("Añadir título").fill("Llamada rápida");
-    await page.getByRole("button", { name: "Guardar" }).click();
+    await page.getByPlaceholder("Ej: Junta con equipo, Recordatorio pago...").fill("Llamada rápida");
+    await page.getByRole("button", { name: "Guardar evento" }).click();
 
     await expect(page.getByText("Evento guardado")).toBeVisible();
     await expect.poll(getCreated).toMatchObject({ title: "Llamada rápida", appt_type: "evento", app_key: "core" });

@@ -38,6 +38,26 @@ const SettingsPage = lazyWithRetry(() => import("@/pages/Settings"));
 const ReportsPage = lazyWithRetry(() => import("@/pages/Reports"));
 const PricingPage = lazyWithRetry(() => import("@/pages/Pricing"));
 const AccessDenied = lazyWithRetry(() => import("@/pages/AccessDenied"));
+const PropertiesDashboard = lazyWithRetry(() => import("@/apps/properties/features/dashboard/PropertiesDashboard"));
+const PropertiesOperationsHub = lazyWithRetry(() => import("@/apps/properties/features/dashboard/PropertiesOperationsHub"));
+const OwnersPage = lazyWithRetry(() => import("@/apps/properties/features/owners/OwnersPage"));
+const PropertiesPage = lazyWithRetry(() => import("@/apps/properties/features/properties/PropertiesPage"));
+const UnitsPage = lazyWithRetry(() => import("@/apps/properties/features/units/UnitsPage"));
+const PropertyModulePreview = lazyWithRetry(() => import("@/apps/properties/features/modules/ModulePreviewPage"));
+const PortfolioWorkspace = lazyWithRetry(() => import("@/apps/properties/features/portfolio/PortfolioWorkspace"));
+const TicketsPage = lazyWithRetry(() => import("@/apps/properties/features/tickets/TicketsPage"));
+const AccessControlPage = lazyWithRetry(() => import("@/apps/properties/features/access/AccessControlPage"));
+const RentOperationsPage = lazyWithRetry(() => import("@/apps/properties/features/rent/RentOperationsPage"));
+const ServiceNetworkPage = lazyWithRetry(() => import("@/apps/properties/features/service/ServiceNetworkPage"));
+const CommunityWorkspace = lazyWithRetry(() => import("@/apps/properties/features/community/CommunityWorkspace"));
+const CondoOperationsSuite = lazyWithRetry(() => import("@/apps/properties/features/condo/CondoOperationsSuite"));
+const ServicePartnerPortal = lazyWithRetry(() => import("@/apps/properties/external/ServicePartnerPortal"));
+const ServiceLogin = lazyWithRetry(() => import("@/apps/properties/external/ServiceAccessPages").then(module => ({ default: module.ServiceLogin })));
+const ServiceInvitation = lazyWithRetry(() => import("@/apps/properties/external/ServiceAccessPages").then(module => ({ default: module.ServiceInvitation })));
+const ServiceRegistration = lazyWithRetry(() => import("@/apps/properties/external/ServiceAccessPages").then(module => ({ default: module.ServiceRegistration })));
+const TenantPortal = lazyWithRetry(() => import("@/apps/properties/external/TenantPortal"));
+const CommunityPortal = lazyWithRetry(() => import("@/apps/properties/external/CommunityPortal"));
+const PropertiesModule = lazyWithRetry(() => import("@/apps/properties/PropertiesModule"));
 
 function PageLoader() {
   return (
@@ -72,6 +92,12 @@ function AppRouter() {
           {/* Página de planes a pantalla completa (fuera del AppShell, sin sidebar) */}
           <Route path="/planes" element={<RequireFeature feature="core.config"><PricingPage /></RequireFeature>} />
           <Route path="/ecosistema" element={<EcosystemHub />} />
+          <Route path="/portal-servicio" element={<ServicePartnerPortal />} />
+          <Route path="/servicio/login" element={<ServiceLogin />} />
+          <Route path="/servicio/invitacion" element={<ServiceInvitation />} />
+          <Route path="/servicio/registro" element={<ServiceRegistration />} />
+          <Route path="/portal-inquilino" element={<TenantPortal />} />
+          <Route path="/portal-comunidad" element={<RequireFeature app="properties"><CommunityPortal /></RequireFeature>} />
           <Route path="/ecosistema/clientes" element={<RequireFeature feature="core.clients"><EcosystemClientes /></RequireFeature>} />
           <Route path="/ecosistema/documentos" element={<RequireFeature feature="core.vault"><EcosystemVault /></RequireFeature>} />
           <Route path="/ecosistema/mi-dia" element={<EcosystemDia />} />
@@ -89,6 +115,23 @@ function AppRouter() {
           {/* Misma página que /configuracion, servida con el shell del Core para
               quien entra desde el Ecosistema (ver Ecosystem/Configuracion.jsx). */}
           <Route path="/ecosistema/configuracion" element={<RequireFeature feature="core.config"><EcosystemConfiguracion /></RequireFeature>} />
+          <Route path="/properties" element={<RequireFeature app="properties"><PropertiesModule /></RequireFeature>}>
+            <Route index element={<PropertiesDashboard />} />
+            <Route path="operacion" element={<PropertiesOperationsHub />} />
+            <Route path="propietarios" element={<RequireFeature feature="properties.owners.read"><OwnersPage /></RequireFeature>} />
+            <Route path="inmuebles" element={<RequireFeature feature="properties.properties.read"><PropertiesPage /></RequireFeature>} />
+            <Route path="unidades" element={<RequireFeature feature="properties.units.read"><UnitsPage /></RequireFeature>} />
+            <Route path="portafolio" element={<RequireFeature feature="properties.properties.read"><PortfolioWorkspace /></RequireFeature>} />
+            {/* El tablero de estatus ahora es una vista dentro de Unidades (?view=board), no una página aparte. */}
+            <Route path="estatus-unidades" element={<Navigate to="/properties/unidades?view=board" replace />} />
+            <Route path="tickets" element={<RequireFeature feature="properties.units.read"><TicketsPage /></RequireFeature>} />
+            <Route path="accesos" element={<RequireFeature feature="properties.units.read"><AccessControlPage /></RequireFeature>} />
+            <Route path="rentas" element={<RequireFeature feature="properties.units.read"><RentOperationsPage /></RequireFeature>} />
+            <Route path="responsables" element={<RequireFeature feature="properties.units.read"><ServiceNetworkPage /></RequireFeature>} />
+            <Route path="condominios" element={<RequireFeature feature="properties.properties.read"><CommunityWorkspace /></RequireFeature>} />
+            <Route path="condominios/operacion" element={<RequireFeature feature="properties.properties.read"><CondoOperationsSuite /></RequireFeature>} />
+            <Route path="modulos/:moduleKey" element={<PropertyModulePreview />} />
+          </Route>
           <Route element={<AppShell />}>
             <Route path="/dashboard" element={<RequireFeature app="lands"><DashboardPage /></RequireFeature>} />
             <Route path="/lotes" element={<RequireFeature app="lands"><LotsPage /></RequireFeature>} />

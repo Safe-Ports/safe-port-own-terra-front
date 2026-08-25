@@ -1,4 +1,7 @@
-export const API = "http://127.0.0.1:8000/api/v1";
+// El frontend puede apuntar directo al backend o usar el proxy local de Vite
+// (`/api/v1`). El glob intercepta ambas variantes y evita que un E2E toque por
+// accidente un backend real.
+export const API = "**/api/v1";
 
 // Sesión válida inyectada directamente en localStorage antes de la primera
 // navegación — evita repetir el flujo de login (ya cubierto en login.spec.js)
@@ -31,6 +34,25 @@ export async function mockCoreEndpoints(page) {
   await page.route(`${API}/**`, (route) => {
     if (route.request().method() !== "GET") {
       return route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+    }
+    if (new URL(route.request().url()).pathname.endsWith("/auth/me")) {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          user: {
+            id: "u1",
+            name: "Test User",
+            initials: "TU",
+            email: "test@ownterra.com",
+            role: "admin",
+            apps: ["core", "lands", "properties", "finanzas"],
+            permissions: [],
+            tours_seen: [],
+          },
+          organization: { id: "org1", name: "Test Org" },
+        }),
+      });
     }
     return route.fulfill({
       status: 200,

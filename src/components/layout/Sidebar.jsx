@@ -34,12 +34,18 @@ const items = [
   { label: "Configuracion", to: "/configuracion", icon: HiCog6Tooth, section: "Sistema" },
 ];
 
-function Logo() {
+function Logo({ onClick }) {
   return (
     <div className="sb-logo">
-      <div className="sb-logo-mark">
-        <img src="/icons/app-lands.png" alt="" />
-      </div>
+      <NavLink
+        to="/ecosistema"
+        className="sb-logo-mark"
+        aria-label="Ir al Ecosistema OwnTerra"
+        title="Volver al Ecosistema"
+        onClick={onClick}
+      >
+        <img src="/icons/app-lands.png" alt="OwnTerra Lands" />
+      </NavLink>
     </div>
   );
 }
@@ -58,7 +64,7 @@ function Sidebar() {
     <>
       <div className={`sidebar-backdrop ${ui.sidebarOpen ? "show" : ""}`} onClick={closeSidebar} />
       <aside className={`sb app-sidebar ${ui.sidebarOpen ? "open" : ""}`}>
-        <Logo />
+        <Logo onClick={closeSidebar} />
         <div className="sb-nav">
           {items.filter((item) => {
             if (item.to.startsWith("/ecosistema")) return true;

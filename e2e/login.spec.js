@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-const API = "http://127.0.0.1:8000/api/v1";
+const API = "**/api/v1";
 
 function passwordInput(page) {
   // El campo de contraseña no tiene <label for>/aria-label asociado, así que
