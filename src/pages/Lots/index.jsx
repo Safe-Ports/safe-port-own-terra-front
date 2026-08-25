@@ -1075,43 +1075,35 @@ function LotsPage() {
   // ── SELECTOR / MAP-UPLOAD: página normal ──────────────────────────
   return (
     <div className="space-y-4">
-      <section className="rounded-[30px] border border-[#DCDAD2] bg-[linear-gradient(150deg,#1A3428,#101511)] p-5 text-[#E9E5DB] shadow-[0_28px_60px_rgba(13,15,12,.28)]">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className="text-[0.7rem] font-bold uppercase tracking-[0.24em] text-[#6FAF6B]">Inventario táctil</div>
-            <h1 className="mt-2 font-display text-[1.9rem] leading-none">Lotes y proyectos</h1>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-white/8 px-3 py-2 text-right">
-            <div className="text-[0.64rem] uppercase tracking-[0.18em] text-white/45">Activos</div>
-            <div className="mt-1 text-sm font-bold">{projects.length}</div>
-          </div>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-[1.7rem] text-forest">Lotes y proyectos</h1>
+          <p className="mt-1 text-sm text-muted">Administra tus fraccionamientos y el inventario de lotes</p>
         </div>
-        <div className="mt-4 flex gap-3 overflow-x-auto pb-1 no-scrollbar">
-          {draftProject.mode === "selector" && (
-            <button
-              className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white transition-colors hover:border-white/30 hover:bg-white/20"
-              onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
-            >
-              Nuevo proyecto
-            </button>
-          )}
-        </div>
-      </section>
+        {draftProject.mode === "selector" && (
+          <button
+            className="btn-p"
+            onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
+          >
+            + Nuevo proyecto
+          </button>
+        )}
+      </div>
 
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-bold uppercase tracking-[0.22em] text-[#83867C]">Portafolio</h2>
-            <div className="mt-1 text-xs font-medium text-[#83867C]">
+            <h2 className="text-sm font-bold uppercase tracking-[0.22em] text-muted">Portafolio</h2>
+            <div className="mt-1 text-xs font-medium text-muted">
               {projects.length} fraccionamientos · usa las flechas o arrastra la lista
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="mr-1 text-sm font-semibold text-[#1E3D2B]">
+            <span className="mr-1 text-sm font-semibold text-forest">
               {projects.reduce((sum, item) => sum + item.totalLots, 0)} lotes
             </span>
             <button
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#DCDAD2] bg-white/90 text-[#1E3D2B] shadow-[0_8px_18px_rgba(24,18,14,.08)] transition hover:border-[#355E3B] hover:bg-[#FBFAF6]"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white/90 text-forest shadow-[0_8px_18px_rgba(24,18,14,.08)] transition hover:border-[#355E3B] hover:bg-[#FBFAF6]"
               type="button"
               onClick={() => scrollPortfolio(-1)}
               aria-label="Ver fraccionamientos anteriores"
@@ -1119,7 +1111,7 @@ function LotsPage() {
               <HiChevronLeft className="text-lg" />
             </button>
             <button
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#DCDAD2] bg-white/90 text-[#1E3D2B] shadow-[0_8px_18px_rgba(24,18,14,.08)] transition hover:border-[#355E3B] hover:bg-[#FBFAF6]"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white/90 text-forest shadow-[0_8px_18px_rgba(24,18,14,.08)] transition hover:border-[#355E3B] hover:bg-[#FBFAF6]"
               type="button"
               onClick={() => scrollPortfolio(1)}
               aria-label="Ver mas fraccionamientos"
@@ -1135,31 +1127,40 @@ function LotsPage() {
           {projects.map((project) => (
             <article
               key={project.id}
-              className="min-w-[min(86vw,340px)] snap-start rounded-[28px] border border-[#DCDAD2] bg-white/88 p-4 shadow-[0_18px_40px_rgba(24,18,14,.08)] sm:min-w-[330px]"
+              className="frac-card min-w-[min(86vw,340px)] snap-start rounded-[20px] border border-line bg-white/88 p-4 shadow-[0_18px_40px_rgba(24,18,14,.08)] sm:min-w-[330px]"
             >
               <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="font-display text-xl text-forest">{project.name}</div>
-                  <div className="mt-1 text-xs uppercase tracking-[0.18em] text-[#83867C]">
-                    {project.totalLots} propiedades
+                <div className="flex items-start gap-3">
+                  {project.mapImageUrl ? (
+                    <img src={project.mapImageUrl} alt="" className="frac-map-thumb" />
+                  ) : (
+                    <div className="frac-map-thumb-empty" title="Sin plano">
+                      <HiMap className="text-lg" />
+                    </div>
+                  )}
+                  <div>
+                    <div className="font-display text-xl text-forest">{project.name}</div>
+                    <div className="mt-1 text-xs uppercase tracking-[0.18em] text-muted">
+                      {project.totalLots} propiedades
+                    </div>
                   </div>
                 </div>
-                <div className="rounded-full bg-[#EDE3D3] px-3 py-1 text-[0.68rem] font-bold text-[#1E3D2B]">
+                <div className="flex-shrink-0 rounded-full bg-[#DCEBD6] px-3 py-1 text-[0.68rem] font-bold text-forest">
                   {project.available} libres
                 </div>
               </div>
               <div className="mt-4 grid grid-cols-3 gap-2">
-                <div className="rounded-2xl bg-[#FBFAF6] p-3">
-                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Vendido</div>
-                  <div className="mt-2 text-lg font-bold text-[#1E3D2B]">{project.sold}</div>
+                <div className="rounded-[13px] bg-[#FBFAF6] p-3">
+                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-muted">Vendido</div>
+                  <div className="mt-2 text-lg font-bold text-forest">{project.sold}</div>
                 </div>
-                <div className="rounded-2xl bg-[#FBFAF6] p-3">
-                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Reserva</div>
-                  <div className="mt-2 text-lg font-bold text-[#1E3D2B]">{project.reserved}</div>
+                <div className="rounded-[13px] bg-[#FBFAF6] p-3">
+                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-muted">Reserva</div>
+                  <div className="mt-2 text-lg font-bold text-forest">{project.reserved}</div>
                 </div>
-                <div className="rounded-2xl bg-[#FBFAF6] p-3">
-                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Disponible</div>
-                  <div className="mt-2 text-lg font-bold text-[#1E3D2B]">{project.available}</div>
+                <div className="rounded-[13px] bg-[#FBFAF6] p-3">
+                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-muted">Disponible</div>
+                  <div className="mt-2 text-lg font-bold text-forest">{project.available}</div>
                 </div>
               </div>
               <div className="mt-4 flex gap-2">
@@ -1173,7 +1174,7 @@ function LotsPage() {
                   Ver
                 </button>
                 <button
-                  className="flex-1 whitespace-nowrap rounded-[10px] border-[1.5px] border-[#355E3B] bg-[#355E3B] px-3 py-[7px] text-[0.76rem] font-bold text-white transition-colors hover:bg-[#21643F] disabled:opacity-60"
+                  className="btn-p flex-1 whitespace-nowrap !py-[7px] !text-[0.76rem] disabled:opacity-60"
                   onClick={() => openProjectEditor(project)}
                   disabled={loadingEditId === project.id}
                 >

@@ -119,6 +119,38 @@ a {
   background: rgba(53, 94, 59, 0.62);
 }
 
+/* Card de fraccionamiento en el portafolio de Lotes — mismo criterio de hover
+   con color-mix() que .kpi/.app-card, en vez de quedar estática. */
+.frac-card {
+  --tone: var(--forest-hi);
+  transition: transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s cubic-bezier(.2,.8,.2,1), border-color .35s cubic-bezier(.2,.8,.2,1);
+}
+.frac-card:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--tone) 45%, var(--line));
+  box-shadow: 0 16px 32px color-mix(in srgb, var(--tone) 16%, transparent);
+}
+.frac-map-thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+}
+.frac-map-thumb-empty {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  border: 1px dashed var(--line);
+  background: var(--sf2);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .app-shell {
   display: flex;
   min-height: 100vh;
