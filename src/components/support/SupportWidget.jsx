@@ -328,7 +328,12 @@ function ThreadView({ ticketId, botFetch }) {
     }
     load()
     const timer = setInterval(load, POLL_MS)
-    return () => { active = false; clearInterval(timer) }
+    // El bot manda un mensaje de bienvenida ~5s después de crear el ticket
+    // (ver ticket_service.send_welcome_message en el backend). Sin este refresco
+    // extra, un ticket recién creado no lo vería hasta el próximo ciclo de
+    // POLL_MS (10s) — con esto aparece prácticamente a tiempo.
+    const welcomeCheck = setTimeout(load, 5_500)
+    return () => { active = false; clearInterval(timer); clearTimeout(welcomeCheck) }
   }, [ticketId, botFetch])
 
   useEffect(() => {
