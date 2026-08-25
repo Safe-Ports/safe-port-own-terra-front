@@ -1127,10 +1127,10 @@ function LotsPage() {
           {projects.map((project) => (
             <article
               key={project.id}
-              className="frac-card min-w-[min(86vw,340px)] snap-start rounded-[20px] border border-line bg-white/88 p-4 shadow-[0_18px_40px_rgba(24,18,14,.08)] sm:min-w-[330px]"
+              className="frac-card w-[min(86vw,340px)] snap-start rounded-[20px] border border-line bg-white/88 p-4 shadow-[0_18px_40px_rgba(24,18,14,.08)] sm:w-[330px]"
             >
               <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-3">
+                <div className="flex min-w-0 items-start gap-3">
                   {project.mapImageUrl ? (
                     <img
                       src={project.mapImageUrl}
@@ -1143,8 +1143,8 @@ function LotsPage() {
                       <HiMap className="text-lg" />
                     </div>
                   )}
-                  <div>
-                    <div className="font-display text-xl text-forest">{project.name}</div>
+                  <div className="min-w-0">
+                    <div className="font-display text-xl leading-snug text-forest">{project.name}</div>
                     <div className="mt-1 text-xs uppercase tracking-[0.18em] text-muted">
                       {project.totalLots} propiedades
                     </div>
