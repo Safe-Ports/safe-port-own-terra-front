@@ -141,10 +141,8 @@
    fondo de gradiente verde. */
 .eco-root .ic-lands   {background:linear-gradient(150deg,#ffffff,#eef2ea);--shadow:rgba(78,123,67,.25);}
 .eco-root .ic-neighb  {background:linear-gradient(150deg,#ffffff,#eef2ea);--shadow:rgba(7,57,60,.25);}
+.eco-root .ic-construct{background:linear-gradient(150deg,#ffffff,#fbf3e2);--shadow:rgba(217,168,103,.25);}
 .eco-root .ic-finanzas{background:linear-gradient(150deg,#ffffff,#eaf0f7);--shadow:rgba(64,105,153,.25);}
-.eco-root .app-icon.ic-construct {background:none;box-shadow:none;width:190px;height:190px;}
-.eco-root .app-icon.ic-construct::before {content:none;}
-.eco-root .app-icon.ic-construct img {width:190px;height:190px;object-fit:contain;}
 
 /* Aplicaciones verticales: un solo tratamiento neutro (no un color por
    tarjeta) — se diferencian por ícono y nombre, no por arcoíris. */

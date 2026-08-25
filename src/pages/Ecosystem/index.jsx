@@ -77,7 +77,7 @@ function EcosystemHub() {
         <div className={`app-card ${!canAccessApp("construct") ? "is-disabled" : ""}`} style={{ "--glow": "rgba(217,168,103,.16)" }} onClick={openConstruct} role="button" tabIndex={0}
           onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && openConstruct()}>
           <div className="app-top">
-            <div className="app-icon ic-construct"><img src="/ownterra_construct.png" alt="" /></div>
+            <div className="app-icon ic-construct"><svg><use href="#eco-g-construct" /></svg></div>
             <span className="app-status st-active">Activo</span>
           </div>
           <div className="app-name">Ownterra Construct</div>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { HiBuildingOffice2, HiPlus } from "react-icons/hi2";
@@ -81,12 +81,6 @@ function ProjectGallery() {
     queryKey: ["construct-projects"],
     queryFn: constructService.listProjects,
   });
-
-  // Entrada directa: con exactamente 1 obra, no obliga a pasar por la galería.
-  // Con 0 (crear primero) o varias (elegir cuál), sí se muestra la galería.
-  useEffect(() => {
-    if (!isLoading && projects.length === 1) navigate(projects[0].id, { replace: true });
-  }, [isLoading, projects, navigate]);
 
   const handleCreated = (project) => {
     queryClient.invalidateQueries({ queryKey: ["construct-projects"] });

@@ -31,6 +31,34 @@
   font-family: var(--font-body);
 }
 
+/* ── Riel de navegación (persistente en toda pantalla del módulo) ─────── */
+.obr-app { display: flex; }
+.obr-app-body { flex: 1; min-width: 0; }
+.obr-rail {
+  width: 72px; flex-shrink: 0; background: var(--obr-ink); display: flex;
+  flex-direction: column; align-items: center; padding: 16px 0; gap: 4px;
+  position: sticky; top: 0; height: 100vh;
+}
+.obr-rail-mark {
+  width: 36px; height: 36px; border-radius: 10px; background: var(--obr-gold); color: var(--obr-ink);
+  display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px;
+  margin-bottom: 14px; flex-shrink: 0;
+}
+.obr-rail-item {
+  width: 56px; padding: 8px 4px 7px; border-radius: 10px; display: flex; flex-direction: column;
+  align-items: center; gap: 4px; color: rgba(255,255,255,.62); text-decoration: none;
+}
+.obr-rail-item svg { width: 18px; height: 18px; }
+.obr-rail-item small { font-size: 8.5px; font-weight: 600; letter-spacing: .02em; }
+.obr-rail-item:hover { background: rgba(255,255,255,.08); color: #fff; }
+.obr-rail-item.active { background: #2a2c2f; color: var(--obr-gold); box-shadow: inset 3px 0 0 var(--obr-gold); }
+.obr-rail-spacer { flex: 1; }
+.obr-rail-avatar {
+  width: 30px; height: 30px; border-radius: 50%; background: var(--obr-gold); color: var(--obr-ink);
+  display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px;
+  margin-bottom: 4px; text-decoration: none;
+}
+
 .obr-eyebrow { color: #987400; text-transform: uppercase; font-size: 10px; font-weight: 800; letter-spacing: .12em; margin: 0 0 5px; }
 .obr-muted { color: var(--obr-gray); font-size: 12.5px; line-height: 1.55; }
 .obr-strong { font-weight: 700; }
@@ -337,6 +365,10 @@
   .obr-caratula-summary { grid-template-columns: 1fr; }
 }
 @media (max-width: 820px) {
+  .obr-app { flex-direction: column; }
+  .obr-rail { width: 100%; height: auto; flex-direction: row; position: static; padding: 8px 10px; }
+  .obr-rail-mark { margin: 0 10px 0 0; }
+  .obr-rail-spacer { display: none; }
   .obr-shell { flex-direction: column; }
   .obr-sidebar { width: 100%; flex-direction: row; overflow-x: auto; align-items: center; }
   .obr-nav { flex-direction: row; }

@@ -10,17 +10,9 @@ function EcoSprite() {
       <symbol id="eco-g-neighb" viewBox="0 0 282 303">
         <image href="/icons/app-properties.png" width="282" height="303" />
       </symbol>
-      {/* CONSTRUCT — cubo isométrico en wireframe con cara dorada (logo de marca) */}
-      <symbol id="eco-g-construct" viewBox="0 0 56 56">
-        <path d="M44 19 L44 37 L28 46 L28 28 Z" fill="#f2b900" />
-        <g fill="none" stroke="#1f2022" strokeWidth="2.6" strokeLinejoin="round" strokeLinecap="round">
-          <path d="M28 10 L44 19 L44 37 L28 46 L12 37 L12 19 Z" />
-          <path d="M28 28 L44 19 M28 28 L28 46 M28 28 L12 19" />
-        </g>
-        <g stroke="#1f2022" strokeWidth="2" strokeLinecap="round">
-          <line x1="36" y1="27" x2="36" y2="39" />
-          <line x1="30" y1="33" x2="42" y2="33" />
-        </g>
+      {/* CONSTRUCT — logo de grúa (marca a todo color) */}
+      <symbol id="eco-g-construct" viewBox="0 0 247 267">
+        <image href="/icons/app-construction.png" width="247" height="267" />
       </symbol>
       {/* FINANZAS — logo de gráfica ascendente */}
       <symbol id="eco-g-finanzas" viewBox="0 0 274 300">
