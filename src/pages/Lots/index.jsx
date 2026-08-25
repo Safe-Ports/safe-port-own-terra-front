@@ -1144,7 +1144,7 @@ function LotsPage() {
                     </div>
                   )}
                   <div className="min-w-0">
-                    <div className="font-display text-xl leading-snug text-forest">{project.name}</div>
+                    <div className="truncate font-display text-xl text-forest" title={project.name}>{project.name}</div>
                     <div className="mt-1 text-xs uppercase tracking-[0.18em] text-muted">
                       {project.totalLots} propiedades
                     </div>
