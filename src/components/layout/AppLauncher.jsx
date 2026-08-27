@@ -3,32 +3,35 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { HiSquares2X2 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
-import { VERTICAL_APP_CATALOG } from "@/services/permissions";
 
 /**
- * Dónde entra cada vertical. El catálogo define qué apps existen; esto sólo
- * dice a qué pantalla lleva cada una.
- */
-const APP_ROUTE = {
-  lands: "/dashboard",
-  finanzas: "/finanzas",
-  homes: "/construccion",
-  neighb: "/ecosistema",
-};
-
-/**
- * Lanzador de aplicaciones, al estilo del menú de cuadrícula de Google: desde
- * cualquier vertical se salta a otra sin pasar por el Hub.
+ * Servicios transversales del ecosistema: los que comparten todas las apps,
+ * los mismos que el Hub lista bajo "Servicios compartidos por todas las apps
+ * core".
  *
- * Lista únicamente las apps VERTICALES en producción — `VERTICAL_APP_CATALOG`
- * ya filtra por `vertical && live`, así que sumar una vertical nueva no
- * requiere tocar este archivo. El Core queda fuera: no es una app a la que se
- * "entra", y sus accesos (Mi Día, Calendario, Perfil) ya están en esta misma
- * barra, al lado del botón.
+ * Las verticales (Lands, Finanzas como app, Construction…) no van acá: a esas
+ * se entra desde el Hub o desde su propio menú. Este lanzador es para lo que se
+ * necesita SIN salir de la vertical en la que estás trabajando.
+ *
+ * `gate` decide si el usuario lo tiene habilitado; sin `gate`, está para todos.
+ */
+const SERVICES = [
+  { key: "finanzas",    label: "Finanzas",     icon: "eco-n-chart",    to: "/finanzas",                gate: (c) => c.canAccessApp("finanzas") },
+  { key: "agenda",      label: "Calendario",   icon: "eco-n-calendar", to: "/ecosistema/agenda" },
+  { key: "mi-dia",      label: "Mi Día",       icon: "eco-n-sun",      to: "/ecosistema/mi-dia" },
+  { key: "formularios", label: "Formularios",  icon: "eco-n-forms",    to: "/ecosistema/formularios",  gate: (c) => c.canUseFeature("core.forms") },
+  { key: "proveedores", label: "Proveedores",  icon: "eco-n-box",      to: "/ecosistema/proveedores",  gate: (c) => c.canUseFeature("core.providers") },
+  { key: "vault",       label: "Vault",        icon: "eco-n-vault",    to: "/ecosistema/documentos",   gate: (c) => c.canUseFeature("core.vault") },
+];
+
+/**
+ * Lanzador de servicios del ecosistema, al estilo del menú de cuadrícula de
+ * Google: da acceso a lo transversal —agenda, documentos, formularios— sin
+ * tener que volver al Hub y perder el contexto de la vertical.
  */
 export default function AppLauncher() {
   const navigate = useNavigate();
-  const { canAccessApp, showToast } = useAppContext();
+  const ctx = useAppContext();
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState(null);
   const btnRef = useRef(null);
@@ -62,13 +65,13 @@ export default function AppLauncher() {
     };
   }, [open]);
 
-  const go = (app) => {
-    if (!canAccessApp(app.key)) {
-      showToast(`Tu usuario no tiene acceso a ${app.name}`, "warning");
+  const go = (svc) => {
+    if (svc.gate && !svc.gate(ctx)) {
+      ctx.showToast(`Tu usuario no tiene acceso a ${svc.label}`, "warning");
       return;
     }
     setOpen(false);
-    navigate(APP_ROUTE[app.key] || "/ecosistema");
+    navigate(svc.to);
   };
 
   return (
@@ -78,10 +81,10 @@ export default function AppLauncher() {
         type="button"
         className={`app-launcher-btn${open ? " is-open" : ""}`}
         onClick={() => setOpen((v) => !v)}
-        aria-label="Aplicaciones del ecosistema"
+        aria-label="Servicios del ecosistema"
         aria-expanded={open}
         aria-haspopup="menu"
-        title="Aplicaciones"
+        title="Servicios del ecosistema"
       >
         <HiSquares2X2 aria-hidden="true" />
       </button>
@@ -93,23 +96,21 @@ export default function AppLauncher() {
           role="menu"
           style={pos ? { left: pos.left, top: pos.top } : { opacity: 0 }}
         >
-          <div className="alp-title">Aplicaciones</div>
+          <div className="alp-title">Servicios del ecosistema</div>
           <div className="alp-grid">
-            {VERTICAL_APP_CATALOG.map((app) => (
+            {SERVICES.map((svc) => (
               <button
-                key={app.key}
+                key={svc.key}
                 type="button"
                 role="menuitem"
-                className={`alp-item${canAccessApp(app.key) ? "" : " is-off"}`}
-                onClick={() => go(app)}
-                title={app.desc}
+                className={`alp-item${svc.gate && !svc.gate(ctx) ? " is-off" : ""}`}
+                onClick={() => go(svc)}
+                title={svc.label}
               >
                 <span className="alp-ico">
-                  <svg><use href={`#${app.icon}`} /></svg>
+                  <svg><use href={`#${svc.icon}`} /></svg>
                 </span>
-                {/* "OwnTerra Lands" → "Lands": el prefijo se repite en todas y
-                    no distingue una app de otra. */}
-                <span className="alp-lbl">{app.name.replace(/^OwnTerra /, "")}</span>
+                <span className="alp-lbl">{svc.label}</span>
               </button>
             ))}
           </div>

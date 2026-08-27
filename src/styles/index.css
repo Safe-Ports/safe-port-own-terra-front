@@ -4382,7 +4382,7 @@ textarea.is-invalid {
 .app-launcher-pop {
   position: fixed;
   z-index: 1300;
-  width: 236px;
+  width: 262px;
   padding: 14px;
   background: var(--sf);
   border: 1px solid var(--bd);
@@ -4436,8 +4436,11 @@ textarea.is-invalid {
   background: linear-gradient(150deg, #ffffff, #eef2ea);
   border: 1px solid var(--bd);
   overflow: hidden;
+  /* Los símbolos del sprite se dibujan con `currentColor`, así que el color
+     tiene que venir del contenedor (igual que .ic-neutral en el Hub). */
+  color: var(--alp-deep);
 }
-.alp-ico svg { width: 24px; height: 24px; }
+.alp-ico svg { width: 22px; height: 22px; color: inherit; }
 /* Sin acceso a la app: se ve, pero apagada. */
 .alp-item.is-off { opacity: .45; }
 
