@@ -325,9 +325,10 @@ async function fetchAvailableLotsForFrac(inmuebleId) {
 function ContractModal() {
   const {
     ui, closeModal, clients, fracs, selectedFracId, editingContract, contractDraft,
-    saveContract, deleteContract, resetContractDraft, showToast, showError,
+    saveContract, deleteContract, resetContractDraft, showToast, showError, canUseFeature,
   } = useAppContext();
   const navigate = useNavigate();
+  const canEditCalculator = canUseFeature("lands.write");
 
   const goToCalculator = () => {
     resetContractDraft();
@@ -921,13 +922,19 @@ function ContractModal() {
           <div style={{ fontWeight: 700, fontSize: ".82rem", color: "var(--danger)", marginBottom: 4 }}>
             ⚠ No hay una calculadora de financiamiento activa
           </div>
-          <div style={{ fontSize: ".76rem", color: "var(--tx)", marginBottom: 10, lineHeight: 1.5 }}>
-            Para registrar una venta primero debes crear y activar una calculadora con la
-            fórmula de la mensualidad. La venta guardará una copia de esa fórmula.
+          {/* Quien no puede definir fórmulas no tiene nada que hacer en la
+              calculadora: mandarlo ahí sería mandarlo a un "sin acceso". Se le dice
+              a quién pedírselo, que es lo único accionable de su lado. */}
+          <div style={{ fontSize: ".76rem", color: "var(--tx)", marginBottom: canEditCalculator ? 10 : 0, lineHeight: 1.5 }}>
+            {canEditCalculator
+              ? "Para registrar una venta primero debes crear y activar una calculadora con la fórmula de la mensualidad. La venta guardará una copia de esa fórmula."
+              : "Para registrar una venta hace falta una calculadora activa con la fórmula de la mensualidad. Pídele a un administrador que la configure."}
           </div>
-          <button type="button" className="btn-p" style={{ padding: "6px 12px", fontSize: ".75rem" }} onClick={goToCalculator}>
-            Crear calculadora →
-          </button>
+          {canEditCalculator && (
+            <button type="button" className="btn-p" style={{ padding: "6px 12px", fontSize: ".75rem" }} onClick={goToCalculator}>
+              Crear calculadora →
+            </button>
+          )}
         </div>
       )}
 

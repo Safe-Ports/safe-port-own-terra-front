@@ -22,6 +22,10 @@
  * `hidden: true` para excluirlos de esa lista sin dejar de existir como tours
  * reales (con su propia entrada en tours_seen).
  *
+ * `gate`: permiso que hace falta para llegar a la pantalla del tour. Sin esto el
+ * panel le ofrecía a un vendedor recorridos de secciones a las que no entra, y al
+ * tocarlos aterrizaba en "sin acceso". Un tour sin `gate` es para todos.
+ *
  * `next` conecta un tour con su continuación: SOLO se dispara si el usuario
  * COMPLETA el tour actual (lo salta o lo cierra y ahí queda). Si la continuación
  * trae `waitFor`, espera en silencio a que su ancla aparezca en el DOM — es decir,
@@ -108,6 +112,7 @@ export const TOUR_LANDS_SELECTOR = {
   label: "Crea tu primer fraccionamiento",
   description: "El recorrido completo: elegir método, nombrar, subir el plano y generar los lotes.",
   route: "/lotes",
+  gate: "lands.write",
   next: "lands-frac-inicio",
   steps: [
     {
@@ -283,6 +288,7 @@ export const TOUR_CALCULADORA_LISTA = {
   label: "Calculadora de financiamiento",
   description: "Crear la fórmula de la mensualidad, probarla y activarla para las ventas.",
   route: "/calculadora",
+  gate: "lands.write",
   next: "calculadora-editor",
   steps: [
     {
@@ -380,6 +386,7 @@ export const TOUR_CONTRATO_BOTON = {
   label: "Generar un contrato",
   description: "Vincular lote y cliente, condiciones financieras y qué queda congelado.",
   route: "/contratos",
+  gate: "lands.sales",
   next: "contrato-form",
   steps: [
     {
@@ -561,6 +568,7 @@ export const TOUR_DOCUMENTOS = {
   label: "Bóveda de documentos",
   description: "Carpetas, subir archivos y dónde buscar lo que ya subiste.",
   route: "/documentos",
+  gate: "lands.documents",
   steps: [
     {
       target: '[data-tour="docs-sidebar"]',
@@ -597,6 +605,7 @@ export const TOUR_REPORTES_CLIENTES = {
   label: "Estado de cuenta",
   description: "El reporte financiero de un cliente: comportamiento, saldo, plan de pagos y PDF.",
   route: "/reportes",
+  gate: "lands.reports",
   next: "reportes-detalle",
   steps: [
     {
@@ -660,6 +669,7 @@ export const TOUR_PAGOS = {
   label: "Control financiero",
   description: "Cobros, egresos, y cómo detectar quién va atrasado.",
   route: "/pagos",
+  gate: "lands.payments",
   steps: [
     {
       target: '[data-tour="pagos-kpis"]',

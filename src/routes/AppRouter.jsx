@@ -96,7 +96,12 @@ function AppRouter() {
           <Route path="/ecosistema/perfil" element={<EcosystemPerfil />} />
           <Route element={<AppShell />}>
             <Route path="/dashboard" element={<RequireFeature app="lands"><DashboardPage /></RequireFeature>} />
-            <Route path="/lotes" element={<RequireFeature app="lands"><LotsPage /></RequireFeature>} />
+            {/* Carga de Lotes y Calculadora son pantallas de administración: crean
+                el inventario y definen la fórmula con la que se vende. Piden
+                "write" —que el rol seller no tiene— en vez de sólo acceso a Lands.
+                El vendedor sigue usando la fórmula activa al armar un contrato; lo
+                que no puede es definirla. */}
+            <Route path="/lotes" element={<RequireFeature feature="lands.write"><LotsPage /></RequireFeature>} />
             <Route path="/fraccionamientos" element={<RequireFeature app="lands"><FracsPage /></RequireFeature>} />
             <Route path="/track-lotes" element={<RequireFeature app="lands"><LotTrackPage /></RequireFeature>} />
             <Route path="/clientes" element={<RequireFeature feature="lands.clients"><ClientsPage /></RequireFeature>} />
@@ -106,7 +111,7 @@ function AppRouter() {
             <Route path="/alertas" element={<Navigate to="/pagos" replace />} />
             <Route path="/pagos" element={<RequireFeature feature="lands.payments"><PaymentsPage /></RequireFeature>} />
             <Route path="/reportes" element={<RequireFeature feature="lands.reports"><ReportsPage /></RequireFeature>} />
-            <Route path="/calculadora" element={<RequireFeature app="lands"><CalculatorPage /></RequireFeature>} />
+            <Route path="/calculadora" element={<RequireFeature feature="lands.write"><CalculatorPage /></RequireFeature>} />
             <Route path="/perfil" element={<ProfilePage />} />
             <Route path="/configuracion" element={<RequireFeature feature="core.config"><SettingsPage /></RequireFeature>} />
           </Route>

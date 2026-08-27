@@ -21,7 +21,8 @@ function GlobalSearchModal() {
     setSelectedFracId,
     openContractCreate,
     openDocumentUpload,
-    startNewProject
+    startNewProject,
+    canUseFeature
   } = useAppContext();
   const [query, setQuery] = useState("");
   const trimmedQuery = query.trim();
@@ -57,6 +58,7 @@ function GlobalSearchModal() {
       },
       {
         id: "qa_lotes",
+        gate: "lands.write",
         title: "Cargar nuevos lotes",
         subtitle: "Nuevo plano o matriz",
         type: "Acción",
@@ -67,6 +69,7 @@ function GlobalSearchModal() {
       },
       {
         id: "qa_client",
+        gate: "lands.clients",
         title: "Nuevo cliente",
         subtitle: "Alta rápida en CRM",
         type: "Acción",
@@ -78,6 +81,7 @@ function GlobalSearchModal() {
       },
       {
         id: "qa_contract",
+        gate: "lands.sales",
         title: "Generar contrato",
         subtitle: "Crear compraventa, renta o reserva",
         type: "Acción",
@@ -89,6 +93,7 @@ function GlobalSearchModal() {
       },
       {
         id: "qa_payment",
+        gate: "lands.payments",
         title: "Ver pagos",
         subtitle: "Cobranza y seguimiento",
         type: "Acción",
@@ -99,6 +104,7 @@ function GlobalSearchModal() {
       },
       {
         id: "qa_docs",
+        gate: "lands.documents",
         title: "Subir documento",
         subtitle: "Contrato, identificación o comprobante",
         type: "Acción",
@@ -110,6 +116,7 @@ function GlobalSearchModal() {
       },
       {
         id: "qa_calc",
+        gate: "lands.write",
         title: "Abrir calculadora",
         subtitle: "Amortización y pagos",
         type: "Acción",
@@ -118,8 +125,10 @@ function GlobalSearchModal() {
           navigate("/calculadora");
         }
       }
-    ],
-    [closeModal, navigate, openContractCreate, openDocumentUpload, openModal, startNewProject]
+    // Ofrecer un atajo que termina en "sin acceso" es peor que no ofrecerlo: el
+    // usuario cree que puede y descubre que no recién al llegar.
+    ].filter((a) => !a.gate || canUseFeature(a.gate)),
+    [canUseFeature, closeModal, navigate, openContractCreate, openDocumentUpload, openModal, startNewProject]
   );
 
   const backendResults = useMemo(() => {

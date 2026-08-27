@@ -79,6 +79,10 @@ function Sidebar() {
             if (item.to === "/documentos") return canUseFeature("lands.documents");
             if (item.to === "/pagos") return canUseFeature("lands.payments");
             if (item.to === "/reportes") return canUseFeature("lands.reports");
+            // Mismo criterio que las rutas (ver AppRouter): son de administración,
+            // así que no basta con tener acceso a Lands. Sin esto el vendedor las
+            // veía en el menú y al entrar chocaba con "sin acceso".
+            if (item.to === "/lotes" || item.to === "/calculadora") return canUseFeature("lands.write");
             return canAccessApp("lands");
           }).map((item) => {
             const Icon = item.icon;

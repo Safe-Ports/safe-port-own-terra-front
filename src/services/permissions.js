@@ -111,7 +111,11 @@ export function canUseFeature(user, feature) {
     "core.forms": () => true,
     "core.config": () => hasPermission(user, "core.write"),
     "lands.read": () => canAccessApp(user, "lands"),
-    "lands.write": () => hasPermission(user, "lands.write") || hasPermission(user, "lands.sales"),
+    // Sin el "|| lands.sales" que tenía antes: el rol seller trae "sales", así que
+    // ese atajo le daba write a todos los vendedores y les mostraba secciones de
+    // administración (Carga de Lotes, Calculadora) que el backend después les niega
+    // con un 403. Entrar a una pantalla para chocarse con un error no es un permiso.
+    "lands.write": () => canAccessApp(user, "lands") && hasPermission(user, "lands.write"),
     "lands.clients": () => canAccessApp(user, "lands") && hasPermission(user, "lands.clients"),
     "lands.sales": () => canAccessApp(user, "lands") && hasPermission(user, "lands.sales"),
     "lands.documents": () => canAccessApp(user, "lands") && hasPermission(user, "lands.documents"),

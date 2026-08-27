@@ -18,7 +18,7 @@ export default function OnboardingChecklist() {
   const navigate = useNavigate();
   const {
     fracs, clients, contracts, payments,
-    fracsLoading, clientsLoading, contractsLoading, paymentsLoading,
+    fracsLoading, clientsLoading, contractsLoading, paymentsLoading, canUseFeature,
   } = useAppContext();
   const [dismissed, setDismissed] = useState(() => localStorage.getItem(DISMISS_KEY) === "1");
 
@@ -47,6 +47,11 @@ export default function OnboardingChecklist() {
 
   // Se oculta al completar todos los pasos o al cerrarlo manualmente.
   if (dismissed || doneCount === steps.length) return null;
+
+  // Es la puesta en marcha de la organización: cargar lotes, invitar al equipo. Un
+  // vendedor no puede hacer ninguno de esos pasos, así que le mostraría una lista de
+  // pendientes ajenos con una barra de progreso que nunca va a poder mover.
+  if (!canUseFeature("lands.write")) return null;
 
   const close = () => { localStorage.setItem(DISMISS_KEY, "1"); setDismissed(true); };
 

@@ -50,7 +50,7 @@ const LOT_STATUS_COLOR = { available: "#355E3B", sold: "#C0392B", reserved: "#9D
  * el estado del hook sin necesidad de un efecto de sincronización.
  */
 function ClientModalInner() {
-  const { closeModal, saveClient, editingClient, deleteClient, clients, showError } = useAppContext();
+  const { closeModal, saveClient, editingClient, deleteClient, clients, showError, canUseFeature } = useAppContext();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
   const ctl = useClientForm(editingClient, clients);
@@ -79,7 +79,11 @@ function ClientModalInner() {
       footer={
         <>
           <Button variant="secondary" onClick={() => closeModal("clientModal")}>Cancelar</Button>
-          {editingClient && <Button variant="danger" onClick={() => deleteClient(editingClient.id)}><HiTrash /> Eliminar</Button>}
+          {/* Dar de baja saca a alguien del sistema: es de administración, no del
+              trabajo diario con la cartera (el backend ahora pide "lands.write"). */}
+          {editingClient && canUseFeature("lands.write") && (
+            <Button variant="danger" onClick={() => deleteClient(editingClient.id)}><HiTrash /> Eliminar</Button>
+          )}
           <Button variant="primary" onClick={submit} disabled={saving}>
             {saving ? "Guardando..." : dupe ? <><HiLink /> Vincular a Lands</> : <><HiCheck /> Guardar</>}
           </Button>
