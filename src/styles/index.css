@@ -438,8 +438,12 @@ a {
 .topbar-r {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
   min-width: 0;
+  /* Toma el ancho que sobra después del título para que el buscador tenga de
+     dónde crecer; las acciones quedan pegadas a la derecha igual que antes. */
+  flex: 1;
 }
 
 .core-topbar-actions {
@@ -623,7 +627,12 @@ a {
   border: 1px solid rgba(67, 69, 63, 0.18);
   border-radius: 11px;
   padding: 8px 12px;
-  width: 280px;
+  /* Se estira con la pantalla en vez de quedarse en un ancho fijo: el tope
+     evita que en monitores anchos se vuelva una barra desproporcionada, y el
+     mínimo que se aplaste hasta no poder leer el texto. */
+  flex: 1 1 auto;
+  min-width: 230px;
+  max-width: 560px;
   transition: background .28s cubic-bezier(.2,.8,.2,1), border-color .28s cubic-bezier(.2,.8,.2,1);
   color: var(--tx2);
   font-size: 0.78rem;
@@ -2533,6 +2542,15 @@ textarea.is-invalid {
   }
 }
 
+/* En pantallas de laptop la fila de acciones se come todo el ancho y el
+   buscador no tiene de dónde crecer. "Cerrar sesión" es la que menos pierde al
+   quedarse en ícono: se usa poco y conserva su tooltip. */
+@media (max-width: 1500px) {
+  .core-logout-label {
+    display: none;
+  }
+}
+
 @media (max-width: 1024px) {
   .sidebar-backdrop {
     position: fixed;
@@ -2581,9 +2599,12 @@ textarea.is-invalid {
     gap: 7px;
   }
 
+  /* Acá el buscador vuelve a ser sólo el ícono, así que se apaga el crecer. */
   .tb-src {
+    flex: none;
     width: 36px;
     min-width: 36px;
+    max-width: 36px;
     height: 36px;
     justify-content: center;
     padding: 0;
