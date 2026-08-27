@@ -5,7 +5,6 @@ import {
   HiCalculator,
   HiChevronDoubleLeft,
   HiChevronDoubleRight,
-  HiCalendarDays,
   HiChartBarSquare,
   HiCog6Tooth,
   HiDocumentDuplicate,
@@ -15,16 +14,16 @@ import {
   HiOutlineUserGroup,
   HiPresentationChartLine,
   HiRectangleGroup,
-  HiSun,
   HiWallet,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 import useEscapeKey from "@/hooks/useEscapeKey";
 
+// Mi Día y Calendario no están acá a propósito: viven en la barra superior y en
+// el lanzador de servicios, que acompañan a todas las apps. Repetirlos en el
+// menú de Lands daba dos caminos al mismo lugar y ocupaba lugar de lo propio.
 const items = [
   { label: "Ecosistema", to: "/ecosistema", icon: HiRectangleGroup, section: "General" },
-  { label: "Mi Día", to: "/ecosistema/mi-dia", icon: HiSun, section: "General" },
-  { label: "Calendario", to: "/ecosistema/agenda", icon: HiCalendarDays, section: "General" },
   { label: "Dashboard", to: "/dashboard", icon: HiHome, section: "General" },
   { label: "Carga de Lotes", to: "/lotes", icon: HiOutlineSquares2X2, section: "Propiedades" },
   { label: "Fraccionamientos", to: "/fraccionamientos", icon: HiMap, section: "Propiedades" },
