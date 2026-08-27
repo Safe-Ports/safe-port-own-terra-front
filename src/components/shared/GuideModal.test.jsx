@@ -46,7 +46,9 @@ describe("GuideModal: la lista de Tours guiados es transversal a toda la app", (
     navigateSpy.mockClear();
     replayTourSpy.mockClear();
     vi.useFakeTimers({ shouldAdvanceTime: true });
-    ctx = { currentUser: { id: "u1", tours_seen: ["ecosistema"] } };
+    // Admin por defecto: ve todos los tours. El filtrado por permiso tiene su
+    // propio caso más abajo.
+    ctx = { currentUser: { id: "u1", tours_seen: ["ecosistema"] }, canUseFeature: () => true };
   });
 
   it("aparece en un GuideModal de una página cualquiera, no solo Configuración", async () => {
@@ -97,5 +99,20 @@ describe("GuideModal: la lista de Tours guiados es transversal a toda la app", (
     expect(onClose).toHaveBeenCalled();
     expect(replayTourSpy).toHaveBeenCalledWith("restricciones");
     expect(navigateSpy).not.toHaveBeenCalled();
+  });
+
+  it("no ofrece recorridos de pantallas a las que el usuario no entra", () => {
+    // Un vendedor no llega a Carga de Lotes ni a la Calculadora: ofrecerle esos
+    // tours lo mandaba a "sin acceso". Los que no dependen de un permiso siguen.
+    ctx = {
+      currentUser: { id: "u1", tours_seen: [] },
+      canUseFeature: (f) => f !== "lands.write",
+    };
+
+    renderModal();
+
+    expect(screen.queryByText("Crea tu primer fraccionamiento")).not.toBeInTheDocument();
+    expect(screen.queryByText("Calculadora de financiamiento")).not.toBeInTheDocument();
+    expect(screen.getByText("Restricciones que existen")).toBeInTheDocument();
   });
 });
