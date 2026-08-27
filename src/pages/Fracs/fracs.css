@@ -744,7 +744,11 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding: 18px;
-  overscroll-behavior: contain;
+  /* Sin `overscroll-behavior: contain` a propósito: este panel vive DENTRO de la
+     página, no es un modal. Con `contain`, al llegar a su tope la rueda se
+     quedaba atrapada y la página no volvía a subir mientras el cursor estuviera
+     encima — había que sacarlo del panel para poder scrollear. `contain` sí
+     corresponde en modales y cajones, donde el fondo no debe moverse. */
   scrollbar-width: thin;
   scrollbar-color: rgba(53, 94, 59, 0.42) rgba(220, 218, 210, 0.45);
 }
