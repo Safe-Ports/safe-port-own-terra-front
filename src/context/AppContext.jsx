@@ -181,6 +181,10 @@ export function AppProvider({ children }) {
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [draftProject, setDraftProject] = usePersistentState("lm_draft_project", createEmptyDraftProject());
+  // Barra lateral en modo riel (solo iconos). Persiste porque es una preferencia
+  // de espacio de trabajo: quien la colapsa no quiere volver a hacerlo cada vez.
+  // Solo aplica en escritorio; en móvil la barra ya es un cajón con backdrop.
+  const [sidebarCollapsed, setSidebarCollapsed] = usePersistentState("lm_sidebar_collapsed", false);
   const [ui, setUi] = useState({
     sidebarOpen: false,
     clientModal: false,
@@ -964,6 +968,8 @@ export function AppProvider({ children }) {
     closeModal,
     toggleSidebar,
     closeSidebar,
+    sidebarCollapsed,
+    toggleSidebarCollapsed: () => setSidebarCollapsed((v) => !v),
     showToast,
     showError,
     canAccessApp: (appKey) => canAccessApp(currentUser, appKey),

@@ -4200,3 +4200,116 @@ textarea.is-invalid {
 }
 .lot-edit-ghost:hover { background: var(--sf2); }
 .guide-ok:hover { opacity: .88; }
+
+/* ════════════════════════════════════════════════════════════════════
+   Barra lateral en modo riel (colapsada) con expansión al pasar el cursor
+   ──────────────────────────────────────────────────────────────────
+   Colapsada mide 68px y muestra solo iconos, así la pantalla de trabajo
+   gana ~190px. Al pasar el cursor se expande FLOTANDO sobre el contenido
+   (position:absolute) en vez de empujarlo: si empujara, todo el layout se
+   recalcularía al rozar la barra sin querer.
+   Solo escritorio — abajo de 1024px la barra ya es un cajón con backdrop.
+   ════════════════════════════════════════════════════════════════════ */
+@media (min-width: 1025px) {
+  .sb.collapsed {
+    width: 68px;
+    transition: width .22s cubic-bezier(.2, .8, .2, 1);
+  }
+
+  /* El riel deja su hueco de 68px y la versión expandida se dibuja encima. */
+  .sb.collapsed:hover {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 256px;
+    z-index: 90;
+    box-shadow: 8px 0 32px rgba(15, 25, 18, .28);
+  }
+  .app-shell:has(.sb.collapsed) { position: relative; }
+  .app-shell:has(.sb.collapsed:hover)::before {
+    content: "";
+    width: 68px;
+    flex-shrink: 0;
+  }
+
+  /* Lo que se esconde en el riel: textos, rótulos de sección y contadores. */
+  .sb.collapsed .sb-txt,
+  .sb.collapsed .sb-sec,
+  .sb.collapsed .sb-bdg,
+  .sb.collapsed .sb-logo-nm,
+  .sb.collapsed .sb-foot-item > div,
+  .sb.collapsed .sb-foot-item span:not(.sb-foot-ico) {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .sb.collapsed:hover .sb-txt,
+  .sb.collapsed:hover .sb-sec,
+  .sb.collapsed:hover .sb-bdg,
+  .sb.collapsed:hover .sb-logo-nm,
+  .sb.collapsed:hover .sb-foot-item > div,
+  .sb.collapsed:hover .sb-foot-item span:not(.sb-foot-ico) {
+    opacity: 1;
+    width: auto;
+    pointer-events: auto;
+  }
+
+  /* Los rótulos de sección dejan una línea fina: sin ellos los iconos
+     quedan como una tira uniforme y se pierde la agrupación. */
+  .sb.collapsed .sb-sec {
+    height: 1px;
+    padding: 0;
+    margin: 11px 14px 8px;
+    background: rgba(233, 229, 219, .12);
+  }
+  .sb.collapsed:hover .sb-sec {
+    height: auto;
+    padding: 14px 12px 7px;
+    margin: 0;
+    background: none;
+  }
+
+  .sb.collapsed .sb-nav { padding: 4px 12px; }
+  .sb.collapsed:hover .sb-nav { padding: 4px 18px; }
+  .sb.collapsed .sb-btn { justify-content: center; padding: 9px; }
+  .sb.collapsed:hover .sb-btn { justify-content: flex-start; padding: 9px 12px; }
+  .sb.collapsed .sb-logo { padding: 18px 10px 16px; }
+  .sb.collapsed:hover .sb-logo { padding: 22px 18px 20px; }
+  .sb.collapsed .sb-logo-mark { width: 44px; height: 44px; }
+  .sb.collapsed .sb-foot { padding: 10px; }
+  .sb.collapsed:hover .sb-foot { padding: 14px 18px; }
+  .sb.collapsed .sb-foot-item { justify-content: center; padding: 9px; }
+  .sb.collapsed:hover .sb-foot-item { justify-content: flex-start; padding: 9px 12px; }
+}
+
+/* Botón para fijar el estado: el hover es para asomarse, esto lo deja fijo. */
+.sb-collapse {
+  position: absolute;
+  top: 14px;
+  right: 10px;
+  z-index: 3;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  border: 1px solid rgba(233, 229, 219, .14);
+  background: rgba(20, 30, 22, .55);
+  color: rgba(233, 229, 219, .55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity .2s, color .2s, border-color .2s;
+}
+.sb:hover .sb-collapse { opacity: 1; }
+.sb-collapse:hover { color: #fff; border-color: rgba(111, 175, 107, .45); }
+
+/* En móvil no aplica: ahí la barra se abre y cierra con el botón del topbar. */
+@media (max-width: 1024px) {
+  .sb-collapse { display: none; }
+  .sb.collapsed { width: 256px; }
+}

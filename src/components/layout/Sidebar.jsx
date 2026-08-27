@@ -3,6 +3,8 @@ import {
   HiArrowLeftOnRectangle,
   HiBellAlert,
   HiCalculator,
+  HiChevronDoubleLeft,
+  HiChevronDoubleRight,
   HiCalendarDays,
   HiChartBarSquare,
   HiCog6Tooth,
@@ -47,7 +49,7 @@ function Logo() {
 }
 
 function Sidebar() {
-  const { ui, closeSidebar, fracs, clients, payments, documents, notificationCount, logout, currentUser, canAccessApp, canUseFeature, resetFracsView, setDraftProject } = useAppContext();
+  const { ui, closeSidebar, fracs, clients, payments, documents, notificationCount, logout, currentUser, canAccessApp, canUseFeature, resetFracsView, setDraftProject, sidebarCollapsed, toggleSidebarCollapsed } = useAppContext();
   useEscapeKey(closeSidebar, ui.sidebarOpen);
 
   const handleLogout = () => {
@@ -59,7 +61,15 @@ function Sidebar() {
   return (
     <>
       <div className={`sidebar-backdrop ${ui.sidebarOpen ? "show" : ""}`} onClick={closeSidebar} />
-      <aside className={`sb app-sidebar ${ui.sidebarOpen ? "open" : ""}`}>
+      <aside className={`sb app-sidebar ${ui.sidebarOpen ? "open" : ""} ${sidebarCollapsed ? "collapsed" : ""}`}>
+        <button
+          className="sb-collapse"
+          onClick={toggleSidebarCollapsed}
+          title={sidebarCollapsed ? "Fijar la barra abierta" : "Colapsar la barra"}
+          aria-label={sidebarCollapsed ? "Fijar la barra abierta" : "Colapsar la barra"}
+        >
+          {sidebarCollapsed ? <HiChevronDoubleRight /> : <HiChevronDoubleLeft />}
+        </button>
         <Logo />
         <div className="sb-nav">
           {items.filter((item) => {
@@ -87,6 +97,9 @@ function Sidebar() {
                 {shouldRenderSection ? <div className="sb-sec">{item.section}</div> : null}
                 <NavLink
                   to={item.to}
+                  /* En modo riel el texto no se ve: el title es lo que dice qué
+                     es cada icono mientras el cursor no llega a expandir. */
+                  title={sidebarCollapsed ? item.label : undefined}
                   onClick={() => {
                     closeSidebar();
                     if (item.to === "/fraccionamientos") resetFracsView();
@@ -97,7 +110,7 @@ function Sidebar() {
                   <span className="sb-ico">
                     <Icon />
                   </span>
-                  <span>{item.label}</span>
+                  <span className="sb-txt">{item.label}</span>
                   {badge ? <span className={`sb-bdg ${item.to === "/pagos" ? "sb-bdg-red" : ""}`}>{badge}</span> : null}
                 </NavLink>
               </div>
