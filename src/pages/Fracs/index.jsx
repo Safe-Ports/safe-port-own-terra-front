@@ -212,6 +212,7 @@ function FracsPage() {
     showError,
     setDraftProject,
     fracsResetKey,
+    openContractCreate,
   } = useAppContext();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -245,13 +246,19 @@ function FracsPage() {
   const [cotEnganche, setCotEnganche] = useState(0);
   const [cotTasa, setCotTasa] = useState(12);
   const [cotPlazo, setCotPlazo] = useState(96);
-  const [showApptForm, setShowApptForm] = useState(false);
-  const [apptDraft, setApptDraft] = useState({ contact_name: "", contact_phone: "", date: "", time: "", notes: "" });
+  // Una acción a la vez: null | "apartar" | "cita" | "venta". Mientras hay una
+  // abierta, el panel muestra SOLO su formulario — la ficha y los servicios
+  // distraían de la tarea y empujaban el botón de guardar fuera de la vista.
+  const [panelMode, setPanelMode] = useState(null);
+  const [apptDraft, setApptDraft] = useState({ client: null, date: "", time: "", notes: "" });
   const [apptSaving, setApptSaving] = useState(false);
-  const [apartarOpen, setApartarOpen] = useState(false);
+  const apartarOpen = panelMode === "apartar";
+  const showApptForm = panelMode === "cita";
+  const setApartarOpen = (v) => setPanelMode((m) => ((typeof v === "function" ? v(m === "apartar") : v) ? "apartar" : null));
   const [apartarUntil, setApartarUntil] = useState("");   // datetime-local
   const [apartarBusy, setApartarBusy] = useState(false);
   const [apartarClient, setApartarClient] = useState(null); // {id, name, phone, email} | null
+  const [ventaClient, setVentaClient] = useState(null);     // comprador elegido para el contrato
   useEscapeKey(() => {
     if (showCotizador) setShowCotizador(false);
     else if (showLotModal) setShowLotModal(false);
@@ -426,6 +433,12 @@ function FracsPage() {
     setSelectedLotId(lot.id);
     setShowLotModal(true);
     setActiveTab("ficha");
+    // Cada lote arranca en su ficha, sin arrastrar el formulario a medio
+    // llenar del lote anterior.
+    setPanelMode(null);
+    setApartarClient(null);
+    setVentaClient(null);
+    setApptDraft({ client: null, date: "", time: "", notes: "" });
   };
 
   const openEditor = () => {
@@ -469,23 +482,22 @@ function FracsPage() {
 
 
   const saveAppointment = async () => {
-    if (!selectedLot || !apptDraft.contact_name.trim() || !apptDraft.date || !apptDraft.time) return;
+    if (!selectedLot || !apptDraft.client || !apptDraft.date || !apptDraft.time) return;
     setApptSaving(true);
     try {
       await appointmentService.create({
         lot_id: selectedLot.id,
-        contact_name: apptDraft.contact_name.trim(),
-        contact_phone: apptDraft.contact_phone.trim() || undefined,
+        // La cita queda ligada al cliente del CRM, no a un contacto suelto:
+        // así aparece en su ficha y se puede dar seguimiento.
+        client_id: apptDraft.client.id,
+        contact_name: apptDraft.client.name,
+        contact_phone: apptDraft.client.phone || undefined,
         scheduled_at: new Date(`${apptDraft.date}T${apptDraft.time}`).toISOString(),
         notes: apptDraft.notes.trim() || undefined,
-        // Si el lote ya tiene un cliente interesado (recién apartado o de una
-        // visita previa), la cita queda ligada a él en el CRM en vez de quedar
-        // como contacto suelto.
-        client_id: apartarClient?.id || selectedLot.client_id || undefined,
       });
       await refetchAppts();
-      setApptDraft({ contact_name: "", contact_phone: "", date: "", time: "", notes: "" });
-      setShowApptForm(false);
+      setApptDraft({ client: null, date: "", time: "", notes: "" });
+      setPanelMode(null);
       showToast("Cita agendada");
     } catch (err) {
       showError(err, "Error al agendar la cita");
@@ -763,72 +775,106 @@ function FracsPage() {
             </header>
 
             <div className="lotp-body">
-              {/* ── Columna de datos (scrollea) ── */}
+              {/* ── Columna de datos ──
+                  Con una acción abierta muestra SOLO su formulario; si no, la
+                  ficha completa del lote. */}
               <div className="lotp-data">
-                {/* Los formularios abren acá arriba, no en la columna angosta:
-                    el selector de cliente y el datetime no caben en 214 px. */}
-                {apartarOpen && selectedLot.status !== "sold" ? (
-                  <div className="lotp-sec">
-                    <div className="lotp-sh"><b>{selectedLot.status === "reserved" ? "Extender apartado" : "Apartar lote"}</b></div>
-                    <div className="frac-apartar-form">
-                      <label className="frac-appt-lbl">Cliente interesado</label>
-                      <ClientPicker value={apartarClient} onSelect={setApartarClient} disabled={apartarBusy} />
-
-                      <label className="frac-appt-lbl">Vence el</label>
-                      <div className="frac-apartar-presets">
-                        {[[3, "3 días"], [7, "7 días"], [15, "15 días"], [30, "30 días"]].map(([n, l]) => (
-                          <button type="button" key={n} onClick={() => setApartarUntil(toLocalInput(new Date(Date.now() + n * 86400000)))}>{l}</button>
-                        ))}
+                {panelMode ? (
+                  <div className="lotp-form">
+                    <div className="lotp-form-hd">
+                      <button className="lotp-back" onClick={() => setPanelMode(null)}>
+                        ← Volver
+                      </button>
+                      <div className="lotp-form-t">
+                        {panelMode === "apartar"
+                          ? (selectedLot.status === "reserved" ? "Extender apartado" : "Apartar lote")
+                          : panelMode === "cita" ? "Agendar cita" : "Registrar venta"}
                       </div>
-                      <input
-                        type="datetime-local"
-                        className="frac-apartar-input"
-                        value={apartarUntil}
-                        min={toLocalInput(new Date())}
-                        onChange={(e) => setApartarUntil(e.target.value)}
-                      />
-                      <Button
-                        variant="primary"
-                        onClick={selectedLot.status === "reserved" ? extendReservation : reserveLot}
-                        disabled={apartarBusy || !apartarUntil || !apartarClient}
-                      >
-                        {apartarBusy ? "Guardando..." : selectedLot.status === "reserved" ? "Guardar vencimiento" : "Confirmar apartado"}
-                      </Button>
                     </div>
-                  </div>
-                ) : null}
 
-                {showApptForm ? (
-                  <div className="lotp-sec">
-                    <div className="lotp-sh"><b>Nueva cita</b></div>
-                    <div className="frac-appointment-form">
-                      <div className="frac-appt-field">
-                        <label className="frac-appt-lbl">Contacto</label>
-                        <input value={apptDraft.contact_name} onChange={(event) => setApptDraft((p) => ({ ...p, contact_name: event.target.value }))} placeholder="Nombre del contacto" />
-                      </div>
-                      <div className="frac-appt-field">
-                        <label className="frac-appt-lbl">Telefono</label>
-                        <PhoneInput value={apptDraft.contact_phone} onChange={(v) => setApptDraft((p) => ({ ...p, contact_phone: v }))} placeholder="Opcional" />
-                      </div>
-                      <div className="frac-appt-field">
-                        <label className="frac-appt-lbl">Fecha</label>
-                        <input type="date" value={apptDraft.date} onChange={(event) => setApptDraft((p) => ({ ...p, date: event.target.value }))} />
-                      </div>
-                      <div className="frac-appt-field">
-                        <label className="frac-appt-lbl">Hora</label>
-                        <input type="time" value={apptDraft.time} onChange={(event) => setApptDraft((p) => ({ ...p, time: event.target.value }))} />
-                      </div>
-                      <div className="frac-appt-field">
-                        <label className="frac-appt-lbl">Notas</label>
-                        <textarea rows="2" value={apptDraft.notes} onChange={(event) => setApptDraft((p) => ({ ...p, notes: event.target.value }))} placeholder="Contexto de la visita" />
-                      </div>
-                      <Button variant="primary" onClick={saveAppointment} disabled={apptSaving || !apptDraft.contact_name.trim() || !apptDraft.date || !apptDraft.time}>
-                        {apptSaving ? "Guardando..." : "Guardar cita"}
-                      </Button>
-                    </div>
-                  </div>
-                ) : null}
+                    {panelMode === "apartar" ? (
+                      <div className="frac-apartar-form">
+                        <label className="frac-appt-lbl">Cliente interesado</label>
+                        <ClientPicker value={apartarClient} onSelect={setApartarClient} disabled={apartarBusy} />
 
+                        <label className="frac-appt-lbl">Vence el</label>
+                        <div className="frac-apartar-presets">
+                          {[[3, "3 días"], [7, "7 días"], [15, "15 días"], [30, "30 días"]].map(([n, l]) => (
+                            <button type="button" key={n} onClick={() => setApartarUntil(toLocalInput(new Date(Date.now() + n * 86400000)))}>{l}</button>
+                          ))}
+                        </div>
+                        <input
+                          type="datetime-local"
+                          className="frac-apartar-input"
+                          value={apartarUntil}
+                          min={toLocalInput(new Date())}
+                          onChange={(e) => setApartarUntil(e.target.value)}
+                        />
+                        <Button
+                          variant="primary"
+                          onClick={selectedLot.status === "reserved" ? extendReservation : reserveLot}
+                          disabled={apartarBusy || !apartarUntil || !apartarClient}
+                        >
+                          {apartarBusy ? "Guardando..." : selectedLot.status === "reserved" ? "Guardar vencimiento" : "Confirmar apartado"}
+                        </Button>
+                      </div>
+                    ) : null}
+
+                    {panelMode === "cita" ? (
+                      <div className="frac-appointment-form">
+                        <label className="frac-appt-lbl">Cliente</label>
+                        <ClientPicker
+                          value={apptDraft.client}
+                          onSelect={(c) => setApptDraft((p) => ({ ...p, client: c }))}
+                          disabled={apptSaving}
+                        />
+                        <div className="frac-appt-field">
+                          <label className="frac-appt-lbl">Fecha</label>
+                          <input type="date" value={apptDraft.date} onChange={(event) => setApptDraft((p) => ({ ...p, date: event.target.value }))} />
+                        </div>
+                        <div className="frac-appt-field">
+                          <label className="frac-appt-lbl">Hora</label>
+                          <input type="time" value={apptDraft.time} onChange={(event) => setApptDraft((p) => ({ ...p, time: event.target.value }))} />
+                        </div>
+                        <div className="frac-appt-field">
+                          <label className="frac-appt-lbl">Notas</label>
+                          <textarea rows="2" value={apptDraft.notes} onChange={(event) => setApptDraft((p) => ({ ...p, notes: event.target.value }))} placeholder="Contexto de la visita" />
+                        </div>
+                        <Button variant="primary" onClick={saveAppointment} disabled={apptSaving || !apptDraft.client || !apptDraft.date || !apptDraft.time}>
+                          {apptSaving ? "Guardando..." : "Guardar cita"}
+                        </Button>
+                      </div>
+                    ) : null}
+
+                    {panelMode === "venta" ? (
+                      <div className="frac-appointment-form">
+                        <label className="frac-appt-lbl">Comprador</label>
+                        <ClientPicker value={ventaClient} onSelect={setVentaClient} />
+                        <p className="lotp-form-help">
+                          Al continuar se abre el contrato con este comprador y el lote ya cargados.
+                        </p>
+                        <Button
+                          variant="primary"
+                          disabled={!ventaClient}
+                          onClick={() => {
+                            setShowLotModal(false);
+                            setPanelMode(null);
+                            // El modal de contrato espera `lot` (el id de la unidad)
+                            // e `inmuebleId`, no `lotId`.
+                            openContractCreate({
+                              clientId: ventaClient.id,
+                              lot: selectedLot.id,
+                              inmuebleId: selectedFrac.id,
+                            });
+                          }}
+                        >
+                          Continuar al contrato →
+                        </Button>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                <>
                 {/* Apartado vigente: quién y hasta cuándo */}
                 {selectedLot.status === "reserved" ? (
                   <div className="lotp-sec">
@@ -903,6 +949,8 @@ function FracsPage() {
                   <div className="lotp-sh"><b>Documentos</b></div>
                   <InlineDocumentsPanel entityType="lot" entityId={selectedLot.id} entityLabel={`${selectedFrac.name} / ${selectedLot.code}`} />
                 </div>
+                </>
+                )}
               </div>
 
               {/* ── Columna de acciones (fija, no scrollea) ── */}
@@ -911,50 +959,61 @@ function FracsPage() {
 
                 {selectedLot.status === "available" ? (
                   <button
-                    className={`lotp-btn${apartarOpen ? "" : " primary"}`}
+                    className={`lotp-btn${apartarOpen ? " on" : " primary"}`}
                     onClick={() => {
-                      setApartarOpen((v) => !v);
-                      if (!apartarOpen) { setApartarUntil(toLocalInput(new Date(Date.now() + 7 * 86400000))); setApartarClient(null); }
+                      if (apartarOpen) { setPanelMode(null); return; }
+                      setApartarUntil(toLocalInput(new Date(Date.now() + 7 * 86400000)));
+                      setApartarClient(null);
+                      setPanelMode("apartar");
                     }}
                   >
-                    {apartarOpen ? "Cancelar apartado" : <><HiBookmark /> Apartar lote</>}
+                    <HiBookmark /> Apartar lote
                   </button>
                 ) : null}
 
                 {selectedLot.status === "reserved" ? (
                   <button
-                    className="lotp-btn"
+                    className={`lotp-btn${apartarOpen ? " on" : ""}`}
                     onClick={() => {
-                      setApartarOpen((v) => !v);
+                      if (apartarOpen) { setPanelMode(null); return; }
                       setApartarUntil(selectedLot.reserved_until ? toLocalInput(new Date(selectedLot.reserved_until)) : "");
                       setApartarClient(selectedLot.client_id ? { id: selectedLot.client_id, name: selectedLot.client_name } : null);
+                      setPanelMode("apartar");
                     }}
                   >
-                    {apartarOpen ? "Cancelar" : "Extender vencimiento"}
+                    Extender vencimiento
                   </button>
                 ) : null}
 
                 {/* La venta es la acción principal en un lote ya apartado. */}
                 {selectedLot.status !== "sold" ? (
                   <button
-                    className={`lotp-btn${selectedLot.status === "reserved" ? " primary" : ""}`}
-                    onClick={() => navigate("/contratos")}
+                    className={`lotp-btn${panelMode === "venta" ? " on" : selectedLot.status === "reserved" ? " primary" : ""}`}
+                    onClick={() => {
+                      if (panelMode === "venta") { setPanelMode(null); return; }
+                      // El interesado del lote ya es el candidato natural a comprador.
+                      setVentaClient(selectedLot.client_id
+                        ? { id: selectedLot.client_id, name: selectedLot.client_name }
+                        : null);
+                      setPanelMode("venta");
+                    }}
                   >
                     Registrar venta
                   </button>
                 ) : null}
 
                 <button
-                  className="lotp-btn"
+                  className={`lotp-btn${showApptForm ? " on" : ""}`}
                   onClick={() => {
-                    setShowApptForm((value) => !value);
-                    if (!showApptForm) {
-                      const known = apartarClient || (selectedLot.client_id ? { name: selectedLot.client_name } : null);
-                      if (known) setApptDraft((p) => ({ ...p, contact_name: known.name || "", contact_phone: known.phone || p.contact_phone }));
-                    }
+                    if (showApptForm) { setPanelMode(null); return; }
+                    // Se precarga el interesado del lote: casi siempre la cita es con él.
+                    const known = apartarClient
+                      || (selectedLot.client_id ? { id: selectedLot.client_id, name: selectedLot.client_name } : null);
+                    setApptDraft((p) => ({ ...p, client: known }));
+                    setPanelMode("cita");
                   }}
                 >
-                  {showApptForm ? "Cancelar cita" : "Agendar cita"}
+                  Agendar cita
                 </button>
 
                 {selectedLot.status === "reserved" ? (

@@ -2,12 +2,40 @@ import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { HiMagnifyingGlass, HiPlusCircle } from "react-icons/hi2";
 import { clientService } from "@/services/clientService";
-import PhoneInput from "@/components/shared/PhoneInput";
+import { useAppContext } from "@/context/AppContext";
+import ClientForm, { CLIENT_FIELD_MAP, useClientForm } from "@/components/shared/ClientForm";
 
 function initials(name) {
   const parts = (name || "").trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";
   return (parts[0][0] + (parts[1]?.[0] || "")).toUpperCase();
+}
+
+/**
+ * Alta rápida con el MISMO formulario de la sección Clientes: mismos campos,
+ * mismas validaciones y misma detección de correo duplicado. Va en su propio
+ * componente porque `useClientForm` es un hook y necesita montarse recién
+ * cuando el usuario decide crear.
+ */
+function NewClientForm({ initialName, clients, saving, onCreate, onCancel }) {
+  // Lo que ya venía escrito en el buscador se aprovecha como nombre. Sin `id`,
+  // así que sigue tratándose como alta nueva (y detecta correos duplicados).
+  const ctl = useClientForm(
+    initialName ? { name: initialName, type: "lead" } : null,
+    clients
+  );
+
+  return (
+    <div className="cp-create">
+      <ClientForm ctl={ctl} compact showNotice={false} />
+      <div className="cp-create-actions">
+        <button type="button" className="mini-save" disabled={saving} onClick={() => onCreate(ctl)}>
+          {saving ? "Guardando…" : ctl.dupe ? "Vincular y usar este cliente" : "Crear y usar este cliente"}
+        </button>
+        <button type="button" className="mini-cancel" onClick={onCancel}>Cancelar</button>
+      </div>
+    </div>
+  );
 }
 
 /**
@@ -24,13 +52,16 @@ function initials(name) {
  */
 export default function ClientPicker({ value, onSelect, disabled }) {
   const queryClient = useQueryClient();
+  const { clients = [], showError } = useAppContext();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [searched, setSearched] = useState(false);
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [newClient, setNewClient] = useState({ name: "", phone: "", email: "" });
+  // Remonta el formulario en cada alta para que arranque limpio (y con el
+  // nombre ya escrito en el buscador precargado).
+  const [formKey, setFormKey] = useState(0);
   const debounceRef = useRef(null);
 
   useEffect(() => {
@@ -56,33 +87,8 @@ export default function ClientPicker({ value, onSelect, disabled }) {
   }, [query]);
 
   const startCreate = () => {
-    setNewClient({ name: query.trim(), phone: "", email: "" });
+    setFormKey((k) => k + 1);
     setCreating(true);
-  };
-
-  const createClient = async () => {
-    const name = newClient.name.trim();
-    if (!name || saving) return;
-    setSaving(true);
-    try {
-      const created = await clientService.create({
-        name,
-        phone: newClient.phone?.trim() || null,
-        email: newClient.email?.trim() || null,
-        type: "lead",
-      });
-      try {
-        await clientService.assignApp(created.id, "lands");
-      } catch (_) {
-        // No crítico para poder apartar el lote con este cliente.
-      }
-      await queryClient.invalidateQueries({ queryKey: ["clients"] });
-      setCreating(false);
-      setQuery("");
-      onSelect(created);
-    } finally {
-      setSaving(false);
-    }
   };
 
   if (value) {
@@ -143,37 +149,49 @@ export default function ClientPicker({ value, onSelect, disabled }) {
       )}
 
       {creating && (
-        <div className="inline-create">
-          <input
-            className="mini-input full"
-            placeholder="Nombre del cliente"
-            value={newClient.name}
-            onChange={(e) => setNewClient((p) => ({ ...p, name: e.target.value }))}
-            autoFocus
-          />
-          <PhoneInput
-            inputClassName="mini-input"
-            value={newClient.phone}
-            onChange={(v) => setNewClient((p) => ({ ...p, phone: v }))}
-          />
-          <input
-            className="mini-input"
-            placeholder="Correo (opcional)"
-            value={newClient.email}
-            onChange={(e) => setNewClient((p) => ({ ...p, email: e.target.value }))}
-          />
-          <button
-            type="button"
-            className="mini-save"
-            disabled={!newClient.name.trim() || saving}
-            onClick={createClient}
-          >
-            {saving ? "Creando…" : "+ Crear y usar este cliente"}
-          </button>
-          <button type="button" className="mini-cancel" onClick={() => setCreating(false)}>
-            Cancelar
-          </button>
-        </div>
+        <NewClientForm
+          key={formKey}
+          initialName={query.trim()}
+          clients={clients}
+          saving={saving}
+          onCancel={() => setCreating(false)}
+          onCreate={async (ctl) => {
+            if (!ctl.validate() || saving) return;
+            setSaving(true);
+            try {
+              const data = ctl.payload();
+              // Mismo correo ya registrado: se usa esa identidad en vez de duplicarla.
+              if (data.linkClientId) {
+                const existing = clients.find((c) => c.id === data.linkClientId);
+                await clientService.assignApp(data.linkClientId, "lands").catch(() => {});
+                await queryClient.invalidateQueries({ queryKey: ["clients"] });
+                setCreating(false);
+                setQuery("");
+                onSelect(existing);
+                return;
+              }
+              const created = await clientService.create({
+                name: data.name,
+                phone: data.phone?.trim() || null,
+                email: data.email?.trim() || null,
+                type: data.type || "lead",
+                notes: data.notes?.trim() || null,
+              });
+              // Vincular a Lands no es crítico para poder seguir con el lote.
+              await clientService.assignApp(created.id, "lands").catch(() => {});
+              await queryClient.invalidateQueries({ queryKey: ["clients"] });
+              setCreating(false);
+              setQuery("");
+              onSelect(created);
+            } catch (err) {
+              if (!ctl.fe.fromServer(err, CLIENT_FIELD_MAP)) {
+                showError(err, "No se pudo crear el cliente");
+              }
+            } finally {
+              setSaving(false);
+            }
+          }}
+        />
       )}
     </div>
   );

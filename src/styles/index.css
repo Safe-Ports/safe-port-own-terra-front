@@ -4319,3 +4319,25 @@ textarea.is-invalid {
   .sb-collapse { display: none; }
   .sb.collapsed { width: 256px; }
 }
+
+/* Avisos del formulario de cliente (compartido entre el modal de Clientes y el
+   alta rápida del selector, así que vive en el CSS global y no en fracs.css). */
+.cf-notice {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  background: rgba(111, 175, 107, .1);
+  border: 1px solid rgba(111, 175, 107, .3);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: .74rem;
+  color: #2F6A38;
+  line-height: 1.5;
+}
+.cf-notice.dupe {
+  background: rgba(201, 168, 76, .14);
+  border-color: rgba(201, 168, 76, .4);
+  color: #8A6D1E;
+}
+.cf-notice svg { flex-shrink: 0; margin-top: 2px; }

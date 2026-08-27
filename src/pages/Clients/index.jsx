@@ -23,6 +23,7 @@ import { useLandsGuide } from "@/context/LandsGuideContext";
 import Modal from "@/components/ui/Modal";
 import InlineDocumentsPanel from "@/components/shared/InlineDocumentsPanel";
 import FieldError from "@/components/shared/FieldError";
+import ClientForm, { CLIENT_FIELD_MAP, useClientForm } from "@/components/shared/ClientForm";
 import PhoneInput from "@/components/shared/PhoneInput";
 import { useFieldErrors } from "@/hooks/useFieldErrors";
 import Button from "@/components/Button";
@@ -40,31 +41,26 @@ const CONTRACT_STATUS_LABEL = { active: "Activo", completed: "Completado", cance
 const LOT_STATUS_LABEL = { available: "Disponible", sold: "Vendido", reserved: "Apartado" };
 const LOT_STATUS_COLOR = { available: "#355E3B", sold: "#C0392B", reserved: "#9D6B18" };
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const CLIENT_RULES = {
-  name: (v) => (!v || v.trim().length < 2 ? "Escribe el nombre (mínimo 2 caracteres)." : ""),
-  email: (v) => (v && !EMAIL_RE.test(v.trim()) ? "El correo no tiene un formato válido." : ""),
-};
-const CLIENT_FIELD_MAP = { name: "name", email: "email", phone: "phone" };
-
-function ClientModal() {
-  const { ui, closeModal, saveClient, editingClient, deleteClient, clients, showError } = useAppContext();
+/**
+ * Alta/edición de cliente. Los campos y las validaciones viven en ClientForm,
+ * compartido con el alta rápida del ClientPicker: así el formulario es
+ * literalmente el mismo se abra desde donde se abra.
+ *
+ * La `key` del padre lo remonta al cambiar de cliente, que es lo que reinicia
+ * el estado del hook sin necesidad de un efecto de sincronización.
+ */
+function ClientModalInner() {
+  const { closeModal, saveClient, editingClient, deleteClient, clients, showError } = useAppContext();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", phone: "", email: "", type: "buyer", notes: "" });
   const [saving, setSaving] = useState(false);
-  const fe = useFieldErrors();
-
-  const setField = (key) => (e) => {
-    const value = e.target.value;
-    setForm((p) => ({ ...p, [key]: value }));
-    fe.clear(key);
-  };
+  const ctl = useClientForm(editingClient, clients);
+  const { fe, dupe } = ctl;
 
   const submit = async () => {
-    if (!fe.validate(form, CLIENT_RULES)) return;
+    if (!ctl.validate()) return;
     setSaving(true);
     try {
-      await saveClient({ ...(editingClient || {}), ...form });
+      await saveClient(ctl.payload());
     } catch (err) {
       // 422 con detalle por campo → marcar campos; si no, error de catálogo (toast OT-…).
       if (!fe.fromServer(err, CLIENT_FIELD_MAP)) showError(err, "Error al guardar el cliente");
@@ -73,29 +69,9 @@ function ClientModal() {
     }
   };
 
-  // Detección de identidad ya existente en el core (vincular en vez de duplicar)
-  const fullName = `${form.nombre} ${form.apellidos}`.trim();
-  const dupe = !editingClient && form.email
-    ? clients.find((c) => c.email && c.email.toLowerCase() === form.email.trim().toLowerCase())
-    : null;
-
-  const splitName = (name = "") => {
-    const parts = name.trim().split(" ");
-    return { nombre: parts[0] || "", apellidos: parts.slice(1).join(" ") };
-  };
-
-  useEffect(() => {
-    if (editingClient) {
-      const { nombre, apellidos } = splitName(editingClient.name);
-      setForm({ nombre, apellidos, phone: editingClient.phone || "", email: editingClient.email || "", type: editingClient.type || "buyer", notes: editingClient.notes || "" });
-    } else {
-      setForm({ nombre: "", apellidos: "", phone: "", email: "", type: "buyer", notes: "" });
-    }
-  }, [editingClient, ui.clientModal]);
-
   return (
     <Modal
-      open={ui.clientModal}
+      open
       icon={<HiUser />}
       title={editingClient ? "Editar cliente" : "Vincular o crear cliente"}
       subtitle={editingClient ? "Identidad del ecosistema" : "Identidad única del ecosistema"}
@@ -104,34 +80,12 @@ function ClientModal() {
         <>
           <Button variant="secondary" onClick={() => closeModal("clientModal")}>Cancelar</Button>
           {editingClient && <Button variant="danger" onClick={() => deleteClient(editingClient.id)}><HiTrash /> Eliminar</Button>}
-          <Button
-            variant="primary"
-            onClick={() => saveClient({
-              ...(editingClient || {}),
-              ...form,
-              name: fullName,
-              linkClientId: dupe?.id,
-            })}
-          >
-            {dupe ? <><HiLink /> Vincular a Lands</> : <><HiCheck /> Guardar</>}
+          <Button variant="primary" onClick={submit} disabled={saving}>
+            {saving ? "Guardando..." : dupe ? <><HiLink /> Vincular a Lands</> : <><HiCheck /> Guardar</>}
           </Button>
         </>
       }
     >
-      {!editingClient && (
-        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", background: "rgba(111,175,107,.1)", border: "1px solid rgba(111,175,107,.3)", borderRadius: 12, padding: "10px 12px", marginBottom: 14, fontSize: ".76rem", color: "#2F6A38", lineHeight: 1.5 }}>
-          <span><HiGlobeAlt /></span>
-          <span>Se registra en el <b>ecosistema</b> como identidad única y se le da acceso a Lands. Si el correo o teléfono ya existe en el core, se <b>vincula</b> en lugar de duplicar.</span>
-        </div>
-      )}
-
-      {dupe && (
-        <div style={{ display: "flex", gap: 8, alignItems: "center", background: "rgba(201,168,76,.14)", border: "1px solid rgba(201,168,76,.4)", borderRadius: 12, padding: "10px 12px", marginBottom: 14, fontSize: ".76rem", color: "#8A6D1E", lineHeight: 1.5 }}>
-          <span><HiExclamationTriangle /></span>
-          <span>Ya existe en el core: <b>{dupe.name}</b>. Al guardar se <b>vinculará</b> a Lands en vez de crear un duplicado.</span>
-        </div>
-      )}
-
       {editingClient && (
         <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", background: "var(--sf2)", border: "1px solid var(--bd)", borderRadius: 12, padding: "9px 12px", marginBottom: 14, fontSize: ".74rem", color: "var(--mu)" }}>
           <span><HiGlobeAlt /> La identidad se sincroniza con el ecosistema.</span>
@@ -140,39 +94,18 @@ function ClientModal() {
           </button>
         </div>
       )}
-      <div className="fr-row">
-        <div className="fg" style={{ flex: 1 }}>
-          <label className="fl">Nombre</label>
-          <input className="fi" value={form.nombre} onChange={(e) => setForm((p) => ({ ...p, nombre: e.target.value }))} />
-        </div>
-        <div className="fg" style={{ flex: 1 }}>
-          <label className="fl">Apellidos</label>
-          <input className="fi" value={form.apellidos} onChange={(e) => setForm((p) => ({ ...p, apellidos: e.target.value }))} />
-        </div>
-      </div>
-      <div className="fg">
-        <label className="fl">Teléfono</label>
-        <PhoneInput inputClassName="fi" value={form.phone} onChange={(v) => setForm((p) => ({ ...p, phone: v }))} />
-      </div>
-      <div className="fg">
-        <label className="fl">Correo electrónico</label>
-        <input {...fe.fieldProps("email")} type="email" value={form.email} onChange={setField("email")} />
-        <FieldError msg={fe.errors.email} />
-      </div>
-      <div className="fg">
-        <label className="fl">Tipo de cliente</label>
-        <select className="fi" value={form.type} onChange={(e) => setForm((p) => ({ ...p, type: e.target.value }))}>
-          <option value="buyer">Comprador</option>
-          <option value="tenant">Arrendatario</option>
-          <option value="lead">Prospecto</option>
-        </select>
-      </div>
-      <div className="fg">
-        <label className="fl">Notas</label>
-        <textarea className="fi" rows="2" value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} />
-      </div>
+
+      <ClientForm ctl={ctl} isEditing={!!editingClient} />
     </Modal>
   );
+}
+
+function ClientModal() {
+  const { ui, editingClient } = useAppContext();
+  if (!ui.clientModal) return null;
+  // La key remonta el formulario al cambiar de cliente (o al pasar de editar a
+  // crear), que es lo que lo deja limpio sin un efecto de sincronización.
+  return <ClientModalInner key={editingClient?.id || "new"} />;
 }
 
 function ClientsPage() {

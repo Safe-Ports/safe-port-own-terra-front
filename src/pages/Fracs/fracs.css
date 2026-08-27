@@ -1824,27 +1824,16 @@
 }
 .new-client-toggle .plus { display: flex; font-size: 16px; }
 
-.inline-create {
+/* Alta de cliente dentro del picker: usa el formulario compartido (.fg/.fl/.fi),
+   así que aquí solo se define el envoltorio y sus botones. */
+.cp-create {
   margin-top: 10px;
   border-top: 1px dashed var(--bd);
   padding-top: 12px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
 }
-.mini-input {
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--bd);
-  background: var(--sf);
-  color: var(--tx);
-  font-family: var(--font-body);
-  font-size: 12.5px;
-}
-.mini-input.full { grid-column: 1 / -1; }
+.cp-create-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
 .mini-save {
-  grid-column: 1 / -1;
-  margin-top: 2px;
+  width: 100%;
   padding: 9px;
   border-radius: 8px;
   border: none;
@@ -1857,7 +1846,7 @@
 }
 .mini-save:disabled { opacity: .6; cursor: not-allowed; }
 .mini-cancel {
-  grid-column: 1 / -1;
+  width: 100%;
   padding: 6px;
   border: none;
   background: none;
@@ -2175,4 +2164,48 @@
   .lotp-body { grid-template-columns: 1fr; }
   .lotp-acts { border-left: none; border-top: 1px solid var(--line); }
   .lotp-code { font-size: 1.35rem; }
+}
+
+/* ── Modo formulario del panel: una acción a la vez ────────────────── */
+.lotp-form-hd {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.lotp-back {
+  padding: 6px 11px;
+  border-radius: 9px;
+  border: 1px solid var(--bd);
+  background: var(--sf2);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .15s, border-color .15s;
+}
+.lotp-back:hover { color: var(--forest); border-color: var(--leaf); }
+.lotp-form-t {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 750;
+  color: var(--tx);
+  letter-spacing: -.01em;
+}
+.lotp-form-help {
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 10px 0 0;
+}
+
+/* Acción abierta: el botón queda marcado para saber cuál se está usando. */
+.lotp-btn.on {
+  background: var(--tan-lt);
+  border-color: var(--leaf);
+  color: var(--forest);
 }
