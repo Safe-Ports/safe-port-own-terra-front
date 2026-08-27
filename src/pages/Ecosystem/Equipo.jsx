@@ -125,10 +125,6 @@ function EcosystemEquipo() {
   const selectedIsAdmin = selected?.role === "admin";
   const verticalAppRows = appRows.filter((app) => APP_LABEL[app.app_key]);
 
-  const vendors = users.filter((u) => u.role === "vendor");
-  const activeUsers = users.filter((u) => u.is_active).length;
-  const inactiveVendors = vendors.filter((u) => !u.is_active).length;
-
   useEffect(() => {
     setAccessDraft(null);
     setConfirmAccessSave(false);
@@ -401,13 +397,6 @@ function EcosystemEquipo() {
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <button className="ag-primary" onClick={openCreate}>Nuevo colaborador</button>
         </div>
-      </div>
-
-      <div className="kpi-row" style={{ marginBottom: 22 }}>
-        <div className="kpi"><div className="kpi-head"><span className="kpi-label">Usuarios del core</span></div><div className="kpi-val">{users.length}</div><div className="kpi-foot">Con acceso a la app</div></div>
-        <div className="kpi"><div className="kpi-head"><span className="kpi-label">Vendedores Lands</span></div><div className="kpi-val">{vendors.length}</div><div className="kpi-foot">Rol vendor</div></div>
-        <div className="kpi"><div className="kpi-head"><span className="kpi-label">Personal</span></div><div className="kpi-val">{employees.length}</div><div className="kpi-foot">Sin acceso a la app</div></div>
-        <div className="kpi"><div className="kpi-head"><span className="kpi-label">Por revisar</span></div><div className="kpi-val">{inactiveVendors}</div><div className="kpi-foot">Vendedores inactivos</div></div>
       </div>
 
       <div className="usr-layout">
