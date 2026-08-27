@@ -4341,3 +4341,122 @@ textarea.is-invalid {
   color: #8A6D1E;
 }
 .cf-notice svg { flex-shrink: 0; margin-top: 2px; }
+
+/* ════════════════════════════════════════════════════════════════════
+   Lanzador de aplicaciones del ecosistema (barra superior)
+   Permite saltar de una vertical a otra sin volver al Hub.
+   ════════════════════════════════════════════════════════════════════ */
+.app-launcher-btn {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  border: 1px solid var(--bd);
+  background: var(--sf);
+  color: var(--tx2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 17px;
+  transition: background .18s cubic-bezier(.2,.8,.2,1), border-color .18s, color .18s;
+}
+.app-launcher-btn:hover,
+.app-launcher-btn.is-open {
+  background: var(--tan-lt);
+  border-color: var(--leaf);
+  color: var(--forest);
+}
+
+.app-launcher-pop {
+  position: fixed;
+  z-index: 1300;
+  width: 312px;
+  padding: 14px;
+  background: var(--sf);
+  border: 1px solid var(--bd);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(30, 61, 43, .18);
+  animation: alp-in .16s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes alp-in {
+  from { opacity: 0; transform: translateY(-6px) }
+  to { opacity: 1; transform: none }
+}
+
+.alp-title {
+  font-size: 9.5px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 750;
+  margin-bottom: 10px;
+}
+.alp-sep { height: 1px; background: var(--line); margin: 14px 0 12px; }
+
+.alp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+
+.alp-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: background .16s, border-color .16s;
+}
+.alp-item:hover { background: var(--sf2); border-color: var(--bd); }
+.alp-item:focus-visible { outline: 2px solid var(--forest); outline-offset: -2px; }
+
+.alp-ico {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(150deg, #ffffff, #eef2ea);
+  border: 1px solid var(--bd);
+  overflow: hidden;
+}
+.alp-ico svg { width: 24px; height: 24px; }
+/* Los accesos del core no son marcas: van en un tono neutro para que las
+   apps de verdad sean las que destacan. */
+.alp-ico.neutral { background: var(--sf2); color: var(--forest); }
+.alp-ico.neutral svg { fill: currentColor; }
+
+.alp-lbl {
+  font-size: 11.5px;
+  font-weight: 650;
+  color: var(--tx2);
+  text-align: center;
+  line-height: 1.25;
+}
+
+/* Verticales que aún no existen: visibles pero apagadas, para que se sepa que
+   vienen en vez de esconderlas. */
+.alp-item.is-off { opacity: .5; }
+.alp-item.is-off:hover { background: none; border-color: transparent; }
+.alp-soon {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--sf3, var(--sf2));
+  border: 1px solid var(--bd);
+  color: var(--muted);
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 560px) {
+  .app-launcher-pop { width: min(292px, calc(100vw - 24px)); }
+}

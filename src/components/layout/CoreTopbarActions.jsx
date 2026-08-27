@@ -7,6 +7,7 @@ import {
 } from "react-icons/hi2";
 import { useLocation, useNavigate } from "react-router-dom";
 import Avatar from "@/components/Avatar";
+import AppLauncher from "@/components/layout/AppLauncher";
 import { useAppContext } from "@/context/AppContext";
 
 function CoreTopbarActions({ onGuide, className = "" }) {
@@ -22,6 +23,8 @@ function CoreTopbarActions({ onGuide, className = "" }) {
 
   return (
     <nav className={`core-topbar-actions ${className}`} aria-label="Acciones del ecosistema">
+      <AppLauncher />
+
       {onGuide && (
         <button
           type="button"
