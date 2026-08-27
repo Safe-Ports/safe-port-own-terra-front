@@ -28,6 +28,8 @@ const SORTS = [
   { value: "code",     label: "Por código de lote" },
 ];
 
+const PER_PAGE = 15;
+
 function initials(name) {
   const parts = (name || "").trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return "?";
@@ -395,6 +397,7 @@ export default function LotTrackPage() {
   const [sort, setSort] = useState("recent");
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
+  const [page, setPage] = useState(1);
   const [openRow, setOpenRow] = useState(null);
   const [contact, setContact] = useState(null); // {anchor, row}
 
@@ -412,18 +415,25 @@ export default function LotTrackPage() {
   const closeContact = useCallback(() => setContact(null), []);
   const closeRow = useCallback(() => setOpenRow(null), []);
 
+  // Volver a la primera página al cambiar cualquier filtro: si estabas en la 4 y
+  // el nuevo filtro deja 2 páginas, la consulta traería una página vacía.
+  useEffect(() => { setPage(1); }, [statusFilter, fracFilter, debounced, sort]);
+
   const params = useMemo(() => ({
     ...(statusFilter ? { status: statusFilter } : {}),
     ...(fracFilter ? { inmueble_id: fracFilter } : {}),
     ...(debounced ? { search: debounced } : {}),
     sort,
-    limit: 100,
-  }), [statusFilter, fracFilter, debounced, sort]);
+    page,
+    limit: PER_PAGE,
+  }), [statusFilter, fracFilter, debounced, sort, page]);
 
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ["lot-track", params],
     queryFn: () => lotService.track(params),
-    keepPreviousData: true,
+    // La página anterior queda en pantalla mientras llega la nueva, para que la
+    // tabla no parpadee a vacío en cada paso del paginador.
+    placeholderData: (prev) => prev,
   });
 
   useEffect(() => {
@@ -432,6 +442,10 @@ export default function LotTrackPage() {
 
   const summary = data?.summary || { available: 0, reserved: 0, sold: 0, total: 0, expiring_soon: 0 };
   const rows = data?.items || [];
+  const totalRows = data?.total || 0;
+  const totalPages = data?.pages || 1;
+  const firstShown = totalRows === 0 ? 0 : (page - 1) * PER_PAGE + 1;
+  const lastShown = Math.min(page * PER_PAGE, totalRows);
 
   return (
     <div className="lt-page">
@@ -522,6 +536,32 @@ export default function LotTrackPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="lt-foot">
+            <span className="lt-count">
+              {totalRows === 0
+                ? "Sin lotes"
+                : `${firstShown}–${lastShown} de ${totalRows} lote${totalRows === 1 ? "" : "s"}`}
+            </span>
+            {totalPages > 1 && (
+              <div className="lt-pager">
+                <button
+                  className="lt-page-btn"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1 || isFetching}
+                >
+                  ← Anterior
+                </button>
+                <span className="lt-page-num">Página {page} de {totalPages}</span>
+                <button
+                  className="lt-page-btn"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages || isFetching}
+                >
+                  Siguiente →
+                </button>
+              </div>
+            )}
           </div>
           <div className="lt-hint">
             Click en la fila para el historial del lote · click en el ojito para el contacto del cliente

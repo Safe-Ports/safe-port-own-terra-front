@@ -239,6 +239,39 @@
 .lt-table tbody tr:hover .lt-eye { opacity: 1; }
 .lt-eye:hover { background: var(--sf); border-color: var(--bd); color: var(--forest); }
 
+/* ── Pie de tabla: conteo + paginador ── */
+.lt-foot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.lt-count { font-size: 0.76rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.lt-pager { display: flex; align-items: center; gap: 9px; margin-left: auto; }
+.lt-page-btn {
+  padding: 7px 13px;
+  border-radius: 9px;
+  border: 1px solid var(--bd);
+  background: var(--sf);
+  color: var(--tx2);
+  font-size: 0.76rem;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color .15s, background .15s, color .15s;
+}
+.lt-page-btn:hover:not(:disabled) { border-color: var(--leaf); color: var(--forest); background: var(--sf2); }
+.lt-page-btn:disabled { opacity: .45; cursor: not-allowed; }
+.lt-page-num {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--tx2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .lt-hint {
   margin-top: 12px;
   padding: 10px 14px;
