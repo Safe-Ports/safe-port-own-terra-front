@@ -216,6 +216,8 @@
   white-space: nowrap;
 }
 
+.lt-since { color: var(--muted); font-size: 0.73rem; white-space: nowrap; }
+
 .lt-venc { font-weight: 700; white-space: nowrap; }
 .lt-venc.urgent { color: var(--danger); }
 .lt-venc.soon { color: var(--lt-warn-tx); }

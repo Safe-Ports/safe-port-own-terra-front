@@ -22,10 +22,31 @@ const STATUS_FILTERS = [
   { value: "sold",      label: "Vendidos" },
 ];
 
+const SORTS = [
+  { value: "recent",   label: "Más recientes primero" },
+  { value: "expiring", label: "Por vencer primero" },
+  { value: "code",     label: "Por código de lote" },
+];
+
 function initials(name) {
   const parts = (name || "").trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return "?";
   return (parts[0][0] + (parts[1]?.[0] || "")).toUpperCase();
+}
+
+/** "hace 2 h", "ayer", "hace 5 d" — cuánto hace que el lote se movió. */
+function sinceLabel(iso) {
+  if (!iso) return null;
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return "ahora";
+  if (mins < 60) return `hace ${mins} min`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `hace ${hrs} h`;
+  const days = Math.round(hrs / 24);
+  if (days === 1) return "ayer";
+  if (days < 30) return `hace ${days} d`;
+  const months = Math.round(days / 30);
+  return `hace ${months} ${months === 1 ? "mes" : "meses"}`;
 }
 
 /** "402.00" → "402 m²" (los lotes se capturan con 2 decimales que casi nunca se usan). */
@@ -318,6 +339,7 @@ export default function LotTrackPage() {
   const { fracs = [], showError } = useAppContext();
   const [statusFilter, setStatusFilter] = useState("");
   const [fracFilter, setFracFilter] = useState("");
+  const [sort, setSort] = useState("recent");
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [openRow, setOpenRow] = useState(null);
@@ -332,8 +354,9 @@ export default function LotTrackPage() {
     ...(statusFilter ? { status: statusFilter } : {}),
     ...(fracFilter ? { inmueble_id: fracFilter } : {}),
     ...(debounced ? { search: debounced } : {}),
+    sort,
     limit: 100,
-  }), [statusFilter, fracFilter, debounced]);
+  }), [statusFilter, fracFilter, debounced, sort]);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["lot-track", params],
@@ -381,6 +404,16 @@ export default function LotTrackPage() {
             <option key={f.id} value={f.id}>{f.name}</option>
           ))}
         </select>
+        <select
+          className="lt-select"
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+          aria-label="Ordenar por"
+        >
+          {SORTS.map((s) => (
+            <option key={s.value} value={s.value}>{s.label}</option>
+          ))}
+        </select>
         <input
           className="lt-search"
           placeholder="Buscar lote, cliente o vendedor…"
@@ -411,6 +444,7 @@ export default function LotTrackPage() {
                   <th>Recorrido · apartó → cerró</th>
                   <th>Cliente</th>
                   <th>Vence</th>
+                  <th>Movimiento</th>
                   <th>Monto</th>
                   <th aria-label="Ver historial" />
                 </tr>
@@ -459,6 +493,13 @@ export default function LotTrackPage() {
                       <td>
                         {venc ? <span className={`lt-venc ${venc.tone}`}>{venc.text}</span>
                               : <span className="lt-dash">—</span>}
+                      </td>
+                      <td>
+                        {sinceLabel(row.last_activity)
+                          ? <span className="lt-since" title={new Date(row.last_activity).toLocaleString("es-MX")}>
+                              {sinceLabel(row.last_activity)}
+                            </span>
+                          : <span className="lt-dash">—</span>}
                       </td>
                       <td className="lt-num">
                         {row.price_contado ? currency(row.price_contado) : <span className="lt-dash">—</span>}
