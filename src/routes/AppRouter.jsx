@@ -25,6 +25,7 @@ const EcosystemFormularios = lazyWithRetry(() => import("@/pages/Ecosystem/Formu
 const EcosystemFormEditor = lazyWithRetry(() => import("@/pages/Ecosystem/Formularios/Editor"));
 const EcosystemFormRespuestas = lazyWithRetry(() => import("@/pages/Ecosystem/Formularios/Respuestas"));
 const EcosystemConfiguracion = lazyWithRetry(() => import("@/pages/Ecosystem/Configuracion"));
+const EcosystemPerfil = lazyWithRetry(() => import("@/pages/Ecosystem/Perfil"));
 const DashboardPage = lazyWithRetry(() => import("@/pages/Dashboard"));
 const LotsPage = lazyWithRetry(() => import("@/pages/Lots"));
 const FracsPage = lazyWithRetry(() => import("@/pages/Fracs"));
@@ -90,6 +91,9 @@ function AppRouter() {
           {/* Misma página que /configuracion, servida con el shell del Core para
               quien entra desde el Ecosistema (ver Ecosystem/Configuracion.jsx). */}
           <Route path="/ecosistema/configuracion" element={<RequireFeature feature="core.config"><EcosystemConfiguracion /></RequireFeature>} />
+          {/* Misma página que /perfil, con el shell del Core. El perfil es
+              transversal, así que abrirlo no debe mandarte a otra app. */}
+          <Route path="/ecosistema/perfil" element={<EcosystemPerfil />} />
           <Route element={<AppShell />}>
             <Route path="/dashboard" element={<RequireFeature app="lands"><DashboardPage /></RequireFeature>} />
             <Route path="/lotes" element={<RequireFeature app="lands"><LotsPage /></RequireFeature>} />

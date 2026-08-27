@@ -29,7 +29,7 @@ const subtitleMap = {
   "/pagos": "OwnTerra Lands · Cobranza y cartera",
   "/calculadora": "OwnTerra Lands · Cotizador comercial",
   "/alertas": "OwnTerra Core · Seguimiento operativo",
-  "/perfil": "Cuenta y preferencias",
+  "/perfil": "Tu cuenta en el ecosistema",
   "/configuracion": "Configuración del espacio Lands",
 };
 

@@ -21,6 +21,14 @@ function CoreTopbarActions({ onGuide, className = "" }) {
 
   const isActive = (path) => location.pathname === path;
 
+  // El perfil es la misma página servida por dos shells (ver Ecosystem/Perfil.jsx).
+  // Esta barra la comparten Lands, Finanzas y el Core, así que se elige la versión
+  // de la shell en la que ya está el usuario: abrir tu perfil no debería cambiarte
+  // de aplicación. Desde Finanzas se usa la del Core porque es la casa común, no
+  // la de otra vertical.
+  const inLands = !/^\/(ecosistema|finanzas)\b/.test(location.pathname);
+  const profilePath = inLands ? "/perfil" : "/ecosistema/perfil";
+
   return (
     <nav className={`core-topbar-actions ${className}`} aria-label="Acciones del ecosistema">
       {onGuide && (
@@ -61,8 +69,8 @@ function CoreTopbarActions({ onGuide, className = "" }) {
 
       <button
         type="button"
-        className={`core-topbar-action core-profile-action ${isActive("/perfil") ? "is-active" : ""}`}
-        onClick={() => navigate("/perfil")}
+        className={`core-topbar-action core-profile-action ${isActive(profilePath) ? "is-active" : ""}`}
+        onClick={() => navigate(profilePath)}
         aria-label={`Ver perfil de ${currentUser?.name || "usuario"}`}
       >
         <Avatar name={currentUser?.name || "Usuario"} src={currentUser?.avatar_url} size={28} />

@@ -84,7 +84,9 @@ function FinanceSidebar() {
           })}
         </div>
         <div className="sb-foot">
-          <NavLink to="/perfil" onClick={closeSidebar} className="sb-foot-item" style={{ textDecoration: "none" }}>
+          {/* Al del Core, no al de Lands: el perfil es transversal y desde acá
+              Lands es otra vertical, no la casa común (ver CoreTopbarActions). */}
+          <NavLink to="/ecosistema/perfil" onClick={closeSidebar} className="sb-foot-item" style={{ textDecoration: "none" }}>
             <span style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--forest)",
               color: "#fff", fontWeight: 800, fontSize: ".68rem",
               display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
