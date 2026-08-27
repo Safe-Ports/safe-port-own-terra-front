@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import { HiEye, HiXMark } from "react-icons/hi2";
@@ -113,6 +113,71 @@ function Journey({ row }) {
   );
 }
 
+/**
+ * Una fila de la tabla. Va memoizada porque abrir el popover de contacto o el
+ * panel de historial cambia el estado de la página, y sin esto React volvía a
+ * renderizar las hasta 100 filas —con sus avatares y pastillas— en cada click.
+ * Los handlers llegan estables desde arriba (useCallback) para que la
+ * comparación de props sirva de algo.
+ */
+const LotRow = memo(function LotRow({ row, onOpenRow, onOpenContact }) {
+  const meta = STATUS_META[row.status] || STATUS_META.available;
+  const venc = row.status === "reserved" ? vencLabel(row.reserved_until) : null;
+  const since = sinceLabel(row.last_activity);
+  const stale = row.status === "available" && !row.closed_by_name;
+
+  return (
+    <tr
+      className={venc?.tone === "urgent" ? "urgent" : venc?.tone === "soon" ? "soon" : ""}
+      tabIndex={0}
+      onClick={() => onOpenRow(row)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenRow(row); }
+      }}
+    >
+      <td className="lt-first">
+        <div className="lt-code">{row.code}</div>
+        <div className="lt-cell-sub">{row.inmueble_name}</div>
+      </td>
+      <td>
+        <span className={`lt-pill ${meta.cls}`}><span className="lt-dot" />{meta.label}</span>
+      </td>
+      <td><Journey row={row} /></td>
+      <td>
+        {row.client_name ? (
+          <div className={`lt-client-cell${stale ? " stale" : ""}`}>
+            <Person name={row.client_name} kind="client" />
+            <button
+              className="lt-eye"
+              title={`Ver contacto de ${row.client_name}`}
+              aria-label={`Ver contacto de ${row.client_name}`}
+              onClick={(e) => {
+                e.stopPropagation();  // no abrir el drawer del lote
+                onOpenContact(e.currentTarget, row);
+              }}
+            >
+              <HiEye />
+            </button>
+          </div>
+        ) : <span className="lt-dash">—</span>}
+      </td>
+      <td>
+        {venc ? <span className={`lt-venc ${venc.tone}`}>{venc.text}</span>
+              : <span className="lt-dash">—</span>}
+      </td>
+      <td>
+        {since
+          ? <span className="lt-since" title={new Date(row.last_activity).toLocaleString("es-MX")}>{since}</span>
+          : <span className="lt-dash">—</span>}
+      </td>
+      <td className="lt-num">
+        {row.price_contado ? currency(row.price_contado) : <span className="lt-dash">—</span>}
+      </td>
+      <td><span className="lt-chev">›</span></td>
+    </tr>
+  );
+});
+
 /** Gráfico de barras del inventario por estado. */
 function StatusChart({ summary }) {
   const bars = [
@@ -158,7 +223,11 @@ function ContactPopover({ anchor, row, onClose }) {
   const ref = useRef(null);
   const [pos, setPos] = useState(null);
 
-  useEffect(() => {
+  // useLayoutEffect y no useEffect: mide y posiciona ANTES de que el navegador
+  // pinte. Con useEffect el popover alcanzaba a pintarse invisible en su posición
+  // por defecto y sólo en el frame siguiente saltaba a su lugar — un frame perdido
+  // en cada apertura, que es lo que se sentía como lentitud.
+  useLayoutEffect(() => {
     if (!anchor || !ref.current) return;
     const a = anchor.getBoundingClientRect();
     const p = ref.current.getBoundingClientRect();
@@ -185,10 +254,6 @@ function ContactPopover({ anchor, row, onClose }) {
       window.removeEventListener("resize", onClose);
     };
   }, [anchor, onClose]);
-
-  const since = row.client_since
-    ? new Date(row.client_since).toLocaleDateString("es-MX", { month: "short", year: "numeric" })
-    : null;
 
   // Portal a body: el contenedor de la página crea un stacking context propio y
   // ahí un position:fixed queda atrapado por debajo de la barra superior.
@@ -218,18 +283,6 @@ function ContactPopover({ anchor, row, onClose }) {
         <span className="lt-pop-k">Teléfono</span>
         <span className="lt-pop-v">{row.client_phone || "—"}</span>
       </div>
-      {since && (
-        <div className="lt-pop-row">
-          <span className="lt-pop-k">Cliente desde</span>
-          <span className="lt-pop-v">{since}</span>
-        </div>
-      )}
-      {row.reserved_by_name && (
-        <div className="lt-pop-row">
-          <span className="lt-pop-k">Apartó</span>
-          <span className="lt-pop-v">{row.reserved_by_name}</span>
-        </div>
-      )}
     </div>,
     document.body
   );
@@ -350,6 +403,15 @@ export default function LotTrackPage() {
     return () => clearTimeout(t);
   }, [search]);
 
+  // Estables entre renders: son lo que permite que LotRow (memo) no se
+  // vuelva a renderizar cada vez que se abre el contacto o el historial.
+  const openRowHandler = useCallback((row) => setOpenRow(row), []);
+  const openContactHandler = useCallback((anchor, row) => {
+    setContact((c) => (c?.row.id === row.id ? null : { anchor, row }));
+  }, []);
+  const closeContact = useCallback(() => setContact(null), []);
+  const closeRow = useCallback(() => setOpenRow(null), []);
+
   const params = useMemo(() => ({
     ...(statusFilter ? { status: statusFilter } : {}),
     ...(fracFilter ? { inmueble_id: fracFilter } : {}),
@@ -450,64 +512,14 @@ export default function LotTrackPage() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => {
-                  const meta = STATUS_META[row.status] || STATUS_META.available;
-                  const venc = row.status === "reserved" ? vencLabel(row.reserved_until) : null;
-                  return (
-                    <tr
-                      key={row.id}
-                      className={venc?.tone === "urgent" ? "urgent" : venc?.tone === "soon" ? "soon" : ""}
-                      tabIndex={0}
-                      onClick={() => setOpenRow(row)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpenRow(row); }
-                      }}
-                    >
-                      <td className="lt-first">
-                        <div className="lt-code">{row.code}</div>
-                        <div className="lt-cell-sub">{row.inmueble_name}</div>
-                      </td>
-                      <td>
-                        <span className={`lt-pill ${meta.cls}`}><span className="lt-dot" />{meta.label}</span>
-                      </td>
-                      <td><Journey row={row} /></td>
-                      <td>
-                        {row.client_name ? (
-                          <div className={`lt-client-cell${row.status === "available" && !row.closed_by_name ? " stale" : ""}`}>
-                            <Person name={row.client_name} kind="client" />
-                            <button
-                              className="lt-eye"
-                              title={`Ver contacto de ${row.client_name}`}
-                              aria-label={`Ver contacto de ${row.client_name}`}
-                              onClick={(e) => {
-                                e.stopPropagation();  // no abrir el drawer del lote
-                                setContact((c) =>
-                                  c?.row.id === row.id ? null : { anchor: e.currentTarget, row });
-                              }}
-                            >
-                              <HiEye />
-                            </button>
-                          </div>
-                        ) : <span className="lt-dash">—</span>}
-                      </td>
-                      <td>
-                        {venc ? <span className={`lt-venc ${venc.tone}`}>{venc.text}</span>
-                              : <span className="lt-dash">—</span>}
-                      </td>
-                      <td>
-                        {sinceLabel(row.last_activity)
-                          ? <span className="lt-since" title={new Date(row.last_activity).toLocaleString("es-MX")}>
-                              {sinceLabel(row.last_activity)}
-                            </span>
-                          : <span className="lt-dash">—</span>}
-                      </td>
-                      <td className="lt-num">
-                        {row.price_contado ? currency(row.price_contado) : <span className="lt-dash">—</span>}
-                      </td>
-                      <td><span className="lt-chev">›</span></td>
-                    </tr>
-                  );
-                })}
+                {rows.map((row) => (
+                  <LotRow
+                    key={row.id}
+                    row={row}
+                    onOpenRow={openRowHandler}
+                    onOpenContact={openContactHandler}
+                  />
+                ))}
               </tbody>
             </table>
           </div>
@@ -518,9 +530,9 @@ export default function LotTrackPage() {
       )}
 
       {contact && (
-        <ContactPopover anchor={contact.anchor} row={contact.row} onClose={() => setContact(null)} />
+        <ContactPopover anchor={contact.anchor} row={contact.row} onClose={closeContact} />
       )}
-      {openRow && <TimelineDrawer row={openRow} onClose={() => setOpenRow(null)} />}
+      {openRow && <TimelineDrawer row={openRow} onClose={closeRow} />}
     </div>
   );
 }
