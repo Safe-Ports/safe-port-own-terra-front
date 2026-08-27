@@ -882,7 +882,7 @@ function FracsPage() {
 
                     {panelMode === "documento" ? (
                       <div className="frac-appointment-form">
-                        <DocumentUploadFields ctl={docUpload} />
+                        <DocumentUploadFields ctl={docUpload} defaultFolderAppKey="lands" />
                         <Button
                           variant="primary"
                           disabled={docSaving}
@@ -893,7 +893,12 @@ function FracsPage() {
                               // El lote ya está decidido por el contexto: se vincula
                               // solo, sin preguntar a qué se adjunta.
                               const ok = await saveDocument(
-                                { ...docUpload.form, linkType: "lot", linkedId: selectedLot.id },
+                                {
+                                  ...docUpload.form,
+                                  folderId: docUpload.form.folderId || undefined,
+                                  linkType: "lot",
+                                  linkedId: selectedLot.id,
+                                },
                                 docUpload.file
                               );
                               if (ok !== false) {

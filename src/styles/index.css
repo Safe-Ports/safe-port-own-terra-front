@@ -4474,3 +4474,39 @@ textarea.is-invalid {
 @media (max-width: 560px) {
   .app-launcher-pop { width: min(292px, calc(100vw - 24px)); }
 }
+
+
+/* ── Selector de carpeta al subir un documento ─────────────────────── */
+.doc-folder-row { display: flex; gap: 7px; align-items: stretch; }
+.doc-folder-row .mobile-input { flex: 1; min-width: 0; }
+.doc-folder-new-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--leaf);
+  background: var(--sf);
+  color: var(--forest);
+  font-size: 12.5px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s;
+}
+.doc-folder-new-btn:hover { background: var(--tan-lt); }
+.doc-folder-new-btn svg { font-size: 15px; }
+
+.doc-folder-new {
+  border: 1px dashed var(--leaf);
+  border-radius: 14px;
+  padding: 11px;
+  background: var(--tan-lt);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.doc-folder-new-actions { display: flex; gap: 7px; }
+.doc-folder-new-actions button { flex: 1; }

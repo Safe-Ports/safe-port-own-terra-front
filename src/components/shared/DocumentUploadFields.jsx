@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { HiOutlineFolderPlus } from "react-icons/hi2";
 import FieldError from "@/components/shared/FieldError";
 import { useFieldErrors } from "@/hooks/useFieldErrors";
+import { folderService } from "@/services/folderService";
 
 export const DOCUMENT_CATEGORIES = [
   { value: "contrato", label: "Contrato" },
@@ -20,13 +23,47 @@ export const DOCUMENT_CATEGORIES = [
  *
  * @param {object} ctl Resultado de `useDocumentUpload`.
  */
-export default function DocumentUploadFields({ ctl }) {
+export default function DocumentUploadFields({ ctl, defaultFolderAppKey }) {
   const { form, setForm, fe, fileName, pickFile } = ctl;
+  const queryClient = useQueryClient();
+  const [creatingFolder, setCreatingFolder] = useState(false);
+  const [newFolder, setNewFolder] = useState("");
+  const [savingFolder, setSavingFolder] = useState(false);
+
+  const { data: folders = [] } = useQuery({
+    queryKey: ["folders"],
+    queryFn: () => folderService.list(),
+  });
+
+  // Sugerir la carpeta de la app desde la que se sube (la que se crea sola por
+  // vertical). Sólo la primera vez: si el usuario elige otra, se respeta.
+  useEffect(() => {
+    if (!defaultFolderAppKey || form.folderId || ctl.folderTouched) return;
+    const own = folders.find((f) => f.app_key === defaultFolderAppKey);
+    if (own) setForm((p) => ({ ...p, folderId: String(own.id) }));
+  }, [folders, defaultFolderAppKey, form.folderId, ctl.folderTouched, setForm]);
 
   const set = (key) => (e) => {
     const v = e.target.value;
     setForm((p) => ({ ...p, [key]: v }));
     fe.clear(key);
+  };
+
+  const createFolder = async () => {
+    const name = newFolder.trim();
+    if (!name || savingFolder) return;
+    setSavingFolder(true);
+    try {
+      const created = await folderService.create({ name, parent_id: null });
+      await queryClient.invalidateQueries({ queryKey: ["folders"] });
+      await queryClient.invalidateQueries({ queryKey: ["document-folders"] });
+      ctl.setFolderTouched(true);
+      setForm((p) => ({ ...p, folderId: String(created.id) }));
+      setNewFolder("");
+      setCreatingFolder(false);
+    } finally {
+      setSavingFolder(false);
+    }
   };
 
   return (
@@ -52,6 +89,50 @@ export default function DocumentUploadFields({ ctl }) {
         ))}
       </select>
 
+      {/* Dónde queda guardado. Sin esto el archivo caía en la raíz del Vault,
+          incluso teniendo la organización una carpeta por app. */}
+      {creatingFolder ? (
+        <div className="doc-folder-new">
+          <input
+            className="mobile-input"
+            value={newFolder}
+            onChange={(e) => setNewFolder(e.target.value)}
+            placeholder="Nombre de la carpeta"
+            autoFocus
+            onKeyDown={(e) => e.key === "Enter" && createFolder()}
+          />
+          <div className="doc-folder-new-actions">
+            <button type="button" className="btn-p" disabled={!newFolder.trim() || savingFolder} onClick={createFolder}>
+              {savingFolder ? "Creando…" : "Crear y usar"}
+            </button>
+            <button type="button" className="btn-s" onClick={() => { setCreatingFolder(false); setNewFolder(""); }}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="doc-folder-row">
+          <select
+            className="mobile-input"
+            value={form.folderId || ""}
+            onChange={(e) => { ctl.setFolderTouched(true); setForm((p) => ({ ...p, folderId: e.target.value })); }}
+          >
+            <option value="">Sin carpeta (raíz)</option>
+            {folders.map((f) => (
+              <option key={f.id} value={f.id}>{f.name}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="doc-folder-new-btn"
+            onClick={() => setCreatingFolder(true)}
+            title="Crear una carpeta"
+          >
+            <HiOutlineFolderPlus /> Nueva
+          </button>
+        </div>
+      )}
+
       <textarea
         className="mobile-input"
         rows="2"
@@ -73,9 +154,12 @@ export function useDocumentUpload(defaults = {}) {
   const [form, setForm] = useState({
     name: "",
     category: defaults.category || "contrato",
+    folderId: defaults.folderId || "",
     notes: "",
   });
   const [file, setFile] = useState(null);
+  // Una vez que el usuario elige carpeta, deja de sugerirse la de la app.
+  const [folderTouched, setFolderTouched] = useState(false);
   const fe = useFieldErrors();
 
   const pickFile = (f) => {
@@ -95,10 +179,14 @@ export function useDocumentUpload(defaults = {}) {
   };
 
   const reset = () => {
-    setForm({ name: "", category: defaults.category || "contrato", notes: "" });
+    setForm({ name: "", category: defaults.category || "contrato", folderId: defaults.folderId || "", notes: "" });
     setFile(null);
+    setFolderTouched(false);
     fe.setErrors({});
   };
 
-  return { form, setForm, fe, file, fileName: file?.name || "", pickFile, validate, reset };
+  return {
+    form, setForm, fe, file, fileName: file?.name || "",
+    pickFile, validate, reset, folderTouched, setFolderTouched,
+  };
 }
