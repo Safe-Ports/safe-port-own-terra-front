@@ -23,8 +23,6 @@ function CoreTopbarActions({ onGuide, className = "" }) {
 
   return (
     <nav className={`core-topbar-actions ${className}`} aria-label="Acciones del ecosistema">
-      <AppLauncher />
-
       {onGuide && (
         <button
           type="button"
@@ -84,6 +82,10 @@ function CoreTopbarActions({ onGuide, className = "" }) {
         <HiArrowLeftOnRectangle aria-hidden="true" />
         <span className="core-logout-label">Cerrar sesión</span>
       </button>
+
+      {/* Último de la fila: es el salto FUERA de esta app, no una acción de
+          ella, así que no se mezcla con las demás. */}
+      <AppLauncher />
     </nav>
   );
 }

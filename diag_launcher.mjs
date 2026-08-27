@@ -1,0 +1,26 @@
+import { chromium } from "playwright";
+import fs from "fs";
+const base = "/private/tmp/claude-501/-Users-nefta-Documents-SafePorts-development-OwnTerra/4235f5e7-b39b-4b20-9c2f-929e2756d85a/scratchpad";
+const email = fs.readFileSync(`${base}/ui_test_email.txt`, "utf8").trim();
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+page.on("pageerror", e => console.log("[PAGEERROR]", e.message));
+page.on("console", m => { if (m.type()==="error" && !/ERR_CONNECTION_REFUSED/.test(m.text())) console.log("[console]", m.text()); });
+await page.goto("http://localhost:5173/login");
+await page.waitForTimeout(600);
+await page.fill('input[placeholder="correo@empresa.mx"]', email);
+await page.fill('input[type="password"]', "TestPass123");
+await page.click('button:has-text("Iniciar sesión")');
+await page.waitForTimeout(1800);
+await page.goto("http://localhost:5173/dashboard");
+await page.waitForTimeout(2500);
+console.log("URL:", page.url());
+console.log("título visible:", (await page.locator("body").innerText()).slice(0, 120).replace(/\n/g, " | "));
+console.log("¿existe .core-topbar-actions?:", await page.locator(".core-topbar-actions").count());
+console.log("¿existe .topbar?:", await page.locator(".topbar").count());
+console.log("hijos de la barra:", await page.evaluate(() => {
+  const n = document.querySelector(".core-topbar-actions");
+  return n ? [...n.children].map(c => c.className) : "(no hay barra)";
+}));
+console.log("¿.app-launcher-btn en el DOM?:", await page.locator(".app-launcher-btn").count());
+await browser.close();

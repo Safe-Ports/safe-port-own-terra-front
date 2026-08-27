@@ -4346,14 +4346,25 @@ textarea.is-invalid {
    Lanzador de aplicaciones del ecosistema (barra superior)
    Permite saltar de una vertical a otra sin volver al Hub.
    ════════════════════════════════════════════════════════════════════ */
+/* Paleta teal del Hub del ecosistema (misma que .eco-root y .pricing-page),
+   local al lanzador: es el acceso al ecosistema, no a la vertical actual, así
+   que se identifica con el color del Core y no con el verde de Lands. */
+.app-launcher-btn,
+.app-launcher-pop {
+  --alp-deep: #07393C;
+  --alp-mid: #2C666E;
+  --alp-leaf: #48A9A6;
+  --alp-tint: #D8EFEC;
+}
+
 .app-launcher-btn {
   width: 34px;
   height: 34px;
   flex-shrink: 0;
   border-radius: 10px;
-  border: 1px solid var(--bd);
-  background: var(--sf);
-  color: var(--tx2);
+  border: 1px solid color-mix(in srgb, var(--alp-leaf) 40%, var(--bd));
+  background: color-mix(in srgb, var(--alp-leaf) 10%, var(--sf));
+  color: var(--alp-mid);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -4363,9 +4374,9 @@ textarea.is-invalid {
 }
 .app-launcher-btn:hover,
 .app-launcher-btn.is-open {
-  background: var(--tan-lt);
-  border-color: var(--leaf);
-  color: var(--forest);
+  background: var(--alp-tint);
+  border-color: var(--alp-leaf);
+  color: var(--alp-deep);
 }
 
 .app-launcher-pop {
@@ -4376,7 +4387,7 @@ textarea.is-invalid {
   background: var(--sf);
   border: 1px solid var(--bd);
   border-radius: 16px;
-  box-shadow: 0 24px 60px rgba(30, 61, 43, .18);
+  box-shadow: 0 24px 60px rgba(7, 57, 60, .20);
   animation: alp-in .16s cubic-bezier(.2,.8,.2,1);
 }
 @keyframes alp-in {
@@ -4410,8 +4421,11 @@ textarea.is-invalid {
   font-family: var(--font-body);
   transition: background .16s, border-color .16s;
 }
-.alp-item:hover { background: var(--sf2); border-color: var(--bd); }
-.alp-item:focus-visible { outline: 2px solid var(--forest); outline-offset: -2px; }
+.alp-item:hover {
+  background: color-mix(in srgb, var(--alp-leaf) 9%, var(--sf2));
+  border-color: color-mix(in srgb, var(--alp-leaf) 30%, var(--bd));
+}
+.alp-item:focus-visible { outline: 2px solid var(--alp-mid); outline-offset: -2px; }
 
 .alp-ico {
   width: 40px;
@@ -4427,7 +4441,11 @@ textarea.is-invalid {
 .alp-ico svg { width: 24px; height: 24px; }
 /* Los accesos del core no son marcas: van en un tono neutro para que las
    apps de verdad sean las que destacan. */
-.alp-ico.neutral { background: var(--sf2); color: var(--forest); }
+.alp-ico.neutral {
+  background: color-mix(in srgb, var(--alp-leaf) 12%, var(--sf2));
+  border-color: color-mix(in srgb, var(--alp-leaf) 25%, var(--bd));
+  color: var(--alp-mid);
+}
 .alp-ico.neutral svg { fill: currentColor; }
 
 .alp-lbl {
