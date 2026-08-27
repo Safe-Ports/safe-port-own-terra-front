@@ -68,6 +68,22 @@ export const ERROR_CATALOG = {
     "name": "AUTH_INVALID_RESET_TOKEN",
     "severity": "warning"
   },
+  "OT-AUTH-2013": {
+    "action": "Vuelve a escribirla; si no la recuerdas, usa \"Olvidé mi contraseña\".",
+    "domain": "AUTH",
+    "http_status": 400,
+    "message": "Tu contraseña actual no es correcta.",
+    "name": "AUTH_WRONG_CURRENT_PASSWORD",
+    "severity": "warning"
+  },
+  "OT-AUTH-2014": {
+    "action": "Elige una distinta.",
+    "domain": "AUTH",
+    "http_status": 400,
+    "message": "La nueva contraseña es igual a la actual.",
+    "name": "AUTH_SAME_PASSWORD",
+    "severity": "warning"
+  },
   "OT-CALC-1001": {
     "action": "Revisa la sintaxis: solo se permiten números, variables, + - * / % ^, paréntesis y funciones (min, max, abs, round, floor, ceil, sqrt, pow).",
     "domain": "CALC",

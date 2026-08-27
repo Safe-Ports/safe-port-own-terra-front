@@ -7,11 +7,13 @@ import {
   HiCamera,
   HiCog6Tooth,
   HiIdentification,
+  HiLockClosed,
   HiShieldCheck,
   HiSquares2X2,
   HiUserGroup,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
+import api, { replaceSessionTokens } from "@/services/api";
 import { orgService } from "@/services/orgService";
 import { userService } from "@/services/userService";
 import { APP_CATALOG, APP_ROLE_LABEL, GLOBAL_ROLES } from "@/services/permissions";
@@ -50,7 +52,13 @@ export const PROFILE_GUIDE_STEPS = [
   { title: "Mis datos", text: "Con 'Editar' puedes cambiar tu nombre, teléfono, iniciales y color. El color es el que te identifica en la agenda y en las asignaciones; las iniciales se muestran cuando no tienes foto." },
   { title: "Mis accesos", text: "Muestra a qué aplicaciones del ecosistema entras y con qué rol en cada una. Si una aparece en gris es porque todavía no te la asignaron, o porque aún no está disponible." },
   { title: "Organización", text: "El nombre, plan y estado de la cuenta a la que perteneces. Para editarlos ve a Configuración." },
+  { title: "Cambiar contraseña", text: "En 'Seguridad' puedes cambiarla escribiendo la actual y la nueva. Al hacerlo se cierra tu sesión en los demás dispositivos, pero sigues dentro en el que la cambiaste. Si no recuerdas la actual, sal de la sesión y usa 'Olvidé mi contraseña'." },
 ];
+
+const BLANK_PW = { current: "", next: "", repeat: "" };
+// El backend exige 8; se valida también acá para no gastar un viaje en algo que
+// ya se sabe que va a rebotar.
+const MIN_PW = 8;
 
 const ORG_STATUS = {
   active: "Activa",
@@ -81,6 +89,10 @@ export default function ProfileContent() {
   const [draft, setDraft] = useState(null);
   const [formError, setFormError] = useState(null);
   const fe = useFieldErrors();
+  const [pwOpen, setPwOpen] = useState(false);
+  const [pw, setPw] = useState(BLANK_PW);
+  const [pwError, setPwError] = useState(null);
+  const pwFe = useFieldErrors();
 
   const userId = currentUser?.id;
 
@@ -122,6 +134,51 @@ export default function ProfileContent() {
     },
     onError: (err) => setFormError(parseApiError(err, "No pudimos guardar tus datos")),
   });
+
+  const closePw = () => {
+    setPw(BLANK_PW);
+    setPwError(null);
+    pwFe.clearAll();
+    setPwOpen(false);
+  };
+
+  const changePassword = useMutation({
+    mutationFn: (body) => api.post("/auth/me/password", body).then((r) => r.data),
+    onSuccess: (tokens) => {
+      // Cambiar la contraseña cierra todas las sesiones, incluida esta. El backend
+      // devuelve un par nuevo para este dispositivo; hay que guardarlo o la
+      // siguiente petición saldría con el token ya muerto.
+      replaceSessionTokens(tokens);
+      closePw();
+      showToast("Contraseña actualizada — se cerraron las sesiones de otros dispositivos");
+    },
+    onError: (err) => {
+      const parsed = parseApiError(err, "No pudimos cambiar tu contraseña");
+      // La actual equivocada es un error de ESE campo, no del formulario entero:
+      // marcarlo ahí evita que el usuario tenga que adivinar cuál rehacer.
+      if (parsed.code === "OT-AUTH-2013") pwFe.setErrors({ current: parsed.message });
+      else if (parsed.code === "OT-AUTH-2014") pwFe.setErrors({ next: parsed.message });
+      else setPwError(parsed);
+    },
+  });
+
+  const submitPw = (e) => {
+    e.preventDefault();
+    const errs = {};
+    if (!pw.current) errs.current = "Escribe tu contraseña actual.";
+    if (pw.next.length < MIN_PW) errs.next = `Usa al menos ${MIN_PW} caracteres.`;
+    if (pw.next !== pw.repeat) errs.repeat = "Las dos contraseñas no coinciden.";
+    pwFe.setErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+    setPwError(null);
+    changePassword.mutate({ current_password: pw.current, new_password: pw.next });
+  };
+
+  const setPwField = (key) => (e) => {
+    const v = e.target.value;
+    setPw((p) => ({ ...p, [key]: v }));
+    pwFe.clear(key);
+  };
 
   const uploadAvatar = useMutation({
     mutationFn: (file) => userService.uploadAvatar(userId, file),
@@ -367,6 +424,81 @@ export default function ProfileContent() {
           <div className="pf-row"><dt>Correo</dt><dd>{org?.email || "—"}</dd></div>
           <div className="pf-row"><dt>Teléfono</dt><dd>{org?.phone || "—"}</dd></div>
         </dl>
+      </section>
+
+      <section className="pf-card">
+        <div className="pf-card-head">
+          <h3><HiLockClosed aria-hidden="true" /> Seguridad</h3>
+          {!pwOpen && (
+            <button type="button" className="pf-btn-ghost" onClick={() => setPwOpen(true)}>
+              Cambiar contraseña
+            </button>
+          )}
+        </div>
+
+        {pwOpen ? (
+          <form className="pf-form" onSubmit={submitPw}>
+            <label className="pf-field">
+              <span className="pf-lbl">Contraseña actual</span>
+              <input
+                type="password"
+                autoComplete="current-password"
+                className={`pf-input${pwFe.errors.current ? " is-invalid" : ""}`}
+                value={pw.current}
+                onChange={setPwField("current")}
+                autoFocus
+              />
+              <FieldError msg={pwFe.errors.current} />
+            </label>
+
+            <label className="pf-field">
+              <span className="pf-lbl">Nueva contraseña</span>
+              <input
+                type="password"
+                autoComplete="new-password"
+                className={`pf-input${pwFe.errors.next ? " is-invalid" : ""}`}
+                value={pw.next}
+                onChange={setPwField("next")}
+              />
+              <FieldError msg={pwFe.errors.next} />
+              <span className="pf-hint">Mínimo {MIN_PW} caracteres.</span>
+            </label>
+
+            <label className="pf-field">
+              <span className="pf-lbl">Repite la nueva</span>
+              <input
+                type="password"
+                autoComplete="new-password"
+                className={`pf-input${pwFe.errors.repeat ? " is-invalid" : ""}`}
+                value={pw.repeat}
+                onChange={setPwField("repeat")}
+              />
+              <FieldError msg={pwFe.errors.repeat} />
+            </label>
+
+            {pwError && <InlineError error={pwError} />}
+
+            <p className="pf-hint">
+              Al cambiarla se cerrará tu sesión en los demás dispositivos. En este seguirás dentro.
+            </p>
+
+            <div className="pf-form-actions">
+              <button type="submit" className="pf-btn" disabled={changePassword.isPending}>
+                {changePassword.isPending ? "Cambiando…" : "Cambiar contraseña"}
+              </button>
+              <button type="button" className="pf-btn-ghost" onClick={closePw} disabled={changePassword.isPending}>
+                Cancelar
+              </button>
+            </div>
+          </form>
+        ) : (
+          <dl className="pf-rows">
+            <div className="pf-row">
+              <dt>Contraseña</dt>
+              <dd>••••••••</dd>
+            </div>
+          </dl>
+        )}
       </section>
 
       {quickLinks.length > 0 && (
