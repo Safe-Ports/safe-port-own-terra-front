@@ -1762,7 +1762,31 @@
   padding: 12px;
   background: var(--tan-lt, #DCEBD6);
 }
-.client-search-wrap { position: relative; }
+/* Buscar y "Nuevo" conviven en una fila: dar de alta no debe requerir buscar
+   primero cuando ya se sabe que el cliente no existe. */
+.client-search-row { display: flex; gap: 7px; align-items: stretch; }
+.client-search-wrap { position: relative; flex: 1; min-width: 0; }
+.client-new-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 13px;
+  height: 38px;
+  border-radius: 9px;
+  border: 1px solid var(--leaf);
+  background: var(--sf);
+  color: var(--forest);
+  font-size: 12.5px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s, border-color .15s;
+}
+.client-new-btn:hover:not(:disabled) { background: var(--tan-lt); }
+.client-new-btn:disabled { opacity: .5; cursor: not-allowed; }
+.client-new-btn svg { font-size: 14px; }
 .client-search {
   width: 100%;
   height: 38px;
@@ -1806,7 +1830,15 @@
   font-size: 12.5px;
   color: var(--muted);
   text-align: center;
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-family: var(--font-body);
 }
+/* El "sin resultados" es también el atajo para dar de alta lo que se escribió. */
+.client-row-empty.as-cta { cursor: pointer; }
+.client-row-empty.as-cta b { color: var(--forest); }
+.client-row-empty.as-cta:hover { background: var(--tan-lt); }
 .client-av {
   width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
   background: linear-gradient(145deg, var(--leaf), var(--mid));
@@ -1816,13 +1848,6 @@
 }
 .client-name { font-size: 13px; font-weight: 700; color: var(--tx); }
 .client-meta { font-size: 11.5px; color: var(--muted); }
-
-.new-client-toggle {
-  display: flex; align-items: center; gap: 6px; margin-top: 8px;
-  padding: 0; border: none; background: none; cursor: pointer;
-  font-size: 12.5px; font-weight: 700; color: var(--mid); font-family: var(--font-body);
-}
-.new-client-toggle .plus { display: flex; font-size: 16px; }
 
 /* Alta de cliente dentro del picker: usa el formulario compartido (.fg/.fl/.fi),
    así que aquí solo se define el envoltorio y sus botones. */

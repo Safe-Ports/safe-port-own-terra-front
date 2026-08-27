@@ -110,16 +110,32 @@ export default function ClientPicker({ value, onSelect, disabled }) {
 
   return (
     <div className="client-field">
-      <div className="client-search-wrap">
-        <HiMagnifyingGlass className="search-ico" />
-        <input
-          className="client-search"
-          placeholder="Buscar cliente por nombre, correo o teléfono…"
-          value={query}
-          disabled={disabled || creating}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-      </div>
+      {/* Buscar y dar de alta son dos caminos igual de válidos: el botón está
+          siempre a la vista para no obligar a buscar a quien ya sabe que el
+          cliente no existe. */}
+      {!creating && (
+        <div className="client-search-row">
+          <div className="client-search-wrap">
+            <HiMagnifyingGlass className="search-ico" />
+            <input
+              className="client-search"
+              placeholder="Buscar cliente por nombre, correo o teléfono…"
+              value={query}
+              disabled={disabled}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+          <button
+            type="button"
+            className="client-new-btn"
+            onClick={startCreate}
+            disabled={disabled}
+            title="Registrar un cliente nuevo"
+          >
+            <HiPlusCircle /> Nuevo
+          </button>
+        </div>
+      )}
 
       {query.trim() && !creating ? (
         <div className="client-results">
@@ -136,17 +152,12 @@ export default function ClientPicker({ value, onSelect, disabled }) {
               </div>
             ))
           ) : searched ? (
-            <div className="client-row-empty">Sin coincidencias</div>
+            <button type="button" className="client-row-empty as-cta" onClick={startCreate}>
+              Sin coincidencias · <b>registrar «{query.trim()}»</b>
+            </button>
           ) : null}
         </div>
       ) : null}
-
-      {!creating && searched && !searching && (
-        <button type="button" className="new-client-toggle" onClick={startCreate}>
-          <span className="plus"><HiPlusCircle /></span>
-          {results.length === 0 ? "Ninguno es · crear cliente nuevo" : "Crear cliente nuevo"}
-        </button>
-      )}
 
       {creating && (
         <NewClientForm
