@@ -261,6 +261,7 @@ function LotsPage() {
   const [loadingEditId, setLoadingEditId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deletedLotIds, setDeletedLotIds] = useState(new Set());
+  const [deletingLot, setDeletingLot] = useState(false);
   const [showDeleteFracConfirm, setShowDeleteFracConfirm] = useState(false);
   const [deletingFrac, setDeletingFrac] = useState(false);
   const [showImportGuide, setShowImportGuide] = useState(false);
@@ -534,16 +535,29 @@ function LotsPage() {
     }));
   };
 
-  const deleteLotFromSection = (sectionId, lotId) => {
+  const deleteLotFromSection = async (sectionId, lotId) => {
     const sec = draftProject.sections.find((s) => s.id === sectionId);
     const lot = sec?.lots.find((l) => l.id === lotId);
-    if (lot?._backendId) setDeletedLotIds((prev) => new Set([...prev, lot._backendId]));
+    // El lote ya existe en el backend: se borra de una vez para no depender
+    // del botón "Guardar cambios" (ese sí navega fuera del tablero al terminar).
+    if (lot?._backendId) {
+      setDeletingLot(true);
+      try {
+        await lotService.delete(lot._backendId);
+      } catch (err) {
+        showError(err, "No se pudo eliminar el lote");
+        setDeletingLot(false);
+        return;
+      }
+      setDeletingLot(false);
+    }
     setDraftProject((previous) => ({
       ...previous,
       sections: previous.sections.map((s) =>
         s.id !== sectionId ? s : { ...s, lots: s.lots.filter((l) => l.id !== lotId) }
       ),
     }));
+    showToast("Lote eliminado");
   };
 
   const addLotsToSection = (sectionId, count) => {
@@ -1000,12 +1014,13 @@ function LotsPage() {
                 <button
                   className="lot-edit-ghost"
                   style={{ color: "#C0392B", borderColor: "#fca5a5", marginRight: "auto" }}
-                  onClick={() => {
-                    deleteLotFromSection(d.sectionId, d.id);
+                  disabled={deletingLot}
+                  onClick={async () => {
+                    await deleteLotFromSection(d.sectionId, d.id);
                     setLotEditDraft(null);
                   }}
                 >
-                  Eliminar lote
+                  {deletingLot ? "Eliminando..." : "Eliminar lote"}
                 </button>
                 <button className="lot-edit-primary" onClick={saveLotEdit}>Guardar</button>
                 <button className="lot-edit-ghost" onClick={() => setLotEditDraft(null)}>Cancelar</button>

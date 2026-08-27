@@ -806,7 +806,6 @@ function FracsPage() {
                   <div className="frac-actions-list">
                     {selectedLot.status !== "sold" ? <button onClick={() => navigate("/contratos")}>Registrar venta</button> : null}
                     <button onClick={() => setShowApptForm((value) => !value)}>Agendar cita</button>
-                    <button onClick={openEditor}>Editar en Carga de Lotes</button>
                   </div>
                   {showApptForm ? (
                     <div className="frac-appointment-form">
