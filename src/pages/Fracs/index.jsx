@@ -4,6 +4,7 @@ import { HiMap, HiBookmark, HiSquares2X2, HiXMark } from "react-icons/hi2";
 import GuideModal from "@/components/shared/GuideModal";
 import PhoneInput from "@/components/shared/PhoneInput";
 import ClientPicker from "@/components/shared/ClientPicker";
+import MatrixSheet from "./MatrixSheet";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
@@ -239,6 +240,8 @@ function FracsPage() {
   const [selectedLotId, setSelectedLotId] = useState(null);
   const [showLotModal, setShowLotModal] = useState(false);
   const [activeTab, setActiveTab] = useState("ficha");
+  // Vista del fraccionamiento: "plano" (plano + grilla) o "matriz" (hoja tipo plantilla).
+  const [fracView, setFracView] = useState("plano");
   const [showMapViewer, setShowMapViewer] = useState(false);
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [showCotizador, setShowCotizador] = useState(false);
@@ -641,6 +644,30 @@ function FracsPage() {
           )}
         </div>
 
+        <div className="frac-views">
+          <button
+            className={fracView === "plano" ? "on" : ""}
+            onClick={() => setFracView("plano")}
+          >
+            Plano y matriz
+          </button>
+          <button
+            className={fracView === "matriz" ? "on" : ""}
+            onClick={() => setFracView("matriz")}
+          >
+            Vista matriz
+          </button>
+        </div>
+
+        {fracView === "matriz" ? (
+          <MatrixSheet
+            lots={filteredLots}
+            fracId={selectedFrac.id}
+            fracName={selectedFrac.name}
+            loading={lotsLoading}
+            showError={showError}
+          />
+        ) : (
         <div className="frac-matrix-grid">
           <article className="frac-panel frac-plan-panel">
             <div className="frac-panel-head">
@@ -719,6 +746,7 @@ function FracsPage() {
             </div>
           </article>
         </div>
+        )}
       </section>
 
       <article className={`frac-quote ${quoteOpen ? "open" : "collapsed"}`}>
