@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { HiMap, HiBookmark, HiSquares2X2 } from "react-icons/hi2";
 import GuideModal from "@/components/shared/GuideModal";
 import PhoneInput from "@/components/shared/PhoneInput";
+import ClientPicker from "@/components/shared/ClientPicker";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
@@ -221,6 +222,7 @@ function FracsPage() {
   const [apartarOpen, setApartarOpen] = useState(false);
   const [apartarUntil, setApartarUntil] = useState("");   // datetime-local
   const [apartarBusy, setApartarBusy] = useState(false);
+  const [apartarClient, setApartarClient] = useState(null); // {id, name, phone, email} | null
   useEscapeKey(() => {
     if (showCotizador) setShowCotizador(false);
     else if (showLotModal) setShowLotModal(false);
@@ -447,6 +449,10 @@ function FracsPage() {
         contact_phone: apptDraft.contact_phone.trim() || undefined,
         scheduled_at: new Date(`${apptDraft.date}T${apptDraft.time}`).toISOString(),
         notes: apptDraft.notes.trim() || undefined,
+        // Si el lote ya tiene un cliente interesado (recién apartado o de una
+        // visita previa), la cita queda ligada a él en el CRM en vez de quedar
+        // como contacto suelto.
+        client_id: apartarClient?.id || selectedLot.client_id || undefined,
       });
       await refetchAppts();
       setApptDraft({ contact_name: "", contact_phone: "", date: "", time: "", notes: "" });
@@ -461,15 +467,16 @@ function FracsPage() {
 
   // ── Apartado con expiración ──────────────────────────────────────────────
   const reserveLot = async () => {
-    if (!selectedLot || !apartarUntil) return;
+    if (!selectedLot || !apartarUntil || !apartarClient) return;
     setApartarBusy(true);
     try {
       await lotService.update(selectedLot.id, {
         status: "reserved",
         reserved_until: new Date(apartarUntil).toISOString(),
+        client_id: apartarClient.id,
       });
       await queryClient.invalidateQueries({ queryKey: ["lots"] });
-      setApartarOpen(false); setApartarUntil("");
+      setApartarOpen(false); setApartarUntil(""); setApartarClient(null);
       showToast("Lote apartado");
     } catch (err) {
       showError(err, "No se pudo apartar el lote");
@@ -484,9 +491,10 @@ function FracsPage() {
     try {
       await lotService.update(selectedLot.id, {
         reserved_until: new Date(apartarUntil).toISOString(),
+        ...(apartarClient?.id ? { client_id: apartarClient.id } : {}),
       });
       await queryClient.invalidateQueries({ queryKey: ["lots"] });
-      setApartarOpen(false); setApartarUntil("");
+      setApartarOpen(false); setApartarUntil(""); setApartarClient(null);
       showToast("Vencimiento actualizado");
     } catch (err) {
       showError(err, "No se pudo extender el apartado");
@@ -764,7 +772,11 @@ function FracsPage() {
                         {" · "}vence {selectedLot.reserved_until ? new Date(selectedLot.reserved_until).toLocaleString("es-MX") : "—"}
                       </div>
                       <div className="frac-apartar-btns">
-                        <button onClick={() => { setApartarOpen((v) => !v); setApartarUntil(selectedLot.reserved_until ? toLocalInput(new Date(selectedLot.reserved_until)) : ""); }}>
+                        <button onClick={() => {
+                          setApartarOpen((v) => !v);
+                          setApartarUntil(selectedLot.reserved_until ? toLocalInput(new Date(selectedLot.reserved_until)) : "");
+                          setApartarClient(selectedLot.client_id ? { id: selectedLot.client_id, name: selectedLot.client_name } : null);
+                        }}>
                           {apartarOpen ? "Cancelar" : "Extender vencimiento"}
                         </button>
                         <button className="frac-apartar-release" onClick={releaseLot} disabled={apartarBusy}>Liberar lote</button>
@@ -772,7 +784,7 @@ function FracsPage() {
                     </div>
                   ) : selectedLot.status === "available" ? (
                     <div className="frac-apartar">
-                      <button className="frac-apartar-cta" onClick={() => { setApartarOpen((v) => !v); if (!apartarOpen) setApartarUntil(toLocalInput(new Date(Date.now() + 7 * 86400000))); }}>
+                      <button className="frac-apartar-cta" onClick={() => { setApartarOpen((v) => !v); if (!apartarOpen) { setApartarUntil(toLocalInput(new Date(Date.now() + 7 * 86400000))); setApartarClient(null); } }}>
                         {apartarOpen ? "Cancelar" : <><HiBookmark style={{ display: "inline", verticalAlign: "-2px" }} /> Apartar lote</>}
                       </button>
                     </div>
@@ -780,6 +792,9 @@ function FracsPage() {
 
                   {apartarOpen && selectedLot.status !== "sold" ? (
                     <div className="frac-apartar-form">
+                      <label className="frac-appt-lbl">Cliente interesado</label>
+                      <ClientPicker value={apartarClient} onSelect={setApartarClient} disabled={apartarBusy} />
+
                       <label className="frac-appt-lbl">Vence el</label>
                       <div className="frac-apartar-presets">
                         {[[3, "3 días"], [7, "7 días"], [15, "15 días"], [30, "30 días"]].map(([n, l]) => (
@@ -796,7 +811,7 @@ function FracsPage() {
                       <Button
                         variant="primary"
                         onClick={selectedLot.status === "reserved" ? extendReservation : reserveLot}
-                        disabled={apartarBusy || !apartarUntil}
+                        disabled={apartarBusy || !apartarUntil || !apartarClient}
                       >
                         {apartarBusy ? "Guardando..." : selectedLot.status === "reserved" ? "Guardar vencimiento" : "Confirmar apartado"}
                       </Button>
@@ -805,7 +820,15 @@ function FracsPage() {
 
                   <div className="frac-actions-list">
                     {selectedLot.status !== "sold" ? <button onClick={() => navigate("/contratos")}>Registrar venta</button> : null}
-                    <button onClick={() => setShowApptForm((value) => !value)}>Agendar cita</button>
+                    <button onClick={() => {
+                      setShowApptForm((value) => !value);
+                      if (!showApptForm) {
+                        const known = apartarClient || (selectedLot.client_id ? { name: selectedLot.client_name } : null);
+                        if (known) setApptDraft((p) => ({ ...p, contact_name: known.name || "", contact_phone: known.phone || p.contact_phone }));
+                      }
+                    }}>
+                      Agendar cita
+                    </button>
                   </div>
                   {showApptForm ? (
                     <div className="frac-appointment-form">

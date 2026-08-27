@@ -17,4 +17,8 @@ export const lotService = {
   },
   update: (id, body) => api.patch(`/lots/${id}`, body).then((r) => r.data),
   delete: (id) => api.delete(`/lots/${id}`),
+  // Track de lotes: filas del dashboard (quién apartó, para quién, quién cerró)
+  // más el conteo por estado que alimenta el gráfico de barras.
+  track: (params = {}) => api.get("/lots/track", { params }).then((r) => r.data),
+  timeline: (id) => api.get(`/lots/${id}/timeline`).then((r) => r.data),
 };

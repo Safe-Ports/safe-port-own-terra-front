@@ -6,6 +6,7 @@ const titleMap = {
   "/dashboard": "Dashboard",
   "/lotes": "Carga de Lotes",
   "/fraccionamientos": "Fraccionamientos",
+  "/track-lotes": "Track de Lotes",
   "/clientes": "Clientes & CRM",
   "/ventas": "Contratos",
   "/contratos": "Contratos",

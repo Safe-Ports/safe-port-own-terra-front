@@ -1,0 +1,485 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useQuery } from "@tanstack/react-query";
+import { HiEye, HiXMark } from "react-icons/hi2";
+import { useAppContext } from "@/context/AppContext";
+import { lotService } from "@/services/lotService";
+import { currency } from "@/services/formatters";
+import EmptyState from "@/components/ui/EmptyState";
+import useEscapeKey from "@/hooks/useEscapeKey";
+import "./lotTrack.css";
+
+const STATUS_META = {
+  available: { label: "Disponible", cls: "ok" },
+  reserved:  { label: "Apartado",   cls: "warn" },
+  sold:      { label: "Vendido",    cls: "sold" },
+};
+
+const STATUS_FILTERS = [
+  { value: "",          label: "Todos los estados" },
+  { value: "reserved",  label: "Apartados" },
+  { value: "available", label: "Disponibles" },
+  { value: "sold",      label: "Vendidos" },
+];
+
+function initials(name) {
+  const parts = (name || "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  return (parts[0][0] + (parts[1]?.[0] || "")).toUpperCase();
+}
+
+/** "402.00" → "402 m²" (los lotes se capturan con 2 decimales que casi nunca se usan). */
+function area(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const n = Number(value);
+  if (Number.isNaN(n)) return null;
+  return `${n % 1 === 0 ? n : n.toFixed(2)} m²`;
+}
+
+/** Días que faltan para `iso`; negativo si ya pasó. null si no hay fecha. */
+function daysLeft(iso) {
+  if (!iso) return null;
+  const ms = new Date(iso).getTime() - Date.now();
+  return Math.ceil(ms / 86400000);
+}
+
+function vencLabel(iso) {
+  const d = daysLeft(iso);
+  if (d === null) return null;
+  if (d < 0) return { text: `venció hace ${Math.abs(d)}d`, tone: "urgent" };
+  if (d === 0) return { text: "vence hoy", tone: "urgent" };
+  if (d <= 3) return { text: `en ${d} día${d === 1 ? "" : "s"}`, tone: "urgent" };
+  if (d <= 7) return { text: `en ${d} días`, tone: "soon" };
+  return { text: `en ${d} días`, tone: "calm" };
+}
+
+function Person({ name, kind }) {
+  if (!name) return <span className="lt-dash">—</span>;
+  return (
+    <div className="lt-person">
+      <div className={`lt-av${kind === "client" ? " client" : ""}`}>{initials(name)}</div>
+      <span>{name}</span>
+    </div>
+  );
+}
+
+/**
+ * Quién apartó y quién cerró, en una sola celda. Cuando son personas distintas
+ * se muestran las dos con una flecha y la etiqueta "Split": es el caso de
+ * comisión compartida, que es justo el dato que no se podía ver en ningún lado.
+ */
+function Journey({ row }) {
+  const { reserved_by_name: res, closed_by_name: closed } = row;
+  if (!res && !closed) return <span className="lt-dash">Sin actividad</span>;
+  if (res && closed && res !== closed) {
+    return (
+      <div className="lt-journey">
+        <Person name={res} />
+        <span className="lt-arrow">→</span>
+        <Person name={closed} />
+        <span className="lt-split">Split</span>
+      </div>
+    );
+  }
+  // Disponible con historial = el apartado se cayó. Se atenúa para no confundirlo
+  // con uno vigente: el lote está libre, esto es solo el rastro de quien lo intentó.
+  const stale = row.status === "available" && !closed;
+  return (
+    <div className={`lt-journey${stale ? " stale" : ""}`}>
+      <Person name={closed || res} />
+      {stale && <span className="lt-stale-tag">apartado vencido</span>}
+    </div>
+  );
+}
+
+/** Gráfico de barras del inventario por estado. */
+function StatusChart({ summary }) {
+  const bars = [
+    { key: "available", label: "Disponibles", value: summary.available, cls: "ok" },
+    { key: "reserved",  label: "Apartados",   value: summary.reserved,  cls: "warn" },
+    { key: "sold",      label: "Vendidos",    value: summary.sold,      cls: "sold" },
+  ];
+  const max = Math.max(1, ...bars.map((b) => b.value));
+
+  return (
+    <div className="lt-chart">
+      <div className="lt-chart-head">
+        <div>
+          <div className="lt-chart-title">Inventario por estado</div>
+          <div className="lt-chart-sub">{summary.total} lotes en total</div>
+        </div>
+        {summary.expiring_soon > 0 && (
+          <div className="lt-chart-alert">
+            {summary.expiring_soon} {summary.expiring_soon === 1 ? "apartado vence" : "apartados vencen"} esta semana
+          </div>
+        )}
+      </div>
+      <div className="lt-bars">
+        {bars.map((b) => (
+          <div className="lt-bar-row" key={b.key}>
+            <div className="lt-bar-label">{b.label}</div>
+            <div className="lt-bar-track">
+              <div
+                className={`lt-bar-fill ${b.cls}`}
+                style={{ width: `${(b.value / max) * 100}%` }}
+              />
+            </div>
+            <div className="lt-bar-value">{b.value}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Ficha de contacto del cliente, anclada al ojito de la fila. */
+function ContactPopover({ anchor, row, onClose }) {
+  const ref = useRef(null);
+  const [pos, setPos] = useState(null);
+
+  useEffect(() => {
+    if (!anchor || !ref.current) return;
+    const a = anchor.getBoundingClientRect();
+    const p = ref.current.getBoundingClientRect();
+    let left = a.left - 8;
+    let top = a.bottom + 7;
+    if (left + p.width > window.innerWidth - 12) left = window.innerWidth - p.width - 12;
+    if (left < 12) left = 12;
+    // Si no cabe abajo, se voltea hacia arriba.
+    if (top + p.height > window.innerHeight - 12) top = a.top - p.height - 7;
+    if (top < 12) top = 12;
+    setPos({ left, top });
+  }, [anchor]);
+
+  useEffect(() => {
+    const away = (e) => {
+      if (!ref.current?.contains(e.target) && !anchor?.contains(e.target)) onClose();
+    };
+    document.addEventListener("mousedown", away);
+    window.addEventListener("scroll", onClose, true);
+    window.addEventListener("resize", onClose);
+    return () => {
+      document.removeEventListener("mousedown", away);
+      window.removeEventListener("scroll", onClose, true);
+      window.removeEventListener("resize", onClose);
+    };
+  }, [anchor, onClose]);
+
+  const since = row.client_since
+    ? new Date(row.client_since).toLocaleDateString("es-MX", { month: "short", year: "numeric" })
+    : null;
+
+  // Portal a body: el contenedor de la página crea un stacking context propio y
+  // ahí un position:fixed queda atrapado por debajo de la barra superior.
+  return createPortal(
+    <div
+      ref={ref}
+      className="lt-pop"
+      style={pos ? { left: pos.left, top: pos.top } : { opacity: 0 }}
+      role="dialog"
+    >
+      <div className="lt-pop-head">
+        <div className="lt-av client">{initials(row.client_name)}</div>
+        <div className="lt-pop-id">
+          <div className="lt-pop-name">{row.client_name}</div>
+          {row.client_type && (
+            <span className={`lt-pop-type ${row.client_type}`}>
+              {row.client_type === "buyer" ? "Comprador" : row.client_type === "tenant" ? "Inquilino" : "Lead"}
+            </span>
+          )}
+        </div>
+      </div>
+      <div className="lt-pop-row">
+        <span className="lt-pop-k">Correo</span>
+        <span className="lt-pop-v">{row.client_email || "—"}</span>
+      </div>
+      <div className="lt-pop-row">
+        <span className="lt-pop-k">Teléfono</span>
+        <span className="lt-pop-v">{row.client_phone || "—"}</span>
+      </div>
+      {since && (
+        <div className="lt-pop-row">
+          <span className="lt-pop-k">Cliente desde</span>
+          <span className="lt-pop-v">{since}</span>
+        </div>
+      )}
+      {row.reserved_by_name && (
+        <div className="lt-pop-row">
+          <span className="lt-pop-k">Apartó</span>
+          <span className="lt-pop-v">{row.reserved_by_name}</span>
+        </div>
+      )}
+    </div>,
+    document.body
+  );
+}
+
+/** Panel lateral con la historia completa del lote. */
+function TimelineDrawer({ row, onClose }) {
+  const { showError } = useAppContext();
+  const { data: events = [], isLoading, isError, error } = useQuery({
+    queryKey: ["lot-timeline", row?.id],
+    queryFn: () => lotService.timeline(row.id),
+    enabled: !!row?.id,
+  });
+
+  useEscapeKey(onClose, !!row);
+
+  useEffect(() => {
+    if (isError) showError(error, "No se pudo cargar el historial del lote");
+  }, [isError, error, showError]);
+
+  if (!row) return null;
+
+  const meta = STATUS_META[row.status] || STATUS_META.available;
+  const venc = vencLabel(row.reserved_until);
+
+  const facts = [
+    row.reserved_by_name && ["Apartó", row.reserved_by_name],
+    row.client_name && ["Cliente", row.client_name],
+    row.closed_by_name && ["Cerró la venta", row.closed_by_name],
+    row.buyer_name && ["Comprador", row.buyer_name],
+    row.reserved_until && ["Vence", new Date(row.reserved_until).toLocaleDateString("es-MX")],
+    row.contract_number && ["Contrato", row.contract_number],
+    row.price_contado && ["Precio", currency(row.price_contado)],
+    area(row.area_m2) && ["Superficie", area(row.area_m2)],
+  ].filter(Boolean).slice(0, 4);
+
+  // Portal a body por la misma razón que el popover: el stacking context de la
+  // página dejaría el drawer por debajo de la barra superior.
+  return createPortal(
+    <>
+      <div className="lt-overlay" onClick={onClose} />
+      <aside className="lt-drawer" aria-label={`Historial del lote ${row.code}`}>
+        <div className="lt-dr-head">
+          <div className="lt-dr-top">
+            {/* El código suele venir como "MZ4-L02": se parte por el guión para
+                que quepa en dos líneas en vez de cortarse a mitad de palabra. */}
+            <div className="lt-dr-badge">
+              {row.code.split("-").map((part, i) => <span key={i}>{part}</span>)}
+            </div>
+            <div className="lt-dr-id">
+              <div className="lt-dr-name">{row.code}</div>
+              <div className="lt-dr-meta">
+                {row.inmueble_name}
+                {area(row.area_m2) ? ` · ${area(row.area_m2)}` : ""}
+              </div>
+            </div>
+            <button className="lt-dr-close" onClick={onClose} aria-label="Cerrar">
+              <HiXMark />
+            </button>
+          </div>
+          <div className="lt-dr-status">
+            <span className={`lt-pill ${meta.cls}`}><span className="lt-dot" />{meta.label}</span>
+            {venc && <span className={`lt-venc ${venc.tone}`}>{venc.text}</span>}
+          </div>
+          {facts.length > 0 && (
+            <div className="lt-dr-facts">
+              {facts.map(([k, v]) => (
+                <div className="lt-fact" key={k}>
+                  <div className="lt-fact-k">{k}</div>
+                  <div className="lt-fact-v">{v}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="lt-dr-body">
+          <div className="lt-dr-sect">Historial del lote</div>
+          {isLoading ? (
+            <div className="lt-tl-empty">Cargando historial…</div>
+          ) : events.length === 0 ? (
+            <div className="lt-tl-empty">Sin movimientos registrados.</div>
+          ) : (
+            <div className="lt-feed">
+              {events.map((e, i) => (
+                <div className="lt-ev" key={i} data-tone={e.tone}>
+                  {/* El texto viene ya redactado del backend, con <b> en los
+                      nombres propios; no hay entrada de usuario sin escapar. */}
+                  <div className="lt-ev-txt" dangerouslySetInnerHTML={{ __html: e.text }} />
+                  <div className="lt-ev-time">
+                    {new Date(e.at).toLocaleString("es-MX", {
+                      day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+                    })}
+                  </div>
+                  {e.detail && <div className="lt-ev-card">{e.detail}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </aside>
+    </>,
+    document.body
+  );
+}
+
+export default function LotTrackPage() {
+  const { fracs = [], showError } = useAppContext();
+  const [statusFilter, setStatusFilter] = useState("");
+  const [fracFilter, setFracFilter] = useState("");
+  const [search, setSearch] = useState("");
+  const [debounced, setDebounced] = useState("");
+  const [openRow, setOpenRow] = useState(null);
+  const [contact, setContact] = useState(null); // {anchor, row}
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const params = useMemo(() => ({
+    ...(statusFilter ? { status: statusFilter } : {}),
+    ...(fracFilter ? { inmueble_id: fracFilter } : {}),
+    ...(debounced ? { search: debounced } : {}),
+    limit: 100,
+  }), [statusFilter, fracFilter, debounced]);
+
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["lot-track", params],
+    queryFn: () => lotService.track(params),
+    keepPreviousData: true,
+  });
+
+  useEffect(() => {
+    if (isError) showError(error, "No se pudo cargar el track de lotes");
+  }, [isError, error, showError]);
+
+  const summary = data?.summary || { available: 0, reserved: 0, sold: 0, total: 0, expiring_soon: 0 };
+  const rows = data?.items || [];
+
+  return (
+    <div className="lt-page">
+      <div className="lt-header">
+        <div>
+          <h1 className="lt-title">Track de lotes</h1>
+          <p className="lt-sub">
+            Quién apartó cada lote, para qué cliente y quién cerró la venta.
+          </p>
+        </div>
+      </div>
+
+      <StatusChart summary={summary} />
+
+      <div className="lt-filters">
+        {STATUS_FILTERS.map((f) => (
+          <button
+            key={f.value}
+            className={`lt-filter${statusFilter === f.value ? " on" : ""}`}
+            onClick={() => setStatusFilter(f.value)}
+          >
+            {f.label}
+          </button>
+        ))}
+        <select
+          className="lt-select"
+          value={fracFilter}
+          onChange={(e) => setFracFilter(e.target.value)}
+        >
+          <option value="">Todos los fraccionamientos</option>
+          {fracs.map((f) => (
+            <option key={f.id} value={f.id}>{f.name}</option>
+          ))}
+        </select>
+        <input
+          className="lt-search"
+          placeholder="Buscar lote, cliente o vendedor…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      {isLoading ? (
+        <div className="lt-loading">Cargando lotes…</div>
+      ) : rows.length === 0 ? (
+        <EmptyState
+          title="Sin lotes que mostrar"
+          description={
+            debounced || statusFilter || fracFilter
+              ? "Ningún lote coincide con los filtros aplicados."
+              : "Cuando cargues lotes y empieces a apartarlos, su seguimiento aparece aquí."
+          }
+        />
+      ) : (
+        <>
+          <div className="lt-tablewrap">
+            <table className="lt-table">
+              <thead>
+                <tr>
+                  <th>Lote</th>
+                  <th>Estado</th>
+                  <th>Recorrido · apartó → cerró</th>
+                  <th>Cliente</th>
+                  <th>Vence</th>
+                  <th>Monto</th>
+                  <th aria-label="Ver historial" />
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => {
+                  const meta = STATUS_META[row.status] || STATUS_META.available;
+                  const venc = row.status === "reserved" ? vencLabel(row.reserved_until) : null;
+                  return (
+                    <tr
+                      key={row.id}
+                      className={venc?.tone === "urgent" ? "urgent" : venc?.tone === "soon" ? "soon" : ""}
+                      tabIndex={0}
+                      onClick={() => setOpenRow(row)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpenRow(row); }
+                      }}
+                    >
+                      <td className="lt-first">
+                        <div className="lt-code">{row.code}</div>
+                        <div className="lt-cell-sub">{row.inmueble_name}</div>
+                      </td>
+                      <td>
+                        <span className={`lt-pill ${meta.cls}`}><span className="lt-dot" />{meta.label}</span>
+                      </td>
+                      <td><Journey row={row} /></td>
+                      <td>
+                        {row.client_name ? (
+                          <div className={`lt-client-cell${row.status === "available" && !row.closed_by_name ? " stale" : ""}`}>
+                            <Person name={row.client_name} kind="client" />
+                            <button
+                              className="lt-eye"
+                              title={`Ver contacto de ${row.client_name}`}
+                              aria-label={`Ver contacto de ${row.client_name}`}
+                              onClick={(e) => {
+                                e.stopPropagation();  // no abrir el drawer del lote
+                                setContact((c) =>
+                                  c?.row.id === row.id ? null : { anchor: e.currentTarget, row });
+                              }}
+                            >
+                              <HiEye />
+                            </button>
+                          </div>
+                        ) : <span className="lt-dash">—</span>}
+                      </td>
+                      <td>
+                        {venc ? <span className={`lt-venc ${venc.tone}`}>{venc.text}</span>
+                              : <span className="lt-dash">—</span>}
+                      </td>
+                      <td className="lt-num">
+                        {row.price_contado ? currency(row.price_contado) : <span className="lt-dash">—</span>}
+                      </td>
+                      <td><span className="lt-chev">›</span></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="lt-hint">
+            Click en la fila para el historial del lote · click en el ojito para el contacto del cliente
+          </div>
+        </>
+      )}
+
+      {contact && (
+        <ContactPopover anchor={contact.anchor} row={contact.row} onClose={() => setContact(null)} />
+      )}
+      {openRow && <TimelineDrawer row={openRow} onClose={() => setOpenRow(null)} />}
+    </div>
+  );
+}

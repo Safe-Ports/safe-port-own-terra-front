@@ -268,6 +268,14 @@ export const ERROR_CATALOG = {
     "name": "LOT_RESERVATION_INVALID",
     "severity": "warning"
   },
+  "OT-LOT-1003": {
+    "action": "Busca o crea el cliente antes de confirmar el apartado.",
+    "domain": "LOT",
+    "http_status": 400,
+    "message": "Falta indicar el cliente interesado.",
+    "name": "LOT_CLIENT_REQUIRED",
+    "severity": "warning"
+  },
   "OT-LOT-3002": {
     "action": "Elige otro lote disponible.",
     "domain": "LOT",
