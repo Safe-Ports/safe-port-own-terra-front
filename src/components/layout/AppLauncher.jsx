@@ -5,13 +5,21 @@ import { HiSquares2X2 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 
 /**
- * Servicios transversales del ecosistema: los que comparten todas las apps,
- * los mismos que el Hub lista bajo "Servicios compartidos por todas las apps
- * core".
+ * Las verticales del ecosistema. Son destinos "grandes": entrar a una cambia
+ * el espacio de trabajo entero, por eso van separadas de los servicios.
  *
- * Las verticales (Lands, Finanzas como app, Construction…) no van acá: a esas
- * se entra desde el Hub o desde su propio menú. Este lanzador es para lo que se
- * necesita SIN salir de la vertical en la que estás trabajando.
+ * `live: false` son las que aún no existen; se muestran apagadas para que se
+ * sepa que vienen, en vez de esconderlas.
+ */
+const APPS = [
+  { key: "lands",  label: "Lands",        icon: "eco-g-lands",  to: "/dashboard",    gate: (c) => c.canAccessApp("lands") },
+  { key: "homes",  label: "Construction", icon: "eco-g-homes",  to: "/construccion", live: false },
+  { key: "neighb", label: "Properties",   icon: "eco-g-neighb", to: "/ecosistema",   live: false },
+];
+
+/**
+ * Servicios transversales: los que comparten todas las apps, los mismos que el
+ * Hub agrupa bajo "Servicios compartidos por todas las apps core".
  *
  * `gate` decide si el usuario lo tiene habilitado; sin `gate`, está para todos.
  */
@@ -65,14 +73,41 @@ export default function AppLauncher() {
     };
   }, [open]);
 
-  const go = (svc) => {
-    if (svc.gate && !svc.gate(ctx)) {
-      ctx.showToast(`Tu usuario no tiene acceso a ${svc.label}`, "warning");
+  const blocked = (item) => item.live === false || (item.gate && !item.gate(ctx));
+
+  const go = (item) => {
+    if (item.live === false) {
+      ctx.showToast(`${item.label} todavía no está disponible`, "warning");
+      return;
+    }
+    if (item.gate && !item.gate(ctx)) {
+      ctx.showToast(`Tu usuario no tiene acceso a ${item.label}`, "warning");
       return;
     }
     setOpen(false);
-    navigate(svc.to);
+    navigate(item.to);
   };
+
+  const renderGrid = (items) => (
+    <div className="alp-grid">
+      {items.map((item) => (
+        <button
+          key={item.key}
+          type="button"
+          role="menuitem"
+          className={`alp-item${blocked(item) ? " is-off" : ""}`}
+          onClick={() => go(item)}
+          title={item.live === false ? `${item.label} — próximamente` : item.label}
+        >
+          <span className="alp-ico">
+            <svg><use href={`#${item.icon}`} /></svg>
+          </span>
+          <span className="alp-lbl">{item.label}</span>
+          {item.live === false && <span className="alp-soon">Pronto</span>}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <>
@@ -96,24 +131,13 @@ export default function AppLauncher() {
           role="menu"
           style={pos ? { left: pos.left, top: pos.top } : { opacity: 0 }}
         >
+          <div className="alp-title">Aplicaciones</div>
+          {renderGrid(APPS)}
+
+          <div className="alp-sep" />
+
           <div className="alp-title">Servicios del ecosistema</div>
-          <div className="alp-grid">
-            {SERVICES.map((svc) => (
-              <button
-                key={svc.key}
-                type="button"
-                role="menuitem"
-                className={`alp-item${svc.gate && !svc.gate(ctx) ? " is-off" : ""}`}
-                onClick={() => go(svc)}
-                title={svc.label}
-              >
-                <span className="alp-ico">
-                  <svg><use href={`#${svc.icon}`} /></svg>
-                </span>
-                <span className="alp-lbl">{svc.label}</span>
-              </button>
-            ))}
-          </div>
+          {renderGrid(SERVICES)}
         </div>,
         document.body
       )}

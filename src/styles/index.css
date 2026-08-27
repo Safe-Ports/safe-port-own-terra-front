@@ -4388,6 +4388,8 @@ textarea.is-invalid {
   border: 1px solid var(--bd);
   border-radius: 16px;
   box-shadow: 0 24px 60px rgba(7, 57, 60, .20);
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
   animation: alp-in .16s cubic-bezier(.2,.8,.2,1);
 }
 @keyframes alp-in {
@@ -4441,8 +4443,25 @@ textarea.is-invalid {
   color: var(--alp-deep);
 }
 .alp-ico svg { width: 22px; height: 22px; color: inherit; }
-/* Sin acceso a la app: se ve, pero apagada. */
+.alp-sep { height: 1px; background: var(--line); margin: 13px 0 12px; }
+
+/* Sin acceso, o vertical que todavía no existe: se ve, pero apagada. */
 .alp-item.is-off { opacity: .45; }
+.alp-item.is-off:hover { background: none; border-color: transparent; }
+.alp-soon {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--sf2);
+  border: 1px solid var(--bd);
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
 
 .alp-lbl {
   font-size: 11.5px;
