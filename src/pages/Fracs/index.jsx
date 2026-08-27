@@ -4,6 +4,7 @@ import { HiMap, HiBookmark, HiSquares2X2, HiXMark } from "react-icons/hi2";
 import GuideModal from "@/components/shared/GuideModal";
 import PhoneInput from "@/components/shared/PhoneInput";
 import ClientPicker from "@/components/shared/ClientPicker";
+import DocumentUploadFields, { useDocumentUpload } from "@/components/shared/DocumentUploadFields";
 import MatrixSheet from "./MatrixSheet";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -214,6 +215,7 @@ function FracsPage() {
     setDraftProject,
     fracsResetKey,
     openContractCreate,
+    saveDocument,
   } = useAppContext();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -255,6 +257,8 @@ function FracsPage() {
   const [panelMode, setPanelMode] = useState(null);
   const [apptDraft, setApptDraft] = useState({ client: null, date: "", time: "", notes: "" });
   const [apptSaving, setApptSaving] = useState(false);
+  const docUpload = useDocumentUpload({ category: "plano" });
+  const [docSaving, setDocSaving] = useState(false);
   const apartarOpen = panelMode === "apartar";
   const showApptForm = panelMode === "cita";
   const setApartarOpen = (v) => setPanelMode((m) => ((typeof v === "function" ? v(m === "apartar") : v) ? "apartar" : null));
@@ -816,7 +820,9 @@ function FracsPage() {
                       <div className="lotp-form-t">
                         {panelMode === "apartar"
                           ? (selectedLot.status === "reserved" ? "Extender apartado" : "Apartar lote")
-                          : panelMode === "cita" ? "Agendar cita" : "Registrar venta"}
+                          : panelMode === "cita" ? "Agendar cita"
+                          : panelMode === "documento" ? "Subir documento"
+                          : "Registrar venta"}
                       </div>
                     </div>
 
@@ -870,6 +876,36 @@ function FracsPage() {
                         </div>
                         <Button variant="primary" onClick={saveAppointment} disabled={apptSaving || !apptDraft.client || !apptDraft.date || !apptDraft.time}>
                           {apptSaving ? "Guardando..." : "Guardar cita"}
+                        </Button>
+                      </div>
+                    ) : null}
+
+                    {panelMode === "documento" ? (
+                      <div className="frac-appointment-form">
+                        <DocumentUploadFields ctl={docUpload} />
+                        <Button
+                          variant="primary"
+                          disabled={docSaving}
+                          onClick={async () => {
+                            if (!docUpload.validate() || docSaving) return;
+                            setDocSaving(true);
+                            try {
+                              // El lote ya está decidido por el contexto: se vincula
+                              // solo, sin preguntar a qué se adjunta.
+                              const ok = await saveDocument(
+                                { ...docUpload.form, linkType: "lot", linkedId: selectedLot.id },
+                                docUpload.file
+                              );
+                              if (ok !== false) {
+                                docUpload.reset();
+                                setPanelMode(null);
+                              }
+                            } finally {
+                              setDocSaving(false);
+                            }
+                          }}
+                        >
+                          {docSaving ? "Subiendo..." : "Guardar documento"}
                         </Button>
                       </div>
                     ) : null}
@@ -975,7 +1011,14 @@ function FracsPage() {
 
                 <div className="lotp-sec">
                   <div className="lotp-sh"><b>Documentos</b></div>
-                  <InlineDocumentsPanel entityType="lot" entityId={selectedLot.id} entityLabel={`${selectedFrac.name} / ${selectedLot.code}`} />
+                  <InlineDocumentsPanel
+                    entityType="lot"
+                    entityId={selectedLot.id}
+                    entityLabel={`${selectedFrac.name} / ${selectedLot.code}`}
+                    /* Sin esto abriría el modal global, que queda por debajo de
+                       este panel; acá la subida es una sección más. */
+                    onUpload={() => { docUpload.reset(); setPanelMode("documento"); }}
+                  />
                 </div>
                 </>
                 )}

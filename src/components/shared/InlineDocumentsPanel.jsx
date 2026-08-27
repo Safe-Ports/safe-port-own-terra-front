@@ -46,7 +46,12 @@ function DocRow({ document, readOnly, openDocumentPreview, downloadDocument, del
   );
 }
 
-function InlineDocumentsPanel({ entityType, entityId, entityLabel, compact = false }) {
+/**
+ * @param {Function} [onUpload] Reemplaza la apertura del modal global. Lo usan
+ *   los paneles laterales, que se dibujan por encima del modal y lo dejarían
+ *   tapado; ahí la subida se muestra dentro del propio panel.
+ */
+function InlineDocumentsPanel({ entityType, entityId, entityLabel, compact = false, onUpload }) {
   const {
     getLinkedDocuments,
     openDocumentPreview,
@@ -66,7 +71,9 @@ function InlineDocumentsPanel({ entityType, entityId, entityLabel, compact = fal
   const opDocs = splitByIdentity ? documents.filter((d) => !isIdentityDoc(d)) : documents;
 
   const rowProps = { openDocumentPreview, downloadDocument, deleteDocument };
-  const uploadOp = () => openDocumentUpload({ linkType: entityType, linkedId: entityId, lotCode: entityType === "lot" ? entityId : "" });
+  const uploadOp = () => (onUpload
+    ? onUpload()
+    : openDocumentUpload({ linkType: entityType, linkedId: entityId, lotCode: entityType === "lot" ? entityId : "" }));
 
   return (
     <section className={`rounded-[24px] border border-[rgba(67,69,63,0.10)] bg-[#FBFAF6] ${compact ? "p-3" : "p-4"}`}>
