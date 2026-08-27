@@ -3,39 +3,32 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { HiSquares2X2 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
+import { VERTICAL_APP_CATALOG } from "@/services/permissions";
 
 /**
- * Apps del ecosistema alcanzables desde cualquier vertical.
- *
- * `gate` decide si el usuario la tiene habilitada; una app sin `gate` está
- * disponible para todos. `live: false` son las verticales que todavía no
- * existen: se muestran apagadas para que se sepa que vienen, en vez de
- * esconderlas y que nadie sepa que el ecosistema es más grande.
+ * Dónde entra cada vertical. El catálogo define qué apps existen; esto sólo
+ * dice a qué pantalla lleva cada una.
  */
-const APPS = [
-  { key: "core",     label: "Ecosistema",   icon: "eco-brand",       to: "/ecosistema" },
-  { key: "lands",    label: "Lands",        icon: "eco-g-lands",     to: "/dashboard",              gate: (c) => c.canAccessApp("lands") },
-  { key: "finanzas", label: "Finanzas",     icon: "eco-g-finanzas",  to: "/finanzas",               gate: (c) => c.canAccessApp("finanzas") },
-  { key: "vault",    label: "Vault",        icon: "eco-n-vault",     to: "/ecosistema/documentos",  gate: (c) => c.canUseFeature("core.vault") },
-  { key: "homes",    label: "Construction", icon: "eco-g-homes",     to: "/construccion",           live: false },
-  { key: "neighb",   label: "Properties",   icon: "eco-g-neighb",    to: "/ecosistema",             live: false },
-];
-
-/** Accesos del core que no son apps, pero se usan a diario. */
-const SHORTCUTS = [
-  { label: "Mi Día",     icon: "eco-n-sun",      to: "/ecosistema/mi-dia" },
-  { label: "Calendario", icon: "eco-n-calendar", to: "/ecosistema/agenda" },
-  { label: "Equipo",     icon: "eco-n-users",    to: "/ecosistema/equipo",   gate: (c) => c.canUseFeature("core.team") },
-  { label: "Clientes",   icon: "eco-n-users",    to: "/ecosistema/clientes", gate: (c) => c.canUseFeature("core.clients") },
-];
+const APP_ROUTE = {
+  lands: "/dashboard",
+  finanzas: "/finanzas",
+  homes: "/construccion",
+  neighb: "/ecosistema",
+};
 
 /**
- * Lanzador de aplicaciones del ecosistema, al estilo del menú de cuadrícula de
- * Google: desde cualquier vertical se puede saltar a otra sin pasar por el Hub.
+ * Lanzador de aplicaciones, al estilo del menú de cuadrícula de Google: desde
+ * cualquier vertical se salta a otra sin pasar por el Hub.
+ *
+ * Lista únicamente las apps VERTICALES en producción — `VERTICAL_APP_CATALOG`
+ * ya filtra por `vertical && live`, así que sumar una vertical nueva no
+ * requiere tocar este archivo. El Core queda fuera: no es una app a la que se
+ * "entra", y sus accesos (Mi Día, Calendario, Perfil) ya están en esta misma
+ * barra, al lado del botón.
  */
 export default function AppLauncher() {
   const navigate = useNavigate();
-  const ctx = useAppContext();
+  const { canAccessApp, showToast } = useAppContext();
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState(null);
   const btnRef = useRef(null);
@@ -58,29 +51,25 @@ export default function AppLauncher() {
       if (!popRef.current?.contains(e.target) && !btnRef.current?.contains(e.target)) setOpen(false);
     };
     const esc = (e) => e.key === "Escape" && setOpen(false);
+    const close = () => setOpen(false);
     document.addEventListener("mousedown", away);
     document.addEventListener("keydown", esc);
-    window.addEventListener("resize", () => setOpen(false));
+    window.addEventListener("resize", close);
     return () => {
       document.removeEventListener("mousedown", away);
       document.removeEventListener("keydown", esc);
+      window.removeEventListener("resize", close);
     };
   }, [open]);
 
-  const go = (item) => {
-    if (item.live === false) {
-      ctx.showToast(`${item.label} todavía no está disponible`, "warning");
-      return;
-    }
-    if (item.gate && !item.gate(ctx)) {
-      ctx.showToast(`Tu usuario no tiene acceso a ${item.label}`, "warning");
+  const go = (app) => {
+    if (!canAccessApp(app.key)) {
+      showToast(`Tu usuario no tiene acceso a ${app.name}`, "warning");
       return;
     }
     setOpen(false);
-    navigate(item.to);
+    navigate(APP_ROUTE[app.key] || "/ecosistema");
   };
-
-  const visibleShortcuts = SHORTCUTS.filter((s) => !s.gate || s.gate(ctx));
 
   return (
     <>
@@ -106,49 +95,24 @@ export default function AppLauncher() {
         >
           <div className="alp-title">Aplicaciones</div>
           <div className="alp-grid">
-            {APPS.map((app) => {
-              const blocked = app.live === false || (app.gate && !app.gate(ctx));
-              return (
-                <button
-                  key={app.key}
-                  type="button"
-                  role="menuitem"
-                  className={`alp-item${blocked ? " is-off" : ""}`}
-                  onClick={() => go(app)}
-                  title={app.live === false ? `${app.label} — próximamente` : app.label}
-                >
-                  <span className="alp-ico">
-                    <svg><use href={`#${app.icon}`} /></svg>
-                  </span>
-                  <span className="alp-lbl">{app.label}</span>
-                  {app.live === false && <span className="alp-soon">Pronto</span>}
-                </button>
-              );
-            })}
+            {VERTICAL_APP_CATALOG.map((app) => (
+              <button
+                key={app.key}
+                type="button"
+                role="menuitem"
+                className={`alp-item${canAccessApp(app.key) ? "" : " is-off"}`}
+                onClick={() => go(app)}
+                title={app.desc}
+              >
+                <span className="alp-ico">
+                  <svg><use href={`#${app.icon}`} /></svg>
+                </span>
+                {/* "OwnTerra Lands" → "Lands": el prefijo se repite en todas y
+                    no distingue una app de otra. */}
+                <span className="alp-lbl">{app.name.replace(/^OwnTerra /, "")}</span>
+              </button>
+            ))}
           </div>
-
-          {visibleShortcuts.length > 0 && (
-            <>
-              <div className="alp-sep" />
-              <div className="alp-title">Accesos</div>
-              <div className="alp-grid">
-                {visibleShortcuts.map((s) => (
-                  <button
-                    key={s.label}
-                    type="button"
-                    role="menuitem"
-                    className="alp-item"
-                    onClick={() => go(s)}
-                  >
-                    <span className="alp-ico neutral">
-                      <svg><use href={`#${s.icon}`} /></svg>
-                    </span>
-                    <span className="alp-lbl">{s.label}</span>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
         </div>,
         document.body
       )}
