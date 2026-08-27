@@ -549,7 +549,14 @@ export function AppProvider({ children }) {
       await queryClient.invalidateQueries({ queryKey: ["document-folders"] });
     }
 
-    showToast(`Contrato ${payload.id ? "actualizado" : "registrado"}${docs.length > 0 ? ` · ${docs.length} doc${docs.length > 1 ? "s" : ""} subido${docs.length > 1 ? "s" : ""}` : ""}`);
+    const conDocs = docs.length > 0 ? ` · ${docs.length} doc${docs.length > 1 ? "s" : ""} subido${docs.length > 1 ? "s" : ""}` : "";
+    // Un colaborador tiene que enterarse de que su contrato todavía no está
+    // vigente: decirle sólo "registrado" lo dejaría creyendo que la venta cerró.
+    if (savedContract?.status === "pending_approval") {
+      showToast(`Contrato enviado a aprobación${conDocs}. El lote queda apartado hasta que un administrador lo autorice.`);
+    } else {
+      showToast(`Contrato ${payload.id ? "actualizado" : "registrado"}${conDocs}`);
+    }
     setEditingContract(null);
     setContractDraft(null);
     closeModal("contractModal");

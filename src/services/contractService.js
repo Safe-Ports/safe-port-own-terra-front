@@ -6,6 +6,8 @@ export const contractService = {
   create: (body) => api.post("/contracts", body).then((r) => r.data),
   update: (id, body) => api.patch(`/contracts/${id}`, body).then((r) => r.data),
   cancel: (id, body) => api.post(`/contracts/${id}/cancel`, body),
+  approve: (id) => api.post(`/contracts/${id}/approve`).then((r) => r.data),
+  reject: (id, reason) => api.post(`/contracts/${id}/reject`, { reason }).then((r) => r.data),
   complete: (id) => api.post(`/contracts/${id}/complete`).then((r) => r.data),
   delete: (id) => api.delete(`/contracts/${id}`),
   downloadPdf: async (id) => {
