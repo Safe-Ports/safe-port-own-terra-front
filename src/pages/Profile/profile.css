@@ -224,38 +224,78 @@
 .pf-btn-ghost:hover:not(:disabled) { background: var(--pf-surface2); border-color: var(--leaf); }
 .pf-btn-ghost:disabled { opacity: .6; cursor: default; }
 
-/* ───── Accesos a apps ───── */
-.pf-apps { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+/* ───── Accesos a apps ─────
+   Mismo bloque que el panel de accesos de Equipo (.usr-app-block): logo real de
+   la app, nombre en la tipografía de títulos y una píldora de estado. Aquellos
+   estilos están bajo .eco-root y esta página también vive en la shell de Lands,
+   así que se replican acá en vez de reutilizarse. */
+.pf-apps { display: flex; flex-direction: column; gap: 12px; }
 
 .pf-app {
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 11px 13px;
-  border-radius: 14px;
+  gap: 14px;
+  padding: 15px 16px;
+  border-radius: 16px;
   border: 1px solid var(--pf-border);
-  background: var(--pf-surface2);
+  background: transparent;
+  transition: border-color .18s cubic-bezier(.2, .8, .2, 1), background .18s cubic-bezier(.2, .8, .2, 1);
 }
 
-.pf-app.is-off { opacity: .55; }
+.pf-app.is-on {
+  border-color: color-mix(in srgb, var(--leaf) 40%, transparent);
+  background: color-mix(in srgb, var(--leaf) 5%, transparent);
+}
 
 .pf-app-ico {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 11px;
-  background: var(--pf-muted);
-  color: #fff;
-  font-weight: 800;
-  font-size: .88rem;
+  width: 46px;
+  height: 46px;
+  border-radius: 15px;
+  background: linear-gradient(150deg, #ffffff, #eef2ea);
+  box-shadow: 0 6px 14px var(--pf-ico-shadow, rgba(7, 57, 60, .18));
   flex-shrink: 0;
 }
 
-.pf-app-id { display: flex; flex-direction: column; min-width: 0; }
-.pf-app-id strong { font-size: .82rem; color: var(--pf-text); font-weight: 600; }
-.pf-app-id small { font-size: .72rem; color: var(--pf-muted); margin-top: 2px; }
+.pf-app-ico img { width: 30px; height: 30px; object-fit: contain; display: block; }
+
+/* Cada logo arrastra su propia sombra de color, como en el Hub. */
+.pf-ic-lands { --pf-ico-shadow: rgba(78, 123, 67, .25); }
+.pf-ic-neighb { --pf-ico-shadow: rgba(7, 57, 60, .25); }
+.pf-ic-homes { --pf-ico-shadow: rgba(72, 169, 166, .25); }
+.pf-ic-finanzas { background: linear-gradient(150deg, #ffffff, #eaf0f7); --pf-ico-shadow: rgba(64, 105, 153, .25); }
+
+.pf-app-id { display: flex; flex-direction: column; min-width: 0; gap: 3px; }
+
+.pf-app-name {
+  font-family: var(--font-title);
+  font-size: 1.05rem;
+  line-height: 1.15;
+  color: var(--deep);
+}
+
+.pf-app-desc { font-size: .76rem; color: var(--leaf); }
+
+.pf-chip {
+  flex-shrink: 0;
+  padding: 5px 11px;
+  border-radius: 30px;
+  font-size: .6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  background: var(--pf-surface2);
+  color: var(--pf-muted);
+  border: 1px solid var(--pf-border);
+}
+
+.pf-chip.is-on {
+  background: color-mix(in srgb, var(--leaf) 14%, transparent);
+  color: var(--deep);
+  border-color: color-mix(in srgb, var(--leaf) 30%, transparent);
+}
 
 /* ───── Accesos rápidos ───── */
 .pf-links { display: flex; flex-direction: column; gap: 10px; }

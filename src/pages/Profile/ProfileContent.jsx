@@ -29,6 +29,15 @@ const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
 // que se entre, es la casa donde viven todas (ver core-not-a-vertical-app).
 const LISTED_APPS = APP_CATALOG.filter((a) => a.vertical);
 
+// Los logos van como <img> y no por el sprite (#eco-g-…): el sprite lo monta
+// EcoLayout, así que en la shell de Lands no existiría y el hueco quedaría vacío.
+const APP_LOGO = {
+  lands: "/icons/app-lands.png",
+  homes: "/icons/app-construction.png",
+  neighb: "/icons/app-properties.png",
+  finanzas: "/icons/app-finanzas.png",
+};
+
 // Paleta para el color personal. Es el que identifica al usuario en la agenda y
 // en las asignaciones, así que se ofrecen opciones distinguibles entre sí en vez
 // de un selector libre donde todos terminan eligiendo el mismo verde.
@@ -320,23 +329,24 @@ export default function ProfileContent() {
         <ul className="pf-apps">
           {LISTED_APPS.map((app) => {
             const row = (currentUser?.apps || []).find((a) => (a.app_key || a.key) === app.key);
-            const allowed = canAccessApp(app.key);
+            const on = app.live && canAccessApp(app.key);
             // Un admin entra a todo sin fila propia de asignación; en ese caso no
             // hay rol por app que mostrar y decirlo es más honesto que inventarlo.
-            const detail = !app.live
+            const chip = !app.live
               ? "Próximamente"
-              : !allowed
-                ? "Sin acceso asignado"
-                : APP_ROLE_LABEL[row?.role] || (currentUser?.role === "admin" ? "Acceso total" : "Con acceso");
+              : !on
+                ? "Sin acceso"
+                : APP_ROLE_LABEL[row?.role] || (currentUser?.role === "admin" ? "Acceso total" : "Activo");
             return (
-              <li key={app.key} className={`pf-app${allowed && app.live ? "" : " is-off"}`}>
-                <span className="pf-app-ico" style={{ background: allowed && app.live ? "var(--mid)" : undefined }}>
-                  {app.name.replace(/^OwnTerra /, "").slice(0, 1)}
+              <li key={app.key} className={`pf-app${on ? " is-on" : ""}`}>
+                <span className={`pf-app-ico pf-ic-${app.key}`}>
+                  <img src={APP_LOGO[app.key]} alt="" />
                 </span>
                 <span className="pf-app-id">
-                  <strong>{app.name}</strong>
-                  <small>{detail}</small>
+                  <span className="pf-app-name">{app.name}</span>
+                  <span className="pf-app-desc">{app.desc}</span>
                 </span>
+                <span className={`pf-chip${on ? " is-on" : ""}`}>{chip}</span>
               </li>
             );
           })}
