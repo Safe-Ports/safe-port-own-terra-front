@@ -73,7 +73,7 @@ function ClientModalInner() {
     <Modal
       open
       icon={<HiUser />}
-      title={editingClient ? "Editar cliente" : "Vincular o crear cliente"}
+      title={editingClient ? "Editar cliente" : "Agregar cliente"}
       subtitle={editingClient ? "Identidad del ecosistema" : "Identidad única del ecosistema"}
       onClose={() => closeModal("clientModal")}
       footer={
@@ -211,13 +211,21 @@ function ClientsPage() {
         {/* ── LEFT: client list ── */}
         <div className="cl-list-card">
           <div className="cl-hd">
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+              {/* min-width:0 para que el subtítulo ceda ancho y el botón no se
+                  parta en dos líneas. */}
+              <div style={{ minWidth: 0 }}>
                 <div style={{ fontWeight: 700, fontSize: ".87rem" }}>Clientes</div>
                 <div style={{ fontSize: ".58rem", color: "var(--mu)", fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", marginTop: 1 }}>Del ecosistema · con acceso a Lands</div>
               </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <Button variant="primary" style={{ padding: "5px 12px", fontSize: ".74rem" }} onClick={() => openModal("clientModal")}>+ Vincular</Button>
+              <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                <Button
+                  variant="primary"
+                  style={{ padding: "6px 12px", fontSize: ".74rem", whiteSpace: "nowrap" }}
+                  onClick={() => openModal("clientModal")}
+                >
+                  + Agregar cliente
+                </Button>
               </div>
             </div>
             <div className="cl-src">
@@ -541,7 +549,7 @@ function ClientsPage() {
         steps={[
           { title: "Seleccionar un cliente", text: "Haz clic en cualquier cliente de la lista izquierda para ver su detalle completo: contratos, pagos, saldo y documentos vinculados." },
           { title: "Buscar y filtrar", text: "Usa la barra de búsqueda para encontrar clientes por nombre o correo. El filtro de pestañas separa compradores activos de prospectos." },
-          { title: "Vincular nuevo cliente", text: "El botón '+ Vincular' abre el formulario para registrar un nuevo cliente y asignarle acceso a OwnTerra Lands." },
+          { title: "Agregar un cliente", text: "El botón '+ Agregar cliente' abre el formulario para registrarlo y darle acceso a OwnTerra Lands. Si el correo ya existe en el ecosistema, se vincula esa identidad en vez de duplicarla." },
           { title: "Editar cliente", text: "En el detalle del cliente, el botón 'Editar' permite modificar nombre, correo, teléfono y datos del contrato." },
           { title: "Estado de cuenta", text: "Desde el detalle puedes ver el historial de pagos, descargarlo en PDF o enviarlo por correo directamente al cliente." },
           { title: "Contacto rápido", text: "Los íconos de teléfono, correo y WhatsApp en el encabezado del cliente abren directamente la app de contacto correspondiente." },
