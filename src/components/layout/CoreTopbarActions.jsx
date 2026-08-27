@@ -7,6 +7,7 @@ import {
 } from "react-icons/hi2";
 import { useLocation, useNavigate } from "react-router-dom";
 import Avatar from "@/components/Avatar";
+import AppLauncher from "@/components/layout/AppLauncher";
 import { useAppContext } from "@/context/AppContext";
 
 function CoreTopbarActions({ onGuide, className = "" }) {
@@ -19,6 +20,14 @@ function CoreTopbarActions({ onGuide, className = "" }) {
   };
 
   const isActive = (path) => location.pathname === path;
+
+  // El perfil es la misma página servida por dos shells (ver Ecosystem/Perfil.jsx).
+  // Esta barra la comparten Lands, Finanzas y el Core, así que se elige la versión
+  // de la shell en la que ya está el usuario: abrir tu perfil no debería cambiarte
+  // de aplicación. Desde Finanzas se usa la del Core porque es la casa común, no
+  // la de otra vertical.
+  const inLands = !/^\/(ecosistema|finanzas)\b/.test(location.pathname);
+  const profilePath = inLands ? "/perfil" : "/ecosistema/perfil";
 
   return (
     <nav className={`core-topbar-actions ${className}`} aria-label="Acciones del ecosistema">
@@ -60,8 +69,8 @@ function CoreTopbarActions({ onGuide, className = "" }) {
 
       <button
         type="button"
-        className={`core-topbar-action core-profile-action ${isActive("/perfil") ? "is-active" : ""}`}
-        onClick={() => navigate("/perfil")}
+        className={`core-topbar-action core-profile-action ${isActive(profilePath) ? "is-active" : ""}`}
+        onClick={() => navigate(profilePath)}
         aria-label={`Ver perfil de ${currentUser?.name || "usuario"}`}
       >
         <Avatar name={currentUser?.name || "Usuario"} src={currentUser?.avatar_url} size={28} />
@@ -81,6 +90,10 @@ function CoreTopbarActions({ onGuide, className = "" }) {
         <HiArrowLeftOnRectangle aria-hidden="true" />
         <span className="core-logout-label">Cerrar sesión</span>
       </button>
+
+      {/* Último de la fila: es el salto FUERA de esta app, no una acción de
+          ella, así que no se mezcla con las demás. */}
+      <AppLauncher />
     </nav>
   );
 }

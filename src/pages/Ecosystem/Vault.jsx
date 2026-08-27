@@ -2,7 +2,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import GuideModal from "@/components/shared/GuideModal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { SkeletonRows } from "@/components/ui/Skeleton";
-import { HiOutlineEllipsisVertical, HiOutlineFolderPlus, HiOutlinePencil, HiOutlineTrash } from "react-icons/hi2";
+import { HiOutlineEllipsisVertical, HiOutlineFolderPlus, HiOutlineLockClosed, HiOutlinePencil, HiOutlineTrash } from "react-icons/hi2";
 import { documentService, filenameForDocument } from "@/services/documentService";
 import { folderService } from "@/services/folderService";
 import { useAppContext } from "@/context/AppContext";
@@ -189,7 +189,10 @@ function EcosystemVault() {
               onKeyDown={(e) => { if (e.key === "Enter") commitRename(); if (e.key === "Escape") setEditingId(null); }} />
           ) : (
             <span className="vlt-finfo">
-              <span className="vlt-fname" style={{ display: "flex" }}>{f.name}</span>
+              <span className="vlt-fname" style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                {f.name}
+                {f.app_key && <HiOutlineLockClosed title="Carpeta de sistema: no se puede eliminar" style={{ opacity: 0.5, fontSize: "0.85em" }} />}
+              </span>
             </span>
           )}
           <span className="vlt-fcnt">{f.document_count || 0}</span>
@@ -200,7 +203,9 @@ function EcosystemVault() {
             <div ref={menuRef} className="vlt-menu" onClick={(e) => e.stopPropagation()}>
               <button onClick={() => startCreate(fid)}><HiOutlineFolderPlus /> Nueva subcarpeta</button>
               <button onClick={() => startRename(f)}><HiOutlinePencil /> Renombrar</button>
-              <button className="danger" onClick={() => deleteFolder(fid)}><HiOutlineTrash /> Eliminar</button>
+              {!f.app_key && (
+                <button className="danger" onClick={() => deleteFolder(fid)}><HiOutlineTrash /> Eliminar</button>
+              )}
             </div>
           )}
         </div>

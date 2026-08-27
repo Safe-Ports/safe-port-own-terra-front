@@ -6,6 +6,8 @@ import {
   HiOutlinePlus, HiOutlinePencil, HiOutlineTrash, HiOutlineCalendar,
   HiOutlineXMark, HiOutlineMagnifyingGlass, HiOutlineChevronDown,
   HiOutlineFunnel, HiOutlineEllipsisVertical,
+  HiArrowTrendingDown, HiBanknotes, HiCreditCard, HiMagnifyingGlass,
+  HiPhone, HiBars3, HiPlusCircle,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
@@ -372,7 +374,7 @@ function EgresoModal({ initial, onClose, onSave }) {
     <div className="modal-overlay">
       <div className="modal-box" style={{ maxWidth: 440 }}>
         <div className="modal-hd">
-          <div className="modal-ico">💸</div>
+          <div className="modal-ico"><HiArrowTrendingDown /></div>
           <div style={{ flex: 1 }}>
             <div className="modal-title" style={{ fontSize: "1.3rem" }}>{initial ? "Editar egreso" : "Nuevo egreso"}</div>
             <div className="modal-sub">Gasto interno de la empresa</div>
@@ -446,7 +448,7 @@ function CobroModal({ clients, contracts, onClose, onSave }) {
     <div className="modal-overlay">
       <div className="modal-box" style={{ maxWidth: 440 }}>
         <div className="modal-hd">
-          <div className="modal-ico">💰</div>
+          <div className="modal-ico"><HiBanknotes /></div>
           <div style={{ flex: 1 }}>
             <div className="modal-title" style={{ fontSize: "1.3rem" }}>Registrar cobro</div>
             <div className="modal-sub">Pago de cuota de cliente</div>
@@ -513,7 +515,7 @@ function AbonoModal({ payment, onClose, onConfirm, busy }) {
     <div className="modal-overlay">
       <div className="modal-box" style={{ maxWidth: 420 }}>
         <div className="modal-hd">
-          <div className="modal-ico">💰</div>
+          <div className="modal-ico"><HiBanknotes /></div>
           <div style={{ flex: 1 }}>
             <div className="modal-title" style={{ fontSize: "1.3rem" }}>Registrar cobro</div>
             <div className="modal-sub">
@@ -571,7 +573,7 @@ function TipoModal({ onSelect, onClose }) {
     <div className="modal-overlay">
       <div className="modal-box" style={{ maxWidth: 400 }}>
         <div className="modal-hd">
-          <div className="modal-ico">💳</div>
+          <div className="modal-ico"><HiCreditCard /></div>
           <div style={{ flex: 1 }}>
             <div className="modal-title" style={{ fontSize: "1.3rem" }}>Nuevo pago</div>
             <div className="modal-sub">¿Qué tipo de movimiento vas a registrar?</div>
@@ -580,15 +582,15 @@ function TipoModal({ onSelect, onClose }) {
         </div>
         <div className="modal-body" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {[
-            ["cobro",  "💰", "#1E3D2B", "var(--tan-lt)", "Cobro de cliente", "Un cliente pagó su cuota de lote"],
-            ["egreso", "💸", "#43453F", "#fef3e2",       "Egreso de empresa","Nómina, servicios, impuestos…"],
-          ].map(([type, icon, border, bg, title, sub]) => (
+            ["cobro",  HiBanknotes, "#1E3D2B", "var(--tan-lt)", "Cobro de cliente", "Un cliente pagó su cuota de lote"],
+            ["egreso", HiArrowTrendingDown, "#43453F", "#fef3e2",       "Egreso de empresa","Nómina, servicios, impuestos…"],
+          ].map(([type, Icon, border, bg, title, sub]) => (
             <button key={type} onClick={() => onSelect(type)} style={{
               display: "flex", alignItems: "center", gap: 14, padding: "16px 18px",
               border: `2px solid ${border}`, borderRadius: 16, background: bg,
               cursor: "pointer", textAlign: "left", fontFamily: "var(--font-body)", width: "100%",
             }}>
-              <span style={{ fontSize: "1.8rem" }}>{icon}</span>
+              <span style={{ fontSize: "1.8rem" }}><Icon /></span>
               <div>
                 <div style={{ fontWeight: 800, fontSize: ".9rem", color: border }}>{title}</div>
                 <div style={{ fontSize: ".75rem", color: "var(--mu)", marginTop: 2 }}>{sub}</div>
@@ -907,8 +909,8 @@ export default function PaymentsPage() {
           <div className="cf-sub">Gestión de amortizaciones y flujo de caja</div>
         </div>
         <div className="cf-top-actions" data-tour="pagos-registrar">
-          <button className="cf-btn cf-btn-ghost" onClick={() => { setEditing(null); setModal("egreso"); }}>⊖ Registrar egreso</button>
-          <button className="cf-btn cf-btn-primary" onClick={() => setModal("cobro")}>＋ Registrar pago</button>
+          <button className="cf-btn cf-btn-ghost" onClick={() => { setEditing(null); setModal("egreso"); }}><HiArrowTrendingDown /> Registrar egreso</button>
+          <button className="cf-btn cf-btn-primary" onClick={() => setModal("cobro")}><HiPlusCircle /> Registrar pago</button>
         </div>
       </div>
 
@@ -928,7 +930,7 @@ export default function PaymentsPage() {
         {tab === "amort" && (
           <>
             <div className="cf-toolbar" data-tour="pagos-filtros">
-              <label className="cf-search"><span>🔎</span><input value={amortSearch} onChange={e => setAmortSearch(e.target.value)} placeholder="Buscar cliente o lote…" /></label>
+              <label className="cf-search"><span><HiMagnifyingGlass /></span><input value={amortSearch} onChange={e => setAmortSearch(e.target.value)} placeholder="Buscar cliente o lote…" /></label>
               <select className="cf-field" value={amortProject} onChange={e => setAmortProject(e.target.value)}>
                 <option value="">Todos los proyectos</option>
                 {amortProjects.map(pj => <option key={pj} value={pj}>{pj}</option>)}
@@ -959,10 +961,10 @@ export default function PaymentsPage() {
                           <td className={`cf-venc ${r.estado === "late" ? "late" : ""}`}>{r.venc ? fmtD(r.venc) : "—"}</td>
                           <td><span className={`cf-badge ${r.estado}`}>{AMORT_EST[r.estado]}</span></td>
                           <td><div className="cf-acts">
-                            <button className="cf-ico pay" title="Registrar pago" onClick={() => r.nextPayment ? setAbono(r.nextPayment) : setModal("cobro")}>＄</button>
-                            {link ? <a className="cf-ico wa" href={link} target="_blank" rel="noreferrer" title="Recordatorio por WhatsApp">✆</a>
-                                  : <button className="cf-ico" title="Sin teléfono del cliente" disabled style={{ opacity: .4, cursor: "default" }}>✆</button>}
-                            <button className="cf-ico" title="Historial de amortización" onClick={() => navigate("/reportes")}>☰</button>
+                            <button className="cf-ico pay" title="Registrar pago" onClick={() => r.nextPayment ? setAbono(r.nextPayment) : setModal("cobro")}><HiBanknotes /></button>
+                            {link ? <a className="cf-ico wa" href={link} target="_blank" rel="noreferrer" title="Recordatorio por WhatsApp"><HiPhone /></a>
+                                  : <button className="cf-ico" title="Sin teléfono del cliente" disabled style={{ opacity: .4, cursor: "default" }}><HiPhone /></button>}
+                            <button className="cf-ico" title="Historial de amortización" onClick={() => navigate("/reportes")}><HiBars3 /></button>
                           </div></td>
                         </tr>
                       );
@@ -982,7 +984,7 @@ export default function PaymentsPage() {
               <div>Flujo neto<b style={{ color: flujoNeto >= 0 ? "var(--mid)" : "var(--danger)" }}>{currency(flujoNeto)}</b></div>
             </div>
             <div className="cf-toolbar">
-              <label className="cf-search"><span>🔎</span><input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Buscar egreso…" /></label>
+              <label className="cf-search"><span><HiMagnifyingGlass /></span><input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Buscar egreso…" /></label>
               <select className="cf-field" value={estado} onChange={e => { setEstado(e.target.value); setPage(1); }}>
                 {ESTADO_EG.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { HiEye } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 import { documentService, filenameForDocument } from "@/services/documentService";
 import Modal from "@/components/ui/Modal";
@@ -54,7 +55,7 @@ function DocumentPreviewModal() {
   return (
     <Modal
       open={ui.documentPreview}
-      icon="👁"
+      icon={<HiEye />}
       title={document.name}
       subtitle={`${document.category} · ${sizeKb} KB`}
       onClose={closeDocumentPreview}

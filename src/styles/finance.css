@@ -5,73 +5,74 @@
    shell no lo usa). Import único desde FinanceShell.jsx.
    ========================================================================== */
 
-/* Paleta "Cielo Corporativo" — redefine los mismos tokens que usa Lands
-   (--deep/--mid/--leaf/--bg/--sf/--navy/etc.) pero solo dentro de
-   .finance-shell, así el resto de la app (Core, Lands) sigue en verde.
-   El layout (.app-shell/.sb/.topbar/.content/.btn-p...) se reutiliza tal
-   cual de index.css porque ya toma sus colores de estos tokens. */
+/* Paleta del Hub del ecosistema (la misma de .eco-root): Finanzas es una app
+   del Core, así que se identifica con su color y no con una propia.
+   Redefine los mismos tokens que usa Lands (--deep/--mid/--leaf/--bg/--sf/
+   --navy/etc.) pero solo dentro de .finance-shell, así el resto de la app
+   sigue en verde. El layout (.app-shell/.sb/.topbar/.content/.btn-p...) se
+   reutiliza tal cual de index.css porque ya toma sus colores de estos tokens. */
 .finance-shell {
-  --deep: #1B3A5C;
-  --mid: #3B6EA5;
-  --leaf: #74A6D9;
-  --light: #BFD9F0;
-  --forest: #3B6EA5;
-  --forest-hi: #74A6D9;
-  --earth: #3B6EA5;
-  --bg: #F3F6FA;
-  --bg2: #E7EEF6;
+  --deep: #07393C;
+  --mid: #2C666E;
+  --leaf: #48A9A6;
+  --light: #7FC4C1;
+  --forest: #2C666E;
+  --forest-hi: #48A9A6;
+  --earth: #2C666E;
+  --bg: #F0EDEE;
+  --bg2: #E4E0E0;
   --card: rgba(255, 255, 255, 0.92);
-  --line: #E2E9F1;
-  --line-soft: #E9EEF5;
-  --sf: #FFFFFF;
-  --sf2: #EDF2F8;
-  --bd: #E2E9F1;
-  --tan: #3B6EA5;
-  --tan-dk: #1B3A5C;
-  --tan-lt: #DCEAF7;
-  --navy: #1B3A5C;
-  --tx: #16233A;
-  --tx2: #2A3B4E;
-  --mu: #7A8798;
-  --sh: 0 1px 3px rgba(27, 58, 92, 0.07), 0 4px 12px rgba(27, 58, 92, 0.08);
-  --sh2: 0 18px 40px rgba(27, 58, 92, 0.12), 0 20px 40px rgba(27, 58, 92, 0.13);
+  --line: rgba(67, 69, 63, 0.10);
+  --line-soft: rgba(67, 69, 63, 0.07);
+  --sf: #FAF8F7;
+  --sf2: #EEEAEA;
+  --bd: rgba(67, 69, 63, 0.18);
+  --tan: #2C666E;
+  --tan-dk: #07393C;
+  --tan-lt: #D8EFEC;
+  --navy: #07393C;
+  --tx: #07393C;
+  --tx2: #33383A;
+  --mu: #797D7E;
+  --sh: 0 1px 3px rgba(7, 57, 60, 0.07), 0 4px 12px rgba(7, 57, 60, 0.08);
+  --sh2: 0 18px 40px rgba(7, 57, 60, 0.12), 0 20px 40px rgba(7, 57, 60, 0.13);
 }
 
 /* El resto de estas reglas de index.css usa rgba() literal (no var()) para
    los verdes de hover/foco/glow decorativo — se re-apuntan acá solo dentro
    del shell de Finanzas. */
 .finance-shell .sb::before {
-  background: radial-gradient(circle, rgba(59, 110, 165, 0.16) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(44, 102, 110, 0.16) 0%, transparent 70%);
 }
 .finance-shell .sb-logo-mark {
-  box-shadow: 0 6px 16px rgba(59, 110, 165, 0.35);
+  box-shadow: 0 6px 16px rgba(44, 102, 110, 0.35);
 }
 .finance-shell .sb-sec {
-  color: rgba(191, 217, 240, 0.55);
+  color: rgba(127, 196, 193, 0.55);
 }
 .finance-shell .sb-btn:hover {
-  background: rgba(116, 166, 217, 0.12);
-  border-color: rgba(116, 166, 217, 0.18);
+  background: rgba(72, 169, 166, 0.12);
+  border-color: rgba(72, 169, 166, 0.18);
 }
 .finance-shell .sb-btn.active {
-  background: rgba(116, 166, 217, 0.20);
-  border-color: rgba(116, 166, 217, 0.30);
+  background: rgba(72, 169, 166, 0.20);
+  border-color: rgba(72, 169, 166, 0.30);
 }
 .finance-shell .sb-btn.active .sb-ico {
-  background: rgba(116, 166, 217, 0.28);
+  background: rgba(72, 169, 166, 0.28);
 }
 .finance-shell .main::before {
   background:
-    radial-gradient(620px 420px at 88% -8%, rgba(116, 166, 217, 0.16), transparent 60%),
-    radial-gradient(520px 420px at -6% 12%, rgba(59, 110, 165, 0.12), transparent 55%),
-    radial-gradient(700px 500px at 50% 120%, rgba(191, 217, 240, 0.16), transparent 60%);
+    radial-gradient(620px 420px at 88% -8%, rgba(72, 169, 166, 0.16), transparent 60%),
+    radial-gradient(520px 420px at -6% 12%, rgba(44, 102, 110, 0.12), transparent 55%),
+    radial-gradient(700px 500px at 50% 120%, rgba(127, 196, 193, 0.16), transparent 60%);
 }
 .finance-shell .core-topbar-action:hover,
 .finance-shell .core-topbar-action.is-active {
-  border-color: rgba(59, 110, 165, 0.4);
+  border-color: rgba(44, 102, 110, 0.4);
 }
 .finance-shell .btn-p {
-  box-shadow: 0 6px 16px rgba(27, 58, 92, 0.24);
+  box-shadow: 0 6px 16px rgba(7, 57, 60, 0.24);
 }
 
 .fin-kpi-grid {
@@ -187,7 +188,7 @@
 .fin-pill { padding: 7px 14px; border-radius: 30px; border: 1px solid var(--bd); background: var(--sf); color: var(--tx2); font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: var(--font-body); }
 .fin-pill:hover { border-color: var(--leaf); }
 .fin-pill.on { background: var(--deep); color: var(--sf); border-color: var(--deep); }
-.fin-pill.on.ok { background: rgba(111,175,107,.16); color: var(--mid); border-color: rgba(111,175,107,.4); }
+.fin-pill.on.ok { background: rgba(111,175,107,.16); color: #2F6A38; border-color: rgba(111,175,107,.4); }
 .fin-pill.on.soon { background: #FBF0DC; color: #9a6c18; border-color: #e6cf9a; }
 .fin-pill.on.late { background: #FBE7E4; color: var(--danger); border-color: #f0c5bd; }
 
@@ -202,14 +203,14 @@
 .fin-amt { font-weight: 700; color: var(--deep); white-space: nowrap; }
 .fin-venc.late { color: var(--danger); font-weight: 700; }
 .fin-badge { display: inline-block; padding: 3px 11px; border-radius: 30px; font-size: 11px; font-weight: 700; }
-.fin-badge.ok { background: rgba(111,175,107,.16); color: var(--mid); }
+.fin-badge.ok { background: rgba(111,175,107,.16); color: #2F6A38; }
 .fin-badge.soon { background: #FBF0DC; color: #9a6c18; }
 .fin-badge.late { background: #FBE7E4; color: var(--danger); }
 .fin-acts { display: flex; gap: 6px; justify-content: flex-end; }
 .fin-ico { width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--bd); background: var(--sf); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--tx2); text-decoration: none; font-size: 14px; }
 .fin-ico:hover { border-color: var(--leaf); background: var(--sf2); }
 .fin-ico.wa { color: #1DA851; border-color: rgba(29,168,81,.4); }
-.fin-ico.pay { color: var(--mid); border-color: rgba(111,175,107,.4); }
+.fin-ico.pay { color: var(--mid); border-color: rgba(72,169,166,.45); }
 
 /* Antigüedad de cartera — fila de chips arriba de la tabla de Cuentas por
    Cobrar/Pagar. Severidad por color, no por gradiente. */

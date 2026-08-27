@@ -139,4 +139,18 @@ api.interceptors.response.use(
   }
 );
 
+/**
+ * Reemplaza el par de tokens de la sesión guardada, dejando el resto igual.
+ *
+ * Lo usa el cambio de contraseña: al cambiarla el backend cierra todas las
+ * sesiones y devuelve un par nuevo para el dispositivo desde el que se hizo. Sin
+ * guardarlo, la siguiente petición viajaría con el token viejo —ya del lado
+ * muerto del corte— y al usuario lo echaría la app justo después de cambiarla.
+ */
+export function replaceSessionTokens({ access_token, refresh_token }) {
+  const session = getSession();
+  if (!session) return;
+  saveSession({ ...session, token: access_token, refresh_token });
+}
+
 export default api;

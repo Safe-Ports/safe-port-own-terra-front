@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { HiMagnifyingGlass } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
@@ -272,7 +273,7 @@ function GlobalSearchModal() {
   return (
     <Modal
       open={ui.globalSearch}
-      icon="🔍"
+      icon={<HiMagnifyingGlass />}
       title="Búsqueda global"
       subtitle="Busca registros o ejecuta acciones rápidas."
       onClose={() => closeModal("globalSearch")}

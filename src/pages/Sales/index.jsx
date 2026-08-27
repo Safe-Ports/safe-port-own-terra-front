@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { HiArrowDownTray, HiDocumentText, HiFolder, HiPrinter } from "react-icons/hi2";
 import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
@@ -32,7 +33,7 @@ function SalesPage() {
   return (
     <div className="card">
       <div className="card-hd">
-        <div className="card-title">📄 Repositorio de Contratos</div>
+        <div className="card-title"><HiDocumentText style={{ display: "inline", verticalAlign: "-2px" }} /> Repositorio de Contratos</div>
         <button className="btn-p" data-tour="contrato-generar" onClick={() => openContractCreate()}>+ Generar Contrato</button>
       </div>
       <div className="card-body" style={{ padding: 0 }}>
@@ -54,7 +55,7 @@ function SalesPage() {
               <tr key={contract.id}>
                 <td>
                   <span className="contract-badge" onClick={() => { setEditingContract(contract); openModal("contractModal"); }}>
-                    📄 {contract.contract_number}
+                    <HiDocumentText style={{ display: "inline", verticalAlign: "-2px" }} /> {contract.contract_number}
                   </span>
                 </td>
                 <td>{contract.type}</td>
@@ -67,9 +68,9 @@ function SalesPage() {
                 </td>
                 <td style={{ whiteSpace: "nowrap" }}>
                   <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => { setEditingContract(contract); openModal("contractModal"); }}>Editar</button>{" "}
-                  <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => openDocumentUpload({ linkType: "contract", linkedId: contract.id })}>📁</button>{" "}
-                  <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => openClientReport(contract.client?.id)}>🖨</button>{" "}
-                  <button className="btn-p" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => handleDownloadPdf(contract)}>⬇ PDF</button>
+                  <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => openDocumentUpload({ linkType: "contract", linkedId: contract.id })}><HiFolder /></button>{" "}
+                  <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => openClientReport(contract.client?.id)}><HiPrinter /></button>{" "}
+                  <button className="btn-p" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => handleDownloadPdf(contract)}><HiArrowDownTray /> PDF</button>
                 </td>
               </tr>
             )) : (

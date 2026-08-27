@@ -1,15 +1,5 @@
+import { HiXMark } from "react-icons/hi2";
 import useEscapeKey from "@/hooks/useEscapeKey";
-
-const ICON_LABELS = {
-  "🔍": "SE",
-  "👤": "CL",
-  "💳": "PG",
-  "👁": "PV",
-  "🖨": "RP",
-  "📁": "DC",
-  "📄": "CT",
-  "▦": "LT",
-};
 
 function Modal({
   open,
@@ -25,7 +15,6 @@ function Modal({
   useEscapeKey(onClose, open);
 
   if (!open) return null;
-  const visualIcon = typeof icon === "string" ? ICON_LABELS[icon] || icon : icon;
 
   return (
     <div className={`modal-overlay open ${overlayClassName}`.trim()} onClick={onClose}>
@@ -37,13 +26,13 @@ function Modal({
         onClick={(event) => event.stopPropagation()}
       >
         <div className="modal-hd">
-          <div className="modal-ico">{visualIcon}</div>
+          <div className="modal-ico">{icon}</div>
           <div>
             <div className="modal-title">{title}</div>
             {subtitle ? <div className="modal-sub">{subtitle}</div> : null}
           </div>
           <button className="modal-close" onClick={onClose} aria-label="Cerrar">
-            ✕
+            <HiXMark />
           </button>
         </div>
         <div className="modal-body">{children}</div>

@@ -25,9 +25,11 @@ const EcosystemFormularios = lazyWithRetry(() => import("@/pages/Ecosystem/Formu
 const EcosystemFormEditor = lazyWithRetry(() => import("@/pages/Ecosystem/Formularios/Editor"));
 const EcosystemFormRespuestas = lazyWithRetry(() => import("@/pages/Ecosystem/Formularios/Respuestas"));
 const EcosystemConfiguracion = lazyWithRetry(() => import("@/pages/Ecosystem/Configuracion"));
+const EcosystemPerfil = lazyWithRetry(() => import("@/pages/Ecosystem/Perfil"));
 const DashboardPage = lazyWithRetry(() => import("@/pages/Dashboard"));
 const LotsPage = lazyWithRetry(() => import("@/pages/Lots"));
 const FracsPage = lazyWithRetry(() => import("@/pages/Fracs"));
+const LotTrackPage = lazyWithRetry(() => import("@/pages/LotTrack"));
 const ClientsPage = lazyWithRetry(() => import("@/pages/Clients"));
 const SalesPage = lazyWithRetry(() => import("@/pages/Sales"));
 const DocumentsPage = lazyWithRetry(() => import("@/pages/Documents"));
@@ -115,6 +117,8 @@ function AppRouter() {
           {/* Misma página que /configuracion, servida con el shell del Core para
               quien entra desde el Ecosistema (ver Ecosystem/Configuracion.jsx). */}
           <Route path="/ecosistema/configuracion" element={<RequireFeature feature="core.config"><EcosystemConfiguracion /></RequireFeature>} />
+          {/* El perfil es transversal y conserva el shell del Core. */}
+          <Route path="/ecosistema/perfil" element={<EcosystemPerfil />} />
           <Route path="/properties" element={<RequireFeature app="properties"><PropertiesModule /></RequireFeature>}>
             <Route index element={<PropertiesDashboard />} />
             <Route path="operacion" element={<PropertiesOperationsHub />} />
@@ -136,6 +140,7 @@ function AppRouter() {
             <Route path="/dashboard" element={<RequireFeature app="lands"><DashboardPage /></RequireFeature>} />
             <Route path="/lotes" element={<RequireFeature app="lands"><LotsPage /></RequireFeature>} />
             <Route path="/fraccionamientos" element={<RequireFeature app="lands"><FracsPage /></RequireFeature>} />
+            <Route path="/track-lotes" element={<RequireFeature app="lands"><LotTrackPage /></RequireFeature>} />
             <Route path="/clientes" element={<RequireFeature feature="lands.clients"><ClientsPage /></RequireFeature>} />
             <Route path="/ventas" element={<RequireFeature feature="lands.sales"><SalesPage /></RequireFeature>} />
             <Route path="/contratos" element={<RequireFeature feature="lands.sales"><SalesPage /></RequireFeature>} />

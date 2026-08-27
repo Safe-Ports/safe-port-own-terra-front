@@ -12,11 +12,11 @@ function MobileHeader({ pathname }) {
       <div className="flex items-center justify-between gap-3">
         <div>
           <div className="text-[0.68rem] font-bold uppercase tracking-[0.26em] text-[#7F7363]">Ownterra</div>
-          <div className="mt-1 font-['Playfair_Display'] text-[1.65rem] leading-none text-[#1E3D2B]">{title}</div>
+          <div className="mt-1 font-display text-[1.65rem] leading-none text-forest">{title}</div>
         </div>
         <div className="flex items-center gap-2">
           <button
-            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#DCDAD2] bg-white/85 text-[#1E3D2B] shadow-[0_10px_24px_rgba(22,18,15,.08)]"
+            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#DCDAD2] bg-white/85 text-forest shadow-[0_10px_24px_rgba(22,18,15,.08)]"
             onClick={() => openModal("globalSearch")}
             aria-label="Buscar"
           >

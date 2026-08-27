@@ -3,7 +3,7 @@ import { useAppContext } from "@/context/AppContext";
 import Modal from "@/components/ui/Modal";
 import FieldError from "@/components/shared/FieldError";
 import { useFieldErrors } from "@/hooks/useFieldErrors";
-import { HiOutlineMagnifyingGlass } from "react-icons/hi2";
+import { HiOutlineFolder, HiOutlineMagnifyingGlass } from "react-icons/hi2";
 
 const CATEGORIES = [
   { value: "contrato", label: "Contrato" },
@@ -96,7 +96,7 @@ function DocumentModal() {
   return (
     <Modal
       open={ui.documentModal}
-      icon="📁"
+      icon={<HiOutlineFolder />}
       title="Subir documento"
       subtitle="Expediente documental"
       onClose={() => { resetDocumentDraft(); closeModal("documentModal"); }}

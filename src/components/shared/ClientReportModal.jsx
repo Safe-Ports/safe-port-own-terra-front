@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { HiPrinter } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 import Modal from "@/components/ui/Modal";
 import { currency, dateLabel, progress } from "@/services/formatters";
@@ -129,7 +130,7 @@ function ClientReportModal() {
   return (
     <Modal
       open={ui.clientReport}
-      icon="🖨"
+      icon={<HiPrinter />}
       title={`Estado de cuenta · ${data.client.name}`}
       subtitle="Resumen de contratos y pagos"
       onClose={closeClientReport}

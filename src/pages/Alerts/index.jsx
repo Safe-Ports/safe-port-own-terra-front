@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import GuideModal from "@/components/shared/GuideModal";
-import { HiBellAlert, HiCheckCircle, HiClock } from "react-icons/hi2";
+import { HiBellAlert, HiCheckCircle, HiClock, HiCreditCard } from "react-icons/hi2";
 import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
@@ -59,7 +59,7 @@ function PaymentModal() {
   return (
     <Modal
       open={ui.paymentModal}
-      icon="💳"
+      icon={<HiCreditCard />}
       title={editingPayment ? "Actualizar pago" : "Registrar pago"}
       subtitle="Cobranza rápida desde celular"
       onClose={() => {
@@ -149,7 +149,7 @@ function AlertsPage() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="text-[0.7rem] font-bold uppercase tracking-[0.24em] text-[#E9B69F]">Centro de alertas</div>
-              <div className="mt-2 font-['Playfair_Display'] text-[1.9rem] leading-none">Prioridades de hoy</div>
+              <div className="mt-2 font-display text-[1.9rem] leading-none">Prioridades de hoy</div>
             </div>
             <div className="flex items-center gap-2">
               <div className="rounded-2xl bg-white/10 p-3">
@@ -178,7 +178,7 @@ function AlertsPage() {
             <article key={payment.id} className="rounded-[28px] border border-[#DCDAD2] bg-white/88 p-4 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="text-sm font-semibold text-[#1E3D2B]">{payment.client?.name || "Cliente"} · cuota {payment.installment_n}</div>
+                  <div className="text-sm font-semibold text-forest">{payment.client?.name || "Cliente"} · cuota {payment.installment_n}</div>
                   <div className="mt-1 text-sm text-[#43453F]">{payment.contract?.contract_number || "—"}</div>
                 </div>
                 <div className="rounded-full bg-[#FDECEA] px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[#C0392B]">
@@ -188,11 +188,11 @@ function AlertsPage() {
               <div className="mt-4 flex items-center justify-between rounded-[22px] border border-[#E7E4DB] bg-[#FBFAF6] p-4">
                 <div>
                   <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Monto</div>
-                  <div className="mt-2 text-base font-bold text-[#1E3D2B]">{currency(payment.amount)}</div>
+                  <div className="mt-2 text-base font-bold text-forest">{currency(payment.amount)}</div>
                 </div>
                 <div className="text-right">
                   <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Fecha límite</div>
-                  <div className="mt-2 text-sm font-semibold text-[#1E3D2B]">{dateLabel(payment.due_date)}</div>
+                  <div className="mt-2 text-sm font-semibold text-forest">{dateLabel(payment.due_date)}</div>
                 </div>
               </div>
               <button
@@ -212,7 +212,7 @@ function AlertsPage() {
         <section className="rounded-[28px] border border-[#DCDAD2] bg-white/88 p-4 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <HiClock className="text-xl text-[#1E3D2B]" />
+              <HiClock className="text-xl text-forest" />
               <h2 className="text-sm font-bold uppercase tracking-[0.22em] text-[#83867C]">Seguimientos mixtos</h2>
             </div>
             {notifications.length > 0 && (
@@ -227,7 +227,7 @@ function AlertsPage() {
           <div className="mt-4 space-y-3">
             {notifications.length > 0 ? notifications.slice(0, 6).map((n) => (
               <div key={n.id} className={`rounded-[22px] border p-4 ${n.is_read ? "border-[#E7E4DB] bg-[#FBFAF6]" : "border-[#C8DDD0] bg-[#EEF6F1]"}`}>
-                <div className="text-sm font-semibold text-[#1E3D2B]">{n.title}</div>
+                <div className="text-sm font-semibold text-forest">{n.title}</div>
                 <div className="mt-1 text-sm text-[#43453F]">{n.message || n.subtitle || ""}</div>
               </div>
             )) : (

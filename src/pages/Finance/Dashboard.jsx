@@ -53,9 +53,9 @@ function TrendBarChart({ labels, revenue, expenses }) {
         const expH = (expenses[i] / max) * (H - padB - 14);
         return (
           <g key={l}>
-            <rect x={cx - barW - 2} y={H - padB - revH} width={barW} height={revH} rx="3" fill="#3B6EA5" />
+            <rect x={cx - barW - 2} y={H - padB - revH} width={barW} height={revH} rx="3" fill="var(--mid)" />
             <rect x={cx + 2} y={H - padB - expH} width={barW} height={expH} rx="3" fill="#C0392B" />
-            <text x={cx} y={H - 8} textAnchor="middle" fontSize="11" fill="#83867C" fontFamily="Inter, system-ui, sans-serif">{l}</text>
+            <text x={cx} y={H - 8} textAnchor="middle" fontSize="11" fill="var(--mu)" fontFamily="Inter, system-ui, sans-serif">{l}</text>
           </g>
         );
       })}
@@ -130,7 +130,7 @@ function FinanceDashboard() {
             </div>
           </div>
           <div className="fin-legend">
-            <div className="fin-legend-item"><span className="fin-legend-dot" style={{ background: "#3B6EA5" }} />Ingresos</div>
+            <div className="fin-legend-item"><span className="fin-legend-dot" style={{ background: "var(--mid)" }} />Ingresos</div>
             <div className="fin-legend-item"><span className="fin-legend-dot" style={{ background: "#C0392B" }} />Egresos</div>
           </div>
           {(summary?.revenue_capital > 0 || summary?.revenue_interest > 0) && (

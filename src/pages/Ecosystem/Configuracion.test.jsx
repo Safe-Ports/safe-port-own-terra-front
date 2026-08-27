@@ -48,7 +48,7 @@ describe("Configuración en el shell del Core", () => {
     renderConfig();
 
     // La página de configuración se pintó...
-    await waitFor(() => expect(screen.getByText("🏢 Organización")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Organización")).toBeInTheDocument());
 
     // ...dentro del shell del Ecosistema: su nav son los 3 renglones fijos.
     expect(screen.getByRole("button", { name: /Hub de aplicaciones/ })).toBeInTheDocument();
