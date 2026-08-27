@@ -4382,7 +4382,7 @@ textarea.is-invalid {
 .app-launcher-pop {
   position: fixed;
   z-index: 1300;
-  width: 262px;
+  width: 214px;
   padding: 14px;
   background: var(--sf);
   border: 1px solid var(--bd);
@@ -4404,7 +4404,7 @@ textarea.is-invalid {
   margin-bottom: 10px;
 }
 
-.alp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.alp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
 
 .alp-item {
   position: relative;
