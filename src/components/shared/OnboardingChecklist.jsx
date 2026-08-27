@@ -35,7 +35,7 @@ export default function OnboardingChecklist() {
     { key: "client",   label: "Registra tu primer cliente",     desc: "Da de alta un prospecto en el CRM.",       to: "/clientes",      done: clients.length > 0 },
     { key: "contract", label: "Genera un contrato de compraventa", desc: "Con plan de pagos y amortización.",     to: "/contratos",     done: contracts.length > 0 },
     { key: "pay",      label: "Revisa tu cobranza",             desc: "Cuotas y recordatorios automáticos.",      to: "/pagos",         done: payments.length > 0 },
-    { key: "team",     label: "Invita a tu equipo",             desc: "Vendedores y permisos por app.",           to: "/configuracion", done: usersCount > 1 },
+    { key: "team",     label: "Invita a tu equipo",             desc: "Colaboradores y accesos por app.",           to: "/configuracion", done: usersCount > 1 },
   ];
   const doneCount = steps.filter((s) => s.done).length;
   const pct = Math.round((doneCount / steps.length) * 100);
@@ -49,8 +49,8 @@ export default function OnboardingChecklist() {
   if (dismissed || doneCount === steps.length) return null;
 
   // Es la puesta en marcha de la organización: cargar lotes, invitar al equipo. Un
-  // vendedor no puede hacer ninguno de esos pasos, así que le mostraría una lista de
-  // pendientes ajenos con una barra de progreso que nunca va a poder mover.
+  // colaborador no puede hacer ninguno de esos pasos, así que le mostraría una lista
+  // de pendientes ajenos con una barra de progreso que nunca va a poder mover.
   if (!canUseFeature("lands.write")) return null;
 
   const close = () => { localStorage.setItem(DISMISS_KEY, "1"); setDismissed(true); };

@@ -421,7 +421,7 @@ function SettingsPage() {
               <div className="fg" style={{ minWidth: 120 }}>
                 <label className="fl">Rol</label>
                 <select className="fi" value={newUser.role} onChange={(e) => setNewUser((p) => ({ ...p, role: e.target.value }))}>
-                  <option value="vendor">Vendedor</option>
+                  <option value="vendor">Colaborador</option>
                   <option value="admin">Administrador</option>
                 </select>
               </div>
@@ -560,7 +560,7 @@ function SettingsPage() {
               <option value="">Selecciona un usuario...</option>
               {transferCandidates.map((u) => (
                 <option key={u.id} value={u.id}>
-                  {u.name} · {u.role === "admin" ? "Administrador" : "Vendedor"}
+                  {u.name} · {u.role === "admin" ? "Administrador" : "Colaborador"}
                 </option>
               ))}
             </select>
@@ -574,8 +574,8 @@ function SettingsPage() {
         subtitle="Administración de la organización y usuarios del equipo."
         steps={[
           { title: "Información de la organización", text: "Aquí puedes ver el nombre y detalles de tu organización. Solo administradores pueden editar esta información." },
-          { title: "Usuarios del equipo", text: "Lista de todos los usuarios activos con su rol (Admin o Vendedor). Puedes crear nuevos usuarios con el botón '+ Nuevo usuario'." },
-          { title: "Roles disponibles", text: "Admin: acceso completo a todas las funciones incluyendo configuración y eliminación de usuarios. Vendor: acceso a operaciones comerciales sin configuración." },
+          { title: "Usuarios del equipo", text: "Lista de todos los usuarios activos con su rol (Administrador o Colaborador). Puedes crear nuevos usuarios con el botón '+ Nuevo usuario'." },
+          { title: "Roles disponibles", text: "Administrador: maneja la organización, el equipo, los accesos y la operación completa. Colaborador: opera su cartera de clientes, aparta lotes y agenda citas, sin tocar configuración ni el inventario." },
           { title: "Restablecer contraseña", text: "Como administrador puedes generar una nueva contraseña temporal para cualquier usuario del equipo." },
           { title: "Eliminar usuario", text: "Solo los administradores pueden eliminar usuarios. Esta acción es irreversible y elimina el acceso del usuario al sistema." },
         ]}

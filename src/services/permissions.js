@@ -1,6 +1,18 @@
+/**
+ * Los dos únicos roles del producto: administrador y colaborador.
+ *
+ * El valor guardado sigue siendo "vendor" a propósito. Es un token interno —lo
+ * mira la base con un CHECK, y una treintena de comprobaciones en el backend—,
+ * y renombrarlo pediría una migración sin cambiarle nada a quien usa la app. Lo
+ * que el usuario lee es esta etiqueta.
+ *
+ * Ojo con no confundirlo con el "vendedor asignado" de un lote o un contrato:
+ * eso es quién lleva la operación comercial, no un rol. Un colaborador puede
+ * ser el vendedor asignado, y un administrador también.
+ */
 export const GLOBAL_ROLES = {
-  admin: { label: "Administrador", desc: "Administra Core, equipo, permisos y operación." },
-  vendor: { label: "Vendedor", desc: "Opera clientes, ventas y agenda asignada." },
+  admin: { label: "Administrador", desc: "Administra la organización, el equipo, los accesos y la operación." },
+  vendor: { label: "Colaborador", desc: "Opera su cartera de clientes, aparta lotes y agenda citas." },
 };
 
 export const APP_CATALOG = [
@@ -14,10 +26,18 @@ export const APP_CATALOG = [
 
 export const VERTICAL_APP_CATALOG = APP_CATALOG.filter((app) => app.vertical && app.live);
 
+/**
+ * Etiquetas de los roles por app. Hoy sólo se usan dos: "seller" es el paquete de
+ * permisos del colaborador y "admin" el del administrador — de ahí que "seller"
+ * se lea "Colaborador" y no "Vendedor".
+ *
+ * Gerente, Cobranza, Editor y Solo lectura están definidos pero ninguna pantalla
+ * los asigna: quedan en reserva para cuando el equipo tenga más roles.
+ */
 export const APP_ROLE_LABEL = {
   admin: "Administrador",
   manager: "Gerente",
-  seller: "Vendedor",
+  seller: "Colaborador",
   collections: "Cobranza",
   editor: "Editor",
   viewer: "Solo lectura",
@@ -40,7 +60,6 @@ export const FEATURE_LABEL = {
 };
 
 const ADMIN_ROLES = new Set(["admin", "superadmin"]);
-const VENDOR_ROLES = new Set(["vendor", "vendedor", "seller"]);
 
 export function defaultPermissionsFor(appKey, role) {
   if (role === "admin") return [`${appKey}.*`];
@@ -95,7 +114,12 @@ export function canAccessApp(user, appKey) {
     });
   }
 
-  return appKey === "lands" && VENDOR_ROLES.has(role);
+  // Sin asignaciones no hay acceso, y punto. Antes acá se asumía que un
+  // colaborador entraba a Lands aunque nadie se lo hubiera dado, y el backend no
+  // asume nada: el resultado era un usuario partido al medio, con el menú de
+  // Lands a la vista y un 403 en cada pantalla que abría. Dar de alta a alguien y
+  // darle acceso a una app son dos pasos, y esto pretendía que fueran uno.
+  return false;
 }
 
 export function canUseFeature(user, feature) {
