@@ -119,12 +119,12 @@ function Sidebar() {
         </div>
         <div className="sb-foot">
           <NavLink to="/perfil" onClick={closeSidebar} className="sb-foot-item" style={{ textDecoration: "none" }}>
-            <span style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--forest)",
+            <span className="sb-foot-av" style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--forest)",
               color: "#fff", fontWeight: 800, fontSize: ".68rem",
               display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               {(currentUser?.name || "U").charAt(0).toUpperCase()}
             </span>
-            <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+            <div className="sb-foot-txt" style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
               <div style={{ fontSize: ".78rem", color: "rgba(255,255,255,.85)", fontWeight: 600,
                 overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {currentUser?.name || "Perfil"}
@@ -137,7 +137,7 @@ function Sidebar() {
             fontFamily: "var(--font-body)", cursor: "pointer", marginTop: 4,
           }}>
             <span className="sb-foot-ico"><HiArrowLeftOnRectangle /></span>
-            <span>Cerrar sesión</span>
+            <span className="sb-foot-txt">Cerrar sesión</span>
           </button>
         </div>
       </aside>

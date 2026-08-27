@@ -4233,29 +4233,30 @@ textarea.is-invalid {
     flex-shrink: 0;
   }
 
-  /* Lo que se esconde en el riel: textos, rótulos de sección y contadores. */
+  /* Lo que se esconde en el riel: textos, rótulos de sección y contadores.
+     display:none y no width:0 — el contador tiene padding y min-width propios,
+     así que encogerlo no bastaba, y un hijo flex de ancho cero SIGUE generando
+     su `gap`. Las dos cosas juntas corrían el icono a la izquierda, y de forma
+     distinta según el item tuviera contador o no: de ahí que se vieran
+     desalineados entre sí. */
   .sb.collapsed .sb-txt,
-  .sb.collapsed .sb-sec,
   .sb.collapsed .sb-bdg,
   .sb.collapsed .sb-logo-nm,
-  .sb.collapsed .sb-foot-item > div,
-  .sb.collapsed .sb-foot-item span:not(.sb-foot-ico) {
-    opacity: 0;
-    width: 0;
-    overflow: hidden;
-    white-space: nowrap;
-    pointer-events: none;
+  .sb.collapsed .sb-foot-txt {
+    display: none;
   }
   .sb.collapsed:hover .sb-txt,
-  .sb.collapsed:hover .sb-sec,
-  .sb.collapsed:hover .sb-bdg,
   .sb.collapsed:hover .sb-logo-nm,
-  .sb.collapsed:hover .sb-foot-item > div,
-  .sb.collapsed:hover .sb-foot-item span:not(.sb-foot-ico) {
-    opacity: 1;
-    width: auto;
-    pointer-events: auto;
+  .sb.collapsed:hover .sb-foot-txt {
+    display: block;
   }
+  .sb.collapsed:hover .sb-bdg { display: inline-flex; }
+
+  /* Sin hijos que separar, el gap sólo descentraría el icono. */
+  .sb.collapsed .sb-btn,
+  .sb.collapsed .sb-foot-item { gap: 0; }
+  .sb.collapsed:hover .sb-btn { gap: 11px; }
+  .sb.collapsed:hover .sb-foot-item { gap: 9px; }
 
   /* Los rótulos de sección dejan una línea fina: sin ellos los iconos
      quedan como una tira uniforme y se pierde la agrupación. */
@@ -4264,12 +4265,17 @@ textarea.is-invalid {
     padding: 0;
     margin: 11px 14px 8px;
     background: rgba(233, 229, 219, .12);
+    /* Sin esto el texto del rótulo desborda la línea de 1px y se lee cortado. */
+    overflow: hidden;
+    text-indent: -999px;
   }
   .sb.collapsed:hover .sb-sec {
     height: auto;
     padding: 14px 12px 7px;
     margin: 0;
     background: none;
+    overflow: visible;
+    text-indent: 0;
   }
 
   .sb.collapsed .sb-nav { padding: 4px 12px; }
