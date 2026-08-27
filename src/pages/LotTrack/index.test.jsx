@@ -77,7 +77,7 @@ const ROW_STALE = {
 function mockTrack(items = [ROW_RESERVED, ROW_SPLIT, ROW_STALE], summary = SUMMARY) {
   server.use(
     http.get(`${API}/lots/track`, () => HttpResponse.json({
-      summary, items, total: items.length, page: 1, limit: 100, pages: 1,
+      summary, items, total: items.length, page: 1, limit: 15, pages: 1,
     })),
   );
 }
@@ -94,31 +94,12 @@ function renderTrack() {
 }
 
 describe("Track de lotes", () => {
-  it("grafica el inventario por estado con una barra por cada uno", async () => {
-    mockTrack();
-    const { container } = renderTrack();
-
-    await screen.findByText("MZ2-L08");
-    expect(screen.getByText("6 lotes en total")).toBeInTheDocument();
-
-    // Acotado al gráfico: los mismos nombres existen también como filtros.
-    const chart = container.querySelector(".lt-chart");
-    expect(within(chart).getByText("Disponibles")).toBeInTheDocument();
-    expect(within(chart).getByText("Apartados")).toBeInTheDocument();
-    expect(within(chart).getByText("Vendidos")).toBeInTheDocument();
-
-    // Una barra por estado, con su conteo.
-    const rows = chart.querySelectorAll(".lt-bar-row");
-    expect(rows).toHaveLength(3);
-    expect(within(rows[0]).getByText("3")).toBeInTheDocument();
-    expect(within(rows[1]).getByText("2")).toBeInTheDocument();
-    expect(within(rows[2]).getByText("1")).toBeInTheDocument();
-  });
-
-  it("avisa cuántos apartados vencen esta semana", async () => {
+  it("muestra el rango de lotes en pantalla", async () => {
     mockTrack();
     renderTrack();
-    expect(await screen.findByText(/1 apartado vence esta semana/i)).toBeInTheDocument();
+
+    await screen.findByText("MZ2-L08");
+    expect(screen.getByText("1–3 de 3 lotes")).toBeInTheDocument();
   });
 
   it("marca como Split cuando quien apartó no es quien cerró", async () => {

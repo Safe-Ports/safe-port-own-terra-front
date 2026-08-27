@@ -180,46 +180,6 @@ const LotRow = memo(function LotRow({ row, onOpenRow, onOpenContact }) {
   );
 });
 
-/** Gráfico de barras del inventario por estado. */
-function StatusChart({ summary }) {
-  const bars = [
-    { key: "available", label: "Disponibles", value: summary.available, cls: "ok" },
-    { key: "reserved",  label: "Apartados",   value: summary.reserved,  cls: "warn" },
-    { key: "sold",      label: "Vendidos",    value: summary.sold,      cls: "sold" },
-  ];
-  const max = Math.max(1, ...bars.map((b) => b.value));
-
-  return (
-    <div className="lt-chart">
-      <div className="lt-chart-head">
-        <div>
-          <div className="lt-chart-title">Inventario por estado</div>
-          <div className="lt-chart-sub">{summary.total} lotes en total</div>
-        </div>
-        {summary.expiring_soon > 0 && (
-          <div className="lt-chart-alert">
-            {summary.expiring_soon} {summary.expiring_soon === 1 ? "apartado vence" : "apartados vencen"} esta semana
-          </div>
-        )}
-      </div>
-      <div className="lt-bars">
-        {bars.map((b) => (
-          <div className="lt-bar-row" key={b.key}>
-            <div className="lt-bar-label">{b.label}</div>
-            <div className="lt-bar-track">
-              <div
-                className={`lt-bar-fill ${b.cls}`}
-                style={{ width: `${(b.value / max) * 100}%` }}
-              />
-            </div>
-            <div className="lt-bar-value">{b.value}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 /** Ficha de contacto del cliente, anclada al ojito de la fila. */
 function ContactPopover({ anchor, row, onClose }) {
   const ref = useRef(null);
@@ -440,7 +400,6 @@ export default function LotTrackPage() {
     if (isError) showError(error, "No se pudo cargar el track de lotes");
   }, [isError, error, showError]);
 
-  const summary = data?.summary || { available: 0, reserved: 0, sold: 0, total: 0, expiring_soon: 0 };
   const rows = data?.items || [];
   const totalRows = data?.total || 0;
   const totalPages = data?.pages || 1;
@@ -457,8 +416,6 @@ export default function LotTrackPage() {
           </p>
         </div>
       </div>
-
-      <StatusChart summary={summary} />
 
       <div className="lt-filters">
         {STATUS_FILTERS.map((f) => (

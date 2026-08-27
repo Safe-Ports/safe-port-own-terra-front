@@ -30,69 +30,6 @@
 }
 .lt-sub { font-size: 0.86rem; color: var(--muted); margin: 4px 0 0; }
 
-/* ── Gráfico de barras por estado ── */
-.lt-chart {
-  background: var(--sf);
-  border: 1px solid var(--bd);
-  border-radius: 18px;
-  padding: 18px 20px;
-  margin-bottom: 18px;
-}
-.lt-chart-head {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
-}
-.lt-chart-title { font-family: var(--font-title); font-size: 1.05rem; color: var(--tx); }
-.lt-chart-sub { font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
-.lt-chart-alert {
-  margin-left: auto;
-  padding: 5px 12px;
-  border-radius: 999px;
-  background: #FBE7E4;
-  color: var(--danger);
-  font-size: 0.74rem;
-  font-weight: 800;
-}
-
-.lt-bars { display: flex; flex-direction: column; gap: 11px; }
-.lt-bar-row { display: flex; align-items: center; gap: 12px; }
-.lt-bar-label {
-  width: 96px;
-  flex-shrink: 0;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--tx2);
-}
-.lt-bar-track {
-  flex: 1;
-  height: 22px;
-  border-radius: 7px;
-  background: var(--sf2);
-  overflow: hidden;
-  min-width: 0;
-}
-.lt-bar-fill {
-  height: 100%;
-  border-radius: 7px;
-  transition: width .5s cubic-bezier(.2,.8,.2,1);
-  min-width: 3px;
-}
-.lt-bar-fill.ok   { background: linear-gradient(90deg, var(--leaf), var(--forest-hi)); }
-.lt-bar-fill.warn { background: linear-gradient(90deg, #E3B564, var(--lt-warn-dot)); }
-.lt-bar-fill.sold { background: linear-gradient(90deg, var(--forest), var(--deep)); }
-.lt-bar-value {
-  width: 46px;
-  flex-shrink: 0;
-  text-align: right;
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: var(--tx);
-  font-variant-numeric: tabular-nums;
-}
-
 /* ── Filtros ── */
 .lt-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
 .lt-filter,
@@ -405,7 +342,6 @@
 
 /* ── Móvil ── */
 @media (max-width: 720px) {
-  .lt-bar-label { width: 78px; font-size: 0.7rem; }
   .lt-dr-facts { grid-template-columns: 1fr; }
-  .lt-chart-alert { margin-left: 0; }
+  .lt-pager { margin-left: 0; }
 }
