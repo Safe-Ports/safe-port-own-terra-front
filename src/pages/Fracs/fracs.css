@@ -1886,3 +1886,293 @@
   cursor: pointer;
   font-family: var(--font-body);
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   Panel de detalle del lote (.lotp-*)
+   Reemplaza al modal centrado de 560px: entra desde la derecha para no
+   tapar el plano, y reparte el contenido en dos columnas —datos que
+   scrollean, acciones fijas— en vez de esconderlo tras pestañas.
+   ════════════════════════════════════════════════════════════════════ */
+
+.lotp-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(18, 22, 14, .30);
+  display: flex;
+  justify-content: flex-end;
+  animation: lotp-fade .2s ease;
+}
+@keyframes lotp-fade { from { opacity: 0 } to { opacity: 1 } }
+
+.lotp {
+  width: min(670px, 100%);
+  height: 100%;
+  background: var(--sf);
+  border-left: 1px solid var(--bd);
+  box-shadow: -30px 0 70px rgba(15, 25, 18, .16);
+  display: flex;
+  flex-direction: column;
+  animation: lotp-slide .28s cubic-bezier(.2, .8, .2, 1);
+}
+@keyframes lotp-slide { from { transform: translateX(102%) } to { transform: none } }
+
+/* ── Encabezado ── */
+.lotp-hd {
+  padding: 20px 22px 17px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  flex-shrink: 0;
+}
+.lotp-mark {
+  width: 54px;
+  height: 54px;
+  border-radius: 15px;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(158deg, var(--leaf), var(--mid));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lotp-mark::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, rgba(255, 255, 255, .30), transparent 58%);
+}
+.lotp-mark span {
+  position: relative;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -.03em;
+  font-variant-numeric: tabular-nums;
+}
+.lotp-mark.reserved { background: linear-gradient(158deg, #E5BB6E, #B98C58); }
+.lotp-mark.sold { background: linear-gradient(158deg, #D97A6C, var(--danger)); }
+
+.lotp-id { min-width: 0; flex: 1; }
+.lotp-kicker {
+  font-size: 9.5px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+/* Sans con peso y tracking apretado: un código alfanumérico se lee firme
+   así, no en la serif editorial. tabular-nums evita que el panel baile
+   de ancho al pasar de "MZ2-L05" a "MZ2-L11". */
+.lotp-code {
+  font-family: var(--font-body);
+  font-size: 1.6rem;
+  font-weight: 750;
+  color: var(--tx);
+  line-height: 1.05;
+  letter-spacing: -.025em;
+  font-variant-numeric: tabular-nums;
+  word-break: break-word;
+}
+.lotp-where {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.lotp-where i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--bd);
+  flex-shrink: 0;
+}
+.lotp-hd-end {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.lotp-x {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--bd);
+  background: var(--sf2);
+  color: var(--muted);
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color .15s, border-color .15s;
+}
+.lotp-x:hover { color: var(--danger); border-color: var(--danger); }
+
+/* ── Cuerpo: datos + acciones ── */
+.lotp-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 214px;
+  min-height: 0;
+}
+.lotp-data { padding: 20px 22px; overflow-y: auto; }
+.lotp-acts {
+  padding: 20px 16px;
+  background: var(--sf2);
+  border-left: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+.lotp-acts-lbl {
+  font-size: 9.5px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 750;
+  margin-bottom: 3px;
+}
+.lotp-acts-sep { height: 1px; background: var(--bd); margin: 5px 0; }
+
+.lotp-sec { margin-bottom: 22px; }
+.lotp-sec:last-child { margin-bottom: 0; }
+.lotp-sh { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.lotp-sh b {
+  font-size: 9.5px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 750;
+  white-space: nowrap;
+}
+.lotp-sh::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+/* ── Ficha técnica: el punto de fuga es el borde derecho de la cifra ── */
+.lotp-specs {
+  border: 1px solid var(--bd);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--sf2);
+}
+.lotp-spec {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.lotp-spec:last-child { border-bottom: none; }
+.lotp-spec-k { font-size: 11.5px; color: var(--muted); font-weight: 600; flex: 1; }
+.lotp-spec-n {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  justify-content: flex-end;
+  min-width: 108px;
+}
+.lotp-spec-v {
+  font-size: 1.02rem;
+  font-weight: 750;
+  color: var(--tx);
+  line-height: 1;
+  letter-spacing: -.015em;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.lotp-spec-v.money { color: var(--forest); }
+/* Carril fijo para la unidad: sin esto "312 m²" y "12 ml" desalinean la cifra. */
+.lotp-spec-u {
+  font-size: .7rem;
+  font-weight: 650;
+  color: var(--muted);
+  width: 22px;
+  text-align: left;
+  flex-shrink: 0;
+}
+
+/* ── Apartado vigente ── */
+.lotp-resv {
+  border: 1px solid var(--bd);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--sf2);
+}
+.lotp-resv-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.lotp-resv-row:last-child { border-bottom: none; }
+.lotp-resv-k { font-size: 11.5px; color: var(--muted); font-weight: 600; flex-shrink: 0; min-width: 62px; }
+.lotp-resv-v { font-size: 12.5px; color: var(--tx); font-weight: 700; text-align: right; margin-left: auto; }
+
+/* ── Servicios ── */
+.lotp-svc { display: flex; flex-wrap: wrap; gap: 6px; }
+.lotp-chip {
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 650;
+  border: 1px solid var(--bd);
+  background: var(--sf2);
+  color: var(--muted);
+}
+.lotp-chip.on {
+  background: var(--tan-lt);
+  border-color: var(--leaf);
+  color: var(--forest);
+  font-weight: 700;
+}
+
+/* ── Botones ── */
+.lotp-btn {
+  padding: 11px 15px;
+  border-radius: 11px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font-body);
+  border: 1px solid var(--bd);
+  background: var(--sf);
+  color: var(--tx2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  white-space: nowrap;
+  width: 100%;
+  transition: all .2s cubic-bezier(.2, .8, .2, 1);
+}
+.lotp-btn:hover:not(:disabled) { border-color: var(--leaf); color: var(--forest); }
+.lotp-btn.primary {
+  background: linear-gradient(140deg, var(--mid), var(--deep));
+  color: var(--cream);
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(27, 56, 38, .18);
+}
+.lotp-btn.primary:hover:not(:disabled) { filter: brightness(1.08); color: var(--cream); }
+.lotp-btn.sm { padding: 9px 13px; font-size: 12px; font-weight: 650; }
+.lotp-btn.danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 32%, var(--bd)); }
+.lotp-btn.danger:hover:not(:disabled) { background: #FBE7E4; border-color: var(--danger); color: var(--danger); }
+.lotp-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+/* ── Móvil: el panel ocupa todo y las acciones bajan al final ── */
+@media (max-width: 860px) {
+  .lotp { width: 100%; }
+  .lotp-body { grid-template-columns: 1fr; }
+  .lotp-acts { border-left: none; border-top: 1px solid var(--line); }
+  .lotp-code { font-size: 1.35rem; }
+}

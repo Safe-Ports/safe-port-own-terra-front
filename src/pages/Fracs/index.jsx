@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { HiMap, HiBookmark, HiSquares2X2 } from "react-icons/hi2";
+import { createPortal } from "react-dom";
+import { HiMap, HiBookmark, HiSquares2X2, HiXMark } from "react-icons/hi2";
 import GuideModal from "@/components/shared/GuideModal";
 import PhoneInput from "@/components/shared/PhoneInput";
 import ClientPicker from "@/components/shared/ClientPicker";
@@ -12,7 +13,7 @@ import InlineDocumentsPanel from "@/components/shared/InlineDocumentsPanel";
 import Button from "@/components/Button";
 import { lotService } from "@/services/lotService";
 import { appointmentService } from "@/services/appointmentService";
-import { currency } from "@/services/formatters";
+import { currency, measure } from "@/services/formatters";
 import useEscapeKey from "@/hooks/useEscapeKey";
 import "./fracs.css";
 
@@ -79,6 +80,34 @@ async function fetchAllFracLots(inmuebleId) {
   );
 
   return [...(firstPage.items || []), ...remainingPages.flat()];
+}
+
+/**
+ * Texto corto para la marca del encabezado. Los códigos vienen como "MZ2-L05":
+ * se queda con lo de antes del guion ("MZ2"), que identifica la manzana. Sin
+ * guion, corta a 3 caracteres para que no se desborde el cuadro.
+ */
+function lotMark(code) {
+  const head = String(code || "").split("-")[0];
+  return head.slice(0, 4) || "—";
+}
+
+/**
+ * Fila de la ficha técnica. Todas las cifras van alineadas a la derecha sobre
+ * la misma columna y la unidad en un carril propio: así "312 m²" y "12 ml"
+ * comparten el punto de fuga y dejan de verse disparejas entre sí.
+ */
+function SpecRow({ label, value, unit, money }) {
+  if (value === null || value === undefined) return null;
+  return (
+    <div className="lotp-spec">
+      <span className="lotp-spec-k">{label}</span>
+      <span className="lotp-spec-n">
+        <span className={`lotp-spec-v${money ? " money" : ""}`}>{value}</span>
+        <span className="lotp-spec-u">{unit || ""}</span>
+      </span>
+    </div>
+  );
 }
 
 function StatusBadge({ status }) {
@@ -663,7 +692,7 @@ function FracsPage() {
                               >
                                 <i />
                                 <strong>{lot.code}</strong>
-                                <span>{lot.area_m2 ? `${lot.area_m2} m2` : "Sin area"}</span>
+                                <span>{measure(lot.area_m2) ? `${measure(lot.area_m2)} m²` : "Sin área"}</span>
                                 {precio ? <em className="frac-lot-price">{currency(precio)}</em> : null}
                               </button>
                             );
@@ -705,92 +734,42 @@ function FracsPage() {
         </div>
       </article>
 
-      {showLotModal && selectedLot ? (
-        <div className="frac-modal-overlay" onClick={(event) => event.target === event.currentTarget && setShowLotModal(false)}>
-          <article className="frac-lot-modal">
-            <div className="frac-modal-head">
-              <div className="frac-modal-id">{selectedLot.code}</div>
-              <div>
-                <h2>Detalle del lote</h2>
-                <p>{selectedFrac.name} / {selectedLot.section || "General"} / {selectedLot.area_m2 || 0} m2</p>
+      {/* Portal a body: el contenedor de la página crea un stacking context propio
+          y ahí la barra superior queda por encima del panel, robándole los clicks. */}
+      {showLotModal && selectedLot ? createPortal(
+        <div className="lotp-overlay" onClick={(event) => event.target === event.currentTarget && setShowLotModal(false)}>
+          <aside className="lotp" aria-label={`Detalle del lote ${selectedLot.code}`}>
+            {/* ── Encabezado: el código manda, el estado aparece UNA sola vez ── */}
+            <header className="lotp-hd">
+              <div className={`lotp-mark${selectedLot.status === "reserved" ? " reserved" : selectedLot.status === "sold" ? " sold" : ""}`}>
+                <span>{lotMark(selectedLot.code)}</span>
               </div>
-              <StatusBadge status={selectedLot.status} />
-              {resLeft ? <span className={`frac-countdown ${resLeft.tone}`}>{resLeft.text}</span> : null}
-              <button className="frac-modal-close" onClick={() => setShowLotModal(false)}>×</button>
-            </div>
-            <div className="frac-modal-body">
-              <div className="frac-tabs">
-                {["ficha", "gestion", "documentos"].map((tab) => (
-                  <button key={tab} className={activeTab === tab ? "on" : ""} onClick={() => setActiveTab(tab)}>
-                    {tab[0].toUpperCase() + tab.slice(1)}
-                  </button>
-                ))}
+              <div className="lotp-id">
+                <div className="lotp-kicker">Lote</div>
+                <div className="lotp-code">{selectedLot.code}</div>
+                <div className="lotp-where">
+                  {selectedFrac.name}
+                  <i />
+                  {selectedLot.section || "General"}
+                </div>
               </div>
+              <div className="lotp-hd-end">
+                <StatusBadge status={selectedLot.status} />
+                {resLeft ? <span className={`frac-countdown ${resLeft.tone}`}>{resLeft.text}</span> : null}
+                <button className="lotp-x" onClick={() => setShowLotModal(false)} aria-label="Cerrar">
+                  <HiXMark />
+                </button>
+              </div>
+            </header>
 
-              {activeTab === "ficha" ? (
-                <>
-                  <div className="frac-detail-grid">
-                    <div><strong>{selectedLot.frente_ml || "--"}</strong><span>Frente ML</span></div>
-                    <div><strong>{selectedLot.fondo_ml || "--"}</strong><span>Fondo ML</span></div>
-                    <div><strong>{selectedLot.area_m2 || "--"}</strong><span>Superficie m2</span></div>
-                    {selectedLot.price_contado
-                      ? <div className="frac-detail-price"><strong>{currency(selectedLot.price_contado)}</strong><span>Precio Contado</span></div>
-                      : null}
-                    {selectedLot.price_financiado
-                      ? <div className="frac-detail-price"><strong>{currency(selectedLot.price_financiado)}</strong><span>Precio Financiado</span></div>
-                      : null}
-                  </div>
-
-                  <div className="frac-services">
-                    {SERVICES.map((service) => {
-                      const on = !!(selectedLot.services?.[service.k]);
-                      return (
-                        <label key={service.k} className="frac-service">
-                          <span>{service.lbl}</span>
-                          <input type="checkbox" checked={on} readOnly disabled />
-                          <i className={on ? "on" : ""} />
-                        </label>
-                      );
-                    })}
-                  </div>
-                </>
-              ) : null}
-
-              {activeTab === "gestion" ? (
-                <div className="frac-management">
-                  <div className="frac-section-label">Estado actual</div>
-                  <div style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                    <StatusBadge status={selectedLot.status} />
-                    {resLeft ? <span className={`frac-countdown ${resLeft.tone}`}>{resLeft.text}</span> : null}
-                  </div>
-
-                  {/* Apartado con expiración */}
-                  {selectedLot.status === "reserved" ? (
-                    <div className="frac-apartar">
-                      <div className="frac-apartar-meta">
-                        Apartado desde {selectedLot.reserved_at ? new Date(selectedLot.reserved_at).toLocaleDateString("es-MX") : "—"}
-                        {" · "}vence {selectedLot.reserved_until ? new Date(selectedLot.reserved_until).toLocaleString("es-MX") : "—"}
-                      </div>
-                      <div className="frac-apartar-btns">
-                        <button onClick={() => {
-                          setApartarOpen((v) => !v);
-                          setApartarUntil(selectedLot.reserved_until ? toLocalInput(new Date(selectedLot.reserved_until)) : "");
-                          setApartarClient(selectedLot.client_id ? { id: selectedLot.client_id, name: selectedLot.client_name } : null);
-                        }}>
-                          {apartarOpen ? "Cancelar" : "Extender vencimiento"}
-                        </button>
-                        <button className="frac-apartar-release" onClick={releaseLot} disabled={apartarBusy}>Liberar lote</button>
-                      </div>
-                    </div>
-                  ) : selectedLot.status === "available" ? (
-                    <div className="frac-apartar">
-                      <button className="frac-apartar-cta" onClick={() => { setApartarOpen((v) => !v); if (!apartarOpen) { setApartarUntil(toLocalInput(new Date(Date.now() + 7 * 86400000))); setApartarClient(null); } }}>
-                        {apartarOpen ? "Cancelar" : <><HiBookmark style={{ display: "inline", verticalAlign: "-2px" }} /> Apartar lote</>}
-                      </button>
-                    </div>
-                  ) : null}
-
-                  {apartarOpen && selectedLot.status !== "sold" ? (
+            <div className="lotp-body">
+              {/* ── Columna de datos (scrollea) ── */}
+              <div className="lotp-data">
+                {/* Los formularios abren acá arriba, no en la columna angosta:
+                    el selector de cliente y el datetime no caben en 214 px. */}
+                {apartarOpen && selectedLot.status !== "sold" ? (
+                  <div className="lotp-sec">
+                    <div className="lotp-sh"><b>{selectedLot.status === "reserved" ? "Extender apartado" : "Apartar lote"}</b></div>
                     <div className="frac-apartar-form">
                       <label className="frac-appt-lbl">Cliente interesado</label>
                       <ClientPicker value={apartarClient} onSelect={setApartarClient} disabled={apartarBusy} />
@@ -816,21 +795,12 @@ function FracsPage() {
                         {apartarBusy ? "Guardando..." : selectedLot.status === "reserved" ? "Guardar vencimiento" : "Confirmar apartado"}
                       </Button>
                     </div>
-                  ) : null}
-
-                  <div className="frac-actions-list">
-                    {selectedLot.status !== "sold" ? <button onClick={() => navigate("/contratos")}>Registrar venta</button> : null}
-                    <button onClick={() => {
-                      setShowApptForm((value) => !value);
-                      if (!showApptForm) {
-                        const known = apartarClient || (selectedLot.client_id ? { name: selectedLot.client_name } : null);
-                        if (known) setApptDraft((p) => ({ ...p, contact_name: known.name || "", contact_phone: known.phone || p.contact_phone }));
-                      }
-                    }}>
-                      Agendar cita
-                    </button>
                   </div>
-                  {showApptForm ? (
+                ) : null}
+
+                {showApptForm ? (
+                  <div className="lotp-sec">
+                    <div className="lotp-sh"><b>Nueva cita</b></div>
                     <div className="frac-appointment-form">
                       <div className="frac-appt-field">
                         <label className="frac-appt-lbl">Contacto</label>
@@ -856,8 +826,67 @@ function FracsPage() {
                         {apptSaving ? "Guardando..." : "Guardar cita"}
                       </Button>
                     </div>
-                  ) : null}
-                  {apptData.length ? (
+                  </div>
+                ) : null}
+
+                {/* Apartado vigente: quién y hasta cuándo */}
+                {selectedLot.status === "reserved" ? (
+                  <div className="lotp-sec">
+                    <div className="lotp-sh"><b>Apartado</b></div>
+                    <div className="lotp-resv">
+                      {selectedLot.client_name ? (
+                        <div className="lotp-resv-row">
+                          <span className="lotp-resv-k">Cliente</span>
+                          <span className="lotp-resv-v">{selectedLot.client_name}</span>
+                        </div>
+                      ) : null}
+                      {selectedLot.reserved_by_name ? (
+                        <div className="lotp-resv-row">
+                          <span className="lotp-resv-k">Apartó</span>
+                          <span className="lotp-resv-v">{selectedLot.reserved_by_name}</span>
+                        </div>
+                      ) : null}
+                      <div className="lotp-resv-row">
+                        <span className="lotp-resv-k">Vence</span>
+                        <span className="lotp-resv-v">
+                          {selectedLot.reserved_until ? new Date(selectedLot.reserved_until).toLocaleString("es-MX") : "—"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* ── Ficha técnica: cifras alineadas a la derecha, unidad en carril fijo ── */}
+                <div className="lotp-sec">
+                  <div className="lotp-sh"><b>Ficha técnica</b></div>
+                  <div className="lotp-specs">
+                    <SpecRow label="Superficie" value={measure(selectedLot.area_m2)} unit="m²" />
+                    <SpecRow label="Frente" value={measure(selectedLot.frente_ml)} unit="ml" />
+                    <SpecRow label="Fondo" value={measure(selectedLot.fondo_ml)} unit="ml" />
+                    {selectedLot.price_contado ? (
+                      <SpecRow label="Precio de contado" value={currency(selectedLot.price_contado)} money />
+                    ) : null}
+                    {selectedLot.price_financiado ? (
+                      <SpecRow label="Precio financiado" value={currency(selectedLot.price_financiado)} money />
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="lotp-sec">
+                  <div className="lotp-sh"><b>Servicios</b></div>
+                  <div className="lotp-svc">
+                    {SERVICES.map((service) => {
+                      const on = !!(selectedLot.services?.[service.k]);
+                      return (
+                        <span key={service.k} className={`lotp-chip${on ? " on" : ""}`}>{service.lbl}</span>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {apptData.length ? (
+                  <div className="lotp-sec">
+                    <div className="lotp-sh"><b>Citas próximas</b></div>
                     <div className="frac-appointments">
                       {apptData.map((appt) => (
                         <div key={appt.id}>
@@ -867,16 +896,80 @@ function FracsPage() {
                         </div>
                       ))}
                     </div>
-                  ) : null}
-                </div>
-              ) : null}
+                  </div>
+                ) : null}
 
-              {activeTab === "documentos" ? (
-                <InlineDocumentsPanel entityType="lot" entityId={selectedLot.id} entityLabel={`${selectedFrac.name} / ${selectedLot.code}`} />
-              ) : null}
+                <div className="lotp-sec">
+                  <div className="lotp-sh"><b>Documentos</b></div>
+                  <InlineDocumentsPanel entityType="lot" entityId={selectedLot.id} entityLabel={`${selectedFrac.name} / ${selectedLot.code}`} />
+                </div>
+              </div>
+
+              {/* ── Columna de acciones (fija, no scrollea) ── */}
+              <div className="lotp-acts">
+                <div className="lotp-acts-lbl">Acciones</div>
+
+                {selectedLot.status === "available" ? (
+                  <button
+                    className={`lotp-btn${apartarOpen ? "" : " primary"}`}
+                    onClick={() => {
+                      setApartarOpen((v) => !v);
+                      if (!apartarOpen) { setApartarUntil(toLocalInput(new Date(Date.now() + 7 * 86400000))); setApartarClient(null); }
+                    }}
+                  >
+                    {apartarOpen ? "Cancelar apartado" : <><HiBookmark /> Apartar lote</>}
+                  </button>
+                ) : null}
+
+                {selectedLot.status === "reserved" ? (
+                  <button
+                    className="lotp-btn"
+                    onClick={() => {
+                      setApartarOpen((v) => !v);
+                      setApartarUntil(selectedLot.reserved_until ? toLocalInput(new Date(selectedLot.reserved_until)) : "");
+                      setApartarClient(selectedLot.client_id ? { id: selectedLot.client_id, name: selectedLot.client_name } : null);
+                    }}
+                  >
+                    {apartarOpen ? "Cancelar" : "Extender vencimiento"}
+                  </button>
+                ) : null}
+
+                {/* La venta es la acción principal en un lote ya apartado. */}
+                {selectedLot.status !== "sold" ? (
+                  <button
+                    className={`lotp-btn${selectedLot.status === "reserved" ? " primary" : ""}`}
+                    onClick={() => navigate("/contratos")}
+                  >
+                    Registrar venta
+                  </button>
+                ) : null}
+
+                <button
+                  className="lotp-btn"
+                  onClick={() => {
+                    setShowApptForm((value) => !value);
+                    if (!showApptForm) {
+                      const known = apartarClient || (selectedLot.client_id ? { name: selectedLot.client_name } : null);
+                      if (known) setApptDraft((p) => ({ ...p, contact_name: known.name || "", contact_phone: known.phone || p.contact_phone }));
+                    }
+                  }}
+                >
+                  {showApptForm ? "Cancelar cita" : "Agendar cita"}
+                </button>
+
+                {selectedLot.status === "reserved" ? (
+                  <>
+                    <div className="lotp-acts-sep" />
+                    <button className="lotp-btn sm danger" onClick={releaseLot} disabled={apartarBusy}>
+                      Liberar lote
+                    </button>
+                  </>
+                ) : null}
+              </div>
             </div>
-          </article>
-        </div>
+          </aside>
+        </div>,
+        document.body
       ) : null}
 
       {showCotizador && selectedLot ? (

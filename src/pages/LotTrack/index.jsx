@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { HiEye, HiXMark } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 import { lotService } from "@/services/lotService";
-import { currency } from "@/services/formatters";
+import { currency, measure } from "@/services/formatters";
 import EmptyState from "@/components/ui/EmptyState";
 import useEscapeKey from "@/hooks/useEscapeKey";
 import "./lotTrack.css";
@@ -49,14 +49,6 @@ function sinceLabel(iso) {
   if (days < 30) return `hace ${days} d`;
   const months = Math.round(days / 30);
   return `hace ${months} ${months === 1 ? "mes" : "meses"}`;
-}
-
-/** "402.00" → "402 m²" (los lotes se capturan con 2 decimales que casi nunca se usan). */
-function area(value) {
-  if (value === null || value === undefined || value === "") return null;
-  const n = Number(value);
-  if (Number.isNaN(n)) return null;
-  return `${n % 1 === 0 ? n : n.toFixed(2)} m²`;
 }
 
 /** Días que faltan para `iso`; negativo si ya pasó. null si no hay fecha. */
@@ -278,7 +270,7 @@ function TimelineDrawer({ row, onClose }) {
     row.reserved_until && ["Vence", new Date(row.reserved_until).toLocaleDateString("es-MX")],
     row.contract_number && ["Contrato", row.contract_number],
     row.price_contado && ["Precio", currency(row.price_contado)],
-    area(row.area_m2) && ["Superficie", area(row.area_m2)],
+    measure(row.area_m2) && ["Superficie", `${measure(row.area_m2)} m²`],
   ].filter(Boolean).slice(0, 4);
 
   // Portal a body por la misma razón que el popover: el stacking context de la
@@ -298,7 +290,7 @@ function TimelineDrawer({ row, onClose }) {
               <div className="lt-dr-name">{row.code}</div>
               <div className="lt-dr-meta">
                 {row.inmueble_name}
-                {area(row.area_m2) ? ` · ${area(row.area_m2)}` : ""}
+                {measure(row.area_m2) ? ` · ${measure(row.area_m2)} m²` : ""}
               </div>
             </div>
             <button className="lt-dr-close" onClick={onClose} aria-label="Cerrar">
