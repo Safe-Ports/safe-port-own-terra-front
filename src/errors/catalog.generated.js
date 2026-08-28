@@ -188,6 +188,22 @@ export const ERROR_CATALOG = {
     "name": "CON_SELLER_INACTIVE",
     "severity": "warning"
   },
+  "OT-CON-3005": {
+    "action": "Rechaza el contrato y arma uno nuevo sobre otro lote.",
+    "domain": "CON",
+    "http_status": 409,
+    "message": "El lote ya se vendió mientras este contrato esperaba aprobación.",
+    "name": "CON_LOT_TAKEN_MEANWHILE",
+    "severity": "warning"
+  },
+  "OT-CON-3006": {
+    "action": "Actualiza la lista: alguien más pudo haberlo resuelto.",
+    "domain": "CON",
+    "http_status": 409,
+    "message": "Este contrato ya no está esperando aprobación.",
+    "name": "CON_NOT_PENDING",
+    "severity": "warning"
+  },
   "OT-DOC-1010": {
     "action": "Sube uno más pequeño.",
     "domain": "DOC",
