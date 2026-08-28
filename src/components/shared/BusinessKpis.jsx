@@ -5,12 +5,38 @@ import {
 } from "react-icons/hi2";
 import { dashboardService } from "@/services/dashboardService";
 
-/* Cifras del panel general. Vienen agregadas del backend: calcularlas sumando
-   las listas que el front trae paginadas dejaba los totales cortos en cuanto la
-   organización pasaba el tope de cada consulta. */
+/* Cifras del negocio, compartidas por el dashboard de Lands y el hub. Vienen
+   agregadas del backend: calcularlas sumando las listas que el front trae
+   paginadas dejaba los totales cortos en cuanto la organización pasaba el tope
+   de cada consulta. */
 
 const money = (n) =>
   Number(n || 0).toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 1 });
+
+const ESTILOS = `
+  .biz-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+    gap:12px; margin-bottom:18px; }
+  .biz-kpi { display:flex; gap:12px; background:var(--sf); border:1px solid var(--bd);
+    border-radius:16px; padding:14px 16px; box-shadow:var(--sh); }
+  .biz-kpi-ico { width:40px; height:40px; border-radius:12px; display:grid;
+    place-items:center; font-size:1.15rem; flex-shrink:0; }
+  .biz-kpi-body { display:flex; flex-direction:column; min-width:0; flex:1; }
+  .biz-kpi-lbl { font-size:.66rem; font-weight:700; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--mu); }
+  .biz-kpi-val { font-size:1.55rem; font-weight:800; color:var(--tx); line-height:1.15;
+    margin-top:3px; font-variant-numeric:tabular-nums; }
+  .biz-kpi-sub { font-size:.74rem; color:var(--mu); margin-top:2px; }
+  .biz-kpi-delta { display:inline-flex; align-items:center; gap:5px; align-self:flex-start;
+    margin-top:7px; padding:2px 8px; border-radius:999px; font-size:.68rem; font-weight:700;
+    font-variant-numeric:tabular-nums; }
+  .biz-kpi-delta em { font-style:normal; font-weight:600; color:var(--mu); font-size:.64rem; }
+  .biz-kpi-delta.up { background:rgba(111,175,107,.16); color:#2F6A38; }
+  .biz-kpi-delta.down { background:rgba(201,138,43,.16); color:#b0791f; }
+  .biz-kpi-delta.flat { background:var(--sf2); color:var(--mu); }
+  .biz-kpis-msg { color:var(--mu); font-size:.82rem; margin-bottom:18px; }
+  @media (max-width:1100px){ .biz-kpis { grid-template-columns:repeat(3,1fr); } }
+  @media (max-width:640px){ .biz-kpis { grid-template-columns:repeat(2,1fr); } }
+`;
 
 function Spark({ serie = [], tono }) {
   if (serie.length < 2) return null;
@@ -37,14 +63,14 @@ function Card({ icono, tono, label, valor, detalle, delta, serie, invertido }) {
   const bueno = invertido ? baja : sube;
 
   return (
-    <div className="hub-kpi">
-      <span className="hub-kpi-ico" style={{ background: `${tono}22`, color: tono }}>{icono}</span>
-      <div className="hub-kpi-body">
-        <span className="hub-kpi-lbl">{label}</span>
-        <span className="hub-kpi-val">{valor}</span>
-        <span className="hub-kpi-sub">{detalle}</span>
+    <div className="biz-kpi">
+      <span className="biz-kpi-ico" style={{ background: `${tono}22`, color: tono }}>{icono}</span>
+      <div className="biz-kpi-body">
+        <span className="biz-kpi-lbl">{label}</span>
+        <span className="biz-kpi-val">{valor}</span>
+        <span className="biz-kpi-sub">{detalle}</span>
         {hay && (
-          <span className={`hub-kpi-delta ${!sube && !baja ? "flat" : bueno ? "up" : "down"}`}>
+          <span className={`biz-kpi-delta ${!sube && !baja ? "flat" : bueno ? "up" : "down"}`}>
             {sube ? "▲" : baja ? "▼" : "—"} {Math.abs(delta).toFixed(1)}%
             <em>vs. mes anterior</em>
           </span>
@@ -55,21 +81,23 @@ function Card({ icono, tono, label, valor, detalle, delta, serie, invertido }) {
   );
 }
 
-export default function HubKpis() {
+export default function BusinessKpis() {
   const { data, isError, isPending } = useQuery({
     queryKey: ["dashboard", "kpis"],
     queryFn: () => dashboardService.kpis(6),
     retry: (n, err) => err?.response?.status !== 403 && n < 2,
   });
 
-  if (isPending) return <div className="hub-kpis-msg">Cargando cifras…</div>;
+  if (isPending) return <><style>{ESTILOS}</style><div className="biz-kpis-msg">Cargando cifras…</div></>;
   // Un cero es indistinguible de "no hay nada": si falló, se dice.
-  if (isError || !data) return <div className="hub-kpis-msg">No se pudieron cargar las cifras.</div>;
+  if (isError || !data) return <><style>{ESTILOS}</style><div className="biz-kpis-msg">No se pudieron cargar las cifras.</div></>;
 
   const t = { verde: "#6FAF6B", bosque: "#355E3B", ambar: "#C98A2B", azul: "#4B77BE", morado: "#8B72C4" };
 
   return (
-    <div className="hub-kpis">
+    <>
+    <style>{ESTILOS}</style>
+    <div className="biz-kpis">
       <Card icono={<HiOutlineBanknotes />} tono={t.verde} label="Ingresos del mes"
         valor={money(data.revenue.value)} detalle={data.revenue.detail}
         delta={data.revenue.delta} serie={data.revenue.series} />
@@ -89,5 +117,6 @@ export default function HubKpis() {
         valor={data.contracts.value} detalle={data.contracts.detail}
         delta={data.contracts.delta} serie={data.contracts.series} />
     </div>
+    </>
   );
 }

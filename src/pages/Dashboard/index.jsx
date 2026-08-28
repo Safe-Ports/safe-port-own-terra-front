@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import GuideModal from "@/components/shared/GuideModal";
+import BusinessKpis from "@/components/shared/BusinessKpis";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
@@ -11,7 +12,6 @@ import { dashboardService } from "@/services/dashboardService";
 import {
   HiOutlineSquares2X2, HiOutlineDocumentText,
   HiOutlineChevronDown, HiOutlineArrowRight,
-  HiMiniArrowTrendingUp, HiMiniArrowTrendingDown,
 } from "react-icons/hi2";
 import { Skeleton } from "@/components/ui/Skeleton";
 
@@ -41,12 +41,7 @@ function isMonth(dateStr, year, month) {
   return d.getFullYear() === year && d.getMonth() === month;
 }
 const isThisMonth = s => isMonth(s, CY, CM);
-const isLastMonth = s => isMonth(s, CM === 0 ? CY - 1 : CY, CM === 0 ? 11 : CM - 1);
 
-function pct(cur, prev) {
-  if (!prev) return null;
-  return ((cur - prev) / Math.abs(prev) * 100).toFixed(1);
-}
 
 function compactNum(n) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -55,29 +50,6 @@ function compactNum(n) {
 }
 
 /* ── KPI Card ────────────────────────────────────────────────── */
-function KpiCard({ label, value, sub, change }) {
-  const up = change !== null && Number(change) >= 0;
-  return (
-    <div className="ot-card" style={{ padding: "16px 18px" }}>
-      <div style={{ fontSize: ".68rem", fontWeight: 700, textTransform: "uppercase",
-        letterSpacing: ".1em", color: "var(--mu)", marginBottom: 6 }}>{label}</div>
-      <div style={{ fontFamily: "var(--font-body)", fontSize: "1.7rem",
-        fontWeight: 700, color: "var(--tx)", lineHeight: 1.1 }}>{value}</div>
-      <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4 }}>
-        {change !== null ? (
-          <span style={{ display: "flex", alignItems: "center", gap: 2, fontSize: ".72rem",
-            fontWeight: 700, color: up ? "var(--mid)" : "var(--danger)" }}>
-            {up ? <HiMiniArrowTrendingUp /> : <HiMiniArrowTrendingDown />}
-            {Math.abs(change)}% vs mes anterior
-          </span>
-        ) : (
-          <span style={{ fontSize: ".72rem", color: "var(--mu)" }}>{sub}</span>
-        )}
-      </div>
-    </div>
-  );
-}
-
 /* ── Donut Chart (multi-segmento) ────────────────────────────── */
 function DonutChart({ segments, total, centerLabel }) {
   const R = 44;
@@ -275,24 +247,13 @@ export default function DashboardPage() {
   const expenses = expRaw || [];
 
   /* ── KPI calculations ── */
-  const revThisMonth = useMemo(() =>
-    payments.filter(p => p.status === "paid" && isThisMonth(p.paid_date || p.due_date))
-            .reduce((s, p) => s + Number(p.amount || 0), 0), [payments]);
-
-  const revLastMonth = useMemo(() =>
-    payments.filter(p => p.status === "paid" && isLastMonth(p.paid_date || p.due_date))
-            .reduce((s, p) => s + Number(p.amount || 0), 0), [payments]);
-
   const salesThisMonth = useMemo(() => contracts.filter(c => isThisMonth(c.contract_date)).length, [contracts]);
-  const salesLastMonth = useMemo(() => contracts.filter(c => isLastMonth(c.contract_date)).length, [contracts]);
 
   const totalLots    = fracs.reduce((s, f) => s + (f.total_lots     || 0), 0);
   const availLots    = fracs.reduce((s, f) => s + (f.available_lots || 0), 0);
   const soldLots     = fracs.reduce((s, f) => s + (f.sold_lots      || 0), 0);
   const reservedLots = fracs.reduce((s, f) => s + (f.reserved_lots  || 0), 0);
   const inTramite    = Math.max(0, totalLots - availLots - soldLots - reservedLots);
-
-  const activeContracts = contracts.filter(c => c.status === "active").length;
 
   /* ── Resumen financiero YTD ── */
   const ytdRevenue = useMemo(() =>
@@ -345,7 +306,6 @@ export default function DashboardPage() {
   return (
     <>
       <style>{`
-        .db-grid6 { display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:18px; }
         .db-charts { display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px; }
         .db-row3  { display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px; }
         .db-card  { background:var(--sf);border:1px solid var(--bd);border-radius:20px;overflow:hidden;box-shadow:var(--sh); }
@@ -359,37 +319,11 @@ export default function DashboardPage() {
         .db-fin-row { display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line-soft);font-size:.83rem; }
         .db-fin-row:last-child { border-bottom:none; }
 
-        @media (max-width:1200px) { .db-grid6 { grid-template-columns:repeat(3,1fr); } }
         @media (max-width:900px)  { .db-charts,.db-row3 { grid-template-columns:1fr; } }
       `}</style>
 
       {/* ── 6 KPIs ── */}
-      <div className="db-grid6">
-        <KpiCard label="Ingresos del mes"
-          value={compactCurrency(revThisMonth)}
-          sub="Cobros aplicados"
-          change={pct(revThisMonth, revLastMonth)} />
-        <KpiCard label="Ventas del mes"
-          value={salesThisMonth}
-          sub="Contratos nuevos"
-          change={pct(salesThisMonth, salesLastMonth)} />
-        <KpiCard label="Lotes disponibles"
-          value={availLots}
-          sub={`${totalLots} en inventario`}
-          change={null} />
-        <KpiCard label="Lotes vendidos"
-          value={soldLots}
-          sub="Total histórico"
-          change={null} />
-        <KpiCard label="Inventario total"
-          value={totalLots}
-          sub="lotes en total"
-          change={null} />
-        <KpiCard label="Contratos activos"
-          value={activeContracts}
-          sub={`${clients.length} clientes`}
-          change={null} />
-      </div>
+      <BusinessKpis />
 
       {/* ── 3 gráficas ── */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>

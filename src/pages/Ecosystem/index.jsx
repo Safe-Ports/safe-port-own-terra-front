@@ -3,7 +3,7 @@ import GuideModal from "@/components/shared/GuideModal";
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
 import EcoLayout from "./EcoLayout";
-import HubKpis from "./HubKpis";
+import BusinessKpis from "@/components/shared/BusinessKpis";
 
 function EcosystemHub() {
   const navigate = useNavigate();
@@ -39,29 +39,7 @@ function EcosystemHub() {
         <>
           <div className="section-head"><h3>Resumen del negocio</h3></div>
           <p className="gallery-section-sub">Cómo viene el mes</p>
-          <style>{`
-            .hub-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
-              gap:12px; margin-bottom:26px; }
-            .hub-kpi { display:flex; gap:12px; background:var(--sf); border:1px solid var(--bd);
-              border-radius:16px; padding:14px 16px; box-shadow:var(--sh); }
-            .hub-kpi-ico { width:40px; height:40px; border-radius:12px; display:grid;
-              place-items:center; font-size:1.15rem; flex-shrink:0; }
-            .hub-kpi-body { display:flex; flex-direction:column; min-width:0; flex:1; }
-            .hub-kpi-lbl { font-size:.66rem; font-weight:700; letter-spacing:.08em;
-              text-transform:uppercase; color:var(--mu); }
-            .hub-kpi-val { font-size:1.55rem; font-weight:800; color:var(--tx); line-height:1.15;
-              margin-top:3px; font-variant-numeric:tabular-nums; }
-            .hub-kpi-sub { font-size:.74rem; color:var(--mu); margin-top:2px; }
-            .hub-kpi-delta { display:inline-flex; align-items:center; gap:5px; align-self:flex-start;
-              margin-top:7px; padding:2px 8px; border-radius:999px; font-size:.68rem; font-weight:700;
-              font-variant-numeric:tabular-nums; }
-            .hub-kpi-delta em { font-style:normal; font-weight:600; color:var(--mu); font-size:.64rem; }
-            .hub-kpi-delta.up { background:rgba(111,175,107,.16); color:#2F6A38; }
-            .hub-kpi-delta.down { background:rgba(201,138,43,.16); color:#b0791f; }
-            .hub-kpi-delta.flat { background:var(--sf2); color:var(--mu); }
-            .hub-kpis-msg { color:var(--mu); font-size:.82rem; margin-bottom:26px; }
-          `}</style>
-          <HubKpis />
+          <BusinessKpis />
         </>
       )}
 
