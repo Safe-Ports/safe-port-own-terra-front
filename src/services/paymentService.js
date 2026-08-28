@@ -20,6 +20,9 @@ export const paymentService = {
   },
   reverse: (id, body) => api.post(`/payments/${id}/reverse-payment`, body).then((r) => r.data),
   sendReminder: (id, body) => api.post(`/payments/${id}/send-reminder`, body).then((r) => r.data),
+  // Las cifras de las tarjetas se agregan en la base: sumarlas sobre la lista
+  // paginada dejaba los totales cortos apenas la organización pasaba el tope.
+  kpis: (params = {}) => api.get("/payments/kpis", { params }).then((r) => r.data),
   upcoming: (params = {}) => api.get("/payments/upcoming", { params }).then((r) => r.data),
   overdue: (params = {}) => api.get("/payments/overdue", { params }).then((r) => r.data),
 };

@@ -10,6 +10,7 @@ import {
   HiPhone, HiBars3, HiPlusCircle, HiOutlineWallet, HiOutlineClock, HiOutlineChartBar,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
+import { paymentService } from "@/services/paymentService";
 import { useLandsGuide } from "@/context/LandsGuideContext";
 import { expenseService, CAT_LABEL, CAT_STYLE } from "@/services/expenseService";
 import { employeeService } from "@/services/employeeService";
@@ -108,75 +109,6 @@ function getMonthlyData(ingresos, expenses) {
     if (m) m.egresos += Number(e.monto || 0);
   });
   return months;
-}
-
-/* ── Series de los KPIs ──────────────────────────────────────────
-   Cada tarjeta grafica su propio dato real. "Por cobrar" mira hacia adelante
-   (lo que vence en los próximos meses), así que no lleva variación: un
-   porcentaje sobre dinero que todavía no entró no significa nada. */
-function mesesAtras(n) {
-  const hoy = new Date();
-  return Array.from({ length: n }, (_, i) => {
-    const d = new Date(hoy.getFullYear(), hoy.getMonth() - (n - 1 - i), 1);
-    return { key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`, v: 0 };
-  });
-}
-
-function mesesAdelante(n) {
-  const hoy = new Date();
-  return Array.from({ length: n }, (_, i) => {
-    const d = new Date(hoy.getFullYear(), hoy.getMonth() + i, 1);
-    return { key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`, v: 0 };
-  });
-}
-
-function variacion(serie) {
-  if (serie.length < 2) return null;
-  const actual = serie[serie.length - 1];
-  const previo = serie[serie.length - 2];
-  if (!previo) return null;
-  if (previo === 0) return actual === 0 ? 0 : null;   // sin base, no hay porcentaje honesto
-  return ((actual - previo) / Math.abs(previo)) * 100;
-}
-
-function getKpiSeries(ingresos, expenses) {
-  const cobrado = mesesAtras(6);
-  const mora    = mesesAtras(6);
-  const egreso  = mesesAtras(6);
-  const porCobrar = mesesAdelante(6);
-
-  ingresos.forEach(p => {
-    const cobradoEn = (p.paid_date || "").slice(0, 7);
-    const venceEn   = (p.due_date || "").slice(0, 7);
-    const abonado   = Number(p.amount_paid || 0);
-    if (abonado > 0 && cobradoEn) {
-      const m = cobrado.find(x => x.key === cobradoEn);
-      if (m) m.v += abonado;
-    }
-    if (["pending", "overdue", "partial"].includes(p.status)) {
-      const resta = Math.max(Number(p.amount || 0) - abonado, 0);
-      const f = porCobrar.find(x => x.key === venceEn);
-      if (f) f.v += resta;
-      if (p.status === "overdue") {
-        const m = mora.find(x => x.key === venceEn);
-        if (m) m.v += resta;
-      }
-    }
-  });
-
-  expenses.filter(e => e.status === "paid").forEach(e => {
-    const k = (e.paid_date || e.due_date || "").slice(0, 7);
-    const m = egreso.find(x => x.key === k);
-    if (m) m.v += Number(e.monto || 0);
-  });
-
-  const vals = s => s.map(x => x.v);
-  return {
-    cobrado:   { serie: vals(cobrado),   delta: variacion(vals(cobrado)) },
-    porCobrar: { serie: vals(porCobrar), delta: null },
-    mora:      { serie: vals(mora),      delta: variacion(vals(mora)) },
-    egreso:    { serie: vals(egreso),    delta: variacion(vals(egreso)) },
-  };
 }
 
 /* Sparkline: área + línea de 2px + punto en el último dato, que es el que la
@@ -953,12 +885,7 @@ export default function PaymentsPage() {
   /* ── KPIs respetan desde/hasta ── */
   // "cancelled" queda fuera de ambos KPIs (dinero que no entrará); "partial" aporta
   // lo ya abonado a Cobrado y el remanente a Por cobrar, igual que el backend.
-  const inCobradoAmt   = ingresos
-    .filter(p => (p.status === "paid" || p.status === "partial") && inRange(p.due_date, desde, hasta))
-    .reduce((s, p) => s + (Number(p.amount_paid ?? (p.status === "paid" ? p.amount : 0)) || 0), 0);
   const inPendienteArr = ingresos.filter(p => ["pending", "overdue", "partial"].includes(p.status) && inRange(p.due_date, desde, hasta));
-  const inCobrado      = ingresos.filter(p => p.status === "paid" && inRange(p.due_date, desde, hasta));
-  const inPendienteAmt = inPendienteArr.reduce((s, p) => s + Math.max(Number(p.amount || 0) - Number(p.amount_paid || 0), 0), 0);
   const monthlyData    = useMemo(() => getMonthlyData(ingresos, expenses), [ingresos, expenses]);
 
   /* ── alertas ── */
@@ -1041,11 +968,23 @@ export default function PaymentsPage() {
 
   /* ── KPIs extra: mora + egresos operativos ── */
   const moraArr    = ingresos.filter(p => p.status === "overdue");
-  const moraAmt    = moraArr.reduce((s, p) => s + Math.max(Number(p.amount || 0) - Number(p.amount_paid || 0), 0), 0);
-  const moraCount  = new Set(moraArr.map(p => p.client?.id).filter(Boolean)).size;
-  const egresosMesAmt = expenses.filter(e => e.status === "paid").reduce((s, e) => s + Number(e.monto || 0), 0);
-  const flujoNeto  = inCobradoAmt - egresosMesAmt;
-  const kpiSeries  = useMemo(() => getKpiSeries(ingresos, expenses), [ingresos, expenses]);
+  // Las tarjetas ya no suman la lista que bajó la página: eso se quedaba corto
+  // apenas la organización pasaba el tope de la consulta. Se invalidan con la
+  // misma llave que los pagos, así que un cobro las refresca al instante.
+  const { data: kpiData } = useQuery({
+    queryKey: ["payments", "kpis"],
+    queryFn: () => paymentService.kpis({ months: 6 }),
+  });
+  // Mientras carga se muestran ceros, no cifras a medias sacadas de otra fuente:
+  // un número plausible pero equivocado es peor que un cero evidente.
+  const vacio = { amount: 0, count: 0, series: [], delta: null };
+  const k = {
+    collected:   kpiData?.collected   || vacio,
+    outstanding: kpiData?.outstanding || vacio,
+    overdue:     kpiData?.overdue     || vacio,
+    expenses:    kpiData?.expenses    || vacio,
+    net_flow:    kpiData?.net_flow    ?? 0,
+  };
 
   /* ── Amortización por contrato (progreso "24/84") ── */
   const amortRows = useMemo(() => {
@@ -1198,17 +1137,17 @@ export default function PaymentsPage() {
 
       <div className="cf-kpis" data-tour="pagos-kpis">
         <KpiCard tono="income" icono={<HiArrowTrendingUp />} label="Ingresos del mes"
-          valor={currency(inCobradoAmt)} pie={`${inCobrado.length} cobros aplicados`}
-          delta={kpiSeries.cobrado.delta} serie={kpiSeries.cobrado.serie} color="#6FAF6B" id="ing" />
+          valor={currency(k.collected.amount)} pie={`${k.collected.count} cobros aplicados`}
+          delta={k.collected.delta} serie={k.collected.series} color="#6FAF6B" id="ing" />
         <KpiCard tono="due" icono={<HiOutlineWallet />} icono2={<HiOutlineClock />} label="Por cobrar"
-          valor={currency(inPendienteAmt)} pie={`${inPendienteArr.length} cuotas pendientes`}
-          serie={kpiSeries.porCobrar.serie} color="#6FAF6B" id="cob" />
+          valor={currency(k.outstanding.amount)} pie={`${k.outstanding.count} cuotas pendientes`}
+          serie={k.outstanding.series} color="#6FAF6B" id="cob" />
         <KpiCard tono="mora" icono={<HiOutlineClock />} label="Pagos atrasados"
-          valor={currency(moraAmt)} pie={`${moraCount} cliente${moraCount === 1 ? "" : "s"} en mora`}
-          delta={kpiSeries.mora.delta} invertido serie={kpiSeries.mora.serie} color="#C0392B" id="mora" />
+          valor={currency(k.overdue.amount)} pie={`${k.overdue.count} cliente${k.overdue.count === 1 ? "" : "s"} en mora`}
+          delta={k.overdue.delta} invertido serie={k.overdue.series} color="#C0392B" id="mora" />
         <KpiCard tono="exp" icono={<HiOutlineChartBar />} label="Egresos operativos"
-          valor={currency(egresosMesAmt)} pie={`flujo neto ${currency(flujoNeto)}`}
-          delta={kpiSeries.egreso.delta} invertido serie={kpiSeries.egreso.serie} color="#C98A2B" id="egr" />
+          valor={currency(k.expenses.amount)} pie={`flujo neto ${currency(k.net_flow)}`}
+          delta={k.expenses.delta} invertido serie={k.expenses.series} color="#C98A2B" id="egr" />
       </div>
 
       <div className="cf-panel">
@@ -1269,9 +1208,9 @@ export default function PaymentsPage() {
         {tab === "egresos" && (
           <>
             <div className="cf-neto">
-              <div>Ingresos del mes<b style={{ color: "var(--mid)" }}>{currency(inCobradoAmt)}</b></div>
-              <div>Egresos<b style={{ color: "var(--danger)" }}>−{currency(egresosMesAmt)}</b></div>
-              <div>Flujo neto<b style={{ color: flujoNeto >= 0 ? "var(--mid)" : "var(--danger)" }}>{currency(flujoNeto)}</b></div>
+              <div>Ingresos del mes<b style={{ color: "var(--mid)" }}>{currency(k.collected.amount)}</b></div>
+              <div>Egresos<b style={{ color: "var(--danger)" }}>−{currency(k.expenses.amount)}</b></div>
+              <div>Flujo neto<b style={{ color: k.net_flow >= 0 ? "var(--mid)" : "var(--danger)" }}>{currency(k.net_flow)}</b></div>
             </div>
             <div className="cf-toolbar">
               <label className="cf-search"><span><HiMagnifyingGlass /></span><input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Buscar egreso…" /></label>
