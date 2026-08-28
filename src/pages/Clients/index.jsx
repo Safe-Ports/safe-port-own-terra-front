@@ -118,7 +118,7 @@ function ClientsPage() {
     selectedClientId, setSelectedClientId,
     openModal, setEditingClient,
     openClientReport, sendClientMessage, openContractCreate,
-    showError,
+    showError, currentUser,
   } = useAppContext();
   const [showGuide, setShowGuide] = useState(false);
   useLandsGuide(() => setShowGuide(true));
@@ -178,6 +178,11 @@ function ClientsPage() {
   );
 
   const selected = landsClients.find((c) => c.id === selectedClientId) || filtered[0] || null;
+  // Un administrador puede con todos; un colaborador, sólo con los que tiene
+  // asignados (mismo criterio que aplica el backend en ClientService).
+  const puedeEditar = Boolean(
+    selected && (currentUser?.role === "admin" || selected.seller?.id === currentUser?.id)
+  );
   const withApps = (client) => client ? { ...client, apps: clientAppsById.get(String(client.id)) ?? [] } : null;
   const eco = selected ? getClientEcosystem(withApps(selected)) : null;
 
@@ -323,9 +328,18 @@ function ClientsPage() {
                   <a href={`tel:${selected.phone}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DCDAD2", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiPhone /></a>
                   <a href={`mailto:${selected.email}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DCDAD2", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiEnvelope /></a>
                   <a href={`https://wa.me/${(selected.phone || "").replace(/\D/g,"")}`} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DCDAD2", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiChatBubbleLeftRight /></a>
-                  <Button variant="secondary" style={{ padding: "6px 14px", fontSize: ".76rem" }} onClick={() => { setEditingClient(selected); openModal("clientModal"); }}>
-                    Editar
-                  </Button>
+                  {/* Toda la cartera se ve, pero cada quien edita la suya. Un
+                      botón que sólo sirve para chocar con un 403 no ayuda: en su
+                      lugar se dice de quién es el cliente. */}
+                  {puedeEditar ? (
+                    <Button variant="secondary" style={{ padding: "6px 14px", fontSize: ".76rem" }} onClick={() => { setEditingClient(selected); openModal("clientModal"); }}>
+                      Editar
+                    </Button>
+                  ) : (
+                    <span className="cl-ajeno" title="Solo quien lo tiene asignado puede editarlo">
+                      {selected.seller?.name ? `Atiende ${selected.seller.name}` : "Sin vendedor asignado"}
+                    </span>
+                  )}
                 </div>
               </div>
 

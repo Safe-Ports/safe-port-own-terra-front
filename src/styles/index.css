@@ -1505,6 +1505,21 @@ textarea.is-invalid {
   max-height: 520px;
 }
 
+/* Etiqueta en lugar del botón Editar cuando el cliente es de otro integrante:
+   toda la cartera se ve, pero cada quien opera la suya. */
+.cl-ajeno {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px dashed var(--bd);
+  background: var(--sf2);
+  color: var(--mu);
+  font-size: .74rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .cl-item {
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr) auto;
