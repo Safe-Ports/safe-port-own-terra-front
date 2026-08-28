@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import GuideModal from "@/components/shared/GuideModal";
 import BusinessKpis from "@/components/shared/BusinessKpis";
+import QuickSummary from "@/components/shared/QuickSummary";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
@@ -324,6 +325,7 @@ export default function DashboardPage() {
 
       {/* ── 6 KPIs ── */}
       <BusinessKpis />
+      <QuickSummary />
 
       {/* ── 3 gráficas ── */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
