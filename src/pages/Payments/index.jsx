@@ -202,7 +202,7 @@ function Sparkline({ serie = [], color, id }) {
 /* Tarjeta de KPI: icono, variación contra el mes anterior, cifra y su serie.
    `invertido` marca los indicadores donde subir es malo —mora y egresos—, para
    que el color diga si la noticia es buena, no solo hacia dónde va la flecha. */
-function KpiCard({ tono, icono, icono2, label, valor, pie, delta, invertido, serie, color, id, error, cargando }) {
+function KpiCard({ tono, icono, icono2, label, valor, pie, delta, invertido, serie, color, id, error, cargando, sinPermiso }) {
   const hayDelta = delta !== null && delta !== undefined && isFinite(delta);
   const sube  = hayDelta && delta > 0.05;
   const baja  = hayDelta && delta < -0.05;
@@ -227,7 +227,11 @@ function KpiCard({ tono, icono, icono2, label, valor, pie, delta, invertido, ser
       </div>
       <div className="val">{error ? "—" : cargando ? "…" : valor}</div>
       <div className="foot">
-        {error ? "No se pudo cargar. Reintenta en unos segundos." : cargando ? "Cargando…" : pie}
+        {error
+          ? (sinPermiso
+              ? "Tu cuenta no tiene acceso a las cifras de cobranza."
+              : "No se pudo cargar. Reintenta en unos segundos.")
+          : cargando ? "Cargando…" : pie}
       </div>
       {!error && !cargando && <Sparkline serie={serie} color={color} id={id} />}
     </div>
@@ -1237,10 +1241,13 @@ export default function PaymentsPage() {
   // Las tarjetas ya no suman la lista que bajó la página: eso se quedaba corto
   // apenas la organización pasaba el tope de la consulta. Se invalidan con la
   // misma llave que los pagos, así que un cobro las refresca al instante.
-  const { data: kpiData, isError: kpiError, isPending: kpiPending } = useQuery({
+  const { data: kpiData, isError: kpiError, isPending: kpiPending, error: kpiErrObj } = useQuery({
     queryKey: ["payments", "kpis"],
     queryFn: () => paymentService.kpis({ months: 6 }),
+    // Un 403 no se arregla reintentando: es el permiso, no la red.
+    retry: (n, err) => err?.response?.status !== 403 && n < 2,
   });
+  const kpiSinPermiso = kpiErrObj?.response?.status === 403;
   // Si la consulta falla, las tarjetas NO muestran $0: un cero es indistinguible
   // de "no hay nada" y esconde el error. Muestran un guion y lo dicen.
   const vacio = { amount: 0, count: 0, series: [], delta: null };
@@ -1404,16 +1411,16 @@ export default function PaymentsPage() {
       <div className="cf-kpis" data-tour="pagos-kpis">
         <KpiCard tono="income" icono={<HiArrowTrendingUp />} label="Ingresos del mes"
           valor={currency(k.collected.amount)} pie={`${k.collected.count} cobros aplicados`}
-          delta={k.collected.delta} serie={k.collected.series} color="#6FAF6B" id="ing" error={kpiError} cargando={kpiPending} />
+          delta={k.collected.delta} serie={k.collected.series} color="#6FAF6B" id="ing" error={kpiError} cargando={kpiPending} sinPermiso={kpiSinPermiso} />
         <KpiCard tono="due" icono={<HiOutlineWallet />} icono2={<HiOutlineClock />} label="Por cobrar"
           valor={currency(k.outstanding.amount)} pie={`${k.outstanding.count} cuotas pendientes`}
-          serie={k.outstanding.series} color="#6FAF6B" id="cob" error={kpiError} cargando={kpiPending} />
+          serie={k.outstanding.series} color="#6FAF6B" id="cob" error={kpiError} cargando={kpiPending} sinPermiso={kpiSinPermiso} />
         <KpiCard tono="mora" icono={<HiOutlineClock />} label="Pagos atrasados"
           valor={currency(k.overdue.amount)} pie={`${k.overdue.count} cliente${k.overdue.count === 1 ? "" : "s"} en mora`}
-          delta={k.overdue.delta} invertido serie={k.overdue.series} color="#C0392B" id="mora" error={kpiError} cargando={kpiPending} />
+          delta={k.overdue.delta} invertido serie={k.overdue.series} color="#C0392B" id="mora" error={kpiError} cargando={kpiPending} sinPermiso={kpiSinPermiso} />
         <KpiCard tono="exp" icono={<HiOutlineChartBar />} label="Egresos operativos"
           valor={currency(k.expenses.amount)} pie={`flujo neto ${currency(k.net_flow)}`}
-          delta={k.expenses.delta} invertido serie={k.expenses.series} color="#C98A2B" id="egr" error={kpiError} cargando={kpiPending} />
+          delta={k.expenses.delta} invertido serie={k.expenses.series} color="#C98A2B" id="egr" error={kpiError} cargando={kpiPending} sinPermiso={kpiSinPermiso} />
       </div>
 
       <div className="cf-panel">
