@@ -3,7 +3,6 @@ import GuideModal from "@/components/shared/GuideModal";
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
 import EcoLayout from "./EcoLayout";
-import BusinessKpis from "@/components/shared/BusinessKpis";
 
 function EcosystemHub() {
   const navigate = useNavigate();
@@ -32,16 +31,6 @@ function EcosystemHub() {
 
   return (
     <EcoLayout active="panel" title="Hub de aplicaciones" subtitle="Todas las apps del ecosistema" onGuide={() => setShowGuide(true)}>
-
-      {/* Cifras del negocio. Solo para quien tiene Lands: son sus lotes y
-          contratos, y a alguien sin acceso no le dicen nada. */}
-      {canAccessApp("lands") && (
-        <>
-          <div className="section-head"><h3>Resumen del negocio</h3></div>
-          <p className="gallery-section-sub">Cómo viene el mes</p>
-          <BusinessKpis />
-        </>
-      )}
 
       {/* APLICACIONES CORE */}
       <div className="section-head">

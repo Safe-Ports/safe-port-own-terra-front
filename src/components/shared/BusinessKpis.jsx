@@ -14,44 +14,50 @@ const money = (n) =>
   Number(n || 0).toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 1 });
 
 const ESTILOS = `
-  .biz-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
-    gap:12px; margin-bottom:18px; }
-  .biz-kpi { display:flex; gap:12px; background:var(--sf); border:1px solid var(--bd);
-    border-radius:16px; padding:14px 16px; box-shadow:var(--sh); }
-  .biz-kpi-ico { width:40px; height:40px; border-radius:12px; display:grid;
-    place-items:center; font-size:1.15rem; flex-shrink:0; }
+  /* Seis columnas fijas: las tarjetas se comprimen antes que saltar de fila,
+     porque partidas en dos renglones dejan de leerse como una sola lectura. */
+  .biz-kpis { display:grid; grid-template-columns:repeat(6,minmax(0,1fr));
+    gap:10px; margin-bottom:18px; }
+  .biz-kpi { display:flex; gap:9px; background:var(--sf); border:1px solid var(--bd);
+    border-radius:13px; padding:10px 12px; box-shadow:var(--sh); min-width:0; }
+  .biz-kpi-ico { width:30px; height:30px; border-radius:9px; display:grid;
+    place-items:center; font-size:.92rem; flex-shrink:0; }
   .biz-kpi-body { display:flex; flex-direction:column; min-width:0; flex:1; }
-  .biz-kpi-lbl { font-size:.66rem; font-weight:700; letter-spacing:.08em;
-    text-transform:uppercase; color:var(--mu); }
-  .biz-kpi-val { font-size:1.55rem; font-weight:800; color:var(--tx); line-height:1.15;
-    margin-top:3px; font-variant-numeric:tabular-nums; }
-  .biz-kpi-sub { font-size:.74rem; color:var(--mu); margin-top:2px; }
-  .biz-kpi-delta { display:inline-flex; align-items:center; gap:5px; align-self:flex-start;
-    margin-top:7px; padding:2px 8px; border-radius:999px; font-size:.68rem; font-weight:700;
+  .biz-kpi-lbl { font-size:.6rem; font-weight:700; letter-spacing:.06em;
+    text-transform:uppercase; color:var(--mu); white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; }
+  .biz-kpi-val { font-size:1.25rem; font-weight:800; color:var(--tx); line-height:1.2;
+    margin-top:1px; font-variant-numeric:tabular-nums; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; }
+  .biz-kpi-sub { font-size:.66rem; color:var(--mu); white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; }
+  .biz-kpi-delta { display:inline-flex; align-items:center; gap:4px; align-self:flex-start;
+    margin-top:4px; padding:1px 6px; border-radius:999px; font-size:.62rem; font-weight:700;
     font-variant-numeric:tabular-nums; }
-  .biz-kpi-delta em { font-style:normal; font-weight:600; color:var(--mu); font-size:.64rem; }
+  .biz-kpi-delta em { font-style:normal; font-weight:600; color:var(--mu); font-size:.58rem; }
   .biz-kpi-delta.up { background:rgba(111,175,107,.16); color:#2F6A38; }
   .biz-kpi-delta.down { background:rgba(201,138,43,.16); color:#b0791f; }
   .biz-kpi-delta.flat { background:var(--sf2); color:var(--mu); }
   .biz-kpis-msg { color:var(--mu); font-size:.82rem; margin-bottom:18px; }
-  @media (max-width:1100px){ .biz-kpis { grid-template-columns:repeat(3,1fr); } }
-  @media (max-width:640px){ .biz-kpis { grid-template-columns:repeat(2,1fr); } }
+  /* En pantallas donde seis no entran legibles, recién ahí se parte. */
+  @media (max-width:1100px){ .biz-kpis { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+  @media (max-width:620px){ .biz-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 `;
 
 function Spark({ serie = [], tono }) {
   if (serie.length < 2) return null;
-  const W = 200, H = 34, P = 2;
+  const W = 200, H = 22, P = 2;
   const max = Math.max(...serie), min = Math.min(...serie);
   const rango = max - min || 1;
   const x = (i) => P + (i * (W - P * 2)) / (serie.length - 1);
   const y = (v) => H - P - ((v - min) / rango) * (H - P * 2);
   const d = serie.map((v, i) => `${i ? "L" : "M"} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ");
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="34" preserveAspectRatio="none"
-         aria-hidden="true" style={{ display: "block", marginTop: 10 }}>
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="22" preserveAspectRatio="none"
+         aria-hidden="true" style={{ display: "block", marginTop: 6 }}>
       <path d={d} fill="none" stroke={tono} strokeWidth="2" strokeLinecap="round"
             strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-      <circle cx={x(serie.length - 1)} cy={y(serie[serie.length - 1])} r="3" fill={tono} />
+      <circle cx={x(serie.length - 1) - 1} cy={y(serie[serie.length - 1])} r="2.5" fill={tono} />
     </svg>
   );
 }
@@ -70,9 +76,9 @@ function Card({ icono, tono, label, valor, detalle, delta, serie, invertido }) {
         <span className="biz-kpi-val">{valor}</span>
         <span className="biz-kpi-sub">{detalle}</span>
         {hay && (
-          <span className={`biz-kpi-delta ${!sube && !baja ? "flat" : bueno ? "up" : "down"}`}>
+          <span className={`biz-kpi-delta ${!sube && !baja ? "flat" : bueno ? "up" : "down"}`}
+            title="Contra el mes anterior">
             {sube ? "▲" : baja ? "▼" : "—"} {Math.abs(delta).toFixed(1)}%
-            <em>vs. mes anterior</em>
           </span>
         )}
         <Spark serie={serie} tono={tono} />
