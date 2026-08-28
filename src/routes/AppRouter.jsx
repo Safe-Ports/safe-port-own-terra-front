@@ -44,7 +44,7 @@ const AccessDenied = lazyWithRetry(() => import("@/pages/AccessDenied"));
 function PageLoader() {
   return (
     <div className="flex min-h-[50vh] items-center justify-center">
-      <div className="rounded-[28px] border border-[#DCDAD2] bg-white/88 px-5 py-4 text-sm font-semibold text-[#5A4E41] shadow-[0_18px_40px_rgba(24,18,14,.08)]">
+      <div className="rounded-[28px] border border-[#E2E7E5] bg-white/88 px-5 py-4 text-sm font-semibold text-[#3F4644] shadow-[0_18px_40px_rgba(30,61,43,.08)]">
         Cargando espacio de trabajo...
       </div>
     </div>

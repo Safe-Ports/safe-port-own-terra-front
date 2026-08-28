@@ -74,7 +74,7 @@
 /* ───── MAIN ───── */
 .eco-root .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;position:relative}
 .eco-root .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 38px;height:66px;
-  background:rgba(251,250,246,.7);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);
+  background:rgba(255, 255, 255,.7);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);
   flex-shrink:0;position:relative;z-index:2}
 .eco-root .topbar-title{font-family: var(--font-title);font-size:clamp(19px,1.6vw,24px);color:var(--deep);letter-spacing:-.3px;line-height:1.1}
 .eco-root .topbar-sub{font-size:12px;color:var(--text3)}
@@ -159,7 +159,7 @@
 
 /* Aplicaciones verticales: un solo tratamiento neutro (no un color por
    tarjeta) — se diferencian por ícono y nombre, no por arcoíris. */
-.eco-root .ic-neutral{background:linear-gradient(150deg,#ffffff,#f1eee6);--shadow:rgba(7,57,60,.12);color:var(--deep);}
+.eco-root .ic-neutral{background:linear-gradient(150deg,#ffffff,#EEF1F1);--shadow:rgba(7,57,60,.12);color:var(--deep);}
 .eco-root .ic-neutral svg{color:var(--deep);}
 
 /* Segunda cuadrícula del Hub: tarjetas más compactas que el lanzador principal
@@ -742,7 +742,7 @@
 
 .eco-root .ag-modal-backdrop{position:fixed;inset:0;background:rgba(16,22,17,.44);z-index:50;display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(4px)}
 .eco-root .ag-modal{width:min(720px,100%);max-height:min(90dvh,860px);display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:22px;box-shadow:0 30px 80px rgba(0,0,0,.28);overflow:hidden;animation:eco-fadeUp .22s ease both}
-.eco-root .ag-modal-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:20px 22px;border-bottom:1px solid var(--border);background:linear-gradient(140deg,rgba(72,169,166,.1),rgba(251,250,246,.96))}
+.eco-root .ag-modal-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:20px 22px;border-bottom:1px solid var(--border);background:linear-gradient(140deg,rgba(72,169,166,.1),rgba(255, 255, 255,.96))}
 .eco-root .ag-modal-head h3{font-family: var(--font-title);font-size:21px;color:var(--deep)}
 .eco-root .ag-modal-head p{font-size:12px;color:var(--text3);margin-top:3px}
 .eco-root .ag-modal-head button{border:1px solid var(--border2);background:var(--surface);color:var(--text2);border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family: var(--font-body)}
@@ -1124,7 +1124,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: radial-gradient(circle at 22% 18%, rgba(111, 175, 107, 0.15), transparent 30%), linear-gradient(145deg, #f4f1ea 0%, #ede9df 52%, #e9e5db 100%);
+  background: radial-gradient(circle at 22% 18%, rgba(111, 175, 107, 0.15), transparent 30%), linear-gradient(145deg, #F4F6F6 0%, #E9EDEC 52%, #e9e5db 100%);
 }
 
 .eco-root .lots-map-pane::before {

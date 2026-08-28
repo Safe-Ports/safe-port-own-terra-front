@@ -161,18 +161,18 @@ function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot, onDeleteL
           {section.name}
           <span className="ml-1 font-normal opacity-55 text-[0.62rem]">{section.lots.length} lotes</span>
         </div>
-        <div className="h-px flex-1 bg-[#DCDAD2]" />
+        <div className="h-px flex-1 bg-[#E2E7E5]" />
         <button
           onClick={() => onAddLots(section.id, 1)}
           title="Añadir un lote a esta sección"
-          className="flex h-[22px] w-[22px] items-center justify-center rounded-[5px] border border-[#DCDAD2] bg-[#F1EEE6] text-[0.8rem] font-black text-[#355E3B]"
+          className="flex h-[22px] w-[22px] items-center justify-center rounded-[5px] border border-[#E2E7E5] bg-[#EEF1F1] text-[0.8rem] font-black text-[#355E3B]"
         >
           +
         </button>
         <button
           onClick={() => onRemoveSection(section.id)}
           title="Eliminar sección"
-          className="flex h-[22px] w-[22px] items-center justify-center rounded-[5px] border border-[#DCDAD2] bg-[#F1EEE6] text-[0.8rem] font-black text-[#C0392B]"
+          className="flex h-[22px] w-[22px] items-center justify-center rounded-[5px] border border-[#E2E7E5] bg-[#EEF1F1] text-[0.8rem] font-black text-[#C0392B]"
         >
           <HiXMark />
         </button>
@@ -222,7 +222,7 @@ function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot, onDeleteL
           <button
             onClick={() => setPage((p) => Math.max(0, p - 1))}
             disabled={safePage === 0}
-            className="flex h-[26px] w-[26px] items-center justify-center rounded-[6px] border border-[#DCDAD2] bg-[#F1EEE6] text-[#355E3B] disabled:opacity-35"
+            className="flex h-[26px] w-[26px] items-center justify-center rounded-[6px] border border-[#E2E7E5] bg-[#EEF1F1] text-[#355E3B] disabled:opacity-35"
           >
             <HiChevronLeft />
           </button>
@@ -232,7 +232,7 @@ function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot, onDeleteL
           <button
             onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
             disabled={safePage >= totalPages - 1}
-            className="flex h-[26px] w-[26px] items-center justify-center rounded-[6px] border border-[#DCDAD2] bg-[#F1EEE6] text-[#355E3B] disabled:opacity-35"
+            className="flex h-[26px] w-[26px] items-center justify-center rounded-[6px] border border-[#E2E7E5] bg-[#EEF1F1] text-[#355E3B] disabled:opacity-35"
           >
             <HiChevronRight />
           </button>
@@ -904,10 +904,10 @@ function LotsPage() {
                     <img
                       src={draftProject.mapUrl}
                       alt="Plano"
-                      style={{ width: 90, height: 64, objectFit: "cover", borderRadius: 8, border: "1.5px solid #DCDAD2", flexShrink: 0 }}
+                      style={{ width: 90, height: 64, objectFit: "cover", borderRadius: 8, border: "1.5px solid #E2E7E5", flexShrink: 0 }}
                     />
                   ) : (
-                    <div style={{ width: 90, height: 64, borderRadius: 8, border: "1.5px dashed #DCDAD2", background: "#F1EEE6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <div style={{ width: 90, height: 64, borderRadius: 8, border: "1.5px dashed #E2E7E5", background: "#EEF1F1", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <span style={{ fontSize: "0.6rem", color: "#83867C", textAlign: "center", lineHeight: 1.3 }}>Sin imagen</span>
                     </div>
                   )}
@@ -1118,7 +1118,7 @@ function LotsPage() {
               {projects.reduce((sum, item) => sum + item.totalLots, 0)} lotes
             </span>
             <button
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white/90 text-forest shadow-[0_8px_18px_rgba(24,18,14,.08)] transition hover:border-[#355E3B] hover:bg-[#FBFAF6]"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white/90 text-forest shadow-[0_8px_18px_rgba(24,18,14,.08)] transition hover:border-[#355E3B] hover:bg-[#FFFFFF]"
               type="button"
               onClick={() => scrollPortfolio(-1)}
               aria-label="Ver fraccionamientos anteriores"
@@ -1126,7 +1126,7 @@ function LotsPage() {
               <HiChevronLeft className="text-lg" />
             </button>
             <button
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white/90 text-forest shadow-[0_8px_18px_rgba(24,18,14,.08)] transition hover:border-[#355E3B] hover:bg-[#FBFAF6]"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white/90 text-forest shadow-[0_8px_18px_rgba(24,18,14,.08)] transition hover:border-[#355E3B] hover:bg-[#FFFFFF]"
               type="button"
               onClick={() => scrollPortfolio(1)}
               aria-label="Ver mas fraccionamientos"
@@ -1170,20 +1170,20 @@ function LotsPage() {
                     </div>
                   </div>
                 </div>
-                <div className="flex-shrink-0 rounded-full bg-[#DCEBD6] px-3 py-1 text-[0.68rem] font-bold text-forest">
+                <div className="flex-shrink-0 rounded-full bg-[#E3EDE3] px-3 py-1 text-[0.68rem] font-bold text-forest">
                   {project.available} libres
                 </div>
               </div>
               <div className="mt-4 grid grid-cols-3 gap-2">
-                <div className="rounded-[13px] bg-[#FBFAF6] p-3">
+                <div className="rounded-[13px] bg-[#FFFFFF] p-3">
                   <div className="text-[0.62rem] uppercase tracking-[0.14em] text-muted">Vendido</div>
                   <div className="mt-2 text-lg font-bold text-forest">{project.sold}</div>
                 </div>
-                <div className="rounded-[13px] bg-[#FBFAF6] p-3">
+                <div className="rounded-[13px] bg-[#FFFFFF] p-3">
                   <div className="text-[0.62rem] uppercase tracking-[0.14em] text-muted">Reserva</div>
                   <div className="mt-2 text-lg font-bold text-forest">{project.reserved}</div>
                 </div>
-                <div className="rounded-[13px] bg-[#FBFAF6] p-3">
+                <div className="rounded-[13px] bg-[#FFFFFF] p-3">
                   <div className="text-[0.62rem] uppercase tracking-[0.14em] text-muted">Disponible</div>
                   <div className="mt-2 text-lg font-bold text-forest">{project.available}</div>
                 </div>
@@ -1218,7 +1218,7 @@ function LotsPage() {
       </section>
 
       {draftProject.mode === "selector" ? (
-        <section className="rounded-[28px] border border-[#DCDAD2] bg-white/88 p-8 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
+        <section className="rounded-[28px] border border-[#E2E7E5] bg-white/88 p-8 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
           <div className="mx-auto max-w-[660px] text-center">
             <h2 className="font-display text-[1.65rem] text-forest">Carga de Lotes</h2>
             <p className="mx-auto mt-2 max-w-[420px] text-[0.84rem] leading-relaxed text-[#83867C]">
@@ -1227,7 +1227,7 @@ function LotsPage() {
             <div className="mt-8 grid gap-5 sm:grid-cols-2">
               {/* ── Carga Manual ── */}
               <div
-                className="relative flex cursor-pointer flex-col overflow-hidden rounded-[16px] border-2 border-[#DCDAD2] bg-[#FBFAF6] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#355E3B] hover:shadow-[0_8px_24px_rgba(45,90,71,.15)]"
+                className="relative flex cursor-pointer flex-col overflow-hidden rounded-[16px] border-2 border-[#E2E7E5] bg-[#FFFFFF] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#355E3B] hover:shadow-[0_8px_24px_rgba(45,90,71,.15)]"
                 data-tour="frac-carga-manual"
                 onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
               >
@@ -1246,7 +1246,7 @@ function LotsPage() {
 
               {/* ── Carga CAD ── */}
               <div
-                className="relative flex cursor-pointer flex-col overflow-hidden rounded-[16px] border-2 border-[#DCDAD2] bg-[#FBFAF6] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#4A6FA5] hover:shadow-[0_8px_24px_rgba(74,111,165,.15)]"
+                className="relative flex cursor-pointer flex-col overflow-hidden rounded-[16px] border-2 border-[#E2E7E5] bg-[#FFFFFF] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#4A6FA5] hover:shadow-[0_8px_24px_rgba(74,111,165,.15)]"
                 role="button"
                 tabIndex={0}
                 aria-label="Importar CAD, próximamente"
@@ -1299,8 +1299,8 @@ function LotsPage() {
             <div style={{ marginBottom: 16 }}>
               <div className="mb-1 text-[0.62rem] font-bold uppercase tracking-[0.5px] text-[#83867C]" style={{ marginBottom: 6, fontSize: ".7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#83867C" }}>Nombre del fraccionamiento</div>
               <input
-                className="w-full rounded-[8px] border-[1.5px] border-[#DCDAD2] bg-white px-3 py-2 text-[0.84rem] text-[#1E3D2B] outline-none"
-                style={{ width: "100%", borderRadius: 8, border: "1.5px solid #DCDAD2", background: "white", padding: "8px 12px", fontSize: ".84rem", color: "#1E3D2B", outline: "none", fontFamily: "var(--font-body)" }}
+                className="w-full rounded-[8px] border-[1.5px] border-[#E2E7E5] bg-white px-3 py-2 text-[0.84rem] text-[#1E3D2B] outline-none"
+                style={{ width: "100%", borderRadius: 8, border: "1.5px solid #E2E7E5", background: "white", padding: "8px 12px", fontSize: ".84rem", color: "#1E3D2B", outline: "none", fontFamily: "var(--font-body)" }}
                 placeholder="Ej. Residencial Las Palmas"
                 data-tour="frac-nombre-inicial"
                 value={draftProject.name === "Nuevo Fraccionamiento" ? "" : draftProject.name}
@@ -1338,7 +1338,7 @@ function LotsPage() {
                 <img
                   src={draftProject.mapUrl}
                   alt="Vista previa del plano"
-                  style={{ width: 90, height: 64, objectFit: "cover", borderRadius: 8, border: "1.5px solid #DCDAD2", flexShrink: 0 }}
+                  style={{ width: 90, height: 64, objectFit: "cover", borderRadius: 8, border: "1.5px solid #E2E7E5", flexShrink: 0 }}
                 />
                 <div className="lots-editor-file">
                   <span>MAP</span>{mapFileName} — listo, falta guardar

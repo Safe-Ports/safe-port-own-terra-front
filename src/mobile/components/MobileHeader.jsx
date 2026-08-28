@@ -16,7 +16,7 @@ function MobileHeader({ pathname }) {
         </div>
         <div className="flex items-center gap-2">
           <button
-            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#DCDAD2] bg-white/85 text-forest shadow-[0_10px_24px_rgba(22,18,15,.08)]"
+            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#E2E7E5] bg-white/85 text-forest shadow-[0_10px_24px_rgba(22,18,15,.08)]"
             onClick={() => openModal("globalSearch")}
             aria-label="Buscar"
           >
@@ -36,7 +36,7 @@ function MobileHeader({ pathname }) {
               `shrink-0 rounded-full px-3.5 py-2 text-[0.72rem] font-semibold transition ${
                 isActive
                   ? "bg-[#1E3D2B] text-[#E9E5DB]"
-                  : "border border-[#DCDAD2] bg-white/88 text-[#5A4E41]"
+                  : "border border-[#E2E7E5] bg-white/88 text-[#3F4644]"
               }`
             }
           >

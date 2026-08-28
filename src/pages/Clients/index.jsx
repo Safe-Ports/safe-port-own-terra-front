@@ -325,9 +325,9 @@ function ClientsPage() {
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                  <a href={`tel:${selected.phone}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DCDAD2", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiPhone /></a>
-                  <a href={`mailto:${selected.email}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DCDAD2", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiEnvelope /></a>
-                  <a href={`https://wa.me/${(selected.phone || "").replace(/\D/g,"")}`} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DCDAD2", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiChatBubbleLeftRight /></a>
+                  <a href={`tel:${selected.phone}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #E2E7E5", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiPhone /></a>
+                  <a href={`mailto:${selected.email}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #E2E7E5", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiEnvelope /></a>
+                  <a href={`https://wa.me/${(selected.phone || "").replace(/\D/g,"")}`} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #E2E7E5", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiChatBubbleLeftRight /></a>
                   {/* Toda la cartera se ve, pero cada quien edita la suya. Un
                       botón que sólo sirve para chocar con un 403 no ayuda: en su
                       lugar se dice de quién es el cliente. */}
@@ -421,7 +421,7 @@ function ClientsPage() {
                     <div style={{ overflowX: "auto" }}>
                       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".78rem" }}>
                         <thead>
-                          <tr style={{ borderBottom: "1.5px solid #E7E4DB" }}>
+                          <tr style={{ borderBottom: "1.5px solid #EBEFED" }}>
                             {["ID Lote", "Proyecto", "Estado", "Medidas", "Progreso", ""].map((h) => (
                               <th key={h} style={{ textAlign: "left", padding: "5px 8px", fontSize: ".6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#83867C", whiteSpace: "nowrap" }}>{h}</th>
                             ))}
@@ -528,7 +528,7 @@ function ClientsPage() {
                   value={cancelForm.reason}
                   onChange={(e) => setCancelForm((p) => ({ ...p, reason: e.target.value }))}
                   placeholder="Ej: Solicitud del cliente, incumplimiento de pago..."
-                  style={{ width: "100%", borderRadius: 8, border: "1.5px solid #DCDAD2", padding: "8px 10px", fontSize: ".82rem", color: "#1E3D2B", outline: "none", fontFamily: "var(--font-body)", resize: "none", boxSizing: "border-box" }}
+                  style={{ width: "100%", borderRadius: 8, border: "1.5px solid #E2E7E5", padding: "8px 10px", fontSize: ".82rem", color: "#1E3D2B", outline: "none", fontFamily: "var(--font-body)", resize: "none", boxSizing: "border-box" }}
                 />
               </div>
               <div>
@@ -539,14 +539,14 @@ function ClientsPage() {
                   value={cancelForm.refund_amount}
                   onChange={(e) => setCancelForm((p) => ({ ...p, refund_amount: e.target.value }))}
                   placeholder="0"
-                  style={{ width: "100%", borderRadius: 8, border: "1.5px solid #DCDAD2", padding: "8px 10px", fontSize: ".82rem", color: "#1E3D2B", outline: "none", fontFamily: "var(--font-body)", boxSizing: "border-box" }}
+                  style={{ width: "100%", borderRadius: 8, border: "1.5px solid #E2E7E5", padding: "8px 10px", fontSize: ".82rem", color: "#1E3D2B", outline: "none", fontFamily: "var(--font-body)", boxSizing: "border-box" }}
                 />
               </div>
             </div>
             {/* Footer */}
             <div style={{ display: "flex", gap: 8, padding: "14px 20px", borderTop: "1px solid #EDEAE1", justifyContent: "flex-end" }}>
               <button onClick={() => setCancelDraft(null)} disabled={cancelling}
-                style={{ borderRadius: 8, border: "1.5px solid #DCDAD2", background: "#F1EEE6", color: "#43453F", padding: "7px 16px", fontSize: ".78rem", fontWeight: 700, cursor: "pointer" }}>
+                style={{ borderRadius: 8, border: "1.5px solid #E2E7E5", background: "#EEF1F1", color: "#43453F", padding: "7px 16px", fontSize: ".78rem", fontWeight: 700, cursor: "pointer" }}>
                 Cerrar
               </button>
               <button onClick={submitCancel} disabled={cancelling || !cancelForm.reason.trim()}

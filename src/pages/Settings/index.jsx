@@ -505,7 +505,7 @@ function SettingsPage() {
         onCancel={closeDeleteDialog}
         onConfirm={confirmDeleteUser}
       >
-        <p className="text-sm text-[#5A4E41]">
+        <p className="text-sm text-[#3F4644]">
           Perderá el acceso de inmediato y dejará de aparecer en esta lista. No se borra
           nada: queda desactivado y su actividad se conserva para auditoría.
         </p>
@@ -527,7 +527,7 @@ function SettingsPage() {
         onCancel={closeDeleteDialog}
         onConfirm={confirmTransferAndDelete}
       >
-        <p className="text-sm text-[#5A4E41]">
+        <p className="text-sm text-[#3F4644]">
           Todavía tiene registros a su nombre. Se reasignarán a la persona que elijas y
           después se completará la baja.
         </p>
@@ -543,7 +543,7 @@ function SettingsPage() {
             </div>
           ))}
         </div>
-        <label className="mt-4 block text-sm font-semibold text-[#5A4E41]">
+        <label className="mt-4 block text-sm font-semibold text-[#3F4644]">
           Traspasar a
           {transferCandidates.length === 0 ? (
             <p className="mt-1 text-sm font-normal text-[#83867C]">

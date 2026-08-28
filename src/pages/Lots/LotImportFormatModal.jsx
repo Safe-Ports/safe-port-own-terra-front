@@ -6,8 +6,8 @@ import useEscapeKey from "@/hooks/useEscapeKey";
 const G = "#355E3B";
 const OK = "#16a34a";
 const ERR = "#dc2626";
-const BG = "#FBFAF6";
-const BD = "#E7E4DB";
+const BG = "#FFFFFF";
+const BD = "#EBEFED";
 
 const Check = () => (
   <HiCheck style={{ color: OK, fontWeight: 800 }} className="inline h-[0.9rem] w-[0.9rem]" />
@@ -39,7 +39,7 @@ function Section({ id, title, type, open, onToggle, children }) {
         onClick={() => onToggle(id)}
         style={{
           width: "100%", padding: "11px 16px", display: "flex", alignItems: "center",
-          gap: 10, background: open ? "#F1EEE6" : "white", border: "none", cursor: "pointer",
+          gap: 10, background: open ? "#EEF1F1" : "white", border: "none", cursor: "pointer",
           textAlign: "left",
         }}
       >
@@ -64,7 +64,7 @@ function MiniTable({ headers, rows }) {
           <tr>
             {headers.map((h) => (
               <th key={h} style={{
-                padding: "6px 10px", background: "#F1EEE6", color: "#43453F",
+                padding: "6px 10px", background: "#EEF1F1", color: "#43453F",
                 fontWeight: 700, textAlign: "left", borderBottom: `1px solid ${BD}`,
                 whiteSpace: "nowrap",
               }}>{h}</th>

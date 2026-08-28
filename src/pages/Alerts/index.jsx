@@ -145,7 +145,7 @@ function AlertsPage() {
   return (
     <>
       <div className="space-y-4">
-        <section className="rounded-[28px] border border-[#DCDAD2] bg-[linear-gradient(150deg,#4C241F,#18120F)] p-5 text-[#FBFAF6] shadow-[0_28px_60px_rgba(13,15,12,.28)]">
+        <section className="rounded-[28px] border border-[#E2E7E5] bg-[linear-gradient(150deg,#4C241F,#18120F)] p-5 text-[#FFFFFF] shadow-[0_28px_60px_rgba(13,15,12,.28)]">
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="text-[0.7rem] font-bold uppercase tracking-[0.24em] text-[#E9B69F]">Centro de alertas</div>
@@ -175,7 +175,7 @@ function AlertsPage() {
 
         <section className="space-y-3">
           {overduePayments.map((payment) => (
-            <article key={payment.id} className="rounded-[28px] border border-[#DCDAD2] bg-white/88 p-4 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
+            <article key={payment.id} className="rounded-[28px] border border-[#E2E7E5] bg-white/88 p-4 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="text-sm font-semibold text-forest">{payment.client?.name || "Cliente"} · cuota {payment.installment_n}</div>
@@ -185,7 +185,7 @@ function AlertsPage() {
                   {Math.abs(relativeDays(payment.due_date))} días
                 </div>
               </div>
-              <div className="mt-4 flex items-center justify-between rounded-[22px] border border-[#E7E4DB] bg-[#FBFAF6] p-4">
+              <div className="mt-4 flex items-center justify-between rounded-[22px] border border-[#EBEFED] bg-[#FFFFFF] p-4">
                 <div>
                   <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Monto</div>
                   <div className="mt-2 text-base font-bold text-forest">{currency(payment.amount)}</div>
@@ -209,7 +209,7 @@ function AlertsPage() {
           ))}
         </section>
 
-        <section className="rounded-[28px] border border-[#DCDAD2] bg-white/88 p-4 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
+        <section className="rounded-[28px] border border-[#E2E7E5] bg-white/88 p-4 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <HiClock className="text-xl text-forest" />
@@ -226,12 +226,12 @@ function AlertsPage() {
           </div>
           <div className="mt-4 space-y-3">
             {notifications.length > 0 ? notifications.slice(0, 6).map((n) => (
-              <div key={n.id} className={`rounded-[22px] border p-4 ${n.is_read ? "border-[#E7E4DB] bg-[#FBFAF6]" : "border-[#C8DDD0] bg-[#EEF6F1]"}`}>
+              <div key={n.id} className={`rounded-[22px] border p-4 ${n.is_read ? "border-[#EBEFED] bg-[#FFFFFF]" : "border-[#C8DDD0] bg-[#EEF6F1]"}`}>
                 <div className="text-sm font-semibold text-forest">{n.title}</div>
                 <div className="mt-1 text-sm text-[#43453F]">{n.message || n.subtitle || ""}</div>
               </div>
             )) : (
-              <div className="rounded-[22px] border border-[#E7E4DB] bg-[#FBFAF6] p-4 text-sm text-[#83867C]">
+              <div className="rounded-[22px] border border-[#EBEFED] bg-[#FFFFFF] p-4 text-sm text-[#83867C]">
                 Sin notificaciones pendientes.
               </div>
             )}

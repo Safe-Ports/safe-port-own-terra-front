@@ -309,7 +309,7 @@ function GlobalSearchModal() {
             results.map((item) => (
               <button
                 key={item.id}
-                className="flex w-full items-center justify-between rounded-xl border border-line bg-[#FBFAF6] px-4 py-3 text-left transition hover:border-[#355E3B] hover:bg-[#F1EEE6]"
+                className="flex w-full items-center justify-between rounded-xl border border-line bg-[#FFFFFF] px-4 py-3 text-left transition hover:border-[#355E3B] hover:bg-[#EEF1F1]"
                 onClick={item.action}
               >
                 <div>
@@ -322,7 +322,7 @@ function GlobalSearchModal() {
               </button>
             ))
           ) : (
-            <div className="rounded-2xl border border-dashed border-line bg-[#F1EEE6] px-5 py-8 text-center text-sm text-[#83867C]">
+            <div className="rounded-2xl border border-dashed border-line bg-[#EEF1F1] px-5 py-8 text-center text-sm text-[#83867C]">
               No hay resultados con ese criterio.
             </div>
           )}

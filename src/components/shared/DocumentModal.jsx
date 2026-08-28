@@ -145,7 +145,7 @@ function DocumentModal() {
           <div ref={clientDropRef} style={{ position: "relative" }}>
             <div style={{
               display: "flex", alignItems: "center", gap: 8,
-              background: "#fff", border: "1.5px solid #DCDAD2", borderRadius: 12,
+              background: "#fff", border: "1.5px solid #E2E7E5", borderRadius: 12,
               padding: "10px 12px",
             }}>
               <HiOutlineMagnifyingGlass style={{ color: "#83867C", flexShrink: 0, fontSize: "1rem" }} />
@@ -172,7 +172,7 @@ function DocumentModal() {
             {showClientDrop && (
               <div style={{
                 position: "absolute", top: "100%", left: 0, right: 0, zIndex: 1000,
-                background: "#fff", border: "1.5px solid #DCDAD2",
+                background: "#fff", border: "1.5px solid #E2E7E5",
                 borderRadius: 10, maxHeight: 200, overflowY: "auto",
                 boxShadow: "0 8px 24px rgba(30,61,43,.14)", marginTop: 4,
               }}>
@@ -193,7 +193,7 @@ function DocumentModal() {
                         color: "#1E3D2B",
                         transition: "background .1s",
                       }}
-                      onMouseEnter={e => e.currentTarget.style.background = "#F1EEE6"}
+                      onMouseEnter={e => e.currentTarget.style.background = "#EEF1F1"}
                       onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                     >
                       {c.name}

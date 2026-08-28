@@ -6,29 +6,35 @@
 
 :root {
   color-scheme: light;
-  /* ── OwnTerra · Aurora palette — verde bosque + crema cálida ── */
+  /* ── OwnTerra · paleta Vidrio — verde bosque sobre gris frío ──────────────
+     El verde de la marca no cambia; cambia el suelo (antes crema cálida, ahora
+     un gris apenas frío) y cómo se aplica: veladuras de verde en vez de bloques
+     sólidos. Las superficies dejan pasar el fondo, de ahí el nombre.
+
+     Los verdes SEMÁNTICOS —lo que está bien, lo vencido, lo pendiente— no viven
+     acá y no siguen a la paleta: comunican estado, no marca. */
   --deep:     #1E3D2B;   /* verde bosque profundo */
   --mid:      #355E3B;   /* verde medio */
   --leaf:     #6FAF6B;   /* verde hoja brillante */
   --light:    #A7CBA1;   /* verde claro */
-  --bg:       #F4F1EA;   /* crema — fondo de página */
-  --bg2:      #EDE9DF;
-  --card:     rgba(251, 250, 246, 0.92);
-  --line:     #DCDAD2;
-  --line-soft:#E7E4DB;
+  --bg:       #F4F6F6;   /* gris apenas frío — fondo de página */
+  --bg2:      #E9EDEC;
+  --card:     rgba(255, 255, 255, 0.78);   /* traslúcida: deja ver el fondo */
+  --line:     rgba(30, 61, 43, 0.09);      /* el borde es verde velado, no gris */
+  --line-soft:rgba(30, 61, 43, 0.06);
   --text:     #1E3D2B;
   --muted:    #83867C;
   --forest:   #355E3B;   /* verde medio — PRIMARIO */
   --forest-hi:#6FAF6B;   /* verde hoja — accent / hover */
   --earth:    #355E3B;   /* secondary (alineado a la paleta verde) */
-  --cream:    #FBFAF6;
+  --cream:    #FFFFFF;
   --danger:   #C0392B;
-  --sf:       #FBFAF6;   /* surface */
-  --sf2:      #F1EEE6;   /* surface muted */
-  --bd:       #DCDAD2;
+  --sf:       #FFFFFF;   /* surface */
+  --sf2:      #EEF1F1;   /* surface muted */
+  --bd:       rgba(30, 61, 43, 0.11);
   --tan:      #355E3B;
   --tan-dk:   #1E3D2B;
-  --tan-lt:   #DCEBD6;   /* verde claro suave (activos) */
+  --tan-lt:   rgba(111, 175, 107, 0.16);   /* verde hoja velado (activos) */
   --navy:     #1E3D2B;   /* verde profundo sidebar */
   --tx:       #1E3D2B;
   --tx2:      #43453F;
@@ -54,7 +60,7 @@ body,
 }
 
 html {
-  background: #EDE9DF;
+  background: #E9EDEC;
 }
 
 body {
@@ -97,7 +103,7 @@ a {
 
 .portfolio-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(53, 94, 59, 0.42) rgba(220, 218, 210, 0.5);
+  scrollbar-color: rgba(53, 94, 59, 0.42) rgba(226, 231, 229, 0.5);
   scroll-padding-inline: 4px;
 }
 
@@ -106,7 +112,7 @@ a {
 }
 
 .portfolio-scroll::-webkit-scrollbar-track {
-  background: rgba(220, 218, 210, 0.5);
+  background: rgba(226, 231, 229, 0.5);
   border-radius: 999px;
 }
 
@@ -195,7 +201,7 @@ a {
 .sb-logo-mark {
   width: min(100%, 206px);
   height: 76px;
-  background: rgba(251, 250, 246, 0.98);
+  background: rgba(255, 255, 255, 0.98);
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -399,7 +405,7 @@ a {
 
 .topbar {
   height: 66px;
-  background: rgba(251, 250, 246, 0.74);
+  background: rgba(255, 255, 255, 0.74);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid rgba(67, 69, 63, 0.1);
   display: flex;
@@ -463,7 +469,7 @@ a {
   padding: 8px 13px;
   border-radius: 11px;
   border: 1px solid rgba(67, 69, 63, 0.18);
-  background: var(--surface, var(--sf, #fbfaf6));
+  background: var(--surface, var(--sf, #FFFFFF));
   color: var(--text2, var(--tx2, #43453f));
   cursor: pointer;
   font-family: var(--font-body);
@@ -475,7 +481,7 @@ a {
 
 .core-topbar-action:hover,
 .core-topbar-action.is-active {
-  background: var(--surface2, var(--sf2, #f1eee6));
+  background: var(--surface2, var(--sf2, #EEF1F1));
   border-color: rgba(111, 175, 107, 0.4);
   color: var(--deep, #1e3d2b);
 }
@@ -765,7 +771,7 @@ a {
 }
 
 .card {
-  border: 1px solid #DCDAD2;
+  border: 1px solid #E2E7E5;
   background: rgba(255, 255, 255, 0.88);
   border-radius: 28px;
   overflow: hidden;
@@ -779,7 +785,7 @@ a {
   justify-content: space-between;
   gap: 12px;
   padding: 16px 18px;
-  border-bottom: 1px solid #E7E4DB;
+  border-bottom: 1px solid #EBEFED;
   background: color-mix(in srgb, var(--forest) 6%, #fff);
 }
 
@@ -808,9 +814,9 @@ a {
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
-  border: 1px solid #DCDAD2;
+  border: 1px solid #E2E7E5;
   border-radius: 16px;
-  background: #FBFAF6;
+  background: #FFFFFF;
   color: var(--deep);
   cursor: pointer;
   text-align: left;
@@ -831,7 +837,7 @@ a {
 
 .reports-tabs button.is-active {
   border-color: rgba(53, 94, 59, 0.58);
-  background: linear-gradient(135deg, rgba(220, 235, 214, 0.9), rgba(251, 250, 246, 0.96));
+  background: linear-gradient(135deg, rgba(220, 235, 214, 0.9), rgba(255, 255, 255, 0.96));
   box-shadow: inset 0 0 0 1px rgba(53, 94, 59, 0.14), 0 12px 26px rgba(30, 61, 43, 0.09);
 }
 
@@ -870,9 +876,9 @@ a {
   align-items: center;
   gap: 6px;
   padding: 5px;
-  border: 1px solid #DCDAD2;
+  border: 1px solid #E2E7E5;
   border-radius: 14px;
-  background: #F1EEE6;
+  background: #EEF1F1;
 }
 
 .reports-segmented button {
@@ -895,7 +901,7 @@ a {
 
 .reports-segmented button.is-active {
   border-color: rgba(53, 94, 59, 0.3);
-  background: #FBFAF6;
+  background: #FFFFFF;
   box-shadow: 0 4px 12px rgba(30, 61, 43, 0.08);
 }
 
@@ -933,7 +939,7 @@ a {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #83867C;
-  border-bottom: 1px solid #E7E4DB;
+  border-bottom: 1px solid #EBEFED;
 }
 
 .tbl td {
@@ -1028,7 +1034,7 @@ textarea.is-invalid {
 }
 
 .kpi {
-  border: 1px solid #DCDAD2;
+  border: 1px solid #E2E7E5;
   background: rgba(255, 255, 255, 0.88);
   border-radius: 24px;
   padding: 16px;
@@ -1201,12 +1207,12 @@ textarea.is-invalid {
 .amort-table th,
 .amort-table td {
   padding: 11px 12px;
-  border-bottom: 1px solid #E7E4DB;
+  border-bottom: 1px solid #EBEFED;
 }
 
 .calc-box-ui {
   border: 1px solid #D9D7CF;
-  background: #F1EEE6;
+  background: #EEF1F1;
   border-radius: 22px;
   padding: 15px;
 }
@@ -1784,7 +1790,7 @@ textarea.is-invalid {
 
 @layer components {
   .mobile-input {
-    @apply w-full rounded-[11px] border border-[#DCDAD2] bg-[#FBFAF6] px-3.5 py-3 text-sm text-[#1E3D2B] outline-none transition placeholder:text-[#9A9C90] focus:border-[#6FAF6B] focus:bg-white focus:ring-4 focus:ring-[#6FAF6B]/10;
+    @apply w-full rounded-[11px] border border-[#E2E7E5] bg-[#FFFFFF] px-3.5 py-3 text-sm text-[#1E3D2B] outline-none transition placeholder:text-[#9A9C90] focus:border-[#6FAF6B] focus:bg-white focus:ring-4 focus:ring-[#6FAF6B]/10;
   }
 
   .mobile-primary-button {
@@ -1792,7 +1798,7 @@ textarea.is-invalid {
   }
 
   .mobile-chip {
-    @apply shrink-0 rounded-[9px] border border-[#D9D7CF] bg-[#FBFAF6] px-3 py-2 text-[0.72rem] font-semibold text-[#43453F] transition;
+    @apply shrink-0 rounded-[9px] border border-[#D9D7CF] bg-[#FFFFFF] px-3 py-2 text-[0.72rem] font-semibold text-[#43453F] transition;
   }
 
   .mobile-chip.is-active {
@@ -1880,7 +1886,7 @@ textarea.is-invalid {
   }
 
   .mobile-auth-field {
-    @apply flex items-center gap-3 rounded-[22px] border border-[#DCDAD2] bg-[#F1EEE6] px-4 py-3.5 text-[#1E3D2B] focus-within:border-[#1E3D2B] focus-within:ring-4 focus-within:ring-[#1E3D2B]/10;
+    @apply flex items-center gap-3 rounded-[22px] border border-[#E2E7E5] bg-[#EEF1F1] px-4 py-3.5 text-[#1E3D2B] focus-within:border-[#1E3D2B] focus-within:ring-4 focus-within:ring-[#1E3D2B]/10;
   }
 
   .mobile-auth-field span {
@@ -2835,7 +2841,7 @@ textarea.is-invalid {
   padding: 28px;
   border: 1px solid var(--bd);
   border-radius: 22px;
-  background: rgba(251, 250, 246, 0.88);
+  background: rgba(255, 255, 255, 0.88);
   box-shadow: 0 18px 40px rgba(7, 57, 60, 0.08);
   animation: lf-slideup 0.4s ease both;
 }
@@ -3244,7 +3250,7 @@ textarea.is-invalid {
   overflow: hidden;
   border: 1px solid rgba(111, 175, 107, 0.22);
   border-radius: 22px;
-  background: #FBFAF6;
+  background: #FFFFFF;
   box-shadow: 0 18px 48px rgba(30, 61, 43, 0.1);
 }
 
@@ -3266,7 +3272,7 @@ textarea.is-invalid {
   gap: 8px;
   border: 1px solid rgba(111, 175, 107, 0.18);
   border-radius: 11px;
-  background: #FBFAF6;
+  background: #FFFFFF;
   color: #1E3D2B;
   padding: 0 13px;
   font-size: 0.74rem;
@@ -3278,7 +3284,7 @@ textarea.is-invalid {
 .lots-editor-btn:hover:not(:disabled) {
   transform: translateY(-1px);
   border-color: rgba(111, 175, 107, 0.34);
-  background: #F1EEE6;
+  background: #EEF1F1;
   box-shadow: 0 8px 18px rgba(30, 61, 43, 0.08);
 }
 
@@ -3339,7 +3345,7 @@ textarea.is-invalid {
 .lots-editor-file span {
   color: #83867C;
   border: 1px solid rgba(111, 175, 107, 0.1);
-  background: #FBFAF6;
+  background: #FFFFFF;
   border-radius: 7px;
   padding: 3px 6px;
 }
@@ -3402,7 +3408,7 @@ textarea.is-invalid {
   overflow: hidden;
   background:
     radial-gradient(circle at 22% 18%, rgba(111, 175, 107, 0.15), transparent 30%),
-    linear-gradient(145deg, #f4f1ea 0%, #ede9df 52%, #e9e5db 100%);
+    linear-gradient(145deg, #F4F6F6 0%, #E9EDEC 52%, #e9e5db 100%);
 }
 
 .lots-map-pane::before {
@@ -3449,7 +3455,7 @@ textarea.is-invalid {
 
 .lots-map-empty-code {
   border: 1px solid rgba(111, 175, 107, 0.22);
-  background: #EDE9DF;
+  background: #E9EDEC;
   color: #355E3B;
 }
 
@@ -3478,7 +3484,7 @@ textarea.is-invalid {
 
 .lots-map-action {
   border: 1px solid rgba(111, 175, 107, 0.18);
-  background: #FBFAF6;
+  background: #FFFFFF;
   color: #1E3D2B;
   border-radius: 11px;
   padding: 8px 13px;
@@ -3500,14 +3506,14 @@ textarea.is-invalid {
   flex-shrink: 0;
   flex-direction: column;
   overflow: hidden;
-  background: #FBFAF6;
+  background: #FFFFFF;
 }
 
 .lots-builder-head {
   flex-shrink: 0;
   padding: 16px;
   border-bottom: 1px solid rgba(111, 175, 107, 0.1);
-  background: #F1EEE6;
+  background: #EEF1F1;
 }
 
 .lots-builder-title-row {
@@ -3555,7 +3561,7 @@ textarea.is-invalid {
   min-height: 36px;
   border: 1px solid rgba(111, 175, 107, 0.18);
   border-radius: 11px;
-  background: #FBFAF6;
+  background: #FFFFFF;
   color: #1E3D2B;
   outline: none;
   padding: 8px 11px;
@@ -3740,7 +3746,7 @@ textarea.is-invalid {
   border: 1px dashed rgba(53, 94, 59, 0.36);
   border-radius: 16px;
   background:
-    linear-gradient(135deg, rgba(111, 175, 107, 0.08), rgba(251, 250, 246, 0.96));
+    linear-gradient(135deg, rgba(111, 175, 107, 0.08), rgba(255, 255, 255, 0.96));
   padding: 20px;
   cursor: pointer;
   transition: border-color .38s cubic-bezier(.2,.8,.2,1), background .38s cubic-bezier(.2,.8,.2,1), box-shadow .38s cubic-bezier(.2,.8,.2,1), transform .38s cubic-bezier(.2,.8,.2,1);

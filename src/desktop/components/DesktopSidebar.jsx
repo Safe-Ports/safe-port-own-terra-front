@@ -10,7 +10,7 @@ function DesktopSidebar() {
     <aside className="hidden xl:flex xl:w-[288px] xl:flex-col xl:border-r xl:border-white/10 xl:bg-forest xl:px-5 xl:py-6">
       <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(28,57,42,0.98),rgba(18,16,13,0.98))] p-5 text-white shadow-[0_24px_60px_rgba(0,0,0,.3)]">
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#6FAF6B,#8B6A46)] text-lg font-black text-forest">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#6FAF6B,#355E3B)] text-lg font-black text-forest">
             O
           </div>
           <div>

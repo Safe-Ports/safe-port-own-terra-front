@@ -9,7 +9,7 @@ function buildPrintHTML(data) {
   const rows = data.clientPayments
     .map(
       (p) => `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:1px solid #E7E4DB;border-radius:14px;background:#fff;margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:1px solid #EBEFED;border-radius:14px;background:#fff;margin-bottom:8px">
       <div>
         <div style="font-size:13px;font-weight:600;color:#1E3D2B">Cuota ${p.installment_n}</div>
         <div style="font-size:11px;color:#83867C;margin-top:2px">${dateLabel(p.due_date)}</div>
@@ -27,7 +27,7 @@ function buildPrintHTML(data) {
       const paid = c.payments_summary?.paid ?? 0;
       const total = c.payments_summary?.total ?? 0;
       return `
-    <div style="padding:12px 14px;border:1px solid #E7E4DB;border-radius:14px;background:#fff;margin-bottom:8px">
+    <div style="padding:12px 14px;border:1px solid #EBEFED;border-radius:14px;background:#fff;margin-bottom:8px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
         <div>
           <div style="font-size:13px;font-weight:600;color:#1E3D2B">${c.contract_number}</div>
@@ -50,10 +50,10 @@ function buildPrintHTML(data) {
   h1 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
   .sub { font-size: 12px; color: #83867C; margin-bottom: 20px; }
   .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
-  .stat { background: #FBFAF6; border-radius: 14px; padding: 14px; }
+  .stat { background: #FFFFFF; border-radius: 14px; padding: 14px; }
   .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #83867C; }
   .stat-val { font-size: 16px; font-weight: 700; margin-top: 6px; }
-  .section { background: #FBFAF6; border: 1px solid #E7E4DB; border-radius: 18px; padding: 14px; margin-bottom: 16px; }
+  .section { background: #FFFFFF; border: 1px solid #EBEFED; border-radius: 18px; padding: 14px; margin-bottom: 16px; }
   .section-title { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
   @media print { body { padding: 20px; } }
 </style></head><body>
@@ -162,28 +162,28 @@ function ClientReportModal() {
     >
       <div className="space-y-4">
         <div className="grid gap-3 md:grid-cols-3">
-          <div className="rounded-[22px] bg-[#FBFAF6] p-4">
+          <div className="rounded-[22px] bg-[#FFFFFF] p-4">
             <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Inversión</div>
             <div className="mt-2 text-lg font-bold text-[#1E3D2B]">{currency(data.totalInvestment)}</div>
           </div>
-          <div className="rounded-[22px] bg-[#FBFAF6] p-4">
+          <div className="rounded-[22px] bg-[#FFFFFF] p-4">
             <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Pagado</div>
             <div className="mt-2 text-lg font-bold text-[#1E3D2B]">{currency(data.totalPaid)}</div>
           </div>
-          <div className="rounded-[22px] bg-[#FBFAF6] p-4">
+          <div className="rounded-[22px] bg-[#FFFFFF] p-4">
             <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Saldo</div>
             <div className="mt-2 text-lg font-bold text-[#C0392B]">{currency(data.balance)}</div>
           </div>
         </div>
 
-        <div className="rounded-[24px] border border-[#E7E4DB] bg-[#FBFAF6] p-4">
+        <div className="rounded-[24px] border border-[#EBEFED] bg-[#FFFFFF] p-4">
           <div className="text-sm font-semibold text-[#1E3D2B]">Contratos</div>
           <div className="mt-3 space-y-3">
             {data.clientContracts.map((contract) => {
               const paid = contract.payments_summary?.paid ?? 0;
               const total = contract.payments_summary?.total ?? 0;
               return (
-                <div key={contract.id} className="rounded-[20px] border border-[#E7E4DB] bg-white p-4">
+                <div key={contract.id} className="rounded-[20px] border border-[#EBEFED] bg-white p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <div className="text-sm font-semibold text-[#1E3D2B]">{contract.contract_number}</div>
@@ -202,11 +202,11 @@ function ClientReportModal() {
           </div>
         </div>
 
-        <div className="rounded-[24px] border border-[#E7E4DB] bg-[#FBFAF6] p-4">
+        <div className="rounded-[24px] border border-[#EBEFED] bg-[#FFFFFF] p-4">
           <div className="text-sm font-semibold text-[#1E3D2B]">Historial de pagos</div>
           <div className="mt-3 space-y-3">
             {data.clientPayments.map((payment) => (
-              <div key={payment.id} className="flex items-center justify-between rounded-[20px] border border-[#E7E4DB] bg-white p-4">
+              <div key={payment.id} className="flex items-center justify-between rounded-[20px] border border-[#EBEFED] bg-white p-4">
                 <div>
                   <div className="text-sm font-semibold text-[#1E3D2B]">Cuota {payment.installment_n}</div>
                   <div className="mt-1 text-xs text-[#83867C]">{dateLabel(payment.due_date)}</div>
