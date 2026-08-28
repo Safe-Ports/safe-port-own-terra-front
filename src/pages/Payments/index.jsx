@@ -491,7 +491,7 @@ function CobroModal({ clients, contracts, onClose, onSave }) {
 }
 
 /* ── Modal abono / cobro de cuota ────────────────────────────── */
-function AbonoModal({ payment, onClose, onConfirm, busy }) {
+function AbonoModal({ payment, siguientes = [], onClose, onConfirm, busy }) {
   useEscapeKey(onClose);
   const total   = Number(payment.amount || 0);
   const abonado = Number(payment.amount_paid || 0);
@@ -506,9 +506,33 @@ function AbonoModal({ payment, onClose, onConfirm, busy }) {
   const restante  = Math.max(saldo - (isNaN(val) ? 0 : val), 0);
   const esParcial = !invalid && val < saldo - 0.001;
 
+  // Si el monto pasa de esta cuota, se reparte hacia las siguientes del contrato.
+  // Arranca en la cuota abierta, no en la más vieja: si el vendedor entró por la 5,
+  // está cobrando la 5 en adelante.
+  const reparto = useMemo(() => {
+    if (invalid || val <= saldo + 0.001) return [];
+    const filas = [];
+    let resta = val;
+    const cola = [{ p: payment, pend: saldo }, ...siguientes.map(p => ({
+      p, pend: Math.max(Number(p.amount || 0) - Number(p.amount_paid || 0), 0),
+    }))];
+    for (let i = 0; i < cola.length && resta > 0.001; i++) {
+      const { p, pend } = cola[i];
+      if (pend <= 0) continue;
+      const esUltima = i === cola.length - 1;
+      const aplica = esUltima ? resta : Math.min(resta, pend);
+      filas.push({ id: p.id, n: p.installment_n, aplica, salda: aplica >= pend - 0.001 });
+      resta -= aplica;
+    }
+    return filas;
+  }, [invalid, val, saldo, payment, siguientes]);
+
+  const esMulti = reparto.length > 1;
+  const sobrante = esMulti ? 0 : Math.max(val - saldo, 0);
+
   const confirm = () => {
     if (invalid) { setErr("Ingresa un monto mayor a $0."); return; }
-    onConfirm(Number(val.toFixed(2)));
+    onConfirm(Number(val.toFixed(2)), esMulti ? reparto.map(f => f.id) : null);
   };
 
   return (
@@ -548,9 +572,31 @@ function AbonoModal({ payment, onClose, onConfirm, busy }) {
             <input className={`fi ${err ? "is-invalid" : ""}`} type="number" min="0" step="0.01"
               value={monto} onChange={e => { setMonto(e.target.value); setErr(""); }} autoFocus />
             <FieldError msg={err} />
-            {!err && !invalid && (
+            {!err && !invalid && !esMulti && (
               <div style={{ marginTop: 6, fontSize: ".76rem", fontWeight: 600, color: esParcial ? "#2f5fa8" : "#2F6A38" }}>
-                {esParcial ? `Abono parcial · quedará un saldo de ${currency(restante)}` : "Salda la cuota completa"}
+                {esParcial
+                  ? `Abono parcial · quedará un saldo de ${currency(restante)}`
+                  : sobrante > 0.001
+                    ? `Salda la cuota completa · ${currency(sobrante)} de más`
+                    : "Salda la cuota completa"}
+              </div>
+            )}
+            {!err && esMulti && (
+              <div style={{ marginTop: 10, border: "1px solid rgba(67,69,63,.12)", borderRadius: 10, overflow: "hidden" }}>
+                <div style={{ padding: "7px 11px", background: "var(--sf2)", fontSize: ".72rem", fontWeight: 700, letterSpacing: ".04em", color: "var(--mu)" }}>
+                  SE APLICARÁ A {reparto.length} CUOTAS
+                </div>
+                {reparto.map(f => (
+                  <div key={f.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 11px", fontSize: ".78rem", borderTop: "1px solid rgba(67,69,63,.07)" }}>
+                    <span>Cuota {f.n}</span>
+                    <span style={{ display: "flex", gap: 9, alignItems: "center" }}>
+                      <span style={{ fontWeight: 700 }}>{currency(f.aplica)}</span>
+                      <span style={{ fontSize: ".7rem", fontWeight: 700, color: f.salda ? "#2F6A38" : "#2f5fa8" }}>
+                        {f.salda ? "salda" : "parcial"}
+                      </span>
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -558,7 +604,7 @@ function AbonoModal({ payment, onClose, onConfirm, busy }) {
         <div className="modal-foot">
           <Button variant="secondary" style={{ flex: 1 }} onClick={onClose} disabled={busy}>Cancelar</Button>
           <Button variant="primary" style={{ flex: 2 }} onClick={confirm} disabled={busy}>
-            {busy ? "Registrando…" : esParcial ? "Registrar abono" : "Registrar cobro"}
+            {busy ? "Registrando…" : esMulti ? `Cobrar ${reparto.length} cuotas` : esParcial ? "Registrar abono" : "Registrar cobro"}
           </Button>
         </div>
       </div>
@@ -612,7 +658,7 @@ const ESTADO_EG  = [["all","Todos los estados"],["pending","Pendiente"],["overdu
 const ESTADO_AL  = [["all","Todas las alertas"],["roja","Urgentes"],["amarilla","Próximas"]];
 
 export default function PaymentsPage() {
-  const { payments, clients, contracts, quickPay, sendReminder, showToast, showError } = useAppContext();
+  const { payments, clients, contracts, quickPay, collectOnContract, sendReminder, showToast, showError } = useAppContext();
   const qc = useQueryClient();
   const navigate = useNavigate();
 
@@ -759,12 +805,29 @@ export default function PaymentsPage() {
 
   /* ── handlers ── */
   const handlePagar = r => isEg ? markPaidExpense.mutate(r.id) : setAbono(r);
-  const confirmAbono = async (amount) => {
+  const confirmAbono = async (amount, paymentIds) => {
     setAbonoBusy(true);
-    const ok = await quickPay(abono.id, amount);
+    // Un solo destino sigue por mark-paid; varias cuotas van por el cobro del
+    // contrato, que es quien sabe repartir y deja un único recibo.
+    const ok = paymentIds?.length
+      ? await collectOnContract(abono.contract?.id, { amount, paymentIds })
+      : await quickPay(abono.id, amount);
     setAbonoBusy(false);
     if (ok) setAbono(null);
   };
+
+  /* Cuotas del mismo contrato que siguen a la abierta: son las que puede alcanzar
+     un pago más grande, en orden de vencimiento. */
+  const siguientesDelContrato = useMemo(() => {
+    if (!abono?.contract?.id) return [];
+    return ingresos
+      .filter(p =>
+        p.contract?.id === abono.contract.id &&
+        p.id !== abono.id &&
+        ["pending", "overdue", "partial"].includes(p.status) &&
+        Number(p.installment_n) > Number(abono.installment_n))
+      .sort((a, b) => Number(a.installment_n) - Number(b.installment_n));
+  }, [abono, ingresos]);
   const handleSaveEgreso = form => {
     const body = { concepto: form.concepto, categoria: form.categoria, monto: Number(form.monto),
       due_date: form.due_date, recurrencia: form.recurrencia || null, notes: form.notes || null,
@@ -1013,7 +1076,7 @@ export default function PaymentsPage() {
       {modal === "tipo"   && <TipoModal onSelect={t => setModal(t)} onClose={() => setModal(null)} />}
       {modal === "egreso" && <EgresoModal initial={editing} onClose={() => { setModal(null); setEditing(null); }} onSave={handleSaveEgreso} />}
       {modal === "cobro"  && <CobroModal clients={clients} contracts={contracts} onClose={() => setModal(null)} onSave={() => setModal(null)} />}
-      {abono && <AbonoModal payment={abono} busy={abonoBusy} onClose={() => setAbono(null)} onConfirm={confirmAbono} />}
+      {abono && <AbonoModal payment={abono} siguientes={siguientesDelContrato} busy={abonoBusy} onClose={() => setAbono(null)} onConfirm={confirmAbono} />}
       <GuideModal
         open={showGuide}
         onClose={() => setShowGuide(false)}

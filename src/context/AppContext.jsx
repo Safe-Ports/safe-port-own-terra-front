@@ -638,6 +638,24 @@ export function AppProvider({ children }) {
     }
   };
 
+  const collectOnContract = async (contractId, { amount, paymentIds } = {}) => {
+    try {
+      const data = await paymentService.collect(contractId, {
+        amount,
+        paid_date: new Date().toISOString().split("T")[0],
+        payment_method: "transfer",
+        ...(paymentIds?.length ? { payment_ids: paymentIds } : {}),
+      });
+      await queryClient.invalidateQueries({ queryKey: ["payments"] });
+      await queryClient.invalidateQueries({ queryKey: ["contracts"] });
+      const n = data.installments?.length || 0;
+      showToast(n > 1 ? `Cobro registrado en ${n} cuotas` : "Pago registrado correctamente");
+      return data;
+    } catch (err) {
+      showError(err, "Error al registrar el cobro");
+    }
+  };
+
   const sendReminder = async (paymentOrName) => {
     const name = typeof paymentOrName === "string" ? paymentOrName : (paymentOrName?.client?.name || "cliente");
     if (!paymentOrName?.id) {
@@ -997,6 +1015,7 @@ export function AppProvider({ children }) {
     openContractCreate,
     resetContractDraft,
     quickPay,
+    collectOnContract,
     savePayment,
     exportAppData,
     sendReminder,
