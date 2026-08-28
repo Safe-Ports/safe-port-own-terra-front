@@ -482,6 +482,14 @@ export default function SupportWidget() {
   // de si hay algo nuevo.
   const [unreadTickets, setUnreadTickets] = useState([])
 
+  // Los dos asistentes comparten la esquina inferior. Si se abre Ownterra AI,
+  // cerramos soporte para que sus paneles nunca se tapen entre sí.
+  useEffect(() => {
+    const close = () => setIsOpen(false)
+    window.addEventListener('ownterra:ai-open', close)
+    return () => window.removeEventListener('ownterra:ai-open', close)
+  }, [])
+
   const botFetch = useCallback(async (path, options = {}) => {
     const isFormData = options.body instanceof FormData
     const res = await fetch(`${BOT_URL}${path}`, {
@@ -542,6 +550,7 @@ export default function SupportWidget() {
   function handleToggle() {
     setIsOpen(prevOpen => {
       const next = !prevOpen
+      if (next) window.dispatchEvent(new Event('ownterra:support-open'))
       if (next && unreadTickets.length > 0) {
         if (unreadTickets.length === 1) {
           const t = unreadTickets[0]
