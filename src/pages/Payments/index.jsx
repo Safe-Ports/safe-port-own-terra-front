@@ -6,8 +6,8 @@ import {
   HiOutlinePlus, HiOutlinePencil, HiOutlineTrash, HiOutlineCalendar,
   HiOutlineXMark, HiOutlineMagnifyingGlass, HiOutlineChevronDown,
   HiOutlineFunnel, HiOutlineEllipsisVertical,
-  HiArrowTrendingDown, HiBanknotes, HiCreditCard, HiMagnifyingGlass,
-  HiPhone, HiBars3, HiPlusCircle,
+  HiArrowTrendingDown, HiArrowTrendingUp, HiBanknotes, HiCreditCard, HiMagnifyingGlass,
+  HiPhone, HiBars3, HiPlusCircle, HiOutlineWallet, HiOutlineClock, HiOutlineChartBar,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
@@ -108,6 +108,139 @@ function getMonthlyData(ingresos, expenses) {
     if (m) m.egresos += Number(e.monto || 0);
   });
   return months;
+}
+
+/* ── Series de los KPIs ──────────────────────────────────────────
+   Cada tarjeta grafica su propio dato real. "Por cobrar" mira hacia adelante
+   (lo que vence en los próximos meses), así que no lleva variación: un
+   porcentaje sobre dinero que todavía no entró no significa nada. */
+function mesesAtras(n) {
+  const hoy = new Date();
+  return Array.from({ length: n }, (_, i) => {
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() - (n - 1 - i), 1);
+    return { key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`, v: 0 };
+  });
+}
+
+function mesesAdelante(n) {
+  const hoy = new Date();
+  return Array.from({ length: n }, (_, i) => {
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() + i, 1);
+    return { key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`, v: 0 };
+  });
+}
+
+function variacion(serie) {
+  if (serie.length < 2) return null;
+  const actual = serie[serie.length - 1];
+  const previo = serie[serie.length - 2];
+  if (!previo) return null;
+  if (previo === 0) return actual === 0 ? 0 : null;   // sin base, no hay porcentaje honesto
+  return ((actual - previo) / Math.abs(previo)) * 100;
+}
+
+function getKpiSeries(ingresos, expenses) {
+  const cobrado = mesesAtras(6);
+  const mora    = mesesAtras(6);
+  const egreso  = mesesAtras(6);
+  const porCobrar = mesesAdelante(6);
+
+  ingresos.forEach(p => {
+    const cobradoEn = (p.paid_date || "").slice(0, 7);
+    const venceEn   = (p.due_date || "").slice(0, 7);
+    const abonado   = Number(p.amount_paid || 0);
+    if (abonado > 0 && cobradoEn) {
+      const m = cobrado.find(x => x.key === cobradoEn);
+      if (m) m.v += abonado;
+    }
+    if (["pending", "overdue", "partial"].includes(p.status)) {
+      const resta = Math.max(Number(p.amount || 0) - abonado, 0);
+      const f = porCobrar.find(x => x.key === venceEn);
+      if (f) f.v += resta;
+      if (p.status === "overdue") {
+        const m = mora.find(x => x.key === venceEn);
+        if (m) m.v += resta;
+      }
+    }
+  });
+
+  expenses.filter(e => e.status === "paid").forEach(e => {
+    const k = (e.paid_date || e.due_date || "").slice(0, 7);
+    const m = egreso.find(x => x.key === k);
+    if (m) m.v += Number(e.monto || 0);
+  });
+
+  const vals = s => s.map(x => x.v);
+  return {
+    cobrado:   { serie: vals(cobrado),   delta: variacion(vals(cobrado)) },
+    porCobrar: { serie: vals(porCobrar), delta: null },
+    mora:      { serie: vals(mora),      delta: variacion(vals(mora)) },
+    egreso:    { serie: vals(egreso),    delta: variacion(vals(egreso)) },
+  };
+}
+
+/* Sparkline: área + línea de 2px + punto en el último dato, que es el que la
+   tarjeta está reportando arriba. */
+function Sparkline({ serie = [], color, id }) {
+  if (serie.length < 2) return null;
+  const W = 220, H = 46, P = 3;
+  const max = Math.max(...serie), min = Math.min(...serie);
+  const rango = max - min || 1;
+  const x = i => P + (i * (W - P * 2)) / (serie.length - 1);
+  const y = v => H - P - ((v - min) / rango) * (H - P * 2);
+  const linea = serie.map((v, i) => `${i ? "L" : "M"} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ");
+  const area  = `${linea} L ${x(serie.length - 1).toFixed(1)} ${H} L ${x(0).toFixed(1)} ${H} Z`;
+  const ultimo = serie.length - 1;
+  const plano = max === min;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="46" preserveAspectRatio="none"
+         role="img" aria-hidden="true" style={{ display: "block", marginTop: 12 }}>
+      <defs>
+        <linearGradient id={`sp-${id}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.20" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {!plano && <path d={area} fill={`url(#sp-${id})`} />}
+      <path d={linea} fill="none" stroke={color} strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+      <circle cx={x(ultimo)} cy={y(serie[ultimo])} r="4" fill={color} />
+    </svg>
+  );
+}
+
+/* Tarjeta de KPI: icono, variación contra el mes anterior, cifra y su serie.
+   `invertido` marca los indicadores donde subir es malo —mora y egresos—, para
+   que el color diga si la noticia es buena, no solo hacia dónde va la flecha. */
+function KpiCard({ tono, icono, icono2, label, valor, pie, delta, invertido, serie, color, id }) {
+  const hayDelta = delta !== null && delta !== undefined && isFinite(delta);
+  const sube  = hayDelta && delta > 0.05;
+  const baja  = hayDelta && delta < -0.05;
+  const bueno = invertido ? baja : sube;
+  const malo  = invertido ? sube : baja;
+  const clase = !hayDelta || (!sube && !baja) ? "flat" : bueno ? "up" : "down";
+
+  return (
+    <div className={`cf-kpi ${tono}`}>
+      <div className="top">
+        <span className="ico">{icono}</span>
+        {icono2 && <span className="ico2">{icono2}</span>}
+      </div>
+      <div className="head">
+        <span className="lbl">{label}</span>
+        {hayDelta && (
+          <span className={`delta ${clase}`}
+            title={`Contra el mes anterior${malo ? " — atención" : ""}`}>
+            {sube ? "▲" : baja ? "▼" : "—"} {Math.abs(delta).toFixed(1)}%
+          </span>
+        )}
+      </div>
+      <div className="val">{valor}</div>
+      <div className="foot">{pie}</div>
+      <Sparkline serie={serie} color={color} id={id} />
+    </div>
+  );
 }
 
 /* ── Gráfica SVG ─────────────────────────────────────────────── */
@@ -496,21 +629,36 @@ function AbonoModal({ payment, siguientes = [], onClose, onConfirm, busy }) {
   const total   = Number(payment.amount || 0);
   const abonado = Number(payment.amount_paid || 0);
   const saldo   = Math.max(total - abonado, 0);
+
+  // El tipo de cobro se elige, no se adivina por el monto. Antes el mismo campo
+  // significaba tres cosas distintas según lo que se escribiera, y quien cobraba
+  // no tenía forma de saber qué iba a pasar hasta después de confirmar.
+  const haySiguientes = siguientes.length > 0;
+  const [modo, setModo]   = useState("completa");
   const [monto, setMonto] = useState(saldo ? String(saldo) : "");
+  const [file, setFile]   = useState(null);
   const [err, setErr]     = useState("");
 
-  const val       = Number(monto);
-  // Sin tope mínimo/máximo: solo exigimos un monto positivo (permite abono parcial,
-  // saldar la cuota completa o incluso registrar de más).
-  const invalid   = monto === "" || isNaN(val) || val <= 0;
-  const restante  = Math.max(saldo - (isNaN(val) ? 0 : val), 0);
-  const esParcial = !invalid && val < saldo - 0.001;
+  const totalSiguientes = useMemo(
+    () => siguientes.reduce((s, p) => s + Math.max(Number(p.amount || 0) - Number(p.amount_paid || 0), 0), 0),
+    [siguientes],
+  );
 
-  // Si el monto pasa de esta cuota, se reparte hacia las siguientes del contrato.
-  // Arranca en la cuota abierta, no en la más vieja: si el vendedor entró por la 5,
-  // está cobrando la 5 en adelante.
+  const elegirModo = (siguiente) => {
+    setModo(siguiente);
+    setErr("");
+    if (siguiente === "completa") setMonto(String(saldo));
+    if (siguiente === "parcial")  setMonto("");
+    if (siguiente === "varias")   setMonto(String(saldo + totalSiguientes));
+  };
+
+  const val     = Number(monto);
+  const invalid = monto === "" || isNaN(val) || val <= 0;
+
+  // El reparto arranca en la cuota abierta, no en la más vieja: quien entró por la
+  // cuota 5 está cobrando de la 5 en adelante.
   const reparto = useMemo(() => {
-    if (invalid || val <= saldo + 0.001) return [];
+    if (invalid || modo !== "varias") return [];
     const filas = [];
     let resta = val;
     const cola = [{ p: payment, pend: saldo }, ...siguientes.map(p => ({
@@ -525,14 +673,26 @@ function AbonoModal({ payment, siguientes = [], onClose, onConfirm, busy }) {
       resta -= aplica;
     }
     return filas;
-  }, [invalid, val, saldo, payment, siguientes]);
+  }, [invalid, modo, val, saldo, payment, siguientes]);
 
-  const esMulti = reparto.length > 1;
-  const sobrante = esMulti ? 0 : Math.max(val - saldo, 0);
+  const restante = Math.max(saldo - (isNaN(val) ? 0 : val), 0);
+  const sobrante = Math.max((isNaN(val) ? 0 : val) - saldo, 0);
 
   const confirm = () => {
     if (invalid) { setErr("Ingresa un monto mayor a $0."); return; }
-    onConfirm(Number(val.toFixed(2)), esMulti ? reparto.map(f => f.id) : null);
+    if (modo === "parcial" && val >= saldo - 0.001) {
+      setErr(`Un abono parcial debe ser menor a ${currency(saldo)}. Elige "Saldar la cuota" si va completa.`);
+      return;
+    }
+    if (modo === "varias" && reparto.length < 2) {
+      setErr("El monto no alcanza para más de una cuota. Elige otra opción de pago.");
+      return;
+    }
+    onConfirm(
+      Number(val.toFixed(2)),
+      modo === "varias" ? reparto.map(f => f.id) : null,
+      file,
+    );
   };
 
   return (
@@ -567,21 +727,54 @@ function AbonoModal({ payment, siguientes = [], onClose, onConfirm, busy }) {
               </>
             )}
           </div>
+
           <div className="fg">
-            <label className="fl">Monto a cobrar ahora</label>
+            <label className="fl">¿Qué cobro vas a registrar?</label>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {[
+                { id: "completa", titulo: "Saldar la cuota", detalle: `Cobra los ${currency(saldo)} que restan de esta cuota.` },
+                { id: "parcial",  titulo: "Abono parcial",   detalle: "El cliente entrega menos; la cuota queda con saldo." },
+                ...(haySiguientes
+                  ? [{ id: "varias", titulo: "Pagar varias cuotas", detalle: `Reparte desde esta cuota en adelante. Hay ${siguientes.length} más por cobrar.` }]
+                  : []),
+              ].map(op => {
+                const activo = modo === op.id;
+                return (
+                  <label key={op.id}
+                    style={{
+                      display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer",
+                      border: `1.5px solid ${activo ? "var(--earth)" : "rgba(67,69,63,.14)"}`,
+                      background: activo ? "rgba(53,94,59,.06)" : "transparent",
+                      borderRadius: 11, padding: "10px 12px",
+                    }}>
+                    <input type="radio" name="modo-cobro" checked={activo}
+                      onChange={() => elegirModo(op.id)} style={{ marginTop: 3 }} />
+                    <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                      <span style={{ fontWeight: 700, fontSize: ".84rem" }}>{op.titulo}</span>
+                      <span style={{ fontSize: ".75rem", color: "var(--mu)", lineHeight: 1.4 }}>{op.detalle}</span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="fg">
+            <label className="fl">{modo === "varias" ? "Monto total recibido" : "Monto a cobrar ahora"}</label>
             <input className={`fi ${err ? "is-invalid" : ""}`} type="number" min="0" step="0.01"
               value={monto} onChange={e => { setMonto(e.target.value); setErr(""); }} autoFocus />
             <FieldError msg={err} />
-            {!err && !invalid && !esMulti && (
-              <div style={{ marginTop: 6, fontSize: ".76rem", fontWeight: 600, color: esParcial ? "#2f5fa8" : "#2F6A38" }}>
-                {esParcial
-                  ? `Abono parcial · quedará un saldo de ${currency(restante)}`
-                  : sobrante > 0.001
-                    ? `Salda la cuota completa · ${currency(sobrante)} de más`
-                    : "Salda la cuota completa"}
+            {!err && !invalid && modo === "completa" && (
+              <div style={{ marginTop: 6, fontSize: ".76rem", fontWeight: 600, color: "#2F6A38" }}>
+                {sobrante > 0.001 ? `Salda la cuota · ${currency(sobrante)} de más` : "Salda la cuota completa"}
               </div>
             )}
-            {!err && esMulti && (
+            {!err && !invalid && modo === "parcial" && val < saldo - 0.001 && (
+              <div style={{ marginTop: 6, fontSize: ".76rem", fontWeight: 600, color: "#2f5fa8" }}>
+                Quedará un saldo de {currency(restante)}
+              </div>
+            )}
+            {!err && modo === "varias" && reparto.length > 1 && (
               <div style={{ marginTop: 10, border: "1px solid rgba(67,69,63,.12)", borderRadius: 10, overflow: "hidden" }}>
                 <div style={{ padding: "7px 11px", background: "var(--sf2)", fontSize: ".72rem", fontWeight: 700, letterSpacing: ".04em", color: "var(--mu)" }}>
                   SE APLICARÁ A {reparto.length} CUOTAS
@@ -600,11 +793,22 @@ function AbonoModal({ payment, siguientes = [], onClose, onConfirm, busy }) {
               </div>
             )}
           </div>
+
+          <div className="fg">
+            <label className="fl">Comprobante (opcional)</label>
+            <input className="fi" type="file" accept="application/pdf,image/jpeg,image/png,image/webp"
+              onChange={e => setFile(e.target.files?.[0] || null)} />
+            <div style={{ marginTop: 6, fontSize: ".75rem", color: "var(--mu)" }}>
+              {file
+                ? `Se adjuntará ${file.name}`
+                : "Si no lo tienes a la mano, registra el cobro igual y súbelo después."}
+            </div>
+          </div>
         </div>
         <div className="modal-foot">
           <Button variant="secondary" style={{ flex: 1 }} onClick={onClose} disabled={busy}>Cancelar</Button>
           <Button variant="primary" style={{ flex: 2 }} onClick={confirm} disabled={busy}>
-            {busy ? "Registrando…" : esMulti ? `Cobrar ${reparto.length} cuotas` : esParcial ? "Registrar abono" : "Registrar cobro"}
+            {busy ? "Registrando…" : modo === "varias" ? `Cobrar ${reparto.length} cuotas` : modo === "parcial" ? "Registrar abono" : "Registrar cobro"}
           </Button>
         </div>
       </div>
@@ -805,13 +1009,13 @@ export default function PaymentsPage() {
 
   /* ── handlers ── */
   const handlePagar = r => isEg ? markPaidExpense.mutate(r.id) : setAbono(r);
-  const confirmAbono = async (amount, paymentIds) => {
+  const confirmAbono = async (amount, paymentIds, file) => {
     setAbonoBusy(true);
     // Un solo destino sigue por mark-paid; varias cuotas van por el cobro del
     // contrato, que es quien sabe repartir y deja un único recibo.
     const ok = paymentIds?.length
-      ? await collectOnContract(abono.contract?.id, { amount, paymentIds })
-      : await quickPay(abono.id, amount);
+      ? await collectOnContract(abono.contract?.id, { amount, paymentIds, file })
+      : await quickPay(abono.id, amount, file);
     setAbonoBusy(false);
     if (ok) setAbono(null);
   };
@@ -841,6 +1045,7 @@ export default function PaymentsPage() {
   const moraCount  = new Set(moraArr.map(p => p.client?.id).filter(Boolean)).size;
   const egresosMesAmt = expenses.filter(e => e.status === "paid").reduce((s, e) => s + Number(e.monto || 0), 0);
   const flujoNeto  = inCobradoAmt - egresosMesAmt;
+  const kpiSeries  = useMemo(() => getKpiSeries(ingresos, expenses), [ingresos, expenses]);
 
   /* ── Amortización por contrato (progreso "24/84") ── */
   const amortRows = useMemo(() => {
@@ -916,12 +1121,26 @@ export default function PaymentsPage() {
         .cf-btn-ghost{background:var(--sf);color:var(--danger);border-color:var(--bd)}
         .cf-btn-ghost:hover{border-color:var(--danger)}
         .cf-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
-        .cf-kpi{background:var(--sf);border:1px solid var(--bd);border-left:3px solid var(--bd);border-radius:18px;box-shadow:var(--sh);padding:16px 18px}
-        .cf-kpi.income{border-left-color:var(--leaf)}.cf-kpi.due{border-left-color:var(--mid)}.cf-kpi.mora{border-left-color:var(--danger)}.cf-kpi.exp{border-left-color:#C98A2B}
-        .cf-kpi .lbl{font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}
-        .cf-kpi .val{margin-top:8px;font-size:1.55rem;font-weight:800;color:var(--deep);line-height:1}
+        .cf-kpi{background:var(--sf);border:1px solid var(--bd);border-radius:18px;box-shadow:var(--sh);padding:16px 18px 6px;display:flex;flex-direction:column}
+        .cf-kpi .top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+        .cf-kpi .ico{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;font-size:1.15rem}
+        .cf-kpi .ico2{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-size:1rem;background:var(--sf2);color:var(--mu)}
+        .cf-kpi.income .ico{background:rgba(111,175,107,.16);color:var(--mid)}
+        .cf-kpi.due .ico{background:rgba(111,175,107,.16);color:var(--mid)}
+        .cf-kpi.mora .ico{background:rgba(192,57,43,.11);color:var(--danger)}
+        .cf-kpi.exp .ico{background:rgba(201,138,43,.15);color:#b0791f}
+        .cf-kpi .head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+        .cf-kpi .lbl{font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
+        .cf-kpi.income .lbl{color:var(--mid)}.cf-kpi.due .lbl{color:var(--mid)}
+        .cf-kpi.mora .lbl{color:var(--danger)}.cf-kpi.exp .lbl{color:#b0791f}
+        .cf-kpi .delta{display:inline-flex;align-items:center;gap:3px;font-size:.7rem;font-weight:700;
+          padding:3px 8px;border-radius:999px;white-space:nowrap;font-variant-numeric:tabular-nums}
+        .cf-kpi .delta.up{background:rgba(111,175,107,.16);color:#2F6A38}
+        .cf-kpi .delta.down{background:rgba(201,138,43,.16);color:#b0791f}
+        .cf-kpi .delta.flat{background:rgba(192,57,43,.10);color:var(--danger)}
+        .cf-kpi .val{margin-top:10px;font-size:2.05rem;font-weight:800;color:var(--deep);line-height:1.05;font-variant-numeric:tabular-nums}
         .cf-kpi.income .val{color:var(--mid)}.cf-kpi.mora .val{color:var(--danger)}.cf-kpi.exp .val{color:#b0791f}
-        .cf-kpi .foot{margin-top:6px;font-size:11.5px;color:var(--mu)}
+        .cf-kpi .foot{margin-top:7px;font-size:12px;color:var(--mu)}
         .cf-panel{background:var(--sf);border:1px solid var(--bd);border-radius:20px;box-shadow:var(--sh);overflow:hidden}
         .cf-tabs{display:flex;gap:2px;border-bottom:1px solid var(--line-soft);padding:0 8px}
         .cf-tab{padding:14px 18px;border:0;background:none;cursor:pointer;font-family:var(--font-body);font-size:13.5px;font-weight:600;color:var(--mu);border-bottom:2px solid transparent;margin-bottom:-1px}
@@ -978,10 +1197,18 @@ export default function PaymentsPage() {
       </div>
 
       <div className="cf-kpis" data-tour="pagos-kpis">
-        <div className="cf-kpi income"><div className="lbl">Ingresos del mes</div><div className="val">{currency(inCobradoAmt)}</div><div className="foot">{inCobrado.length} cobros aplicados</div></div>
-        <div className="cf-kpi due"><div className="lbl">Por cobrar</div><div className="val">{currency(inPendienteAmt)}</div><div className="foot">{inPendienteArr.length} cuotas pendientes</div></div>
-        <div className="cf-kpi mora"><div className="lbl">Pagos atrasados</div><div className="val">{currency(moraAmt)}</div><div className="foot">{moraCount} cliente{moraCount === 1 ? "" : "s"} en mora</div></div>
-        <div className="cf-kpi exp"><div className="lbl">Egresos operativos</div><div className="val">{currency(egresosMesAmt)}</div><div className="foot">flujo neto {currency(flujoNeto)}</div></div>
+        <KpiCard tono="income" icono={<HiArrowTrendingUp />} label="Ingresos del mes"
+          valor={currency(inCobradoAmt)} pie={`${inCobrado.length} cobros aplicados`}
+          delta={kpiSeries.cobrado.delta} serie={kpiSeries.cobrado.serie} color="#6FAF6B" id="ing" />
+        <KpiCard tono="due" icono={<HiOutlineWallet />} icono2={<HiOutlineClock />} label="Por cobrar"
+          valor={currency(inPendienteAmt)} pie={`${inPendienteArr.length} cuotas pendientes`}
+          serie={kpiSeries.porCobrar.serie} color="#6FAF6B" id="cob" />
+        <KpiCard tono="mora" icono={<HiOutlineClock />} label="Pagos atrasados"
+          valor={currency(moraAmt)} pie={`${moraCount} cliente${moraCount === 1 ? "" : "s"} en mora`}
+          delta={kpiSeries.mora.delta} invertido serie={kpiSeries.mora.serie} color="#C0392B" id="mora" />
+        <KpiCard tono="exp" icono={<HiOutlineChartBar />} label="Egresos operativos"
+          valor={currency(egresosMesAmt)} pie={`flujo neto ${currency(flujoNeto)}`}
+          delta={kpiSeries.egreso.delta} invertido serie={kpiSeries.egreso.serie} color="#C98A2B" id="egr" />
       </div>
 
       <div className="cf-panel">
