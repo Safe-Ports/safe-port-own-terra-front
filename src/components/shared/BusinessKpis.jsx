@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   HiOutlineBanknotes, HiOutlineShoppingBag, HiOutlineCube,
-  HiOutlineTag, HiOutlineSquare3Stack3D, HiOutlineUserGroup,
+  HiOutlineTag, HiOutlineSquare3Stack3D,
 } from "react-icons/hi2";
 import { dashboardService } from "@/services/dashboardService";
 
@@ -14,9 +14,9 @@ const money = (n) =>
   Number(n || 0).toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 1 });
 
 const ESTILOS = `
-  /* Seis columnas fijas: las tarjetas se comprimen antes que saltar de fila,
+  /* Columnas fijas: las tarjetas se comprimen antes que saltar de fila,
      porque partidas en dos renglones dejan de leerse como una sola lectura. */
-  .biz-kpis { display:grid; grid-template-columns:repeat(6,minmax(0,1fr));
+  .biz-kpis { display:grid; grid-template-columns:repeat(5,minmax(0,1fr));
     gap:10px; margin-bottom:18px; }
   .biz-kpi { display:flex; gap:9px; background:var(--sf); border:1px solid var(--bd);
     border-radius:13px; padding:10px 12px; box-shadow:var(--sh); min-width:0; }
@@ -40,7 +40,7 @@ const ESTILOS = `
   .biz-kpi-delta.flat { background:var(--sf2); color:var(--mu); }
   .biz-kpis-msg { color:var(--mu); font-size:.82rem; margin-bottom:18px; }
   /* En pantallas donde seis no entran legibles, recién ahí se parte. */
-  @media (max-width:1100px){ .biz-kpis { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+  @media (max-width:1000px){ .biz-kpis { grid-template-columns:repeat(3,minmax(0,1fr)); } }
   @media (max-width:620px){ .biz-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 `;
 
@@ -98,7 +98,7 @@ export default function BusinessKpis() {
   // Un cero es indistinguible de "no hay nada": si falló, se dice.
   if (isError || !data) return <><style>{ESTILOS}</style><div className="biz-kpis-msg">No se pudieron cargar las cifras.</div></>;
 
-  const t = { verde: "#6FAF6B", bosque: "#355E3B", ambar: "#C98A2B", azul: "#4B77BE", morado: "#8B72C4" };
+  const t = { verde: "#6FAF6B", bosque: "#355E3B", ambar: "#C98A2B", azul: "#4B77BE" };
 
   return (
     <>
@@ -119,9 +119,6 @@ export default function BusinessKpis() {
       <Card icono={<HiOutlineSquare3Stack3D />} tono={t.azul} label="Inventario total"
         valor={data.lots_total.value} detalle={data.lots_total.detail}
         delta={data.lots_total.delta} serie={data.lots_total.series} />
-      <Card icono={<HiOutlineUserGroup />} tono={t.morado} label="Contratos activos"
-        valor={data.contracts.value} detalle={data.contracts.detail}
-        delta={data.contracts.delta} serie={data.contracts.series} />
     </div>
     </>
   );
