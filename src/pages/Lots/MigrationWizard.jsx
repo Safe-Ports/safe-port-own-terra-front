@@ -185,7 +185,7 @@ function Asistente({ onSalir }) {
   const descargarPlantilla = async () => {
     const blob = paso.id === "clientes" ? await clientService.importTemplate()
       : paso.id === "contratos" ? await contractService.importTemplate()
-      : await lotService.importTemplate("csv");
+      : await lotService.importTemplateMigration();
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url; a.download = `${paso.id}.csv`;

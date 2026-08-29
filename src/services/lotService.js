@@ -14,6 +14,11 @@ export const lotService = {
   bulkCreate: (body) => api.post("/lots/bulk", body, { timeout: 120000 }).then((r) => r.data),
   importTemplate: (format = "xlsx") =>
     api.get("/lots/import-template", { params: { format }, responseType: "blob" }).then((r) => r.data),
+  // La variante de migración omite Estado y Vendedor Asignado: los decide el
+  // contrato de la fase 3.
+  importTemplateMigration: () =>
+    api.get("/lots/import-template", { params: { format: "csv", migration: true }, responseType: "blob" })
+       .then((r) => r.data),
   importCsv: (file, { fraccionamiento_id, mode = "tolerant", dry_run = false } = {}) => {
     const form = new FormData();
     form.append("file", file);
