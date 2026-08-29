@@ -43,6 +43,23 @@ describe("Asistente de migración: la revisión del archivo", () => {
     expect(screen.getByText(/Fila 7: Superficie vacía/)).toBeTruthy();
   });
 
+  it("cuenta las filas válidas del dry-run de lotes, que no vienen en imported", async () => {
+    // El importador de lotes devuelve imported=0 en dry-run porque no persistió
+    // nada; las filas buenas van en preview_lots. Sin normalizar eso, la revisión
+    // decía "0 nuevos" y no se podía avanzar.
+    importCsv.mockResolvedValue({
+      imported: 0, updated: 0, failed: 0, errors: [], warnings: [],
+      preview_lots: [{ row: 2, code: "L001" }, { row: 3, code: "L002" }],
+    });
+
+    const { container } = render(<MigrationWizard onSalir={() => {}} />);
+    await act(async () => elegirArchivo(container));
+    await act(async () => clickPorTexto(container, "Revisar archivo"));
+
+    await waitFor(() => expect(screen.getByText(/2 nuevos/)).toBeTruthy());
+    expect(container.textContent).toContain("Cargar 2 registros");
+  });
+
   /* Falta acá el caso de "el servidor rechaza el archivo". El componente lo
      maneja bien —se verificó mirando el DOM: muestra el mensaje del backend con
      su Ref— pero vitest reporta el rechazo como no manejado al cruzar el

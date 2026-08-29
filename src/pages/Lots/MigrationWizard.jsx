@@ -147,7 +147,16 @@ function Asistente({ onSalir }) {
 
   const correr = async (id, file, dryRun) => {
     if (id === "clientes") return clientService.importCsv(file, { dry_run: dryRun });
-    if (id === "lotes") return lotService.importCsv(file, { mode: "tolerant", dry_run: dryRun });
+    if (id === "lotes") {
+      const r = await lotService.importCsv(file, { mode: "tolerant", dry_run: dryRun });
+      // En dry-run el importador de lotes devuelve imported=0 —no persistió nada—
+      // y deja las filas válidas en preview_lots. Sin esto la revisión decía
+      // "0 nuevos" y el botón de cargar quedaba deshabilitado para siempre.
+      if (dryRun && Array.isArray(r.preview_lots)) {
+        return { ...r, imported: r.preview_lots.length };
+      }
+      return r;
+    }
     return correrContratos(file, dryRun);
   };
 
