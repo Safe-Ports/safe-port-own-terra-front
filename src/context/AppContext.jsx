@@ -322,8 +322,8 @@ export function AppProvider({ children }) {
     const onQuota = (e) => {
       const parsed = parseApiError({ response: { data: e.detail } });
       setToast({ kind: "error", ...parsed });
-      window.clearTimeout(showToast._timer);
-      showToast._timer = window.setTimeout(() => setToast(null), 9000);
+      window.clearTimeout(toastTimer.current);
+      toastTimer.current = window.setTimeout(() => setToast(null), 9000);
     };
     window.addEventListener("ownterra:quota-exceeded", onQuota);
     return () => window.removeEventListener("ownterra:quota-exceeded", onQuota);
