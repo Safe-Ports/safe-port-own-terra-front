@@ -12,6 +12,30 @@ const money = (n) =>
 const fecha = (d) =>
   d ? new Date(`${d}T12:00:00`).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
+/* Antes eran tres columnas de dinero —cobrado, devuelto, retenido— y en los
+   apartados dos quedaban siempre vacías, así que parecían lo mismo. Ahora el
+   monto va solo y el destino se cuenta en una frase. */
+function destino(f, hubo) {
+  if (!hubo) {
+    return <span style={{ fontSize: ".76rem", color: "var(--mu)" }}>No se cobró nada</span>;
+  }
+  if (!f.settled) {
+    return (
+      <span style={{ fontSize: ".76rem", fontWeight: 700, color: "#b0791f" }}>
+        Sin resolver — falta decidir si se devuelve o se retiene
+      </span>
+    );
+  }
+  const partes = [];
+  if (Number(f.refunded) > 0) partes.push(`${money(f.refunded)} devuelto al cliente`);
+  if (Number(f.retained) > 0) partes.push(`${money(f.retained)} retenido`);
+  return (
+    <span style={{ fontSize: ".76rem", color: "var(--tx2)" }}>
+      {partes.length ? partes.join(" · ") : "Liquidado"}
+    </span>
+  );
+}
+
 export default function ReleasesTable() {
   const { data, isPending, isError } = useQuery({
     queryKey: ["contracts", "releases"],
@@ -53,14 +77,13 @@ export default function ReleasesTable() {
                 <th>Cliente</th>
                 <th>Fecha</th>
                 <th style={{ textAlign: "right" }}>Cobrado</th>
-                <th style={{ textAlign: "right" }}>Devuelto</th>
-                <th style={{ textAlign: "right" }}>Retenido</th>
-                <th>Liquidación</th>
+                <th>Qué se hizo con ese dinero</th>
               </tr>
             </thead>
             <tbody>
               {filas.map((f, i) => {
                 const esContrato = f.kind === "contract";
+                const hubo = Number(f.collected) > 0;
                 return (
                   <tr key={`${f.kind}-${f.contract_id || i}-${f.date}`}>
                     <td>
@@ -77,25 +100,9 @@ export default function ReleasesTable() {
                     <td style={{ fontSize: ".82rem" }}>{f.client_name || "—"}</td>
                     <td style={{ fontSize: ".8rem", color: "var(--mu)", whiteSpace: "nowrap" }}>{fecha(f.date)}</td>
                     <td style={{ textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
-                      {esContrato ? money(f.collected) : "—"}
+                      {hubo ? money(f.collected) : "—"}
                     </td>
-                    <td style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-                      {esContrato ? money(f.refunded) : "—"}
-                    </td>
-                    <td style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-                      {esContrato ? money(f.retained) : "—"}
-                    </td>
-                    <td>
-                      {f.settled ? (
-                        <span style={{ fontSize: ".74rem", fontWeight: 700, color: "#2F6A38" }}>
-                          {esContrato ? "Liquidado" : "Sin dinero"}
-                        </span>
-                      ) : (
-                        <span style={{ fontSize: ".74rem", fontWeight: 700, color: "#b0791f" }}>
-                          Pendiente de liquidar
-                        </span>
-                      )}
-                    </td>
+                    <td>{destino(f, hubo)}</td>
                   </tr>
                 );
               })}
