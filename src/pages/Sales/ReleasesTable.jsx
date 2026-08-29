@@ -1,6 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { HiArrowUturnLeft, HiOutlineClock } from "react-icons/hi2";
 import { contractService } from "@/services/contractService";
+import FilePicker from "@/components/shared/FilePicker";
+import Button from "@/components/Button";
 
 /* Lotes que volvieron al inventario. Dos caminos con la misma consecuencia:
    cancelar un contrato —que arrastra dinero y hay que liquidar— o soltar un
@@ -12,31 +15,90 @@ const money = (n) =>
 const fecha = (d) =>
   d ? new Date(`${d}T12:00:00`).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
-/* Antes eran tres columnas de dinero —cobrado, devuelto, retenido— y en los
-   apartados dos quedaban siempre vacías, así que parecían lo mismo. Ahora el
-   monto va solo y el destino se cuenta en una frase. */
-function destino(f, hubo) {
-  if (!hubo) {
-    return <span style={{ fontSize: ".76rem", color: "var(--mu)" }}>No se cobró nada</span>;
-  }
-  if (!f.settled) {
-    return (
-      <span style={{ fontSize: ".76rem", fontWeight: 700, color: "#b0791f" }}>
-        Sin resolver — falta decidir si se devuelve o se retiene
-      </span>
-    );
-  }
-  const partes = [];
-  if (Number(f.refunded) > 0) partes.push(`${money(f.refunded)} devuelto al cliente`);
-  if (Number(f.retained) > 0) partes.push(`${money(f.retained)} retenido`);
+/* Solo se pide lo devuelto: lo retenido es la diferencia contra lo cobrado.
+   Pedir los dos invita a que no cuadren, y quien liquida sabe cuánto entregó. */
+function SettleModal({ fila, onClose, onDone }) {
+  const cobrado = Number(fila.collected || 0);
+  const [monto, setMonto] = useState(String(cobrado));
+  const [file, setFile] = useState(null);
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const val = Number(monto);
+  const invalido = monto === "" || isNaN(val) || val < 0;
+  const retenido = Math.max(cobrado - (invalido ? 0 : val), 0);
+
+  const guardar = async () => {
+    if (invalido) { setErr("Ingresa cuánto se devolvió (puede ser $0)."); return; }
+    if (val > cobrado + 0.001) { setErr(`No se puede devolver más de ${money(cobrado)}.`); return; }
+    setBusy(true);
+    try {
+      await contractService.settleRelease({
+        kind: fila.kind,
+        refId: fila.kind === "contract" ? fila.contract_id : fila.lot_id,
+        refunded: Number(val.toFixed(2)),
+        file,
+      });
+      onDone();
+    } catch {
+      setErr("No se pudo registrar la devolución.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
-    <span style={{ fontSize: ".76rem", color: "var(--tx2)" }}>
-      {partes.length ? partes.join(" · ") : "Liquidado"}
-    </span>
+    <div className="modal-overlay">
+      <div className="modal-box" style={{ maxWidth: 420 }}>
+        <div className="modal-hd">
+          <div style={{ flex: 1 }}>
+            <div className="modal-title" style={{ fontSize: "1.25rem" }}>Registrar devolución</div>
+            <div className="modal-sub">{fila.lot_label} · {fila.client_name || "sin cliente"}</div>
+          </div>
+        </div>
+        <div className="modal-body">
+          <div style={{ background: "var(--sf2)", borderRadius: 12, padding: "12px 14px",
+                        marginBottom: 14, display: "flex", justifyContent: "space-between", fontSize: ".84rem" }}>
+            <span style={{ color: "var(--mu)" }}>El cliente entregó</span>
+            <span style={{ fontWeight: 800 }}>{money(cobrado)}</span>
+          </div>
+
+          <div className="fg">
+            <label className="fl">¿Cuánto se le devolvió?</label>
+            <input className={`fi ${err ? "is-invalid" : ""}`} type="number" min="0" step="0.01"
+              value={monto} onChange={(e) => { setMonto(e.target.value); setErr(""); }} autoFocus />
+            {err && <div style={{ marginTop: 6, fontSize: ".76rem", color: "var(--danger)" }}>{err}</div>}
+            {!err && !invalido && (
+              <div style={{ marginTop: 6, fontSize: ".76rem", fontWeight: 600,
+                            color: retenido > 0 ? "#b0791f" : "#2F6A38" }}>
+                {retenido > 0
+                  ? `Se dan por retenidos ${money(retenido)}`
+                  : "Se devuelve todo, no queda nada retenido"}
+              </div>
+            )}
+          </div>
+
+          <div className="fg">
+            <label className="fl">Comprobante (opcional)</label>
+            <FilePicker value={file} onChange={setFile}
+              accept="application/pdf,image/jpeg,image/png,image/webp"
+              hint="PDF o imagen. Puedes registrarlo ahora y subir el papel después." />
+          </div>
+        </div>
+        <div className="modal-foot">
+          <Button variant="secondary" style={{ flex: 1 }} onClick={onClose} disabled={busy}>Cancelar</Button>
+          <Button variant="primary" style={{ flex: 2 }} onClick={guardar} disabled={busy}>
+            {busy ? "Guardando…" : "Registrar devolución"}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
 export default function ReleasesTable() {
+  const qc = useQueryClient();
+  const [liquidando, setLiquidando] = useState(null);
   const { data, isPending, isError } = useQuery({
     queryKey: ["contracts", "releases"],
     queryFn: () => contractService.releases(50),
@@ -49,6 +111,11 @@ export default function ReleasesTable() {
   const porLiquidar = filas.filter(f => !f.settled).length;
 
   return (
+    <>
+    {liquidando && (
+      <SettleModal fila={liquidando} onClose={() => setLiquidando(null)}
+        onDone={() => { setLiquidando(null); qc.invalidateQueries({ queryKey: ["contracts", "releases"] }); }} />
+    )}
     <div className="card" style={{ marginTop: 16 }}>
       <div className="card-hd">
         <div className="card-title">
@@ -77,7 +144,9 @@ export default function ReleasesTable() {
                 <th>Cliente</th>
                 <th>Fecha</th>
                 <th style={{ textAlign: "right" }}>Cobrado</th>
-                <th>Qué se hizo con ese dinero</th>
+                <th style={{ textAlign: "right" }}>Devuelto</th>
+                <th style={{ textAlign: "right" }}>Retenido</th>
+                <th>Liquidación</th>
               </tr>
             </thead>
             <tbody>
@@ -102,7 +171,31 @@ export default function ReleasesTable() {
                     <td style={{ textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
                       {hubo ? money(f.collected) : "—"}
                     </td>
-                    <td>{destino(f, hubo)}</td>
+                    <td style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", color: "#2f5fa8" }}>
+                      {hubo && f.settled ? money(f.refunded) : "—"}
+                    </td>
+                    <td style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", color: "#b0791f" }}>
+                      {hubo && f.settled ? money(f.retained) : "—"}
+                    </td>
+                    <td>
+                      {!hubo ? (
+                        <span style={{ fontSize: ".74rem", color: "var(--mu)" }}>Sin dinero</span>
+                      ) : f.settled ? (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: ".74rem", fontWeight: 700, color: "#2F6A38" }}>Liquidado</span>
+                          {f.receipt_url && (
+                            <a href={f.receipt_url} target="_blank" rel="noreferrer"
+                               style={{ fontSize: ".72rem", color: "var(--earth)" }}>comprobante</a>
+                          )}
+                        </span>
+                      ) : (
+                        <button className="btn-s" onClick={() => setLiquidando(f)}
+                          style={{ padding: "5px 11px", fontSize: ".74rem", fontWeight: 700,
+                                   color: "#b0791f", borderColor: "rgba(201,138,43,.4)" }}>
+                          Registrar devolución
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
@@ -111,5 +204,6 @@ export default function ReleasesTable() {
         )}
       </div>
     </div>
+    </>
   );
 }
