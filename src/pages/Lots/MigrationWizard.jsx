@@ -27,6 +27,7 @@ const PASOS = [
     titulo: "Lotes",
     resumen: "El inventario completo, de todos los fraccionamientos",
     columnas: "ID Lote · Fraccionamiento · Precios · Medidas · Servicios",
+    extra: "El vendedor va en el paso 3: quién cerró la venta es un dato del contrato, no del inventario.",
     nota: "Todos entran como disponibles. El estado real lo define el contrato en el paso 3, para que un lote vendido siempre tenga su contrato detrás.",
   },
   {
@@ -109,6 +110,7 @@ function Asistente({ onSalir }) {
     plazo:           ["Plazo", "meses", "plazo meses"],
     tasa:            ["Tasa anual", "tasa", "interes", "interés"],
     cuotas_pagadas:  ["Cuotas pagadas", "pagadas", "mensualidades pagadas"],
+    vendedor:        ["Vendedor", "asesor", "agente", "vendedor asignado"],
   };
 
   /* Los contratos van por tandas: cada una es una petición corta, el progreso es
@@ -256,6 +258,9 @@ function Asistente({ onSalir }) {
           </div>
 
           <p className="mt-3 text-[0.75rem] leading-relaxed text-[#83867C]">{paso.nota}</p>
+          {paso.extra && (
+            <p className="mt-1.5 text-[0.75rem] leading-relaxed text-[#83867C]">{paso.extra}</p>
+          )}
 
           {bloqueado ? (
             <div className="mt-5 rounded-[11px] border border-[#E2C08B] bg-[#FDF6E9] px-4 py-3 text-[0.78rem] text-[#8A6A2B]">
