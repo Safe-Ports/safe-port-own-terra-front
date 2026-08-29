@@ -263,6 +263,8 @@ function FracsPage() {
   const showApptForm = panelMode === "cita";
   const setApartarOpen = (v) => setPanelMode((m) => ((typeof v === "function" ? v(m === "apartar") : v) ? "apartar" : null));
   const [apartarUntil, setApartarUntil] = useState("");   // datetime-local
+  const [apartarMonto, setApartarMonto] = useState("");   // opcional: hay apartados de palabra
+  const [apartarFile, setApartarFile]   = useState(null); // comprobante, puede llegar después
   const [apartarBusy, setApartarBusy] = useState(false);
   const [apartarClient, setApartarClient] = useState(null); // {id, name, phone, email} | null
   const [ventaClient, setVentaClient] = useState(null);     // comprador elegido para el contrato
@@ -514,6 +516,17 @@ function FracsPage() {
   };
 
   // ── Apartado con expiración ──────────────────────────────────────────────
+  /* El comprobante no bloquea el apartado: si su subida falla, la reserva ya
+     quedó hecha y el papel se puede adjuntar después. */
+  const subirComprobante = async (lotId) => {
+    if (!apartarFile) return;
+    try {
+      await lotService.reservationReceipt(lotId, apartarFile);
+    } catch {
+      showToast("Lote apartado, pero no se pudo subir el comprobante", "warning");
+    }
+  };
+
   const reserveLot = async () => {
     if (!selectedLot || !apartarUntil || !apartarClient) return;
     setApartarBusy(true);
@@ -522,9 +535,12 @@ function FracsPage() {
         status: "reserved",
         reserved_until: new Date(apartarUntil).toISOString(),
         client_id: apartarClient.id,
+        // Opcional: se puede apartar de palabra y cargar el monto después.
+        ...(apartarMonto ? { reserved_amount: Number(apartarMonto) } : {}),
       });
+      await subirComprobante(selectedLot.id);
       await queryClient.invalidateQueries({ queryKey: ["lots"] });
-      setApartarOpen(false); setApartarUntil(""); setApartarClient(null);
+      setApartarOpen(false); setApartarUntil(""); setApartarClient(null); setApartarMonto(""); setApartarFile(null);
       showToast("Lote apartado");
     } catch (err) {
       showError(err, "No se pudo apartar el lote");
@@ -540,9 +556,11 @@ function FracsPage() {
       await lotService.update(selectedLot.id, {
         reserved_until: new Date(apartarUntil).toISOString(),
         ...(apartarClient?.id ? { client_id: apartarClient.id } : {}),
+        ...(apartarMonto ? { reserved_amount: Number(apartarMonto) } : {}),
       });
+      await subirComprobante(selectedLot.id);
       await queryClient.invalidateQueries({ queryKey: ["lots"] });
-      setApartarOpen(false); setApartarUntil(""); setApartarClient(null);
+      setApartarOpen(false); setApartarUntil(""); setApartarClient(null); setApartarMonto(""); setApartarFile(null);
       showToast("Vencimiento actualizado");
     } catch (err) {
       showError(err, "No se pudo extender el apartado");
@@ -844,6 +862,27 @@ function FracsPage() {
                           min={toLocalInput(new Date())}
                           onChange={(e) => setApartarUntil(e.target.value)}
                         />
+                        <label className="frac-appt-lbl">Monto del apartado (opcional)</label>
+                        <input
+                          type="number" min="0" step="0.01" placeholder="0.00"
+                          className="frac-apartar-input"
+                          value={apartarMonto}
+                          onChange={(e) => setApartarMonto(e.target.value)}
+                        />
+                        <div style={{ fontSize: ".72rem", color: "var(--mu)", marginTop: -4, lineHeight: 1.4 }}>
+                          Se propondrá como enganche al generar el contrato, así que baja el capital a financiar.
+                        </div>
+
+                        <label className="frac-appt-lbl">Comprobante (opcional)</label>
+                        <input
+                          type="file" className="frac-apartar-input"
+                          accept="application/pdf,image/jpeg,image/png,image/webp"
+                          onChange={(e) => setApartarFile(e.target.files?.[0] || null)}
+                        />
+                        <div style={{ fontSize: ".72rem", color: "var(--mu)", marginTop: -4, lineHeight: 1.4 }}>
+                          {apartarFile ? `Se adjuntará ${apartarFile.name}` : "Si no lo tienes ahora, apartas igual y lo subes después."}
+                        </div>
+
                         <Button
                           variant="primary"
                           onClick={selectedLot.status === "reserved" ? extendReservation : reserveLot}

@@ -1,6 +1,13 @@
 import api from "./api";
 
 export const lotService = {
+  // El comprobante del apartado va aparte: se aparta con el cliente enfrente y
+  // el papel casi nunca está en ese momento.
+  reservationReceipt: (lotId, file) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return api.post(`/lots/${lotId}/reservation-receipt`, fd).then(r => r.data);
+  },
   list: (params = {}) => api.get("/lots", { params }).then((r) => r.data),
   get: (id) => api.get(`/lots/${id}`).then((r) => r.data),
   create: (body) => api.post("/lots", body).then((r) => r.data),
