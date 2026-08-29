@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { HiArrowUturnLeft, HiOutlineClock } from "react-icons/hi2";
 import { contractService } from "@/services/contractService";
 import FilePicker from "@/components/shared/FilePicker";
+import { parseApiError } from "@/errors/parseApiError";
 import Button from "@/components/Button";
 
 /* Lotes que volvieron al inventario. Dos caminos con la misma consecuencia:
@@ -40,8 +41,11 @@ function SettleModal({ fila, onClose, onDone }) {
         file,
       });
       onDone();
-    } catch {
-      setErr("No se pudo registrar la devolución.");
+    } catch (e) {
+      // Mostrar el motivo real: un mensaje genérico deja a quien cobra sin saber
+      // si el problema es el monto, el permiso o la red.
+      const { message, action, requestId } = parseApiError(e, "No se pudo registrar la devolución.");
+      setErr([message, action, requestId && `Ref: ${requestId}`].filter(Boolean).join(" · "));
     } finally {
       setBusy(false);
     }
