@@ -60,6 +60,29 @@ describe("Asistente de migración: la revisión del archivo", () => {
     expect(container.textContent).toContain("Cargar 2 registros");
   });
 
+  it("deja ver las filas antes de cargarlas", async () => {
+    // Un contador dice cuántas; la tabla dice cuáles. Es donde se descubre que
+    // la columna de precios se corrió.
+    importCsv.mockResolvedValue({
+      imported: 0, updated: 0, failed: 0, errors: [], warnings: [],
+      preview_lots: [
+        { row: 2, code: "L001", price_contado: 250000, area_m2: 200 },
+        { row: 3, code: "L002", price_contado: 280000, area_m2: 300 },
+      ],
+    });
+
+    const { container } = render(<MigrationWizard onSalir={() => {}} />);
+    await act(async () => elegirArchivo(container));
+    await act(async () => clickPorTexto(container, "Revisar archivo"));
+    await waitFor(() => expect(screen.getByText(/2 nuevos/)).toBeTruthy());
+
+    // La tabla no aparece sola: primero hay que pedirla.
+    expect(container.textContent).not.toContain("L001");
+    await act(async () => clickPorTexto(container, "Ver las 2 filas"));
+    expect(container.textContent).toContain("L001");
+    expect(container.textContent).toContain("L002");
+  });
+
   /* Falta acá el caso de "el servidor rechaza el archivo". El componente lo
      maneja bien —se verificó mirando el DOM: muestra el mensaje del backend con
      su Ref— pero vitest reporta el rechazo como no manejado al cruzar el

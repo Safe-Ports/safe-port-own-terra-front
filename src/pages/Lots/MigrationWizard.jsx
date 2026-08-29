@@ -5,6 +5,7 @@ import {
 } from "react-icons/hi2";
 import ErrorBoundary from "@/components/shared/ErrorBoundary";
 import FilePicker from "@/components/shared/FilePicker";
+import PreviewTable from "./PreviewTable";
 import { clientService } from "@/services/clientService";
 import { lotService } from "@/services/lotService";
 import { contractService } from "@/services/contractService";
@@ -93,6 +94,8 @@ function Asistente({ onSalir }) {
   const [hechos, setHechos] = useState({});           // ya escrito en la base
   const [ocupado, setOcupado] = useState(false);
   const [progreso, setProgreso] = useState(null);   // {hechas, total} de la fase 3
+  const [verTabla, setVerTabla] = useState(false);
+  const [filasVistas, setFilasVistas] = useState([]);
   const [error, setError] = useState("");
 
   /* La revisión y la carga son la MISMA llamada con dry_run distinto: si lo que
@@ -120,6 +123,7 @@ function Asistente({ onSalir }) {
     const filas = await parseSheet(file, ALIAS_CONTRATOS);
     if (filas.length === 0) throw new Error("El archivo no tiene filas con datos");
 
+    setFilasVistas(filas);
     const tandas = enTandas(filas, 100);
     const total = { created: 0, skipped: 0, failed: 0, installments: 0,
                     opening_balance: 0, errors: [], imported: 0 };
@@ -286,7 +290,8 @@ function Asistente({ onSalir }) {
                 <FilePicker
                   value={archivo}
                   onChange={(f) => { setArchivos((p) => ({ ...p, [paso.id]: f }));
-                                     setRevisiones((p) => ({ ...p, [paso.id]: null })); setError(""); }}
+                                     setRevisiones((p) => ({ ...p, [paso.id]: null }));
+                                     setVerTabla(false); setError(""); }}
                   accept=".xlsx,.xls,.csv"
                   hint="Excel o CSV. Se revisa antes de guardar nada."
                 />
@@ -320,6 +325,22 @@ function Asistente({ onSalir }) {
                       )}
                     </ul>
                   )}
+                  {(() => {
+                    const filas = paso.id === "lotes" ? (revision.preview_lots || [])
+                      : paso.id === "clientes" ? (revision.preview || [])
+                      : filasVistas;
+                    if (filas.length === 0) return null;
+                    return (
+                      <>
+                        <button onClick={() => setVerTabla(!verTabla)}
+                          className="mt-2 text-[0.75rem] font-bold text-[#355E3B] underline">
+                          {verTabla ? "Ocultar detalle" : `Ver las ${filas.length} filas`}
+                        </button>
+                        {verTabla && <PreviewTable fase={paso.id} filas={filas} />}
+                      </>
+                    );
+                  })()}
+
                   {(revision.warnings || []).length > 0 && (
                     <ul className="mt-2 space-y-1 text-[0.74rem] text-[#8A6A2B]">
                       {revision.warnings.slice(0, 4).map((w, i) => <li key={i}>{comoTexto(w)}</li>)}
