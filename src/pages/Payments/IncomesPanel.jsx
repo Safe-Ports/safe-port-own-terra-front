@@ -13,7 +13,7 @@ const money = (n) =>
 const fecha = (d) =>
   d ? new Date(`${d}T12:00:00`).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
-export default function IncomesPanel({ onMarcarRecibido }) {
+export default function IncomesPanel({ busqueda = "", estado = "all", onMarcarRecibido }) {
   const manuales = useQuery({
     queryKey: ["incomes"],
     queryFn: () => incomeService.list({ limit: 200 }).then(r => r.items),
@@ -26,9 +26,15 @@ export default function IncomesPanel({ onMarcarRecibido }) {
   const filas = useMemo(() => {
     const a = (manuales.data || []).map(i => ({ ...i, origin: "manual" }));
     const b = cobranza.data || [];
-    return [...a, ...b].sort((x, y) =>
-      String(y.received_date || y.due_date).localeCompare(String(x.received_date || x.due_date)));
-  }, [manuales.data, cobranza.data]);
+    const q = busqueda.trim().toLocaleLowerCase("es-MX");
+    return [...a, ...b]
+      // Busca en el concepto, que es lo que distingue una fila de otra: en la
+      // cobranza de lotes el concepto trae el número de contrato.
+      .filter(f => !q || String(f.concepto || "").toLocaleLowerCase("es-MX").includes(q))
+      .filter(f => estado === "all" || f.status === estado)
+      .sort((x, y) =>
+        String(y.received_date || y.due_date).localeCompare(String(x.received_date || x.due_date)));
+  }, [manuales.data, cobranza.data, busqueda, estado]);
 
   if (manuales.isError || cobranza.isError) {
     return <div style={{ padding: "18px 20px", color: "var(--mu)", fontSize: ".85rem" }}>
@@ -40,7 +46,9 @@ export default function IncomesPanel({ onMarcarRecibido }) {
   }
   if (filas.length === 0) {
     return <div style={{ padding: "18px 20px", color: "var(--mu)", fontSize: ".85rem" }}>
-      Todavía no hay ingresos registrados este periodo.
+      {busqueda || estado !== "all"
+        ? "Sin ingresos para estos filtros."
+        : "Todavía no hay ingresos registrados este periodo."}
     </div>;
   }
 

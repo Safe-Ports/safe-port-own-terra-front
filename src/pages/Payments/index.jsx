@@ -1575,7 +1575,18 @@ export default function PaymentsPage() {
 
         {tab === "ingresos" && (
           <div className="card-body" style={{ padding: 0 }}>
-            <IncomesPanel onMarcarRecibido={marcarIngresoRecibido} />
+            <div className="cf-toolbar">
+              <label className="cf-search"><span><HiMagnifyingGlass /></span>
+                <input value={search} onChange={e => setSearch(e.target.value)}
+                  placeholder="Buscar por concepto…" /></label>
+              <select className="cf-field" value={estado} onChange={e => setEstado(e.target.value)}>
+                <option value="all">Todos los estados</option>
+                <option value="received">Recibidos</option>
+                <option value="pending">Por recibir</option>
+              </select>
+            </div>
+            <IncomesPanel busqueda={search} estado={estado}
+              onMarcarRecibido={marcarIngresoRecibido} />
           </div>
         )}
 
