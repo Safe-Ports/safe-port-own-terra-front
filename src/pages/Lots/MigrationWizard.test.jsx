@@ -198,7 +198,8 @@ describe("Asistente de migración: la revisión del archivo", () => {
 
     // Volver a entrar: el paso 1 sigue completo y no hay que repetir la carga.
     const segunda = render(<MigrationWizard onSalir={() => {}} />);
-    expect(segunda.container.textContent).toContain("Retomando una migración empezada");
+    expect(segunda.container.textContent).toContain("Retomando la migración de");
+    expect(segunda.container.textContent).toContain("Los Pinos");
     expect(segunda.container.textContent).toContain("1 de 3 pasos completados");
   });
 
@@ -248,4 +249,42 @@ describe("Asistente de migración: la revisión del archivo", () => {
      manejador de eventos de React, y el test falla aunque el comportamiento sea
      correcto. Preferí no dejar un test roto ni deformar el componente para
      satisfacer al arnés. */
+});
+
+describe("Asistente de migración: varios fraccionamientos", () => {
+  beforeEach(() => {
+    importCsv.mockReset();
+    window.localStorage.clear();
+  });
+
+  it("descarta un avance guardado sin fraccionamiento", () => {
+    // Viene de antes de que se eligiera uno: retomarlo dejaba la pantalla
+    // diciendo "3 de 3 pasos" y "elige el fraccionamiento" a la vez.
+    window.localStorage.setItem("ot_migracion", JSON.stringify({
+      "org-test": { pasoActivo: 2, hechos: { lotes: { imported: 3 } } },
+    }));
+
+    const { container } = render(<MigrationWizard onSalir={() => {}} />);
+    expect(container.textContent).not.toContain("Retomando la migración");
+    expect(container.textContent).toContain("Elige primero el fraccionamiento");
+  });
+
+  it("al terminar deja empezar con otro fraccionamiento", async () => {
+    window.localStorage.setItem("ot_migracion", JSON.stringify({
+      "org-test": {
+        pasoActivo: 2, fracId: "frac-1",
+        hechos: {
+          lotes: { imported: 3 }, clientes: { imported: 3 },
+          contratos: { imported: 3, installments: 156 },
+        },
+      },
+    }));
+
+    const { container } = render(<MigrationWizard onSalir={() => {}} />);
+    expect(container.textContent).toContain("Migración completa");
+
+    await act(async () => clickPorTexto(container, "Migrar otro fraccionamiento"));
+    expect(container.textContent).not.toContain("Migración completa");
+    expect(container.textContent).toContain("Elige primero el fraccionamiento");
+  });
 });

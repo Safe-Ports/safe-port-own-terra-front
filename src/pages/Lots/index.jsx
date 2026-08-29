@@ -1330,7 +1330,7 @@ function LotsPage() {
                 onClick={() => setMigrando(true)}
                 className="mt-4 shrink-0 rounded-[9px] border-2 border-[#355E3B] px-5 py-2.5 text-[0.8rem] font-bold text-[#355E3B] transition-colors hover:bg-[#355E3B] hover:text-white sm:mt-0"
               >
-                Migrar inmobiliaria
+                Migrar fraccionamiento
               </button>
             </div>
           </div>

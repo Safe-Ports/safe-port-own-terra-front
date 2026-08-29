@@ -106,7 +106,11 @@ function leerAvance(orgId) {
   if (!orgId) return null;
   try {
     const todo = JSON.parse(window.localStorage.getItem(CLAVE_AVANCE) || "{}");
-    return todo[orgId] || null;
+    const avance = todo[orgId] || null;
+    // Un avance sin fraccionamiento viene de antes de que se eligiera uno:
+    // retomarlo deja la pantalla diciendo "3 de 3 pasos completados" y "elige el
+    // fraccionamiento" al mismo tiempo.
+    return avance?.fracId ? avance : null;
   } catch {
     return null;
   }
@@ -137,6 +141,14 @@ function Asistente({ onSalir }) {
   const [fracNuevo, setFracNuevo] = useState("");
   const [creandoFrac, setCreandoFrac] = useState(false);
   const fracElegido = fracs.find((f) => String(f.id) === String(fracId)) || null;
+
+  /* Deja la pantalla lista para otro proyecto. Lo cargado no se toca: son datos
+     de un fraccionamiento distinto y no se pisan entre sí. */
+  const empezarOtra = () => {
+    guardarAvance(orgId, null);
+    setHechos({}); setRevisiones({}); setArchivos({});
+    setPasoActivo(0); setFracId(""); setVerTabla(false); setError("");
+  };
 
   const crearFrac = async () => {
     const nombre = fracNuevo.trim();
@@ -284,7 +296,7 @@ function Asistente({ onSalir }) {
   const revision = revisiones[paso.id] || null;
   const listo = Boolean(resultado);
   const sinFrac = !fracId;
-  const bloqueado = sinFrac || (pasoActivo > 0 && !hechos[PASOS[pasoActivo - 1].id]);
+  const bloqueado = !listo && (sinFrac || (pasoActivo > 0 && !hechos[PASOS[pasoActivo - 1].id]));
 
   return (
     <section className="rounded-[28px] border border-[#E2E7E5] bg-white/88 p-8 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
@@ -296,16 +308,16 @@ function Asistente({ onSalir }) {
       {Object.keys(hechos).length > 0 && (
         <div className="mx-auto mb-5 flex max-w-[720px] items-center justify-between gap-4 rounded-[12px] border border-[#BEE0C6] bg-[#EDF7EF] px-4 py-3">
           <span className="text-[0.78rem] leading-relaxed text-[#2F6A38]">
-            Retomando una migración empezada: {Object.keys(hechos).length} de {PASOS.length} pasos
-            completados. Lo ya cargado no se vuelve a subir.
+            Retomando la migración de <b>{fracElegido?.name || "un fraccionamiento"}</b>:{" "}
+            {Object.keys(hechos).length} de {PASOS.length} pasos completados. Lo ya cargado no
+            se vuelve a subir.
           </span>
           <button
             onClick={() => {
               if (!window.confirm(
                 "Se olvida el avance de esta pantalla. Lo ya cargado en la base NO se borra: " +
                 "al volver a subir los archivos se actualizarán en vez de duplicarse.")) return;
-              guardarAvance(orgId, null);
-              setHechos({}); setRevisiones({}); setArchivos({}); setPasoActivo(0);
+              empezarOtra();
             }}
             className="shrink-0 text-[0.75rem] font-bold text-[#4E7A55] underline"
           >
@@ -315,7 +327,7 @@ function Asistente({ onSalir }) {
       )}
 
       <div className="mx-auto max-w-[720px] text-center">
-        <h2 className="font-display text-[1.65rem] text-forest">Migrar inmobiliaria completa</h2>
+        <h2 className="font-display text-[1.65rem] text-forest">Migrar un fraccionamiento</h2>
         <p className="mx-auto mt-2 max-w-[480px] text-[0.84rem] leading-relaxed text-[#83867C]">
           Trae un fraccionamiento que ya opera: sus lotes, los clientes que compraron
           y sus contratos con la cobranza al día. Se hace una vez por fraccionamiento,
@@ -626,14 +638,24 @@ function Asistente({ onSalir }) {
             </p>
             {/* Terminar sin poder ver el resultado deja al usuario preguntándose
                 si de verdad quedó cargado. */}
-            {fracId && (
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+              {fracId && (
+                <button
+                  onClick={() => navigate(`/fraccionamientos?frac=${fracId}`)}
+                  className="rounded-[9px] bg-[#355E3B] px-5 py-2.5 text-[0.8rem] font-bold text-white"
+                >
+                  Ver los lotes de {fracElegido?.name || "el fraccionamiento"} →
+                </button>
+              )}
+              {/* Una inmobiliaria tiene varios proyectos: terminar uno no puede
+                  dejar el asistente encerrado en él. */}
               <button
-                onClick={() => navigate(`/fraccionamientos?frac=${fracId}`)}
-                className="mt-4 rounded-[9px] bg-[#355E3B] px-5 py-2.5 text-[0.8rem] font-bold text-white"
+                onClick={empezarOtra}
+                className="rounded-[9px] border border-[#355E3B] px-5 py-2.5 text-[0.8rem] font-bold text-[#355E3B]"
               >
-                Ver los lotes de {fracElegido?.name || "el fraccionamiento"} →
+                Migrar otro fraccionamiento
               </button>
-            )}
+            </div>
           </div>
         )}
       </div>
