@@ -11,11 +11,13 @@ import { localRef, errorClipboardText } from "@/errors/parseApiError";
 class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, requestId: null, copied: false };
+    this.state = { hasError: false, requestId: null, copied: false, error: null };
   }
 
-  static getDerivedStateFromError() {
-    return { hasError: true, requestId: localRef() };
+  static getDerivedStateFromError(error) {
+    // El error se guarda para poder mostrárselo a un fallback propio; la pantalla
+    // por defecto sigue sin exponerlo, que es lo correcto a nivel de app.
+    return { hasError: true, requestId: localRef(), error };
   }
 
   componentDidCatch(error, info) {
@@ -42,6 +44,12 @@ class ErrorBoundary extends Component {
 
   render() {
     if (!this.state.hasError) return this.props.children;
+
+    // Una sección puede traer su propia red, para no tapar la app entera cuando
+    // lo que falla es acotado —un archivo raro, un resultado inesperado—.
+    if (typeof this.props.fallback === "function") {
+      return this.props.fallback(this.state.error);
+    }
 
     const meta = getErrorMeta(UI_CODE);
     return (

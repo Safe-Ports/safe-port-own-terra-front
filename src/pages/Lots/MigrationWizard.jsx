@@ -3,6 +3,7 @@ import {
   HiOutlineArrowLeft, HiOutlineArrowDownTray, HiOutlineCheckCircle,
   HiOutlineMapPin, HiOutlineUserGroup, HiOutlineDocumentText,
 } from "react-icons/hi2";
+import ErrorBoundary from "@/components/shared/ErrorBoundary";
 import FilePicker from "@/components/shared/FilePicker";
 import { clientService } from "@/services/clientService";
 import { lotService } from "@/services/lotService";
@@ -46,7 +47,45 @@ const PASOS = [
   },
 ];
 
+/* Cada importador reporta a su manera: en lotes los avisos son objetos con fila
+   y mensaje, en clientes son texto suelto. La pantalla no tiene por qué saberlo,
+   y renderizar un objeto directo tumba React entero. */
+function comoTexto(item) {
+  if (item == null) return "";
+  if (typeof item === "string") return item;
+  const fila = item.row ? `Fila ${item.row}` : "";
+  const campo = item.field ? ` · ${item.field}` : "";
+  const mensaje = item.message || JSON.stringify(item);
+  return [fila + campo, mensaje].filter(Boolean).join(": ");
+}
+
 export default function MigrationWizard({ onSalir }) {
+  /* Red propia: si algo del asistente revienta al renderizar, se muestra acá
+     dentro con su motivo en vez de caer en el ErrorBoundary global, que tapa la
+     pantalla completa y solo dice "algo se rompió". */
+  return (
+    <ErrorBoundary
+      fallback={(err) => (
+        <section className="rounded-[28px] border border-[#E8C4B8] bg-[#FBECE9] p-8">
+          <div className="font-display text-[1.15rem] text-[#B4552F]">
+            No se pudo mostrar el resultado del archivo
+          </div>
+          <p className="mt-2 text-[0.82rem] leading-relaxed text-[#8A4A32]">
+            {String(err?.message || err)}
+          </p>
+          <button onClick={onSalir}
+            className="mt-4 rounded-[9px] border border-[#B4552F] px-4 py-2 text-[0.8rem] font-bold text-[#B4552F]">
+            Volver a Carga de Lotes
+          </button>
+        </section>
+      )}
+    >
+      <Asistente onSalir={onSalir} />
+    </ErrorBoundary>
+  );
+}
+
+function Asistente({ onSalir }) {
   const [pasoActivo, setPasoActivo] = useState(0);
   const [archivos, setArchivos] = useState({});
   const [revisiones, setRevisiones] = useState({});   // resultado del dry-run
@@ -260,7 +299,7 @@ export default function MigrationWizard({ onSalir }) {
                   {revision.failed > 0 && (
                     <ul className="mt-2 max-h-[150px] space-y-1 overflow-y-auto text-[0.74rem] text-[#B4552F]">
                       {(revision.errors || []).slice(0, 8).map((er, i) => (
-                        <li key={i}>Fila {er.row} · {er.field}: {er.message}</li>
+                        <li key={i}>{comoTexto(er)}</li>
                       ))}
                       {(revision.errors || []).length > 8 && (
                         <li className="text-[#83867C]">…y {revision.errors.length - 8} más</li>
@@ -269,7 +308,7 @@ export default function MigrationWizard({ onSalir }) {
                   )}
                   {(revision.warnings || []).length > 0 && (
                     <ul className="mt-2 space-y-1 text-[0.74rem] text-[#8A6A2B]">
-                      {revision.warnings.slice(0, 4).map((w, i) => <li key={i}>{w}</li>)}
+                      {revision.warnings.slice(0, 4).map((w, i) => <li key={i}>{comoTexto(w)}</li>)}
                     </ul>
                   )}
                 </div>
@@ -298,7 +337,7 @@ export default function MigrationWizard({ onSalir }) {
         </div>
 
         {!listo && !bloqueado && !revision && (
-          <button disabled={!archivo || ocupado} onClick={revisar}
+          <button disabled={!archivo || ocupado} onClick={() => { revisar(); }}
             className="mt-4 w-full rounded-[10px] border-2 border-[#355E3B] px-4 py-3 text-[0.85rem] font-bold text-[#355E3B] disabled:opacity-40">
             {ocupado ? "Revisando…" : "Revisar archivo"}
           </button>
@@ -306,7 +345,7 @@ export default function MigrationWizard({ onSalir }) {
 
         {!listo && !bloqueado && revision && (
           <button disabled={ocupado || revision.imported + (revision.updated || 0) === 0}
-            onClick={confirmar}
+            onClick={() => { confirmar(); }}
             className="mt-4 w-full rounded-[10px] bg-[#355E3B] px-4 py-3 text-[0.85rem] font-bold text-white disabled:opacity-40">
             {ocupado ? "Cargando…" : `Cargar ${revision.imported + (revision.updated || 0)} registros`}
           </button>
