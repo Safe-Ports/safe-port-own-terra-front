@@ -1,6 +1,13 @@
 import api from "./api";
 
 export const contractService = {
+  // Fase 3 de la migración: va por tandas, no por archivo entero. Con 1500
+  // contratos, una operación que se corta deja sin saber qué quedó guardado.
+  importBatch: (rows, { dry_run = false } = {}) =>
+    api.post("/contracts/import/batch", { rows, dry_run }, { timeout: 120000 })
+       .then(r => r.data),
+  importTemplate: () =>
+    api.get("/contracts/import/template", { responseType: "blob" }).then(r => r.data),
   // Lotes que volvieron al inventario: por contrato cancelado o apartado soltado.
   releases: (limit = 50) => api.get("/contracts/releases", { params: { limit } }).then(r => r.data),
   // Monto y comprobante juntos: quien liquida ya tiene el papel en la mano.

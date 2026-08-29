@@ -6,6 +6,8 @@ import {
 import FilePicker from "@/components/shared/FilePicker";
 import { clientService } from "@/services/clientService";
 import { lotService } from "@/services/lotService";
+import { contractService } from "@/services/contractService";
+import { enTandas, parseSheet } from "./parseSheet";
 
 /* Migración inicial de una inmobiliaria que ya opera: su inventario, su cartera
    de clientes y sus contratos con el dinero ya cobrado.
@@ -40,7 +42,7 @@ const PASOS = [
     titulo: "Contratos y pagos",
     resumen: "Las ventas y apartados, con lo ya cobrado",
     columnas: "Clave Cliente · ID Lote · Tipo · Fecha · Precio · Enganche · Plazo · Tasa · Cuotas pagadas",
-    nota: "Genera la amortización de cada contrato y registra lo ya cobrado como saldo inicial. Corre en segundo plano: son miles de cuotas. Todavía no está conectado.",
+    nota: "Genera la amortización de cada contrato y registra lo ya cobrado como saldo inicial. Corre en segundo plano: son miles de cuotas.",
   },
 ];
 
@@ -50,15 +52,64 @@ export default function MigrationWizard({ onSalir }) {
   const [revisiones, setRevisiones] = useState({});   // resultado del dry-run
   const [hechos, setHechos] = useState({});           // ya escrito en la base
   const [ocupado, setOcupado] = useState(false);
+  const [progreso, setProgreso] = useState(null);   // {hechas, total} de la fase 3
   const [error, setError] = useState("");
 
   /* La revisión y la carga son la MISMA llamada con dry_run distinto: si lo que
      se confirma no fuera exactamente lo que se revisó, el paso previo no serviría
      de nada. */
+  const ALIAS_CONTRATOS = {
+    numero_contrato: ["Numero de Contrato", "Número de Contrato", "contrato", "no. contrato"],
+    clave_cliente:   ["Clave Cliente", "clave", "id cliente"],
+    id_lote:         ["ID Lote", "lote", "id_lote"],
+    fraccionamiento: ["Fraccionamiento", "proyecto", "desarrollo"],
+    tipo:            ["Tipo", "operacion", "operación"],
+    fecha:           ["Fecha", "fecha contrato"],
+    precio:          ["Precio", "monto", "valor"],
+    enganche:        ["Enganche", "anticipo"],
+    plazo:           ["Plazo", "meses", "plazo meses"],
+    tasa:            ["Tasa anual", "tasa", "interes", "interés"],
+    cuotas_pagadas:  ["Cuotas pagadas", "pagadas", "mensualidades pagadas"],
+  };
+
+  /* Los contratos van por tandas: cada una es una petición corta, el progreso es
+     real, y si falla la tanda 7 se reintenta esa sola. Las otras dos fases caben
+     en una llamada porque no generan cuotas. */
+  const correrContratos = async (file, dryRun) => {
+    const filas = await parseSheet(file, ALIAS_CONTRATOS);
+    if (filas.length === 0) throw new Error("El archivo no tiene filas con datos");
+
+    const tandas = enTandas(filas, 100);
+    const total = { created: 0, skipped: 0, failed: 0, installments: 0,
+                    opening_balance: 0, errors: [], imported: 0 };
+    setProgreso({ hechas: 0, total: filas.length });
+
+    for (const [i, tanda] of tandas.entries()) {
+      const r = await contractService.importBatch(tanda, { dry_run: dryRun });
+      total.created += r.created;
+      total.skipped += r.skipped;
+      total.failed += r.failed;
+      total.installments += r.installments;
+      total.opening_balance += Number(r.opening_balance || 0);
+      for (const o of r.outcomes || []) {
+        if (o.status === "failed") {
+          total.errors.push({ row: o.row, field: o.contract_number, message: o.message });
+        }
+      }
+      setProgreso({ hechas: Math.min((i + 1) * 100, filas.length), total: filas.length });
+    }
+
+    setProgreso(null);
+    // Se normaliza a la misma forma que devuelven las otras dos fases.
+    total.imported = total.created;
+    total.updated = total.skipped;
+    return total;
+  };
+
   const correr = async (id, file, dryRun) => {
     if (id === "clientes") return clientService.importCsv(file, { dry_run: dryRun });
     if (id === "lotes") return lotService.importCsv(file, { mode: "tolerant", dry_run: dryRun });
-    throw new Error("La carga de contratos todavía no está conectada");
+    return correrContratos(file, dryRun);
   };
 
   const revisar = async () => {
@@ -82,8 +133,8 @@ export default function MigrationWizard({ onSalir }) {
   };
 
   const descargarPlantilla = async () => {
-    const blob = paso.id === "clientes"
-      ? await clientService.importTemplate()
+    const blob = paso.id === "clientes" ? await clientService.importTemplate()
+      : paso.id === "contratos" ? await contractService.importTemplate()
       : await lotService.importTemplate("csv");
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -195,9 +246,17 @@ export default function MigrationWizard({ onSalir }) {
                   </div>
                   <div className="mt-1 text-[0.86rem] font-bold text-forest">
                     {revision.imported} nuevos
-                    {revision.updated ? ` · ${revision.updated} actualizados` : ""}
+                    {revision.updated ? ` · ${revision.updated} ya estaban` : ""}
                     {revision.failed ? ` · ${revision.failed} con problemas` : ""}
                   </div>
+                  {paso.id === "contratos" && revision.installments > 0 && (
+                    <div className="mt-1 text-[0.76rem] text-[#4E7A55]">
+                      {revision.installments.toLocaleString("es-MX")} cuotas ·{" "}
+                      {Number(revision.opening_balance).toLocaleString("es-MX", {
+                        style: "currency", currency: "MXN", maximumFractionDigits: 0,
+                      })} de saldo ya cobrado
+                    </div>
+                  )}
                   {revision.failed > 0 && (
                     <ul className="mt-2 max-h-[150px] space-y-1 overflow-y-auto text-[0.74rem] text-[#B4552F]">
                       {(revision.errors || []).slice(0, 8).map((er, i) => (
@@ -213,6 +272,19 @@ export default function MigrationWizard({ onSalir }) {
                       {revision.warnings.slice(0, 4).map((w, i) => <li key={i}>{w}</li>)}
                     </ul>
                   )}
+                </div>
+              )}
+
+              {progreso && (
+                <div className="mt-4">
+                  <div className="flex items-center justify-between text-[0.75rem] text-[#83867C]">
+                    <span>Procesando por tandas…</span>
+                    <span className="tabular-nums">{progreso.hechas} de {progreso.total}</span>
+                  </div>
+                  <div className="mt-1.5 h-[6px] overflow-hidden rounded-full bg-[#EEF1F1]">
+                    <div className="h-full rounded-full bg-[#6FAF6B] transition-all"
+                         style={{ width: `${Math.round((progreso.hechas / progreso.total) * 100)}%` }} />
+                  </div>
                 </div>
               )}
 
@@ -251,14 +323,17 @@ export default function MigrationWizard({ onSalir }) {
           <div className="mt-4 rounded-[12px] border border-[#BEE0C6] bg-[#EDF7EF] p-5 text-center">
             <div className="font-display text-[1.05rem] text-forest">Migración completa</div>
             <p className="mt-1 text-[0.78rem] text-[#4E7A55]">
-              El inventario, la cartera y la cobranza quedaron cargados.
+              {hechos.lotes?.imported ?? 0} lotes · {hechos.clientes?.imported ?? 0} clientes ·{" "}
+              {hechos.contratos?.imported ?? 0} contratos con{" "}
+              {(hechos.contratos?.installments ?? 0).toLocaleString("es-MX")} cuotas.
             </p>
           </div>
         )}
       </div>
 
       <p className="mx-auto mt-8 max-w-[560px] text-center text-[0.72rem] leading-relaxed text-[#A0A39A]">
-        Lotes y clientes ya cargan de verdad. El paso de contratos todavía no está conectado.
+        Cada paso revisa el archivo antes de escribir. Los contratos se cargan por tandas de 100:
+        si una falla, se reintenta esa sola.
       </p>
     </section>
   );
