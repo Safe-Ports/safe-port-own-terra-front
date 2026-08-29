@@ -324,6 +324,14 @@ export const ERROR_CATALOG = {
     "name": "LOT_SOLD",
     "severity": "warning"
   },
+  "OT-LOT-3004": {
+    "action": "Cancela el contrato para liberarlo: ahí se define qué pasa con lo ya cobrado.",
+    "domain": "LOT",
+    "http_status": 409,
+    "message": "El lote tiene un contrato vigente.",
+    "name": "LOT_HAS_LIVE_CONTRACT",
+    "severity": "warning"
+  },
   "OT-LOT-3010": {
     "action": "Usa un código de lote distinto.",
     "domain": "LOT",
