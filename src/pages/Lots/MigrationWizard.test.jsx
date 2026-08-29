@@ -38,7 +38,7 @@ describe("Asistente de migración: la revisión del archivo", () => {
     await act(async () => elegirArchivo(container));
     await act(async () => clickPorTexto(container, "Revisar archivo"));
 
-    await waitFor(() => expect(screen.getByText(/2 nuevos/)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/2 filas van a entrar/)).toBeTruthy());
     expect(screen.getByText(/Fila 4 · Precio Contado: No es un número/)).toBeTruthy();
     expect(screen.getByText(/Fila 7: Superficie vacía/)).toBeTruthy();
   });
@@ -56,7 +56,7 @@ describe("Asistente de migración: la revisión del archivo", () => {
     await act(async () => elegirArchivo(container));
     await act(async () => clickPorTexto(container, "Revisar archivo"));
 
-    await waitFor(() => expect(screen.getByText(/2 nuevos/)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/2 filas van a entrar/)).toBeTruthy());
     expect(container.textContent).toContain("Cargar 2 registros");
   });
 
@@ -74,7 +74,7 @@ describe("Asistente de migración: la revisión del archivo", () => {
     const { container } = render(<MigrationWizard onSalir={() => {}} />);
     await act(async () => elegirArchivo(container));
     await act(async () => clickPorTexto(container, "Revisar archivo"));
-    await waitFor(() => expect(screen.getByText(/2 nuevos/)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/2 filas van a entrar/)).toBeTruthy());
 
     // La tabla no aparece sola: primero hay que pedirla.
     expect(container.textContent).not.toContain("L001");

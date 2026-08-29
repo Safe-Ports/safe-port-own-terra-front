@@ -276,10 +276,21 @@ function Asistente({ onSalir }) {
             </div>
           ) : listo ? (
             <div className="mt-5 rounded-[11px] border border-[#BEE0C6] bg-[#EDF7EF] px-4 py-3">
-              <div className="text-[0.82rem] font-bold text-[#2F6A38]">
-                {resultado.imported} cargados
-                {resultado.updated ? ` · ${resultado.updated} actualizados` : ""}
+              {/* Adelante el total, que es el número que se compara contra los
+                  de la inmobiliaria. Nuevos contra actualizados es un detalle de
+                  si es la primera vez que se sube el archivo o la tercera. */}
+              <div className="text-[0.9rem] font-bold text-[#2F6A38]">
+                {(resultado.imported + (resultado.updated || 0)).toLocaleString("es-MX")}{" "}
+                {paso.id === "lotes" ? "lotes" : paso.id === "clientes" ? "clientes" : "contratos"}{" "}
+                en el sistema
               </div>
+              {resultado.updated > 0 && (
+                <div className="mt-0.5 text-[0.73rem] text-[#4E7A55]">
+                  {resultado.imported > 0
+                    ? `${resultado.imported} nuevos · ${resultado.updated} ya estaban y se actualizaron`
+                    : "Ya estaban cargados de una subida anterior; se actualizaron con este archivo."}
+                </div>
+              )}
               {resultado.failed > 0 && (
                 <div className="mt-1 text-[0.78rem] font-bold text-[#B4552F]">
                   {resultado.failed} filas no entraron
@@ -291,7 +302,7 @@ function Asistente({ onSalir }) {
                 </ul>
               )}
               <div className="mt-1 text-[0.74rem] text-[#4E7A55]">
-                Compara este número con el de la inmobiliaria antes de seguir.
+                Compara este total con el de la inmobiliaria antes de seguir.
               </div>
             </div>
           ) : (
@@ -317,10 +328,18 @@ function Asistente({ onSalir }) {
                     Así quedaría
                   </div>
                   <div className="mt-1 text-[0.86rem] font-bold text-forest">
-                    {revision.imported} nuevos
-                    {revision.updated ? ` · ${revision.updated} ya estaban` : ""}
-                    {revision.failed ? ` · ${revision.failed} con problemas` : ""}
+                    {(revision.imported + (revision.updated || 0)).toLocaleString("es-MX")} filas
+                    van a entrar
                   </div>
+                  {(revision.updated > 0 || revision.failed > 0) && (
+                    <div className="mt-0.5 text-[0.74rem] text-[#83867C]">
+                      {[
+                        revision.imported ? `${revision.imported} nuevas` : null,
+                        revision.updated ? `${revision.updated} ya existían y se actualizan` : null,
+                        revision.failed ? `${revision.failed} con problemas` : null,
+                      ].filter(Boolean).join(" · ")}
+                    </div>
+                  )}
                   {paso.id === "contratos" && revision.installments > 0 && (
                     <div className="mt-1 text-[0.76rem] text-[#4E7A55]">
                       {revision.installments.toLocaleString("es-MX")} cuotas ·{" "}
