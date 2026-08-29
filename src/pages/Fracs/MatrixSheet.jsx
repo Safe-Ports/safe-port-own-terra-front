@@ -24,6 +24,28 @@ const SERVICE_KEYS = ["agua", "luz", "drenaje", "gas", "internet", "pavimento"];
 const STATUS_ES = { available: "disponible", reserved: "apartado", sold: "vendido" };
 const STATUS_CLS = { available: "ok", reserved: "wr", sold: "sd" };
 
+/**
+ * Quién tiene el lote. Son dos orígenes distintos y hasta ahora la matriz solo
+ * miraba uno: el vendedor que un administrador asigna, y —si nadie lo asignó—
+ * quien lo apartó, que en la práctica es quien lo está trabajando.
+ *
+ * `reserved_by_id` no se limpia al liberar el apartado, así que solo cuenta
+ * mientras el lote siga apartado: si no, un lote disponible mostraría a alguien
+ * que ya no tiene nada que ver con él.
+ */
+function quienLoTiene(lot) {
+  if (lot.seller_name) return lot.seller_name;
+  if (lot.status === "reserved" && lot.reserved_by_name) {
+    return (
+      <span style={{ display: "inline-flex", flexDirection: "column", lineHeight: 1.25 }}>
+        <span>{lot.reserved_by_name}</span>
+        <span style={{ fontSize: ".68rem", color: "var(--mu)" }}>lo apartó</span>
+      </span>
+    );
+  }
+  return <span className="mx-no">—</span>;
+}
+
 /** Importe con separador de miles; vacío si no hay dato. */
 function money(value) {
   if (value === null || value === undefined || value === "") return null;
@@ -125,7 +147,7 @@ export default function MatrixSheet({ lots, fracId, fracName, loading, showError
                         {lot.services?.[k] ? "Sí" : "No"}
                       </td>
                     ))}
-                    <td>{lot.seller_name || <span className="mx-no">—</span>}</td>
+                    <td>{quienLoTiene(lot)}</td>
                   </tr>
                 );
               })}
