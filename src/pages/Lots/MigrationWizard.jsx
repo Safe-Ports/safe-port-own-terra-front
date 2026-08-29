@@ -10,7 +10,9 @@ import { clientService } from "@/services/clientService";
 import { lotService } from "@/services/lotService";
 import { contractService } from "@/services/contractService";
 import { enTandas, parseSheet } from "./parseSheet";
+import { useNavigate } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
+import { inmuebleService } from "@/services/inmuebleService";
 
 /* Migración inicial de una inmobiliaria que ya opera: su inventario, su cartera
    de clientes y sus contratos con el dinero ya cobrado.
@@ -27,8 +29,8 @@ const PASOS = [
     id: "lotes",
     icono: <HiOutlineMapPin />,
     titulo: "Lotes",
-    resumen: "El inventario completo, de todos los fraccionamientos",
-    columnas: "ID Lote · Fraccionamiento · Precios · Medidas · Servicios",
+    resumen: "Los lotes del fraccionamiento elegido",
+    columnas: "ID Lote · Precios · Medidas · Servicios",
     extra: "El vendedor va en el paso 3: quién cerró la venta es un dato del contrato, no del inventario.",
     nota: "Todos entran como disponibles. El estado real lo define el contrato en el paso 3, para que un lote vendido siempre tenga su contrato detrás.",
   },
@@ -125,7 +127,32 @@ function guardarAvance(orgId, avance) {
 function Asistente({ onSalir }) {
   const { currentUser } = useAppContext();
   const orgId = currentUser?.organization?.id || null;
+  /* La migración es de UN fraccionamiento: sus lotes, y los contratos de esos
+     lotes. Sin elegirlo, el importador no sabe dónde poner nada y los lotes
+     quedarían repartidos por nombre, que es frágil. */
+  const navigate = useNavigate();
+  const { fracs = [], showToast } = useAppContext();
   const guardado = leerAvance(orgId);
+  const [fracId, setFracId] = useState(guardado?.fracId ?? "");
+  const [fracNuevo, setFracNuevo] = useState("");
+  const [creandoFrac, setCreandoFrac] = useState(false);
+  const fracElegido = fracs.find((f) => String(f.id) === String(fracId)) || null;
+
+  const crearFrac = async () => {
+    const nombre = fracNuevo.trim();
+    if (!nombre) return;
+    setCreandoFrac(true);
+    try {
+      const creado = await inmuebleService.create({ name: nombre });
+      setFracId(creado.id);
+      setFracNuevo("");
+      showToast?.(`Fraccionamiento "${nombre}" creado`);
+    } catch {
+      showToast?.("No se pudo crear el fraccionamiento", "warning");
+    } finally {
+      setCreandoFrac(false);
+    }
+  };
   const [pasoActivo, setPasoActivo] = useState(guardado?.pasoActivo ?? 0);
   const [archivos, setArchivos] = useState({});
   const [revisiones, setRevisiones] = useState({});   // resultado del dry-run
@@ -138,8 +165,8 @@ function Asistente({ onSalir }) {
   // Solo se persiste lo que ya se escribió en la base; los archivos elegidos no,
   // porque el navegador no puede volver a abrirlos por su cuenta.
   useEffect(() => {
-    if (Object.keys(hechos).length > 0) guardarAvance(orgId, { pasoActivo, hechos });
-  }, [orgId, pasoActivo, hechos]);
+    if (Object.keys(hechos).length > 0) guardarAvance(orgId, { pasoActivo, hechos, fracId });
+  }, [orgId, pasoActivo, hechos, fracId]);
   const [error, setError] = useState("");
 
   /* La revisión y la carga son la MISMA llamada con dry_run distinto: si lo que
@@ -164,7 +191,12 @@ function Asistente({ onSalir }) {
      real, y si falla la tanda 7 se reintenta esa sola. Las otras dos fases caben
      en una llamada porque no generan cuotas. */
   const correrContratos = async (file, dryRun) => {
-    const filas = await parseSheet(file, ALIAS_CONTRATOS);
+    const filas = (await parseSheet(file, ALIAS_CONTRATOS)).map((f) => ({
+      // El fraccionamiento se asume: la migración es de uno solo, así que no hace
+      // falta repetirlo en cada una de las 1500 filas.
+      ...f,
+      fraccionamiento: f.fraccionamiento || fracElegido?.name || "",
+    }));
     if (filas.length === 0) throw new Error("El archivo no tiene filas con datos");
 
     setFilasVistas(filas);
@@ -201,6 +233,7 @@ function Asistente({ onSalir }) {
       // update_existing: en una migración se reintenta el archivo, y rechazar por
       // código duplicado convertiría un reintento en 1500 errores.
       const r = await lotService.importCsv(file, {
+        fraccionamiento_id: fracId || undefined,
         mode: "tolerant", dry_run: dryRun, update_existing: true,
       });
       // En dry-run el importador de lotes devuelve imported=0 —no persistió nada—
@@ -250,7 +283,8 @@ function Asistente({ onSalir }) {
   const resultado = hechos[paso.id] || null;
   const revision = revisiones[paso.id] || null;
   const listo = Boolean(resultado);
-  const bloqueado = pasoActivo > 0 && !hechos[PASOS[pasoActivo - 1].id];
+  const sinFrac = !fracId;
+  const bloqueado = sinFrac || (pasoActivo > 0 && !hechos[PASOS[pasoActivo - 1].id]);
 
   return (
     <section className="rounded-[28px] border border-[#E2E7E5] bg-white/88 p-8 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
@@ -283,9 +317,55 @@ function Asistente({ onSalir }) {
       <div className="mx-auto max-w-[720px] text-center">
         <h2 className="font-display text-[1.65rem] text-forest">Migrar inmobiliaria completa</h2>
         <p className="mx-auto mt-2 max-w-[480px] text-[0.84rem] leading-relaxed text-[#83867C]">
-          Para traer una operación que ya existe: inventario, cartera y contratos con su cobranza.
-          Se hace una sola vez y en este orden.
+          Trae un fraccionamiento que ya opera: sus lotes, los clientes que compraron
+          y sus contratos con la cobranza al día. Se hace una vez por fraccionamiento,
+          y en este orden.
         </p>
+      </div>
+
+      {/* El fraccionamiento primero: todo lo demás cuelga de él. */}
+      <div className="mx-auto mt-7 max-w-[560px] rounded-[14px] border border-[#E2E7E5] bg-white p-5">
+        <div className="text-[0.66rem] font-bold uppercase tracking-[0.09em] text-[#83867C]">
+          ¿De qué fraccionamiento?
+        </div>
+        {Object.keys(hechos).length > 0 ? (
+          <div className="mt-2 text-[0.88rem] font-bold text-forest">
+            {fracElegido?.name || "—"}
+            <span className="ml-2 text-[0.72rem] font-normal text-[#83867C]">
+              (no se puede cambiar con la migración empezada)
+            </span>
+          </div>
+        ) : (
+          <>
+            <select
+              value={fracId}
+              onChange={(e) => setFracId(e.target.value)}
+              className="mt-2 w-full rounded-[10px] border border-[#D8DEDB] bg-white px-3 py-2.5 text-[0.85rem]"
+            >
+              <option value="">— Elegir fraccionamiento —</option>
+              {fracs.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+            </select>
+            <div className="mt-3 flex items-end gap-2">
+              <div className="flex-1">
+                <div className="text-[0.72rem] text-[#83867C]">¿No está en la lista? Créalo</div>
+                <input
+                  value={fracNuevo}
+                  onChange={(e) => setFracNuevo(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && crearFrac()}
+                  placeholder="Nombre del fraccionamiento"
+                  className="mt-1 w-full rounded-[10px] border border-[#D8DEDB] px-3 py-2 text-[0.82rem]"
+                />
+              </div>
+              <button
+                onClick={crearFrac}
+                disabled={!fracNuevo.trim() || creandoFrac}
+                className="rounded-[9px] border border-[#355E3B] px-4 py-2 text-[0.78rem] font-bold text-[#355E3B] disabled:opacity-40"
+              >
+                {creandoFrac ? "Creando…" : "Crear"}
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Barra de pasos */}
@@ -337,7 +417,9 @@ function Asistente({ onSalir }) {
 
           {bloqueado ? (
             <div className="mt-5 rounded-[11px] border border-[#E2C08B] bg-[#FDF6E9] px-4 py-3 text-[0.78rem] text-[#8A6A2B]">
-              Termina el paso anterior primero: este archivo se apoya en esos datos.
+              {sinFrac
+                ? "Elige primero el fraccionamiento: los lotes tienen que entrar a alguno."
+                : "Termina el paso anterior primero: este archivo se apoya en esos datos."}
             </div>
           ) : listo ? (
             <div className="mt-5 rounded-[11px] border border-[#BEE0C6] bg-[#EDF7EF] px-4 py-3">
@@ -542,6 +624,16 @@ function Asistente({ onSalir }) {
                 ? `, con ${hechos.contratos.installments.toLocaleString("es-MX")} cuotas`
                 : ""}.
             </p>
+            {/* Terminar sin poder ver el resultado deja al usuario preguntándose
+                si de verdad quedó cargado. */}
+            {fracId && (
+              <button
+                onClick={() => navigate(`/fraccionamientos?frac=${fracId}`)}
+                className="mt-4 rounded-[9px] bg-[#355E3B] px-5 py-2.5 text-[0.8rem] font-bold text-white"
+              >
+                Ver los lotes de {fracElegido?.name || "el fraccionamiento"} →
+              </button>
+            )}
           </div>
         )}
       </div>

@@ -1322,8 +1322,8 @@ function LotsPage() {
               <div className="flex-1">
                 <div className="font-display text-[1rem] text-forest">¿Vienes de otro sistema?</div>
                 <p className="mt-1 text-[0.78rem] leading-relaxed text-[#83867C]">
-                  Migra el inventario completo, la cartera de clientes y los contratos con su
-                  cobranza. Se hace una sola vez, en tres pasos.
+                  Trae un fraccionamiento que ya opera: sus lotes, los clientes que compraron
+                  y sus contratos con la cobranza al día. Tres pasos, una vez por proyecto.
                 </p>
               </div>
               <button

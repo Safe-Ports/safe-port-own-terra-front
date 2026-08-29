@@ -227,7 +227,9 @@ function FracsPage() {
   // Qué proyecto está ABIERTO en esta vista (galería vs. detalle). Es local a la
   // página: el `selectedFracId` global se auto-reselecciona en el contexto (lo usan
   // los contratos), así que no sirve para "sin selección". null = galería.
-  const [openFracId, setOpenFracId] = useState(null);
+  const [openFracId, setOpenFracId] = useState(
+    () => new URLSearchParams(window.location.search).get("frac") || null,
+  );
 
   const openFrac = (id) => { setOpenFracId(id); setSelectedFracId(id); };
 

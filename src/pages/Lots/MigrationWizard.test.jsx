@@ -7,10 +7,24 @@ vi.mock("@/services/lotService", () => ({ lotService: { importCsv: (...a) => imp
 vi.mock("@/services/clientService", () => ({ clientService: {} }));
 vi.mock("@/services/contractService", () => ({ contractService: {} }));
 vi.mock("@/context/AppContext", () => ({
-  useAppContext: () => ({ currentUser: { organization: { id: "org-test" } } }),
+  useAppContext: () => ({
+    currentUser: { organization: { id: "org-test" } },
+    fracs: [{ id: "frac-1", name: "Los Pinos" }],
+    showToast: () => {},
+  }),
 }));
+vi.mock("react-router-dom", () => ({ useNavigate: () => () => {} }));
+vi.mock("@/services/inmuebleService", () => ({ inmuebleService: { create: vi.fn() } }));
 
 import MigrationWizard from "./MigrationWizard";
+
+/* La migración es de un fraccionamiento: sin elegirlo, los pasos están
+   bloqueados. */
+function elegirFraccionamiento(container, id = "frac-1") {
+  const select = container.querySelector("select");
+  select.value = id;
+  select.dispatchEvent(new Event("change", { bubbles: true }));
+}
 
 function elegirArchivo(container) {
   const input = container.querySelector('input[type="file"]');
@@ -43,6 +57,7 @@ describe("Asistente de migración: la revisión del archivo", () => {
     });
 
     const { container } = render(<MigrationWizard onSalir={() => {}} />);
+    await act(async () => elegirFraccionamiento(container));
     await act(async () => elegirArchivo(container));
     await act(async () => clickPorTexto(container, "Revisar archivo"));
 
@@ -61,6 +76,7 @@ describe("Asistente de migración: la revisión del archivo", () => {
     });
 
     const { container } = render(<MigrationWizard onSalir={() => {}} />);
+    await act(async () => elegirFraccionamiento(container));
     await act(async () => elegirArchivo(container));
     await act(async () => clickPorTexto(container, "Revisar archivo"));
 
@@ -80,6 +96,7 @@ describe("Asistente de migración: la revisión del archivo", () => {
     });
 
     const { container } = render(<MigrationWizard onSalir={() => {}} />);
+    await act(async () => elegirFraccionamiento(container));
     await act(async () => elegirArchivo(container));
     await act(async () => clickPorTexto(container, "Revisar archivo"));
     await waitFor(() => expect(screen.getByText(/2 filas van a entrar/)).toBeTruthy());
@@ -101,6 +118,7 @@ describe("Asistente de migración: la revisión del archivo", () => {
     });
 
     const { container } = render(<MigrationWizard onSalir={() => {}} />);
+    await act(async () => elegirFraccionamiento(container));
     await act(async () => elegirArchivo(container));
     await act(async () => clickPorTexto(container, "Revisar archivo"));
 
@@ -113,6 +131,7 @@ describe("Asistente de migración: la revisión del archivo", () => {
       imported: 0, updated: 0, failed: 0, errors: [], warnings: [], preview_lots: [],
     });
     const { container } = render(<MigrationWizard onSalir={() => {}} />);
+    await act(async () => elegirFraccionamiento(container));
     await act(async () => elegirArchivo(container));
     await act(async () => clickPorTexto(container, "Revisar archivo"));
 
@@ -131,6 +150,7 @@ describe("Asistente de migración: la revisión del archivo", () => {
     });
 
     const { container } = render(<MigrationWizard onSalir={() => {}} />);
+    await act(async () => elegirFraccionamiento(container));
     await act(async () => elegirArchivo(container));
     await act(async () => clickPorTexto(container, "Revisar archivo"));
 
@@ -148,6 +168,7 @@ describe("Asistente de migración: la revisión del archivo", () => {
 
     const { container } = render(<MigrationWizard onSalir={() => {}} />);
     // Paso 1: cargar 3 lotes
+    await act(async () => elegirFraccionamiento(container));
     await act(async () => elegirArchivo(container));
     await act(async () => clickPorTexto(container, "Revisar archivo"));
     await waitFor(() => expect(container.textContent).toContain("3 filas van a entrar"));
@@ -167,6 +188,7 @@ describe("Asistente de migración: la revisión del archivo", () => {
       .mockResolvedValueOnce({ imported: 2, updated: 0, failed: 0, errors: [], warnings: [] });
 
     const primera = render(<MigrationWizard onSalir={() => {}} />);
+    await act(async () => elegirFraccionamiento(primera.container));
     await act(async () => elegirArchivo(primera.container));
     await act(async () => clickPorTexto(primera.container, "Revisar archivo"));
     await waitFor(() => expect(primera.container.textContent).toContain("2 filas van a entrar"));
@@ -189,11 +211,35 @@ describe("Asistente de migración: la revisión del archivo", () => {
       .mockResolvedValueOnce({ imported: 0, updated: 3, failed: 0, errors: [], warnings: [] });
 
     const { container } = render(<MigrationWizard onSalir={() => {}} />);
+    await act(async () => elegirFraccionamiento(container));
     await act(async () => elegirArchivo(container));
     await act(async () => clickPorTexto(container, "Revisar archivo"));
     await act(async () => clickPorTexto(container, "Cargar 3 registros"));
 
     await waitFor(() => expect(container.textContent).toContain("3 lotes en el sistema"));
+  });
+
+  it("no deja avanzar sin elegir fraccionamiento", async () => {
+    // Los lotes tienen que entrar a alguno: sin eso el importador no sabe dónde
+    // ponerlos y quedarían repartidos por nombre, que es frágil.
+    const { container } = render(<MigrationWizard onSalir={() => {}} />);
+    expect(container.textContent).toContain("Elige primero el fraccionamiento");
+    expect(container.querySelector('input[type="file"]')).toBeNull();
+  });
+
+  it("manda los lotes al fraccionamiento elegido", async () => {
+    importCsv.mockResolvedValue({
+      imported: 0, updated: 0, failed: 0, errors: [], warnings: [], preview_lots: [{ row: 2 }],
+    });
+    const { container } = render(<MigrationWizard onSalir={() => {}} />);
+    await act(async () => elegirFraccionamiento(container));
+    await act(async () => elegirArchivo(container));
+    await act(async () => clickPorTexto(container, "Revisar archivo"));
+
+    expect(importCsv).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ fraccionamiento_id: "frac-1" }),
+    );
   });
 
   /* Falta acá el caso de "el servidor rechaza el archivo". El componente lo
