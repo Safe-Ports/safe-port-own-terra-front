@@ -50,7 +50,6 @@ export default function IncomesPanel({ onMarcarRecibido }) {
         <tr>
           <th>Origen</th>
           <th>Concepto</th>
-          <th>Cliente</th>
           <th style={{ textAlign: "right" }}>Monto</th>
           <th>Fecha</th>
           <th>Estado</th>
@@ -71,7 +70,6 @@ export default function IncomesPanel({ onMarcarRecibido }) {
                 </span>
               </td>
               <td style={{ fontSize: ".84rem" }}>{f.concepto}</td>
-              <td style={{ fontSize: ".82rem", color: "var(--mu)" }}>{f.client_name || "—"}</td>
               <td style={{ textAlign: "right", fontWeight: 800, fontVariantNumeric: "tabular-nums",
                            color: recibido ? "var(--mid)" : "var(--tx2)" }}>
                 {money(f.monto)}
