@@ -548,6 +548,103 @@ function EgresoModal({ initial, onClose, onSave }) {
   );
 }
 
+/* ── Modal ingreso ────────────────────────────────────────────────
+   El espejo del de egresos: pide si el dinero ya entró o se espera, porque solo
+   lo recibido cuenta en el flujo del mes. */
+function IngresoModal({ onClose, onSave, busy }) {
+  useEscapeKey(onClose);
+  const [form, setForm] = useState({
+    concepto: "", categoria: "otro", monto: "",
+    due_date: new Date().toISOString().split("T")[0], notes: "",
+  });
+  const [cuando, setCuando] = useState("recibido");
+  const [file, setFile] = useState(null);
+  const [err, setErr] = useState("");
+  const set = k => e => { const v = e.target.value; setForm(p => ({ ...p, [k]: v })); setErr(""); };
+
+  const guardar = () => {
+    if (!form.concepto.trim()) { setErr("Escribe de qu\u00e9 es el ingreso."); return; }
+    const monto = Number(form.monto);
+    if (!form.monto || isNaN(monto) || monto <= 0) { setErr("Ingresa un monto mayor a $0."); return; }
+    onSave({ ...form, monto, received: cuando === "recibido", _file: file });
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-box" style={{ maxWidth: 430 }}>
+        <div className="modal-hd">
+          <div className="modal-ico"><HiArrowTrendingUp /></div>
+          <div style={{ flex: 1 }}>
+            <div className="modal-title" style={{ fontSize: "1.3rem" }}>Registrar ingreso</div>
+            <div className="modal-sub">Dinero que no viene de la cobranza de un lote</div>
+          </div>
+          <button className="modal-close" onClick={onClose}><HiOutlineXMark /></button>
+        </div>
+        <div className="modal-body">
+          <div className="fg"><label className="fl">Concepto</label>
+            <input className="fi" value={form.concepto} onChange={set("concepto")}
+              placeholder="Renta de bodega, venta de maquinaria\u2026" autoFocus /></div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="fg"><label className="fl">Categor\u00eda</label>
+              <select className="fi" value={form.categoria} onChange={set("categoria")}>
+                {Object.entries(INCOME_CAT).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select></div>
+            <div className="fg"><label className="fl">Monto</label>
+              <input className="fi" type="number" min="0" step="0.01" value={form.monto}
+                onChange={set("monto")} placeholder="0.00" /></div>
+          </div>
+
+          <div className="fg">
+            <label className="fl">\u00bfEl dinero ya entr\u00f3?</label>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {[
+                { id: "recibido", titulo: "Ya lo recib\u00ed", detalle: "Cuenta en el flujo del mes." },
+                { id: "esperado", titulo: "Se espera", detalle: "Queda pendiente con su fecha. No afecta el flujo hasta que entre." },
+              ].map(op => {
+                const activo = cuando === op.id;
+                return (
+                  <label key={op.id} style={{
+                    display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer",
+                    border: `1.5px solid ${activo ? "var(--earth)" : "rgba(67,69,63,.14)"}`,
+                    background: activo ? "rgba(53,94,59,.06)" : "transparent",
+                    borderRadius: 11, padding: "10px 12px",
+                  }}>
+                    <input type="radio" name="momento-ingreso" checked={activo}
+                      onChange={() => setCuando(op.id)} style={{ marginTop: 3 }} />
+                    <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                      <span style={{ fontWeight: 700, fontSize: ".84rem" }}>{op.titulo}</span>
+                      <span style={{ fontSize: ".75rem", color: "var(--mu)", lineHeight: 1.4 }}>{op.detalle}</span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="fg"><label className="fl">{cuando === "recibido" ? "Fecha del ingreso" : "Fecha esperada"}</label>
+            <input className="fi" type="date" value={form.due_date} onChange={set("due_date")} /></div>
+
+          <div className="fg">
+            <label className="fl">Comprobante (opcional)</label>
+            <FilePicker value={file} onChange={setFile}
+              accept="application/pdf,image/jpeg,image/png,image/webp"
+              hint="PDF o imagen. Puedes registrarlo ahora y subirlo despu\u00e9s." />
+          </div>
+
+          <FieldError msg={err} />
+        </div>
+        <div className="modal-foot">
+          <Button variant="secondary" style={{ flex: 1 }} onClick={onClose} disabled={busy}>Cancelar</Button>
+          <Button variant="primary" style={{ flex: 2 }} onClick={guardar} disabled={busy}>
+            {busy ? "Guardando\u2026" : "Registrar ingreso"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Modal cobro ─────────────────────────────────────────────── */
 function CobroModal({ clients, contracts, payments, onClose, onSave, busy }) {
   useEscapeKey(onClose);
