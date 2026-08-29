@@ -154,7 +154,11 @@ function Asistente({ onSalir }) {
   const correr = async (id, file, dryRun) => {
     if (id === "clientes") return clientService.importCsv(file, { dry_run: dryRun });
     if (id === "lotes") {
-      const r = await lotService.importCsv(file, { mode: "tolerant", dry_run: dryRun });
+      // update_existing: en una migración se reintenta el archivo, y rechazar por
+      // código duplicado convertiría un reintento en 1500 errores.
+      const r = await lotService.importCsv(file, {
+        mode: "tolerant", dry_run: dryRun, update_existing: true,
+      });
       // En dry-run el importador de lotes devuelve imported=0 —no persistió nada—
       // y deja las filas válidas en preview_lots. Sin esto la revisión decía
       // "0 nuevos" y el botón de cargar quedaba deshabilitado para siempre.
@@ -276,6 +280,16 @@ function Asistente({ onSalir }) {
                 {resultado.imported} cargados
                 {resultado.updated ? ` · ${resultado.updated} actualizados` : ""}
               </div>
+              {resultado.failed > 0 && (
+                <div className="mt-1 text-[0.78rem] font-bold text-[#B4552F]">
+                  {resultado.failed} filas no entraron
+                </div>
+              )}
+              {(resultado.errors || []).length > 0 && (
+                <ul className="mt-1.5 max-h-[120px] space-y-1 overflow-y-auto text-[0.73rem] text-[#B4552F]">
+                  {resultado.errors.slice(0, 6).map((er, i) => <li key={i}>{comoTexto(er)}</li>)}
+                </ul>
+              )}
               <div className="mt-1 text-[0.74rem] text-[#4E7A55]">
                 Compara este número con el de la inmobiliaria antes de seguir.
               </div>

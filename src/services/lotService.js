@@ -19,12 +19,13 @@ export const lotService = {
   importTemplateMigration: () =>
     api.get("/lots/import-template", { params: { format: "csv", migration: true }, responseType: "blob" })
        .then((r) => r.data),
-  importCsv: (file, { fraccionamiento_id, mode = "tolerant", dry_run = false } = {}) => {
+  importCsv: (file, { fraccionamiento_id, mode = "tolerant", dry_run = false, update_existing = false } = {}) => {
     const form = new FormData();
     form.append("file", file);
     if (fraccionamiento_id) form.append("fraccionamiento_id", fraccionamiento_id);
     form.append("mode", mode);
     if (dry_run) form.append("dry_run", "true");
+    if (update_existing) form.append("update_existing", "true");
     return api.post("/lots/import-csv", form, { timeout: 120000 }).then((r) => r.data);
   },
   update: (id, body) => api.patch(`/lots/${id}`, body).then((r) => r.data),

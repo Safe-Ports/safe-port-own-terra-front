@@ -83,6 +83,37 @@ describe("Asistente de migración: la revisión del archivo", () => {
     expect(container.textContent).toContain("L002");
   });
 
+  it("no esconde las filas que no entraron", async () => {
+    // Decir solo "0 cargados" deja al usuario sin saber si el archivo estaba mal,
+    // si ya estaban cargados, o si el sistema falló.
+    importCsv.mockResolvedValue({
+      imported: 0, updated: 0, failed: 3,
+      errors: [{ row: 2, field: "ID Lote", message: "El código ya existe" }],
+      warnings: [], preview_lots: [],
+    });
+
+    const { container } = render(<MigrationWizard onSalir={() => {}} />);
+    await act(async () => elegirArchivo(container));
+    await act(async () => clickPorTexto(container, "Revisar archivo"));
+
+    await waitFor(() => expect(container.textContent).toContain("3 con problemas"));
+    expect(container.textContent).toContain("El código ya existe");
+  });
+
+  it("pide actualizar los que ya existen: reintentar el archivo es seguro", async () => {
+    importCsv.mockResolvedValue({
+      imported: 0, updated: 0, failed: 0, errors: [], warnings: [], preview_lots: [],
+    });
+    const { container } = render(<MigrationWizard onSalir={() => {}} />);
+    await act(async () => elegirArchivo(container));
+    await act(async () => clickPorTexto(container, "Revisar archivo"));
+
+    expect(importCsv).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ update_existing: true }),
+    );
+  });
+
   /* Falta acá el caso de "el servidor rechaza el archivo". El componente lo
      maneja bien —se verificó mirando el DOM: muestra el mensaje del backend con
      su Ref— pero vitest reporta el rechazo como no manejado al cruzar el
