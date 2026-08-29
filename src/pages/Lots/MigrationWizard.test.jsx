@@ -6,6 +6,9 @@ const importCsv = vi.fn();
 vi.mock("@/services/lotService", () => ({ lotService: { importCsv: (...a) => importCsv(...a) } }));
 vi.mock("@/services/clientService", () => ({ clientService: {} }));
 vi.mock("@/services/contractService", () => ({ contractService: {} }));
+vi.mock("@/context/AppContext", () => ({
+  useAppContext: () => ({ currentUser: { organization: { id: "org-test" } } }),
+}));
 
 import MigrationWizard from "./MigrationWizard";
 
@@ -23,7 +26,12 @@ function clickPorTexto(container, texto) {
 }
 
 describe("Asistente de migración: la revisión del archivo", () => {
-  beforeEach(() => importCsv.mockReset());
+  beforeEach(() => {
+    importCsv.mockReset();
+    // El avance se guarda por organización: sin limpiarlo, un test arranca donde
+    // terminó el anterior.
+    window.localStorage.clear();
+  });
 
   it("muestra los avisos que llegan como objeto sin tumbar la pantalla", async () => {
     // El importador de lotes reporta avisos con {row, message}; el de clientes
@@ -148,6 +156,28 @@ describe("Asistente de migración: la revisión del archivo", () => {
     await waitFor(() => expect(container.textContent).toContain("3 lotes en el sistema"));
 
     expect(container.textContent).toContain("Continuar al paso 2");
+  });
+
+  it("retoma la migración donde quedó al volver a entrar", async () => {
+    // Una migración de 1500 lotes no se hace de un tirón: se carga una fase, se
+    // verifica con la inmobiliaria, y se vuelve al día siguiente.
+    importCsv
+      .mockResolvedValueOnce({ imported: 0, updated: 0, failed: 0, errors: [], warnings: [],
+                               preview_lots: [{ row: 2 }, { row: 3 }] })
+      .mockResolvedValueOnce({ imported: 2, updated: 0, failed: 0, errors: [], warnings: [] });
+
+    const primera = render(<MigrationWizard onSalir={() => {}} />);
+    await act(async () => elegirArchivo(primera.container));
+    await act(async () => clickPorTexto(primera.container, "Revisar archivo"));
+    await waitFor(() => expect(primera.container.textContent).toContain("2 filas van a entrar"));
+    await act(async () => clickPorTexto(primera.container, "Cargar 2 registros"));
+    await waitFor(() => expect(primera.container.textContent).toContain("2 lotes en el sistema"));
+    primera.unmount();
+
+    // Volver a entrar: el paso 1 sigue completo y no hay que repetir la carga.
+    const segunda = render(<MigrationWizard onSalir={() => {}} />);
+    expect(segunda.container.textContent).toContain("Retomando una migración empezada");
+    expect(segunda.container.textContent).toContain("1 de 3 pasos completados");
   });
 
   /* Falta acá el caso de "el servidor rechaza el archivo". El componente lo

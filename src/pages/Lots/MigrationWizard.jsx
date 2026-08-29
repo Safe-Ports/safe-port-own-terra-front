@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   HiOutlineArrowLeft, HiOutlineArrowDownTray, HiOutlineCheckCircle,
   HiOutlineMapPin, HiOutlineUserGroup, HiOutlineDocumentText,
@@ -10,6 +10,7 @@ import { clientService } from "@/services/clientService";
 import { lotService } from "@/services/lotService";
 import { contractService } from "@/services/contractService";
 import { enTandas, parseSheet } from "./parseSheet";
+import { useAppContext } from "@/context/AppContext";
 
 /* Migración inicial de una inmobiliaria que ya opera: su inventario, su cartera
    de clientes y sus contratos con el dinero ya cobrado.
@@ -87,15 +88,52 @@ export default function MigrationWizard({ onSalir }) {
   );
 }
 
+/* El avance se guarda por organización. Una migración de 1500 lotes no se hace
+   de un tirón: se carga una fase, se verifica el conteo con la inmobiliaria, y se
+   vuelve al día siguiente. Perder el avance al recargar obligaría a repetir
+   cargas que ya escribieron en la base. */
+const CLAVE_AVANCE = "ot_migracion";
+
+function leerAvance(orgId) {
+  if (!orgId) return null;
+  try {
+    const todo = JSON.parse(window.localStorage.getItem(CLAVE_AVANCE) || "{}");
+    return todo[orgId] || null;
+  } catch {
+    return null;
+  }
+}
+
+function guardarAvance(orgId, avance) {
+  if (!orgId) return;
+  try {
+    const todo = JSON.parse(window.localStorage.getItem(CLAVE_AVANCE) || "{}");
+    if (avance) todo[orgId] = avance;
+    else delete todo[orgId];
+    window.localStorage.setItem(CLAVE_AVANCE, JSON.stringify(todo));
+  } catch {
+    /* sin espacio o en modo privado: se sigue sin persistir */
+  }
+}
+
 function Asistente({ onSalir }) {
-  const [pasoActivo, setPasoActivo] = useState(0);
+  const { currentUser } = useAppContext();
+  const orgId = currentUser?.organization?.id || null;
+  const guardado = leerAvance(orgId);
+  const [pasoActivo, setPasoActivo] = useState(guardado?.pasoActivo ?? 0);
   const [archivos, setArchivos] = useState({});
   const [revisiones, setRevisiones] = useState({});   // resultado del dry-run
-  const [hechos, setHechos] = useState({});           // ya escrito en la base
+  const [hechos, setHechos] = useState(guardado?.hechos ?? {});   // ya escrito en la base
   const [ocupado, setOcupado] = useState(false);
   const [progreso, setProgreso] = useState(null);   // {hechas, total} de la fase 3
   const [verTabla, setVerTabla] = useState(false);
   const [filasVistas, setFilasVistas] = useState([]);
+
+  // Solo se persiste lo que ya se escribió en la base; los archivos elegidos no,
+  // porque el navegador no puede volver a abrirlos por su cuenta.
+  useEffect(() => {
+    if (Object.keys(hechos).length > 0) guardarAvance(orgId, { pasoActivo, hechos });
+  }, [orgId, pasoActivo, hechos]);
   const [error, setError] = useState("");
 
   /* La revisión y la carga son la MISMA llamada con dry_run distinto: si lo que
@@ -214,6 +252,27 @@ function Asistente({ onSalir }) {
         className="mb-6 inline-flex items-center gap-2 text-[0.82rem] font-semibold text-[#83867C] hover:text-forest">
         <HiOutlineArrowLeft /> Volver a Carga de Lotes
       </button>
+
+      {Object.keys(hechos).length > 0 && (
+        <div className="mx-auto mb-5 flex max-w-[720px] items-center justify-between gap-4 rounded-[12px] border border-[#BEE0C6] bg-[#EDF7EF] px-4 py-3">
+          <span className="text-[0.78rem] leading-relaxed text-[#2F6A38]">
+            Retomando una migración empezada: {Object.keys(hechos).length} de {PASOS.length} pasos
+            completados. Lo ya cargado no se vuelve a subir.
+          </span>
+          <button
+            onClick={() => {
+              if (!window.confirm(
+                "Se olvida el avance de esta pantalla. Lo ya cargado en la base NO se borra: " +
+                "al volver a subir los archivos se actualizarán en vez de duplicarse.")) return;
+              guardarAvance(orgId, null);
+              setHechos({}); setRevisiones({}); setArchivos({}); setPasoActivo(0);
+            }}
+            className="shrink-0 text-[0.75rem] font-bold text-[#4E7A55] underline"
+          >
+            Empezar de nuevo
+          </button>
+        </div>
+      )}
 
       <div className="mx-auto max-w-[720px] text-center">
         <h2 className="font-display text-[1.65rem] text-forest">Migrar inmobiliaria completa</h2>
