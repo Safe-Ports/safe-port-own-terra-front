@@ -94,6 +94,12 @@ export default function MigrationWizard({ onSalir }) {
    cargas que ya escribieron en la base. */
 const CLAVE_AVANCE = "ot_migracion";
 
+/** Cuántos registros quedaron en el sistema tras un paso: nuevos más actualizados. */
+function total(resultado) {
+  if (!resultado) return 0;
+  return (resultado.imported || 0) + (resultado.updated || 0);
+}
+
 function leerAvance(orgId) {
   if (!orgId) return null;
   try {
@@ -339,7 +345,7 @@ function Asistente({ onSalir }) {
                   de la inmobiliaria. Nuevos contra actualizados es un detalle de
                   si es la primera vez que se sube el archivo o la tercera. */}
               <div className="text-[0.9rem] font-bold text-[#2F6A38]">
-                {(resultado.imported + (resultado.updated || 0)).toLocaleString("es-MX")}{" "}
+                {total(resultado).toLocaleString("es-MX")}{" "}
                 {paso.id === "lotes" ? "lotes" : paso.id === "clientes" ? "clientes" : "contratos"}{" "}
                 en el sistema
               </div>
@@ -387,13 +393,13 @@ function Asistente({ onSalir }) {
                     Así quedaría
                   </div>
                   <div className="mt-1 text-[0.86rem] font-bold text-forest">
-                    {(revision.imported + (revision.updated || 0)).toLocaleString("es-MX")} filas
+                    {total(revision).toLocaleString("es-MX")} filas
                     van a entrar
                   </div>
                   {/* Cero filas tiene dos causas muy distintas —el archivo está
                       vacío, o trae solo los ejemplos— y confundirlas hace perder
                       un rato largo. */}
-                  {revision.imported + (revision.updated || 0) === 0 && (
+                  {total(revision) === 0 && (
                     <div className="mt-2 rounded-[10px] border border-[#E2C08B] bg-[#FDF6E9] px-3 py-2.5 text-[0.76rem] leading-relaxed text-[#8A6A2B]">
                       {(revision.warnings || []).some((w) => String(comoTexto(w)).includes("ejemplo"))
                         ? "Es la plantilla sin llenar: sus filas de ejemplo empiezan con # y se ignoran. Reemplázalas por tus datos."
@@ -414,8 +420,8 @@ function Asistente({ onSalir }) {
                       pero sí puede dar el número para contrastarlo contra lo que
                       dice la inmobiliaria. */}
                   {paso.id === "contratos" && (() => {
-                    const lotesCargados = (hechos.lotes?.imported || 0) + (hechos.lotes?.updated || 0);
-                    const conContrato = revision.imported + (revision.updated || 0);
+                    const lotesCargados = total(hechos.lotes);
+                    const conContrato = total(revision);
                     const sinContrato = lotesCargados - conContrato;
                     if (lotesCargados === 0 || sinContrato <= 0) return null;
                     return (
@@ -506,10 +512,10 @@ function Asistente({ onSalir }) {
         )}
 
         {!listo && !bloqueado && revision && (
-          <button disabled={ocupado || revision.imported + (revision.updated || 0) === 0}
+          <button disabled={ocupado || total(revision) === 0}
             onClick={() => { confirmar(); }}
             className="mt-4 w-full rounded-[10px] bg-[#355E3B] px-4 py-3 text-[0.85rem] font-bold text-white disabled:opacity-40">
-            {ocupado ? "Cargando…" : `Cargar ${revision.imported + (revision.updated || 0)} registros`}
+            {ocupado ? "Cargando…" : `Cargar ${total(revision)} registros`}
           </button>
         )}
 
@@ -524,9 +530,17 @@ function Asistente({ onSalir }) {
           <div className="mt-4 rounded-[12px] border border-[#BEE0C6] bg-[#EDF7EF] p-5 text-center">
             <div className="font-display text-[1.05rem] text-forest">Migración completa</div>
             <p className="mt-1 text-[0.78rem] text-[#4E7A55]">
-              {hechos.lotes?.imported ?? 0} lotes · {hechos.clientes?.imported ?? 0} clientes ·{" "}
-              {hechos.contratos?.imported ?? 0} contratos con{" "}
-              {(hechos.contratos?.installments ?? 0).toLocaleString("es-MX")} cuotas.
+              {/* Total, no solo los nuevos: en un reintento —o cuando una fase ya
+                  se había corrido— todo entra como actualizado, y leer solo
+                  `imported` mostraba ceros sobre datos que sí están cargados. */}
+              {[
+                [total(hechos.lotes), "lotes"],
+                [total(hechos.clientes), "clientes"],
+                [total(hechos.contratos), "contratos"],
+              ].map(([n, etiqueta]) => `${n.toLocaleString("es-MX")} ${etiqueta}`).join(" · ")}
+              {hechos.contratos?.installments
+                ? `, con ${hechos.contratos.installments.toLocaleString("es-MX")} cuotas`
+                : ""}.
             </p>
           </div>
         )}

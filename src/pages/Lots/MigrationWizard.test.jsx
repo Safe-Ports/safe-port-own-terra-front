@@ -180,6 +180,22 @@ describe("Asistente de migración: la revisión del archivo", () => {
     expect(segunda.container.textContent).toContain("1 de 3 pasos completados");
   });
 
+  it("el resumen final cuenta lo actualizado, no solo lo nuevo", async () => {
+    // Reintentar una fase deja todo como "actualizado": leer solo `imported`
+    // mostraba "0 lotes" sobre datos que sí estaban cargados.
+    importCsv
+      .mockResolvedValueOnce({ imported: 0, updated: 0, failed: 0, errors: [], warnings: [],
+                               preview_lots: [{ row: 2 }, { row: 3 }, { row: 4 }] })
+      .mockResolvedValueOnce({ imported: 0, updated: 3, failed: 0, errors: [], warnings: [] });
+
+    const { container } = render(<MigrationWizard onSalir={() => {}} />);
+    await act(async () => elegirArchivo(container));
+    await act(async () => clickPorTexto(container, "Revisar archivo"));
+    await act(async () => clickPorTexto(container, "Cargar 3 registros"));
+
+    await waitFor(() => expect(container.textContent).toContain("3 lotes en el sistema"));
+  });
+
   /* Falta acá el caso de "el servidor rechaza el archivo". El componente lo
      maneja bien —se verificó mirando el DOM: muestra el mensaje del backend con
      su Ref— pero vitest reporta el rechazo como no manejado al cruzar el
