@@ -4,6 +4,8 @@ import {
   HiOutlineMapPin, HiOutlineUserGroup, HiOutlineDocumentText,
 } from "react-icons/hi2";
 import FilePicker from "@/components/shared/FilePicker";
+import { clientService } from "@/services/clientService";
+import { lotService } from "@/services/lotService";
 
 /* Migración inicial de una inmobiliaria que ya opera: su inventario, su cartera
    de clientes y sus contratos con el dinero ya cobrado.
@@ -38,18 +40,62 @@ const PASOS = [
     titulo: "Contratos y pagos",
     resumen: "Las ventas y apartados, con lo ya cobrado",
     columnas: "Clave Cliente · ID Lote · Tipo · Fecha · Precio · Enganche · Plazo · Tasa · Cuotas pagadas",
-    nota: "Genera la amortización de cada contrato y registra lo ya cobrado como saldo inicial. Corre en segundo plano: son miles de cuotas.",
+    nota: "Genera la amortización de cada contrato y registra lo ya cobrado como saldo inicial. Corre en segundo plano: son miles de cuotas. Todavía no está conectado.",
   },
 ];
 
 export default function MigrationWizard({ onSalir }) {
   const [pasoActivo, setPasoActivo] = useState(0);
   const [archivos, setArchivos] = useState({});
-  const [hechos, setHechos] = useState({});
+  const [revisiones, setRevisiones] = useState({});   // resultado del dry-run
+  const [hechos, setHechos] = useState({});           // ya escrito en la base
+  const [ocupado, setOcupado] = useState(false);
+  const [error, setError] = useState("");
+
+  /* La revisión y la carga son la MISMA llamada con dry_run distinto: si lo que
+     se confirma no fuera exactamente lo que se revisó, el paso previo no serviría
+     de nada. */
+  const correr = async (id, file, dryRun) => {
+    if (id === "clientes") return clientService.importCsv(file, { dry_run: dryRun });
+    if (id === "lotes") return lotService.importCsv(file, { mode: "tolerant", dry_run: dryRun });
+    throw new Error("La carga de contratos todavía no está conectada");
+  };
+
+  const revisar = async () => {
+    setOcupado(true); setError("");
+    try {
+      const r = await correr(paso.id, archivo, true);
+      setRevisiones(p => ({ ...p, [paso.id]: r }));
+    } catch (e) {
+      setError(e?.response?.data?.error?.message || e.message || "No se pudo revisar el archivo");
+    } finally { setOcupado(false); }
+  };
+
+  const confirmar = async () => {
+    setOcupado(true); setError("");
+    try {
+      const r = await correr(paso.id, archivo, false);
+      setHechos(p => ({ ...p, [paso.id]: r }));
+    } catch (e) {
+      setError(e?.response?.data?.error?.message || e.message || "No se pudo cargar el archivo");
+    } finally { setOcupado(false); }
+  };
+
+  const descargarPlantilla = async () => {
+    const blob = paso.id === "clientes"
+      ? await clientService.importTemplate()
+      : await lotService.importTemplate("csv");
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `${paso.id}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   const paso = PASOS[pasoActivo];
   const archivo = archivos[paso.id] || null;
   const resultado = hechos[paso.id] || null;
+  const revision = revisiones[paso.id] || null;
   const listo = Boolean(resultado);
   const bloqueado = pasoActivo > 0 && !hechos[PASOS[pasoActivo - 1].id];
 
@@ -118,35 +164,79 @@ export default function MigrationWizard({ onSalir }) {
             </div>
           ) : listo ? (
             <div className="mt-5 rounded-[11px] border border-[#BEE0C6] bg-[#EDF7EF] px-4 py-3">
-              <div className="text-[0.82rem] font-bold text-[#2F6A38]">{resultado}</div>
+              <div className="text-[0.82rem] font-bold text-[#2F6A38]">
+                {resultado.imported} cargados
+                {resultado.updated ? ` · ${resultado.updated} actualizados` : ""}
+              </div>
               <div className="mt-1 text-[0.74rem] text-[#4E7A55]">
                 Compara este número con el de la inmobiliaria antes de seguir.
               </div>
             </div>
           ) : (
             <>
-              <button className="mt-5 inline-flex items-center gap-2 rounded-[9px] border border-[#355E3B] px-4 py-2 text-[0.78rem] font-bold text-[#355E3B]">
+              <button onClick={descargarPlantilla}
+                className="mt-5 inline-flex items-center gap-2 rounded-[9px] border border-[#355E3B] px-4 py-2 text-[0.78rem] font-bold text-[#355E3B]">
                 <HiOutlineArrowDownTray /> Descargar plantilla
               </button>
               <div className="mt-4">
                 <FilePicker
                   value={archivo}
-                  onChange={(f) => setArchivos((p) => ({ ...p, [paso.id]: f }))}
+                  onChange={(f) => { setArchivos((p) => ({ ...p, [paso.id]: f }));
+                                     setRevisiones((p) => ({ ...p, [paso.id]: null })); setError(""); }}
                   accept=".xlsx,.xls,.csv"
                   hint="Excel o CSV. Se revisa antes de guardar nada."
                 />
               </div>
+
+              {revision && (
+                <div className="mt-4 rounded-[11px] border border-[#E2E7E5] bg-[#FBFCFB] p-4">
+                  <div className="text-[0.66rem] font-bold uppercase tracking-[0.09em] text-[#83867C]">
+                    Así quedaría
+                  </div>
+                  <div className="mt-1 text-[0.86rem] font-bold text-forest">
+                    {revision.imported} nuevos
+                    {revision.updated ? ` · ${revision.updated} actualizados` : ""}
+                    {revision.failed ? ` · ${revision.failed} con problemas` : ""}
+                  </div>
+                  {revision.failed > 0 && (
+                    <ul className="mt-2 max-h-[150px] space-y-1 overflow-y-auto text-[0.74rem] text-[#B4552F]">
+                      {(revision.errors || []).slice(0, 8).map((er, i) => (
+                        <li key={i}>Fila {er.row} · {er.field}: {er.message}</li>
+                      ))}
+                      {(revision.errors || []).length > 8 && (
+                        <li className="text-[#83867C]">…y {revision.errors.length - 8} más</li>
+                      )}
+                    </ul>
+                  )}
+                  {(revision.warnings || []).length > 0 && (
+                    <ul className="mt-2 space-y-1 text-[0.74rem] text-[#8A6A2B]">
+                      {revision.warnings.slice(0, 4).map((w, i) => <li key={i}>{w}</li>)}
+                    </ul>
+                  )}
+                </div>
+              )}
+
+              {error && (
+                <div className="mt-3 rounded-[10px] bg-[#FBECE9] px-4 py-2.5 text-[0.78rem] text-[#B4552F]">
+                  {error}
+                </div>
+              )}
             </>
           )}
         </div>
 
-        {!listo && !bloqueado && (
-          <button
-            disabled={!archivo}
-            onClick={() => setHechos((p) => ({ ...p, [paso.id]: `Archivo de ${paso.titulo.toLowerCase()} revisado` }))}
-            className="mt-4 w-full rounded-[10px] bg-[#355E3B] px-4 py-3 text-[0.85rem] font-bold text-white disabled:opacity-40"
-          >
-            Revisar archivo
+        {!listo && !bloqueado && !revision && (
+          <button disabled={!archivo || ocupado} onClick={revisar}
+            className="mt-4 w-full rounded-[10px] border-2 border-[#355E3B] px-4 py-3 text-[0.85rem] font-bold text-[#355E3B] disabled:opacity-40">
+            {ocupado ? "Revisando…" : "Revisar archivo"}
+          </button>
+        )}
+
+        {!listo && !bloqueado && revision && (
+          <button disabled={ocupado || revision.imported + (revision.updated || 0) === 0}
+            onClick={confirmar}
+            className="mt-4 w-full rounded-[10px] bg-[#355E3B] px-4 py-3 text-[0.85rem] font-bold text-white disabled:opacity-40">
+            {ocupado ? "Cargando…" : `Cargar ${revision.imported + (revision.updated || 0)} registros`}
           </button>
         )}
 
@@ -168,7 +258,7 @@ export default function MigrationWizard({ onSalir }) {
       </div>
 
       <p className="mx-auto mt-8 max-w-[560px] text-center text-[0.72rem] leading-relaxed text-[#A0A39A]">
-        Flujo en construcción: la revisión de archivos y la carga todavía no escriben en la base.
+        Lotes y clientes ya cargan de verdad. El paso de contratos todavía no está conectado.
       </p>
     </section>
   );
