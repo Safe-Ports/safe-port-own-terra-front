@@ -461,11 +461,18 @@ function Asistente({ onSalir }) {
                     );
                   })()}
 
-                  {(revision.warnings || []).length > 0 && (
-                    <ul className="mt-2 space-y-1 text-[0.74rem] text-[#8A6A2B]">
-                      {revision.warnings.slice(0, 4).map((w, i) => <li key={i}>{comoTexto(w)}</li>)}
-                    </ul>
-                  )}
+                  {(() => {
+                    // El recuadro de arriba ya explica el caso de la plantilla sin
+                    // llenar; repetirlo acá hace dudar de si son dos problemas.
+                    const avisos = (revision.warnings || [])
+                      .filter((w) => !String(comoTexto(w)).includes("filas de ejemplo"));
+                    if (avisos.length === 0) return null;
+                    return (
+                      <ul className="mt-2 space-y-1 text-[0.74rem] text-[#8A6A2B]">
+                        {avisos.slice(0, 4).map((w, i) => <li key={i}>{comoTexto(w)}</li>)}
+                      </ul>
+                    );
+                  })()}
                 </div>
               )}
 
