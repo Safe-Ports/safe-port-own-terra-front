@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
-import { HiArrowDownTray } from "react-icons/hi2";
+import { useQuery } from "@tanstack/react-query";
+import { HiArrowDownTray, HiOutlinePaperClip } from "react-icons/hi2";
 import { lotService } from "@/services/lotService";
+import { documentService } from "@/services/documentService";
 import { measure } from "@/services/formatters";
 
 /**
@@ -20,6 +22,12 @@ const HEADERS = [
 
 /** Servicios en el mismo orden en que aparecen en la plantilla. */
 const SERVICE_KEYS = ["agua", "luz", "drenaje", "gas", "internet", "pavimento"];
+
+/* Va aparte de HEADERS a propósito: HEADERS espeja la plantilla de importación
+   y el archivo que se descarga lo genera el backend con esa misma lista. Esta
+   columna es solo de pantalla —enlaces al Vault— y por eso no viaja en la
+   descarga: un archivo con una celda de links no se podría volver a importar. */
+const COL_ARCHIVOS = "Files asociados";
 
 const STATUS_ES = { available: "disponible", reserved: "apartado", sold: "vendido" };
 const STATUS_CLS = { available: "ok", reserved: "wr", sold: "sd" };
@@ -46,6 +54,23 @@ function quienLoTiene(lot) {
   return <span className="mx-no">—</span>;
 }
 
+/** Los archivos del lote como enlaces al Vault. */
+function CeldaArchivos({ archivos }) {
+  if (!archivos || archivos.length === 0) return <span className="mx-no">—</span>;
+  return (
+    <span className="mx-files">
+      {archivos.map((a) => (
+        <a key={a.id} href={a.download_url} target="_blank" rel="noreferrer"
+           className="mx-file" title={a.name}>
+          <HiOutlinePaperClip aria-hidden="true" />
+          {a.name}
+        </a>
+      ))}
+    </span>
+  );
+}
+
+
 /** Importe con separador de miles; vacío si no hay dato. */
 function money(value) {
   if (value === null || value === undefined || value === "") return null;
@@ -60,6 +85,14 @@ function money(value) {
  */
 export default function MatrixSheet({ lots, fracId, fracName, loading, showError }) {
   const [downloading, setDownloading] = useState(null);
+
+  /* Si falla, la matriz se pinta igual: los archivos son un extra de la vista,
+     no la vista. */
+  const { data: archivosPorLote = {} } = useQuery({
+    queryKey: ["documents", "for-lots", fracId],
+    queryFn: () => documentService.forLots(fracId),
+    enabled: !!fracId,
+  });
 
   const missing = useMemo(
     () => lots.filter((l) => !l.area_m2 && !l.price_contado).length,
@@ -119,6 +152,7 @@ export default function MatrixSheet({ lots, fracId, fracName, loading, showError
                 {HEADERS.map((h, i) => (
                   <th key={h} className={i === 0 ? "mx-stick" : ""}>{h}</th>
                 ))}
+                <th className="mx-extra">{COL_ARCHIVOS}</th>
               </tr>
             </thead>
             <tbody>
@@ -148,6 +182,9 @@ export default function MatrixSheet({ lots, fracId, fracName, loading, showError
                       </td>
                     ))}
                     <td>{quienLoTiene(lot)}</td>
+                    <td className="mx-extra">
+                      <CeldaArchivos archivos={archivosPorLote[lot.id]} />
+                    </td>
                   </tr>
                 );
               })}
@@ -159,6 +196,8 @@ export default function MatrixSheet({ lots, fracId, fracName, loading, showError
       <div className="mx-foot">
         El archivo descargado se puede editar en Excel y volver a subir desde
         <b> Carga de Lotes</b>: usa exactamente las columnas que espera el importador.
+        <b> Files asociados</b> queda fuera de la descarga —son enlaces al Vault— para
+        que el archivo se siga pudiendo reimportar tal cual.
       </div>
     </article>
   );

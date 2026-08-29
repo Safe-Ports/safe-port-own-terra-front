@@ -3,9 +3,12 @@ import api from "./api";
 export const lotService = {
   // El comprobante del apartado va aparte: se aparta con el cliente enfrente y
   // el papel casi nunca está en ese momento.
-  reservationReceipt: (lotId, file) => {
+  /* Un apartado real trae transferencia, identificación y a veces el pagaré:
+     no es un solo papel. Quedan registrados como documentos del lote, así que
+     se ven en su ficha y en la matriz. */
+  reservationReceipt: (lotId, files) => {
     const fd = new FormData();
-    fd.append("file", file);
+    for (const f of [].concat(files)) fd.append("files", f);
     return api.post(`/lots/${lotId}/reservation-receipt`, fd).then(r => r.data);
   },
   list: (params = {}) => api.get("/lots", { params }).then((r) => r.data),

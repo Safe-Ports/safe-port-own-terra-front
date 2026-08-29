@@ -770,12 +770,10 @@ export function AppProvider({ children }) {
     closeModal("documentPreview");
   };
 
-  const getLinkedDocuments = (entityType, entityId) => {
-    const backendType = toBackendEntityType(entityType);
-    return documents.filter(
-      (doc) => doc.entity_type === backendType && String(doc.entity_id) === String(entityId)
-    );
-  };
+  /* Ya no existe un getLinkedDocuments: filtraba `documents`, que son los 100
+     más recientes de toda la organización, y el expediente de una entidad vieja
+     salía vacío aunque sus archivos existieran. Cada panel pide los suyos con
+     documentService.forEntity. */
 
   // ── Fraccionamientos ──────────────────────────────────────────────────────
   // Primer paso del asistente ("Guardar y continuar" en la pantalla de nombre+plano):
@@ -1049,7 +1047,6 @@ export function AppProvider({ children }) {
     openDocumentPreview,
     closeDocumentPreview,
     downloadDocument,
-    getLinkedDocuments,
     openClientReport,
     closeClientReport,
     sendClientMessage,

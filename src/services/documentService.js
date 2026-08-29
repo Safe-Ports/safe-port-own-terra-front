@@ -28,6 +28,11 @@ async function blobFromUrl(url) {
 export const documentService = {
   list: (params = {}) => api.get("/documents", { params }).then((r) => r.data),
   get: (id) => api.get(`/documents/${id}`).then((r) => r.data),
+  /* Los documentos de todos los lotes de un fraccionamiento en una sola
+     petición: la matriz pinta el fraccionamiento entero, que puede ser de más
+     de mil lotes, y preguntar uno por uno serían mil peticiones. */
+  forLots: (inmuebleId) =>
+    api.get("/documents/for-lots", { params: { inmueble_id: inmuebleId } }).then((r) => r.data),
   forEntity: (entityType, entityId) =>
     api.get("/documents/for-entity", { params: { entity_type: entityType, entity_id: entityId } }).then((r) => r.data),
   upload: (file, { name, category = "otro", entityType, entityId, folderId, notes } = {}) => {

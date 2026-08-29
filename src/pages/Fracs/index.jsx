@@ -267,7 +267,7 @@ function FracsPage() {
   const setApartarOpen = (v) => setPanelMode((m) => ((typeof v === "function" ? v(m === "apartar") : v) ? "apartar" : null));
   const [apartarUntil, setApartarUntil] = useState("");   // datetime-local
   const [apartarMonto, setApartarMonto] = useState("");   // opcional: hay apartados de palabra
-  const [apartarFile, setApartarFile]   = useState(null); // comprobante, puede llegar después
+  const [apartarFiles, setApartarFiles] = useState([]);  // comprobantes, pueden llegar después
   const [apartarBusy, setApartarBusy] = useState(false);
   const [apartarClient, setApartarClient] = useState(null); // {id, name, phone, email} | null
   const [ventaClient, setVentaClient] = useState(null);     // comprador elegido para el contrato
@@ -521,12 +521,22 @@ function FracsPage() {
   // ── Apartado con expiración ──────────────────────────────────────────────
   /* El comprobante no bloquea el apartado: si su subida falla, la reserva ya
      quedó hecha y el papel se puede adjuntar después. */
-  const subirComprobante = async (lotId) => {
-    if (!apartarFile) return;
+  const subirComprobantes = async (lotId) => {
+    if (apartarFiles.length === 0) return;
     try {
-      await lotService.reservationReceipt(lotId, apartarFile);
+      await lotService.reservationReceipt(lotId, apartarFiles);
+      // La ficha y la matriz leen documentos: sin esto el archivo recién subido
+      // no aparece hasta recargar. Son dos claves distintas —la global del
+      // contexto y la del expediente de la entidad—, así que no basta con una.
+      await queryClient.invalidateQueries({ queryKey: ["documents"] });
+      await queryClient.invalidateQueries({ queryKey: ["documents-entity"] });
     } catch {
-      showToast("Lote apartado, pero no se pudo subir el comprobante", "warning");
+      showToast(
+        apartarFiles.length === 1
+          ? "Lote apartado, pero no se pudo subir el comprobante"
+          : "Lote apartado, pero no se pudieron subir los comprobantes",
+        "warning",
+      );
     }
   };
 
@@ -541,9 +551,9 @@ function FracsPage() {
         // Opcional: se puede apartar de palabra y cargar el monto después.
         ...(apartarMonto ? { reserved_amount: Number(apartarMonto) } : {}),
       });
-      await subirComprobante(selectedLot.id);
+      await subirComprobantes(selectedLot.id);
       await queryClient.invalidateQueries({ queryKey: ["lots"] });
-      setApartarOpen(false); setApartarUntil(""); setApartarClient(null); setApartarMonto(""); setApartarFile(null);
+      setApartarOpen(false); setApartarUntil(""); setApartarClient(null); setApartarMonto(""); setApartarFiles([]);
       showToast("Lote apartado");
     } catch (err) {
       showError(err, "No se pudo apartar el lote");
@@ -561,9 +571,9 @@ function FracsPage() {
         ...(apartarClient?.id ? { client_id: apartarClient.id } : {}),
         ...(apartarMonto ? { reserved_amount: Number(apartarMonto) } : {}),
       });
-      await subirComprobante(selectedLot.id);
+      await subirComprobantes(selectedLot.id);
       await queryClient.invalidateQueries({ queryKey: ["lots"] });
-      setApartarOpen(false); setApartarUntil(""); setApartarClient(null); setApartarMonto(""); setApartarFile(null);
+      setApartarOpen(false); setApartarUntil(""); setApartarClient(null); setApartarMonto(""); setApartarFiles([]);
       showToast("Vencimiento actualizado");
     } catch (err) {
       showError(err, "No se pudo extender el apartado");
@@ -876,12 +886,13 @@ function FracsPage() {
                           Se propondrá como enganche al generar el contrato, así que baja el capital a financiar.
                         </div>
 
-                        <label className="frac-appt-lbl">Comprobante (opcional)</label>
+                        <label className="frac-appt-lbl">Comprobantes (opcional)</label>
                         <FilePicker
-                          value={apartarFile}
-                          onChange={setApartarFile}
+                          multiple
+                          value={apartarFiles}
+                          onChange={setApartarFiles}
                           accept="application/pdf,image/jpeg,image/png,image/webp"
-                          hint="PDF o imagen. Si no lo tienes ahora, apartas igual y lo subes después."
+                          hint="PDF o imagen. Puedes subir varios —transferencia, identificación—. Quedan en los documentos del lote."
                         />
 
                         <Button
