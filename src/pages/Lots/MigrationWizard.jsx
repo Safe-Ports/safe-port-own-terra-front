@@ -331,6 +331,16 @@ function Asistente({ onSalir }) {
                     {(revision.imported + (revision.updated || 0)).toLocaleString("es-MX")} filas
                     van a entrar
                   </div>
+                  {/* Cero filas tiene dos causas muy distintas —el archivo está
+                      vacío, o trae solo los ejemplos— y confundirlas hace perder
+                      un rato largo. */}
+                  {revision.imported + (revision.updated || 0) === 0 && (
+                    <div className="mt-2 rounded-[10px] border border-[#E2C08B] bg-[#FDF6E9] px-3 py-2.5 text-[0.76rem] leading-relaxed text-[#8A6A2B]">
+                      {(revision.warnings || []).some((w) => String(comoTexto(w)).includes("ejemplo"))
+                        ? "Es la plantilla sin llenar: sus filas de ejemplo empiezan con # y se ignoran. Reemplázalas por tus datos."
+                        : "No se encontró ninguna fila con datos. Revisa que los encabezados coincidan con los de la plantilla."}
+                    </div>
+                  )}
                   {(revision.updated > 0 || revision.failed > 0) && (
                     <div className="mt-0.5 text-[0.74rem] text-[#83867C]">
                       {[

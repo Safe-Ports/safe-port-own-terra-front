@@ -114,6 +114,22 @@ describe("Asistente de migración: la revisión del archivo", () => {
     );
   });
 
+  it("distingue la plantilla sin llenar de un archivo sin datos", async () => {
+    // Cero filas tiene dos causas muy distintas y confundirlas hace perder un
+    // rato largo buscando el problema equivocado.
+    importCsv.mockResolvedValue({
+      imported: 0, updated: 0, failed: 0, errors: [], preview_lots: [],
+      warnings: ["Este archivo solo trae las filas de ejemplo de la plantilla."],
+    });
+
+    const { container } = render(<MigrationWizard onSalir={() => {}} />);
+    await act(async () => elegirArchivo(container));
+    await act(async () => clickPorTexto(container, "Revisar archivo"));
+
+    await waitFor(() =>
+      expect(container.textContent).toContain("Es la plantilla sin llenar"));
+  });
+
   /* Falta acá el caso de "el servidor rechaza el archivo". El componente lo
      maneja bien —se verificó mirando el DOM: muestra el mensaje del backend con
      su Ref— pero vitest reporta el rechazo como no manejado al cruzar el
