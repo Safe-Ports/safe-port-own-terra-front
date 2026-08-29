@@ -239,7 +239,7 @@ export default function DashboardPage() {
   });
   const teamPerf = teamRaw?.team || [];
 
-  /* expenses for resumen financiero */
+  /* egresos para la gráfica de ingresos vs egresos */
   const { data: expRaw } = useQuery({
     queryKey: ["expenses"],
     queryFn:  () => expenseService.list({ limit: 500 }).then(r => r.items),
@@ -255,18 +255,6 @@ export default function DashboardPage() {
   const soldLots     = fracs.reduce((s, f) => s + (f.sold_lots      || 0), 0);
   const reservedLots = fracs.reduce((s, f) => s + (f.reserved_lots  || 0), 0);
   const inTramite    = Math.max(0, totalLots - availLots - soldLots - reservedLots);
-
-  /* ── Resumen financiero YTD ── */
-  const ytdRevenue = useMemo(() =>
-    payments.filter(p => p.status === "paid" && p.paid_date?.startsWith(String(CY)))
-            .reduce((s, p) => s + Number(p.amount || 0), 0), [payments]);
-
-  const ytdCostos = useMemo(() =>
-    expenses.filter(e => e.status === "paid" && (e.paid_date || e.due_date)?.startsWith(String(CY)))
-            .reduce((s, e) => s + Number(e.monto || 0), 0), [expenses]);
-
-  const ytdUtilidad = ytdRevenue - ytdCostos;
-  const margen      = ytdRevenue > 0 ? (ytdUtilidad / ytdRevenue * 100).toFixed(1) : "0.0";
 
   /* ── Chart data (monthly) ── */
   const monthlyChart = useMemo(() => {
@@ -317,8 +305,6 @@ export default function DashboardPage() {
         .db-accion { display:flex;align-items:center;gap:10px;padding:14px 16px;border-radius:14px;border:1.5px solid var(--bd);background:var(--sf);cursor:pointer;transition:all .14s;flex:1;font-family:inherit; }
         .db-accion:hover { border-color:var(--forest);background:var(--tan-lt); }
         .db-accion-ico { width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
-        .db-fin-row { display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line-soft);font-size:.83rem; }
-        .db-fin-row:last-child { border-bottom:none; }
 
         @media (max-width:900px)  { .db-charts,.db-row3 { grid-template-columns:1fr; } }
       `}</style>
@@ -413,7 +399,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Ventas recientes + Top vendedores + Resumen financiero ── */}
+      {/* ── Ventas recientes + Top vendedores ── */}
       <div className="db-row3">
 
         {/* Ventas recientes */}
@@ -511,48 +497,6 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Resumen financiero YTD */}
-        <div className="db-card">
-          <div className="db-card-hd">
-            <div className="db-card-title">Resumen financiero (YTD)</div>
-          </div>
-          <div style={{ padding: "16px 18px" }}>
-            <div className="db-fin-row">
-              <span style={{ color: "var(--tx2)" }}>Ingresos totales</span>
-              <strong style={{ color: "var(--forest)" }}>{currency(ytdRevenue)}</strong>
-            </div>
-            <div className="db-fin-row">
-              <span style={{ color: "var(--tx2)" }}>Costos operativos</span>
-              <strong style={{ color: "var(--danger)" }}>{currency(ytdCostos)}</strong>
-            </div>
-            <div className="db-fin-row">
-              <span style={{ color: "var(--tx2)" }}>Utilidad bruta</span>
-              <strong style={{ color: ytdUtilidad >= 0 ? "var(--forest)" : "var(--danger)" }}>
-                {currency(ytdUtilidad)}
-              </strong>
-            </div>
-            {/* Margen card */}
-            <div style={{ marginTop: 12, background: "var(--tan-lt)", borderRadius: 12,
-              padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <div style={{ fontSize: ".68rem", fontWeight: 700, textTransform: "uppercase",
-                  letterSpacing: ".08em", color: "var(--tan-dk)" }}>Margen de utilidad</div>
-                <div style={{ fontFamily: "var(--font-body)", fontSize: "1.6rem",
-                  fontWeight: 700, color: "var(--forest)", lineHeight: 1.1 }}>{margen}%</div>
-              </div>
-              {/* Mini sparkline */}
-              <svg width="60" height="30" viewBox="0 0 60 30">
-                <polyline
-                  points={monthlyChart.filter(m => m.ingresos > 0).map((m, i, arr) => {
-                    const maxR = Math.max(...arr.map(x => x.ingresos), 1);
-                    return `${i * (60 / Math.max(arr.length - 1, 1))},${30 - (m.ingresos / maxR) * 26}`;
-                  }).join(" ")}
-                  fill="none" stroke={VIZ.ingresos} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                />
-              </svg>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* ── Acciones rápidas ── */}
@@ -583,11 +527,11 @@ export default function DashboardPage() {
         title="Panel principal"
         subtitle="Vista consolidada de indicadores clave de tu negocio inmobiliario."
         steps={[
-          { title: "KPIs del mes", text: "Los 6 indicadores al inicio muestran ingresos, ventas, lotes disponibles, vendidos, inventario total y contratos activos. El porcentaje compara con el mes anterior." },
+          { title: "KPIs del mes", text: "Los indicadores al inicio muestran ingresos, ventas, lotes disponibles, vendidos e inventario total. El porcentaje compara con el mes anterior, y solo aparece donde hay historia para compararlo." },
           { title: "Gráficas de tendencia", text: "Las gráficas muestran ingresos vs egresos y contratos cerrados mes a mes durante el año. Úsalas para detectar tendencias de cobranza y ventas." },
           { title: "Top vendedores", text: "Ranking mensual del equipo por número de contratos cerrados. Se actualiza en tiempo real con los contratos del mes en curso." },
           { title: "Ventas recientes", text: "Los últimos 5 contratos registrados con su cliente, fraccionamiento, monto y estado. Haz clic en 'Ver todos' para ir al repositorio completo." },
-          { title: "Resumen financiero YTD", text: "Acumulado del año: ingresos totales, egresos y utilidad neta con margen porcentual. Los datos se actualizan conforme se registran pagos y gastos." },
+          { title: "Resumen rápido", text: "Debajo de los indicadores, lo que pide acción este mes: cuotas por cobrar, apartados que vencen y clientes en mora. Cada uno lleva a la pantalla donde se resuelve." },
           { title: "Acciones rápidas", text: "Botones directos para registrar los flujos más frecuentes: nuevo contrato, cobro de cliente, egreso operativo e incorporar nuevo cliente." },
         ]}
       />
