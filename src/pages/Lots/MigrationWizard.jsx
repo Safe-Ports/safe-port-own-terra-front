@@ -350,6 +350,24 @@ function Asistente({ onSalir }) {
                       ].filter(Boolean).join(" · ")}
                     </div>
                   )}
+                  {/* Reconciliación: el sistema no puede saber si un lote SIN
+                      contrato está mal —uno disponible legítimamente no tiene—,
+                      pero sí puede dar el número para contrastarlo contra lo que
+                      dice la inmobiliaria. */}
+                  {paso.id === "contratos" && (() => {
+                    const lotesCargados = (hechos.lotes?.imported || 0) + (hechos.lotes?.updated || 0);
+                    const conContrato = revision.imported + (revision.updated || 0);
+                    const sinContrato = lotesCargados - conContrato;
+                    if (lotesCargados === 0 || sinContrato <= 0) return null;
+                    return (
+                      <div className="mt-2 rounded-[10px] border border-[#D9E2EC] bg-[#F5F8FB] px-3 py-2.5 text-[0.75rem] leading-relaxed text-[#41556B]">
+                        <b>{sinContrato} de los {lotesCargados} lotes</b> no aparecen en este
+                        archivo. Está bien si siguen disponibles; si la inmobiliaria dice que
+                        están vendidos o apartados, falta esa fila.
+                      </div>
+                    );
+                  })()}
+
                   {paso.id === "contratos" && revision.installments > 0 && (
                     <div className="mt-1 text-[0.76rem] text-[#4E7A55]">
                       {revision.installments.toLocaleString("es-MX")} cuotas ·{" "}
