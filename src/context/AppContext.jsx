@@ -235,11 +235,16 @@ export function AppProvider({ children }) {
   const closeModal = (modal) => setUi((p) => ({ ...p, [modal]: false }));
   const toggleSidebar = () => setUi((p) => ({ ...p, sidebarOpen: !p.sidebarOpen }));
   const closeSidebar = () => setUi((p) => ({ ...p, sidebarOpen: false }));
-  const showToast = (message, kind = "success") => {
+  // Memoizadas: un consumidor que las ponga en las dependencias de un useEffect
+  // —para mostrar el error de una consulta, por ejemplo— entraba en bucle. El
+  // toast re-renderiza el provider, eso cambiaba la identidad de la función, y
+  // el efecto volvía a dispararse sin fin.
+  const toastTimer = useRef(null);
+  const showToast = useCallback((message, kind = "success") => {
     setToast(typeof message === "object" ? message : { kind, message });
-    window.clearTimeout(showToast._timer);
-    showToast._timer = window.setTimeout(() => setToast(null), 2600);
-  };
+    window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 2600);
+  }, []);
   // keep a stable ref so effects without showToast in deps can still call it
   showToastRef.current = showToast;
 
@@ -300,13 +305,15 @@ export function AppProvider({ children }) {
     setCurrentUser((prev) => (prev ? { ...prev, ...partial } : prev));
   };
 
-  const showError = (error, fallbackMessage) => {
+  const showError = useCallback((error, fallbackMessage) => {
     const parsed = parseApiError(error, fallbackMessage);
     setToast({ kind: "error", ...parsed });
-    window.clearTimeout(showToast._timer);
-    showToast._timer = window.setTimeout(() => setToast(null), 9000);
+    // El temporizador vive en un ref, no colgado de la función: antes se perdía
+    // en cada render y el toast anterior nunca se cancelaba.
+    window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 9000);
     return parsed;
-  };
+  }, []);
 
   // Aviso global de tope de plan (OT-SUB-4001): el interceptor de api.js emite este
   // evento en cualquier escritura bloqueada por cuota; aquí lo presentamos con el
