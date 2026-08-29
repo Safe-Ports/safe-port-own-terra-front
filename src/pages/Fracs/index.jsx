@@ -4,6 +4,7 @@ import { HiMap, HiBookmark, HiSquares2X2, HiXMark } from "react-icons/hi2";
 import GuideModal from "@/components/shared/GuideModal";
 import PhoneInput from "@/components/shared/PhoneInput";
 import ClientPicker from "@/components/shared/ClientPicker";
+import FilePicker from "@/components/shared/FilePicker";
 import DocumentUploadFields, { useDocumentUpload } from "@/components/shared/DocumentUploadFields";
 import MatrixSheet from "./MatrixSheet";
 import { Link, useNavigate } from "react-router-dom";
@@ -874,14 +875,12 @@ function FracsPage() {
                         </div>
 
                         <label className="frac-appt-lbl">Comprobante (opcional)</label>
-                        <input
-                          type="file" className="frac-apartar-input"
+                        <FilePicker
+                          value={apartarFile}
+                          onChange={setApartarFile}
                           accept="application/pdf,image/jpeg,image/png,image/webp"
-                          onChange={(e) => setApartarFile(e.target.files?.[0] || null)}
+                          hint="PDF o imagen. Si no lo tienes ahora, apartas igual y lo subes después."
                         />
-                        <div style={{ fontSize: ".72rem", color: "var(--mu)", marginTop: -4, lineHeight: 1.4 }}>
-                          {apartarFile ? `Se adjuntará ${apartarFile.name}` : "Si no lo tienes ahora, apartas igual y lo subes después."}
-                        </div>
 
                         <Button
                           variant="primary"
