@@ -251,6 +251,10 @@ function LotsPage() {
     setDraftProject({ mode: "selector", name: "Nuevo Fraccionamiento", mapUrl: "", sections: [], cadProcessing: false });
   }, []);
 
+  // Cargar a mano y cargar por archivo son dos caminos que se estorban: el
+  // formulario de secciones quedaba atenuado cuando ya se había importado, y
+  // ambos competían por la misma pantalla. Ahora se elige uno.
+  const [modoCarga, setModoCarga] = useState("manual");
   const [sectionName, setSectionName] = useState("");
   // Se conserva como texto mientras el usuario escribe para permitir borrar
   // completamente el valor antes de capturar una nueva cantidad.
@@ -583,6 +587,9 @@ function LotsPage() {
   // builder manual de secciones se deshabilita. Para agregar un lote olvidado se usa
   // el "+" de cada sección (que ahora agrega 1).
   const importedByFile = (importSummary?.imported ?? 0) > 0;
+  // Al volver a un borrador que vino de archivo, se abre en ese modo: es donde
+  // está el contexto de lo que se cargó.
+  useEffect(() => { if (importedByFile) setModoCarga("archivo"); }, [importedByFile]);
 
   const updateMap = async (file) => {
     if (!isSupportedMapImage(file)) {
@@ -747,6 +754,31 @@ function LotsPage() {
                   />
                 </div>
               </div>
+              <div style={{ display: "flex", gap: 8, margin: "4px 0 14px" }}>
+                {[
+                  { id: "manual", titulo: "Cargar a mano", detalle: "Secciones y número de lotes" },
+                  { id: "archivo", titulo: "Importar archivo", detalle: "Excel o CSV" },
+                ].map(op => {
+                  const activo = modoCarga === op.id;
+                  return (
+                    <button key={op.id} type="button" onClick={() => setModoCarga(op.id)}
+                      style={{
+                        flex: 1, textAlign: "left", cursor: "pointer", borderRadius: 12,
+                        padding: "10px 13px", background: activo ? "rgba(53,94,59,.07)" : "transparent",
+                        border: `1.5px solid ${activo ? "var(--earth)" : "rgba(67,69,63,.14)"}`,
+                        fontFamily: "var(--font-body)",
+                      }}>
+                      <span style={{ display: "block", fontWeight: 700, fontSize: ".85rem",
+                                     color: activo ? "var(--earth)" : "var(--tx)" }}>{op.titulo}</span>
+                      <span style={{ display: "block", fontSize: ".72rem", color: "var(--mu)", marginTop: 1 }}>
+                        {op.detalle}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {modoCarga === "manual" && (
               <div className="lots-section-form" data-tour="frac-secciones" style={importedByFile ? { opacity: 0.5 } : undefined}>
                 <div className="lots-section-name">
                   <div className="lots-builder-label">
@@ -794,11 +826,15 @@ function LotsPage() {
                   Agregar
                 </button>
               </div>
-              {importedByFile && (
+              )}
+
+              {modoCarga === "manual" && importedByFile && (
                 <div className="lots-import-hint">
                   Lotes importados por archivo. Para agregar uno olvidado, usa el <b>+</b> de la sección abajo.
                 </div>
               )}
+
+              {modoCarga === "archivo" && (
               <div className="lots-excel-row" data-tour="frac-excel">
                 <div>
                   <span className="lots-excel-title">Llenar con Excel o CSV</span>
@@ -835,6 +871,7 @@ function LotsPage() {
                   onChange={handleExcelFile}
                 />
               </div>
+              )}
             </div>
 
             {/* Matrix board */}
