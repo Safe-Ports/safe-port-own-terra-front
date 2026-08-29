@@ -8,6 +8,7 @@ import {
   HiOutlineFunnel, HiOutlineEllipsisVertical,
   HiArrowTrendingDown, HiArrowTrendingUp, HiBanknotes, HiCreditCard, HiMagnifyingGlass,
   HiPhone, HiBars3, HiPlusCircle, HiOutlineWallet, HiOutlineClock, HiOutlineChartBar,
+  HiOutlinePaperClip,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 import FilePicker from "@/components/shared/FilePicker";
@@ -322,6 +323,7 @@ function PagoTable({ rows, isEgreso, historial, onPagar, onRecordar, onEdit, onD
           <th>Vence</th>
           <th>Estado</th>
           <th>Días</th>
+          <th>Comprobante</th>
           {!historial && <th/>}
         </tr>
       </thead>
@@ -373,6 +375,18 @@ function PagoTable({ rows, isEgreso, historial, onPagar, onRecordar, onEdit, onD
               <td><span className={`pc-chip ${status}`}>{ESTADO_LABEL[status] || status}</span></td>
               {/* Días */}
               <td><span className={`days-badge ${cls}`}>{lbl}</span></td>
+              {/* Comprobante */}
+              <td>
+                {r.receipt_url ? (
+                  <a href={r.receipt_url} target="_blank" rel="noreferrer"
+                     style={{ display: "inline-flex", alignItems: "center", gap: 4,
+                              fontSize: ".76rem", color: "var(--earth)", fontWeight: 600 }}>
+                    <HiOutlinePaperClip /> Ver
+                  </a>
+                ) : (
+                  <span style={{ fontSize: ".76rem", color: "var(--mu)" }}>—</span>
+                )}
+              </td>
               {/* Acciones */}
               {!historial && (
                 <td>
@@ -1326,7 +1340,19 @@ export default function PaymentsPage() {
     }
     // `paid` decide si el egreso nace pagado o programado; el backend pone la
     // fecha de pago solo en el primer caso.
-    createExpense.mutate({ ...body, paid: !!form.paid, paid_date: form.paid_date || null });
+    createExpense.mutate(
+      { ...body, paid: !!form.paid, paid_date: form.paid_date || null },
+      {
+        // El comprobante se sube después de crear, y no bloquea: el egreso ya
+        // quedó registrado aunque falle la subida.
+        onSuccess: async (creado) => {
+          if (!form._file || !creado?.id) return;
+          try { await expenseService.receipt(creado.id, form._file); }
+          catch { showToast("Egreso registrado, pero no se pudo subir el comprobante", "warning"); }
+          qc.invalidateQueries({ queryKey: ["expenses"] });
+        },
+      },
+    );
   };
 
   /* ── KPIs extra: mora + egresos operativos ── */

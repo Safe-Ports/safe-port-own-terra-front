@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { HiOutlineBanknotes, HiOutlineHomeModern } from "react-icons/hi2";
+import { HiOutlineBanknotes, HiOutlineHomeModern, HiOutlinePaperClip } from "react-icons/hi2";
 import { incomeService, INCOME_CAT } from "@/services/incomeService";
 
 /* Todo el dinero que entra, en una sola vista: la cobranza de lotes —que vive en
@@ -60,6 +60,7 @@ export default function IncomesPanel({ busqueda = "", estado = "all", onMarcarRe
           <th>Concepto</th>
           <th style={{ textAlign: "right" }}>Monto</th>
           <th>Fecha</th>
+          <th>Comprobante</th>
           <th>Estado</th>
         </tr>
       </thead>
@@ -84,6 +85,17 @@ export default function IncomesPanel({ busqueda = "", estado = "all", onMarcarRe
               </td>
               <td style={{ fontSize: ".8rem", color: "var(--mu)", whiteSpace: "nowrap" }}>
                 {fecha(f.received_date || f.due_date)}
+              </td>
+              <td>
+                {f.receipt_url ? (
+                  <a href={f.receipt_url} target="_blank" rel="noreferrer"
+                     style={{ display: "inline-flex", alignItems: "center", gap: 4,
+                              fontSize: ".76rem", color: "var(--earth)", fontWeight: 600 }}>
+                    <HiOutlinePaperClip /> Ver
+                  </a>
+                ) : (
+                  <span style={{ fontSize: ".76rem", color: "var(--mu)" }}>—</span>
+                )}
               </td>
               <td>
                 {recibido ? (
