@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import MigrationWizard from "./MigrationWizard";
 import { useNavigate } from "react-router-dom";
 import { HiChevronLeft, HiChevronRight, HiCube, HiMap, HiPencil, HiXMark } from "react-icons/hi2";
 import * as XLSX from "xlsx";
@@ -255,6 +256,9 @@ function LotsPage() {
   // formulario de secciones quedaba atenuado cuando ya se había importado, y
   // ambos competían por la misma pantalla. Ahora se elige uno.
   const [modoCarga, setModoCarga] = useState("manual");
+  // La migración carga la inmobiliaria entera —varios fraccionamientos, cartera
+  // y contratos—, así que vive fuera del editor, que trabaja sobre un proyecto.
+  const [migrando, setMigrando] = useState(false);
   const [sectionName, setSectionName] = useState("");
   // Se conserva como texto mientras el usuario escribe para permitir borrar
   // completamente el valor antes de capturar una nueva cantidad.
@@ -1254,7 +1258,9 @@ function LotsPage() {
         </div>
       </section>
 
-      {draftProject.mode === "selector" ? (
+      {migrando ? (
+        <MigrationWizard onSalir={() => setMigrando(false)} />
+      ) : draftProject.mode === "selector" ? (
         <section className="rounded-[28px] border border-[#E2E7E5] bg-white/88 p-8 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
           <div className="mx-auto max-w-[660px] text-center">
             <h2 className="font-display text-[1.65rem] text-forest">Carga de Lotes</h2>
@@ -1308,6 +1314,24 @@ function LotsPage() {
                 </button>
               </div>
 
+            </div>
+
+            {/* Traer una inmobiliaria que ya opera. Va aparte de los métodos de
+                arriba porque no carga un proyecto: carga la empresa entera. */}
+            <div className="mt-7 border-t border-[#E2E7E5] pt-6 text-left sm:flex sm:items-center sm:gap-5">
+              <div className="flex-1">
+                <div className="font-display text-[1rem] text-forest">¿Vienes de otro sistema?</div>
+                <p className="mt-1 text-[0.78rem] leading-relaxed text-[#83867C]">
+                  Migra el inventario completo, la cartera de clientes y los contratos con su
+                  cobranza. Se hace una sola vez, en tres pasos.
+                </p>
+              </div>
+              <button
+                onClick={() => setMigrando(true)}
+                className="mt-4 shrink-0 rounded-[9px] border-2 border-[#355E3B] px-5 py-2.5 text-[0.8rem] font-bold text-[#355E3B] transition-colors hover:bg-[#355E3B] hover:text-white sm:mt-0"
+              >
+                Migrar inmobiliaria
+              </button>
             </div>
           </div>
         </section>
