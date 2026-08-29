@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
-  HiOutlineDocumentText, HiOutlineBanknotes, HiOutlineClock, HiOutlineExclamationTriangle,
+  HiOutlineBanknotes, HiOutlineClock, HiOutlineExclamationTriangle,
 } from "react-icons/hi2";
 import { dashboardService } from "@/services/dashboardService";
 
@@ -14,7 +14,7 @@ const ESTILOS = `
     padding:14px 6px; box-shadow:var(--sh); margin-bottom:18px; }
   .qs-hd { font-size:.66rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase;
     color:var(--mu); padding:0 14px; margin-bottom:12px; }
-  .qs-row { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); }
+  .qs-row { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); }
   .qs-item { display:flex; gap:11px; align-items:center; padding:2px 14px; min-width:0;
     border-left:1px solid var(--bd); background:none; border-top:0; border-right:0;
     border-bottom:0; font:inherit; text-align:left; cursor:pointer; }
@@ -30,9 +30,9 @@ const ESTILOS = `
     font-variant-numeric:tabular-nums; }
   .qs-sub { font-size:.66rem; color:var(--mu); white-space:nowrap; overflow:hidden;
     text-overflow:ellipsis; }
-  @media (max-width:900px){
-    .qs-row { grid-template-columns:repeat(2,minmax(0,1fr)); row-gap:14px; }
-    .qs-item:nth-child(3) { border-left:0; }
+  @media (max-width:820px){
+    .qs-row { grid-template-columns:1fr; row-gap:14px; }
+    .qs-item { border-left:0; }
   }
 `;
 
@@ -51,9 +51,6 @@ export default function QuickSummary() {
   const q = data.quick;
 
   const items = [
-    { k: "ap", ico: <HiOutlineDocumentText />, tono: "#6FAF6B",
-      label: "Contratos pendientes", valor: q.pending_approval.value,
-      sub: q.pending_approval.detail, ir: "/contratos" },
     { k: "co", ico: <HiOutlineBanknotes />, tono: "#355E3B",
       label: "Por cobrar este mes", valor: q.due_this_month.value,
       sub: money(q.due_this_month.amount), ir: "/pagos" },
