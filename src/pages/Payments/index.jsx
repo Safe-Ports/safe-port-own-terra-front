@@ -11,6 +11,8 @@ import {
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 import FilePicker from "@/components/shared/FilePicker";
+import IncomesPanel from "./IncomesPanel";
+import { incomeService, INCOME_CAT } from "@/services/incomeService";
 import { paymentService } from "@/services/paymentService";
 import { useLandsGuide } from "@/context/LandsGuideContext";
 import { expenseService, CAT_LABEL, CAT_STYLE } from "@/services/expenseService";
@@ -1166,6 +1168,40 @@ export default function PaymentsPage() {
     if (ok) setModal(null);
   };
 
+  const guardarIngreso = async (form) => {
+    setAbonoBusy(true);
+    try {
+      const creado = await incomeService.create({
+        concepto: form.concepto, categoria: form.categoria, monto: form.monto,
+        due_date: form.due_date, notes: form.notes || null, received: form.received,
+      });
+      // El comprobante no bloquea: el ingreso ya quedó registrado.
+      if (form._file) {
+        try { await incomeService.receipt(creado.id, form._file); }
+        catch { showToast("Ingreso registrado, pero no se pudo subir el comprobante", "warning"); }
+      }
+      qc.invalidateQueries({ queryKey: ["incomes"] });
+      qc.invalidateQueries({ queryKey: ["payments"] });
+      setModal(null);
+      showToast("Ingreso registrado");
+    } catch (e) {
+      showError(e, "No se pudo registrar el ingreso");
+    } finally {
+      setAbonoBusy(false);
+    }
+  };
+
+  const marcarIngresoRecibido = async (fila) => {
+    try {
+      await incomeService.update(fila.id, { status: "received" });
+      qc.invalidateQueries({ queryKey: ["incomes"] });
+      qc.invalidateQueries({ queryKey: ["payments"] });
+      showToast("Ingreso marcado como recibido");
+    } catch (e) {
+      showError(e, "No se pudo marcar el ingreso");
+    }
+  };
+
   const handleSaveEgreso = form => {
     const body = { concepto: form.concepto, categoria: form.categoria, monto: Number(form.monto),
       due_date: form.due_date, recurrencia: form.recurrencia || null, notes: form.notes || null,
@@ -1346,6 +1382,7 @@ export default function PaymentsPage() {
           <div className="cf-sub">Gestión de amortizaciones y flujo de caja</div>
         </div>
         <div className="cf-top-actions" data-tour="pagos-registrar">
+          <button className="cf-btn cf-btn-ghost" onClick={() => setModal("ingreso")}><HiArrowTrendingUp /> Registrar ingreso</button>
           <button className="cf-btn cf-btn-ghost" onClick={() => { setEditing(null); setModal("egreso"); }}><HiArrowTrendingDown /> Registrar egreso</button>
           <button className="cf-btn cf-btn-primary" onClick={() => setModal("cobro")}><HiPlusCircle /> Registrar pago</button>
         </div>
@@ -1369,6 +1406,7 @@ export default function PaymentsPage() {
       <div className="cf-panel">
         <div className="cf-tabs" data-tour="pagos-tabs">
           <button className={`cf-tab ${tab === "amort" ? "on" : ""}`} onClick={() => setTab("amort")}>Amortizaciones de Lotes</button>
+          <button className={`cf-tab ${tab === "ingresos" ? "on" : ""}`} onClick={() => { setTab("ingresos"); setEstado("all"); setSearch(""); setPage(1); }}>Registro de Ingresos</button>
           <button className={`cf-tab ${tab === "egresos" ? "on" : ""}`} onClick={() => { setTab("egresos"); setEstado("all"); setSearch(""); setPage(1); }}>Registro de Egresos</button>
         </div>
 
@@ -1421,6 +1459,12 @@ export default function PaymentsPage() {
           </>
         )}
 
+        {tab === "ingresos" && (
+          <div className="card-body" style={{ padding: 0 }}>
+            <IncomesPanel onMarcarRecibido={marcarIngresoRecibido} />
+          </div>
+        )}
+
         {tab === "egresos" && (
           <>
             <div className="cf-neto">
@@ -1460,6 +1504,9 @@ export default function PaymentsPage() {
       {modal === "cobro"  && (
         <CobroModal clients={clients} contracts={contracts} payments={ingresos} busy={abonoBusy}
           onClose={() => setModal(null)} onSave={guardarCobroManual} />
+      )}
+      {modal === "ingreso" && (
+        <IngresoModal busy={abonoBusy} onClose={() => setModal(null)} onSave={guardarIngreso} />
       )}
       {abono && <AbonoModal payment={abono} siguientes={siguientesDelContrato} busy={abonoBusy} onClose={() => setAbono(null)} onConfirm={confirmAbono} />}
       <GuideModal
