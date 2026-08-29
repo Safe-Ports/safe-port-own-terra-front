@@ -648,7 +648,10 @@ function IngresoModal({ onClose, onSave, busy }) {
 /* ── Modal cobro ─────────────────────────────────────────────── */
 function CobroModal({ clients, contracts, payments, onClose, onSave, busy }) {
   useEscapeKey(onClose);
-  const [form, setForm] = useState({ clientId: "", contractId: "", paymentId: "", amount: "" });
+  const [form, setForm] = useState({
+    clientId: "", contractId: "", paymentId: "", amount: "",
+    paid_date: new Date().toISOString().split("T")[0],
+  });
   const [modo, setModo] = useState("completa");
   const [file, setFile] = useState(null);
   const [err, setErr] = useState("");
@@ -725,6 +728,7 @@ function CobroModal({ clients, contracts, payments, onClose, onSave, busy }) {
       paymentId: cuota.id,
       amount: Number(val.toFixed(2)),
       paymentIds: modo === "varias" ? reparto.map(f => f.id) : null,
+      paidDate: form.paid_date,
       file,
     });
   };
@@ -832,14 +836,27 @@ function CobroModal({ clients, contracts, payments, onClose, onSave, busy }) {
                 )}
               </div>
 
-              <div className="fg">
-                <label className="fl">Comprobante (opcional)</label>
-                <FilePicker value={file} onChange={setFile}
-                  accept="application/pdf,image/jpeg,image/png,image/webp"
-                  hint="PDF o imagen. Puedes registrar el cobro ahora y subirlo después." />
-              </div>
             </>
           )}
+
+          {!cuota && (
+            <div style={{ fontSize: ".76rem", color: "var(--mu)", lineHeight: 1.45,
+                          background: "var(--sf2)", borderRadius: 10, padding: "9px 12px" }}>
+              Elige la cuota y aparecerá el monto con las opciones de cobro.
+            </div>
+          )}
+
+          <div className="fg">
+            <label className="fl">Fecha del cobro</label>
+            <input className="fi" type="date" value={form.paid_date} onChange={set("paid_date")} />
+          </div>
+
+          <div className="fg">
+            <label className="fl">Comprobante (opcional)</label>
+            <FilePicker value={file} onChange={setFile}
+              accept="application/pdf,image/jpeg,image/png,image/webp"
+              hint="PDF o imagen. Puedes registrar el cobro ahora y subirlo después." />
+          </div>
 
           <FieldError msg={err} />
         </div>
@@ -1256,11 +1273,11 @@ export default function PaymentsPage() {
   }, [abono, ingresos]);
   /* El modal de arriba antes solo se cerraba: el formulario no guardaba nada.
      Ahora pasa por el mismo cobro que el de la fila. */
-  const guardarCobroManual = async ({ contractId, paymentId, amount, paymentIds, file }) => {
+  const guardarCobroManual = async ({ contractId, paymentId, amount, paymentIds, file, paidDate }) => {
     setAbonoBusy(true);
     const ok = paymentIds?.length
-      ? await collectOnContract(contractId, { amount, paymentIds, file })
-      : await quickPay(paymentId, amount, file);
+      ? await collectOnContract(contractId, { amount, paymentIds, file, paidDate })
+      : await quickPay(paymentId, amount, file, paidDate);
     setAbonoBusy(false);
     if (ok) setModal(null);
   };

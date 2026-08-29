@@ -629,10 +629,10 @@ export function AppProvider({ children }) {
     }
   };
 
-  const quickPay = async (paymentId, amount, file) => {
+  const quickPay = async (paymentId, amount, file, paidDate) => {
     try {
       await paymentService.markPaid(paymentId, {
-        paid_date: new Date().toISOString().split("T")[0],
+        paid_date: paidDate || new Date().toISOString().split("T")[0],
         payment_method: "transfer",
         amount_paid: amount,
       });
@@ -654,11 +654,11 @@ export function AppProvider({ children }) {
     }
   };
 
-  const collectOnContract = async (contractId, { amount, paymentIds, file } = {}) => {
+  const collectOnContract = async (contractId, { amount, paymentIds, file, paidDate } = {}) => {
     try {
       const data = await paymentService.collect(contractId, {
         amount,
-        paid_date: new Date().toISOString().split("T")[0],
+        paid_date: paidDate || new Date().toISOString().split("T")[0],
         payment_method: "transfer",
         ...(paymentIds?.length ? { payment_ids: paymentIds } : {}),
       });
