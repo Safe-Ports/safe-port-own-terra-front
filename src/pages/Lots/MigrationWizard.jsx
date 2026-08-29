@@ -10,6 +10,7 @@ import { clientService } from "@/services/clientService";
 import { lotService } from "@/services/lotService";
 import { contractService } from "@/services/contractService";
 import { enTandas, parseSheet } from "./parseSheet";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
 import { inmuebleService } from "@/services/inmuebleService";
@@ -135,6 +136,7 @@ function Asistente({ onSalir }) {
      lotes. Sin elegirlo, el importador no sabe dónde poner nada y los lotes
      quedarían repartidos por nombre, que es frágil. */
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { fracs = [], showToast } = useAppContext();
   const guardado = leerAvance(orgId);
   const [fracId, setFracId] = useState(guardado?.fracId ?? "");
@@ -156,6 +158,8 @@ function Asistente({ onSalir }) {
     setCreandoFrac(true);
     try {
       const creado = await inmuebleService.create({ name: nombre });
+      // Para que aparezca en el desplegable sin recargar.
+      await qc.invalidateQueries({ queryKey: ["inmuebles"] });
       setFracId(creado.id);
       setFracNuevo("");
       showToast?.(`Fraccionamiento "${nombre}" creado`);
@@ -274,6 +278,11 @@ function Asistente({ onSalir }) {
     try {
       const r = await correr(paso.id, archivo, false);
       setHechos(p => ({ ...p, [paso.id]: r }));
+      // Sin esto, ir a ver los lotes recién cargados muestra la lista vieja y
+      // hay que refrescar a mano — como si la migración no hubiera hecho nada.
+      for (const llave of ["lots", "inmuebles", "clients", "contracts", "payments"]) {
+        qc.invalidateQueries({ queryKey: [llave] });
+      }
     } catch (e) {
       setError(e?.response?.data?.error?.message || e.message || "No se pudo cargar el archivo");
     } finally { setOcupado(false); }

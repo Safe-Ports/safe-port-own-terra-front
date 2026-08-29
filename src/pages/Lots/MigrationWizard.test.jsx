@@ -14,6 +14,8 @@ vi.mock("@/context/AppContext", () => ({
   }),
 }));
 vi.mock("react-router-dom", () => ({ useNavigate: () => () => {} }));
+const invalidar = vi.fn();
+vi.mock("@tanstack/react-query", () => ({ useQueryClient: () => ({ invalidateQueries: invalidar }) }));
 vi.mock("@/services/inmuebleService", () => ({ inmuebleService: { create: vi.fn() } }));
 
 import MigrationWizard from "./MigrationWizard";
@@ -241,6 +243,26 @@ describe("Asistente de migración: la revisión del archivo", () => {
       expect.anything(),
       expect.objectContaining({ fraccionamiento_id: "frac-1" }),
     );
+  });
+
+  it("refresca las listas al terminar un paso", async () => {
+    // Sin esto, ir a ver los lotes recién cargados muestra la lista vieja y hay
+    // que refrescar a mano, como si la migración no hubiera hecho nada.
+    importCsv
+      .mockResolvedValueOnce({ imported: 0, updated: 0, failed: 0, errors: [], warnings: [],
+                               preview_lots: [{ row: 2 }] })
+      .mockResolvedValueOnce({ imported: 1, updated: 0, failed: 0, errors: [], warnings: [] });
+    invalidar.mockClear();
+
+    const { container } = render(<MigrationWizard onSalir={() => {}} />);
+    await act(async () => elegirFraccionamiento(container));
+    await act(async () => elegirArchivo(container));
+    await act(async () => clickPorTexto(container, "Revisar archivo"));
+    await act(async () => clickPorTexto(container, "Cargar 1 registros"));
+
+    const llaves = invalidar.mock.calls.map((c) => c[0].queryKey[0]);
+    expect(llaves).toContain("lots");
+    expect(llaves).toContain("inmuebles");
   });
 
   /* Falta acá el caso de "el servidor rechaza el archivo". El componente lo
