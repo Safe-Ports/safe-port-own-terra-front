@@ -549,7 +549,14 @@ export function AppProvider({ children }) {
       await queryClient.invalidateQueries({ queryKey: ["document-folders"] });
     }
 
-    showToast(`Contrato ${payload.id ? "actualizado" : "registrado"}${docs.length > 0 ? ` · ${docs.length} doc${docs.length > 1 ? "s" : ""} subido${docs.length > 1 ? "s" : ""}` : ""}`);
+    const conDocs = docs.length > 0 ? ` · ${docs.length} doc${docs.length > 1 ? "s" : ""} subido${docs.length > 1 ? "s" : ""}` : "";
+    // Un colaborador tiene que enterarse de que su contrato todavía no está
+    // vigente: decirle sólo "registrado" lo dejaría creyendo que la venta cerró.
+    if (savedContract?.status === "pending_approval") {
+      showToast(`Contrato enviado a aprobación${conDocs}. El lote queda apartado hasta que un administrador lo autorice.`);
+    } else {
+      showToast(`Contrato ${payload.id ? "actualizado" : "registrado"}${conDocs}`);
+    }
     setEditingContract(null);
     setContractDraft(null);
     closeModal("contractModal");
@@ -615,19 +622,53 @@ export function AppProvider({ children }) {
     }
   };
 
-  const quickPay = async (paymentId, amount) => {
+  const quickPay = async (paymentId, amount, file) => {
     try {
       await paymentService.markPaid(paymentId, {
         paid_date: new Date().toISOString().split("T")[0],
         payment_method: "transfer",
         amount_paid: amount,
       });
+      // El comprobante va aparte y no bloquea: si falla la subida, el cobro ya
+      // quedó registrado y el papel se puede adjuntar después.
+      if (file) {
+        try {
+          await paymentService.uploadReceipt(paymentId, file);
+        } catch {
+          showToast("Cobro registrado, pero no se pudo subir el comprobante");
+        }
+      }
       await queryClient.invalidateQueries({ queryKey: ["payments"] });
       await queryClient.invalidateQueries({ queryKey: ["contracts"] });
       showToast("Pago registrado correctamente");
       return true;
     } catch (err) {
       showError(err, "Error al registrar el pago");
+    }
+  };
+
+  const collectOnContract = async (contractId, { amount, paymentIds, file } = {}) => {
+    try {
+      const data = await paymentService.collect(contractId, {
+        amount,
+        paid_date: new Date().toISOString().split("T")[0],
+        payment_method: "transfer",
+        ...(paymentIds?.length ? { payment_ids: paymentIds } : {}),
+      });
+      await queryClient.invalidateQueries({ queryKey: ["payments"] });
+      await queryClient.invalidateQueries({ queryKey: ["contracts"] });
+      if (file && data?.receipt_id) {
+        try {
+          await paymentService.uploadCollectReceipt(data.receipt_id, file);
+        } catch {
+          showToast("Cobro registrado, pero no se pudo subir el comprobante");
+        }
+      }
+      const n = data.installments?.length || 0;
+      showToast(n > 1 ? `Cobro registrado en ${n} cuotas` : "Pago registrado correctamente");
+      return data;
+    } catch (err) {
+      showError(err, "Error al registrar el cobro");
     }
   };
 
@@ -990,6 +1031,7 @@ export function AppProvider({ children }) {
     openContractCreate,
     resetContractDraft,
     quickPay,
+    collectOnContract,
     savePayment,
     exportAppData,
     sendReminder,

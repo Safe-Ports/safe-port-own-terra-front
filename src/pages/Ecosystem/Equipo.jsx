@@ -411,7 +411,7 @@ function EcosystemEquipo() {
               {[
                 ["all", "Todos"],
                 ["admin", "Admins"],
-                ["vendor", "Vendedores"],
+                ["vendor", "Colaboradores"],
                 ["employee", "Personal"],
               ].map(([value, label]) => (
                 <button key={value} className={`usr-fil ${typeFilter === value ? "on" : ""}`} onClick={() => setTypeFilter(value)}>{label}</button>
@@ -649,8 +649,8 @@ function EcosystemEquipo() {
                   <div className="usr-field">
                     <label className="usr-field-lbl">Rol</label>
                     <select className="usr-select" value={modal.draft.role} onChange={(e) => setDraft({ role: e.target.value })}>
-                      <option value="vendor">Vendedor Lands</option>
-                      <option value="admin">Administrador Core</option>
+                      <option value="vendor">Colaborador</option>
+                      <option value="admin">Administrador</option>
                     </select>
                   </div>
                   <div className="usr-field">
@@ -763,8 +763,8 @@ function EcosystemEquipo() {
           { title: "Nuevo colaborador", text: "Pulsa 'Nuevo colaborador': por defecto queda sin acceso (nombre, puesto, teléfono). Marca '¿Le damos acceso a la app?' solo si necesita loguearse — ahí pide correo, rol y contraseña temporal." },
           { title: "Asignar apps", text: "Desde la ficha de cada usuario puedes activar o desactivar su acceso a OwnTerra Lands." },
           { title: "Restablecer contraseña", text: "Si un usuario olvidó su contraseña, usa el botón de restablecer en su ficha para generar una nueva contraseña temporal." },
-          { title: "Filtrar por tipo", text: "Las pestañas superiores permiten ver todos, solo admins, solo vendedores, o solo personal." },
-          { title: "Vendedores en Lands", text: "Los usuarios con rol Vendor aparecen en los selectores de vendedor al crear contratos, lotes y clientes en OwnTerra Lands." },
+          { title: "Filtrar por tipo", text: "Las pestañas superiores permiten ver todos, solo administradores, solo colaboradores, o solo personal." },
+          { title: "Los dos roles", text: "Un administrador maneja la organización, el equipo y los accesos. Un colaborador opera su cartera: clientes, apartados y citas. Cualquiera de los dos puede ser el vendedor asignado de un lote o un contrato — eso es quién lleva la operación comercial, no un rol." },
         ]}
       />
     </EcoLayout>

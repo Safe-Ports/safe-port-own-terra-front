@@ -10,9 +10,9 @@
    ════════════════════════════════════════════════════════════════════ */
 
 .pf-page {
-  --pf-surface: var(--surface, var(--sf, #FBFAF6));
-  --pf-surface2: var(--surface2, var(--sf2, #F3F1EA));
-  --pf-border: var(--border2, var(--bd, #DCDAD2));
+  --pf-surface: var(--surface, var(--sf, #FFFFFF));
+  --pf-surface2: var(--surface2, var(--sf2, #EEF1F1));
+  --pf-border: var(--border2, var(--bd, #E2E7E5));
   --pf-text: var(--text, var(--tx, #1B1D19));
   --pf-text2: var(--text2, var(--tx2, #43453F));
   --pf-muted: var(--text3, var(--mu, #83867C));

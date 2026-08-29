@@ -17,9 +17,12 @@ const VISIBLE_TOURS = TOURS.filter((t) => !t.hidden);
  * sin que cada página tenga que montarla por su cuenta.
  */
 function GuidedToursSection({ onClose }) {
-  const { currentUser } = useAppContext();
+  const { currentUser, canUseFeature } = useAppContext();
   const navigate = useNavigate();
   const seenTours = currentUser?.tours_seen || [];
+  // Solo los recorridos de pantallas a las que este usuario entra: ofrecerle uno
+  // que termina en "sin acceso" es peor que no ofrecerlo.
+  const tours = VISIBLE_TOURS.filter((t) => !t.gate || canUseFeature(t.gate));
 
   // Relanzar un tour: si vive en una ruta concreta, navega ahí primero y lo dispara
   // cuando la pantalla ya existe (si no, no habría elementos que iluminar). Los
@@ -46,7 +49,7 @@ function GuidedToursSection({ onClose }) {
         🧭 Tours guiados
       </div>
       <div className="space-y-2">
-        {VISIBLE_TOURS.map((tour) => {
+        {tours.map((tour) => {
           const done = seenTours.includes(tour.key);
           return (
             <div

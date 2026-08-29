@@ -21,7 +21,8 @@ function GlobalSearchModal() {
     setSelectedFracId,
     openContractCreate,
     openDocumentUpload,
-    startNewProject
+    startNewProject,
+    canUseFeature
   } = useAppContext();
   const [query, setQuery] = useState("");
   const trimmedQuery = query.trim();
@@ -57,6 +58,7 @@ function GlobalSearchModal() {
       },
       {
         id: "qa_lotes",
+        gate: "lands.write",
         title: "Cargar nuevos lotes",
         subtitle: "Nuevo plano o matriz",
         type: "Acción",
@@ -67,6 +69,7 @@ function GlobalSearchModal() {
       },
       {
         id: "qa_client",
+        gate: "lands.clients",
         title: "Nuevo cliente",
         subtitle: "Alta rápida en CRM",
         type: "Acción",
@@ -78,6 +81,7 @@ function GlobalSearchModal() {
       },
       {
         id: "qa_contract",
+        gate: "lands.sales",
         title: "Generar contrato",
         subtitle: "Crear compraventa, renta o reserva",
         type: "Acción",
@@ -89,6 +93,7 @@ function GlobalSearchModal() {
       },
       {
         id: "qa_payment",
+        gate: "lands.payments",
         title: "Ver pagos",
         subtitle: "Cobranza y seguimiento",
         type: "Acción",
@@ -99,6 +104,7 @@ function GlobalSearchModal() {
       },
       {
         id: "qa_docs",
+        gate: "lands.documents",
         title: "Subir documento",
         subtitle: "Contrato, identificación o comprobante",
         type: "Acción",
@@ -110,6 +116,7 @@ function GlobalSearchModal() {
       },
       {
         id: "qa_calc",
+        gate: "lands.write",
         title: "Abrir calculadora",
         subtitle: "Amortización y pagos",
         type: "Acción",
@@ -118,8 +125,10 @@ function GlobalSearchModal() {
           navigate("/calculadora");
         }
       }
-    ],
-    [closeModal, navigate, openContractCreate, openDocumentUpload, openModal, startNewProject]
+    // Ofrecer un atajo que termina en "sin acceso" es peor que no ofrecerlo: el
+    // usuario cree que puede y descubre que no recién al llegar.
+    ].filter((a) => !a.gate || canUseFeature(a.gate)),
+    [canUseFeature, closeModal, navigate, openContractCreate, openDocumentUpload, openModal, startNewProject]
   );
 
   const backendResults = useMemo(() => {
@@ -300,7 +309,7 @@ function GlobalSearchModal() {
             results.map((item) => (
               <button
                 key={item.id}
-                className="flex w-full items-center justify-between rounded-xl border border-line bg-[#FBFAF6] px-4 py-3 text-left transition hover:border-[#355E3B] hover:bg-[#F1EEE6]"
+                className="flex w-full items-center justify-between rounded-xl border border-line bg-[#FFFFFF] px-4 py-3 text-left transition hover:border-[#355E3B] hover:bg-[#EEF1F1]"
                 onClick={item.action}
               >
                 <div>
@@ -313,7 +322,7 @@ function GlobalSearchModal() {
               </button>
             ))
           ) : (
-            <div className="rounded-2xl border border-dashed border-line bg-[#F1EEE6] px-5 py-8 text-center text-sm text-[#83867C]">
+            <div className="rounded-2xl border border-dashed border-line bg-[#EEF1F1] px-5 py-8 text-center text-sm text-[#83867C]">
               No hay resultados con ese criterio.
             </div>
           )}

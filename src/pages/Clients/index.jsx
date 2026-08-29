@@ -50,7 +50,7 @@ const LOT_STATUS_COLOR = { available: "#355E3B", sold: "#C0392B", reserved: "#9D
  * el estado del hook sin necesidad de un efecto de sincronización.
  */
 function ClientModalInner() {
-  const { closeModal, saveClient, editingClient, deleteClient, clients, showError } = useAppContext();
+  const { closeModal, saveClient, editingClient, deleteClient, clients, showError, canUseFeature } = useAppContext();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
   const ctl = useClientForm(editingClient, clients);
@@ -79,7 +79,11 @@ function ClientModalInner() {
       footer={
         <>
           <Button variant="secondary" onClick={() => closeModal("clientModal")}>Cancelar</Button>
-          {editingClient && <Button variant="danger" onClick={() => deleteClient(editingClient.id)}><HiTrash /> Eliminar</Button>}
+          {/* Dar de baja saca a alguien del sistema: es de administración, no del
+              trabajo diario con la cartera (el backend ahora pide "lands.write"). */}
+          {editingClient && canUseFeature("lands.write") && (
+            <Button variant="danger" onClick={() => deleteClient(editingClient.id)}><HiTrash /> Eliminar</Button>
+          )}
           <Button variant="primary" onClick={submit} disabled={saving}>
             {saving ? "Guardando..." : dupe ? <><HiLink /> Vincular a Lands</> : <><HiCheck /> Guardar</>}
           </Button>
@@ -114,7 +118,7 @@ function ClientsPage() {
     selectedClientId, setSelectedClientId,
     openModal, setEditingClient,
     openClientReport, sendClientMessage, openContractCreate,
-    showError,
+    showError, currentUser,
   } = useAppContext();
   const [showGuide, setShowGuide] = useState(false);
   useLandsGuide(() => setShowGuide(true));
@@ -174,6 +178,11 @@ function ClientsPage() {
   );
 
   const selected = landsClients.find((c) => c.id === selectedClientId) || filtered[0] || null;
+  // Un administrador puede con todos; un colaborador, sólo con los que tiene
+  // asignados (mismo criterio que aplica el backend en ClientService).
+  const puedeEditar = Boolean(
+    selected && (currentUser?.role === "admin" || selected.seller?.id === currentUser?.id)
+  );
   const withApps = (client) => client ? { ...client, apps: clientAppsById.get(String(client.id)) ?? [] } : null;
   const eco = selected ? getClientEcosystem(withApps(selected)) : null;
 
@@ -316,12 +325,21 @@ function ClientsPage() {
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                  <a href={`tel:${selected.phone}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DCDAD2", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiPhone /></a>
-                  <a href={`mailto:${selected.email}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DCDAD2", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiEnvelope /></a>
-                  <a href={`https://wa.me/${(selected.phone || "").replace(/\D/g,"")}`} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DCDAD2", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiChatBubbleLeftRight /></a>
-                  <Button variant="secondary" style={{ padding: "6px 14px", fontSize: ".76rem" }} onClick={() => { setEditingClient(selected); openModal("clientModal"); }}>
-                    Editar
-                  </Button>
+                  <a href={`tel:${selected.phone}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #E2E7E5", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiPhone /></a>
+                  <a href={`mailto:${selected.email}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #E2E7E5", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiEnvelope /></a>
+                  <a href={`https://wa.me/${(selected.phone || "").replace(/\D/g,"")}`} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #E2E7E5", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiChatBubbleLeftRight /></a>
+                  {/* Toda la cartera se ve, pero cada quien edita la suya. Un
+                      botón que sólo sirve para chocar con un 403 no ayuda: en su
+                      lugar se dice de quién es el cliente. */}
+                  {puedeEditar ? (
+                    <Button variant="secondary" style={{ padding: "6px 14px", fontSize: ".76rem" }} onClick={() => { setEditingClient(selected); openModal("clientModal"); }}>
+                      Editar
+                    </Button>
+                  ) : (
+                    <span className="cl-ajeno" title="Solo quien lo tiene asignado puede editarlo">
+                      {selected.seller?.name ? `Atiende ${selected.seller.name}` : "Sin vendedor asignado"}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -403,7 +421,7 @@ function ClientsPage() {
                     <div style={{ overflowX: "auto" }}>
                       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".78rem" }}>
                         <thead>
-                          <tr style={{ borderBottom: "1.5px solid #E7E4DB" }}>
+                          <tr style={{ borderBottom: "1.5px solid #EBEFED" }}>
                             {["ID Lote", "Proyecto", "Estado", "Medidas", "Progreso", ""].map((h) => (
                               <th key={h} style={{ textAlign: "left", padding: "5px 8px", fontSize: ".6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#83867C", whiteSpace: "nowrap" }}>{h}</th>
                             ))}
@@ -510,7 +528,7 @@ function ClientsPage() {
                   value={cancelForm.reason}
                   onChange={(e) => setCancelForm((p) => ({ ...p, reason: e.target.value }))}
                   placeholder="Ej: Solicitud del cliente, incumplimiento de pago..."
-                  style={{ width: "100%", borderRadius: 8, border: "1.5px solid #DCDAD2", padding: "8px 10px", fontSize: ".82rem", color: "#1E3D2B", outline: "none", fontFamily: "var(--font-body)", resize: "none", boxSizing: "border-box" }}
+                  style={{ width: "100%", borderRadius: 8, border: "1.5px solid #E2E7E5", padding: "8px 10px", fontSize: ".82rem", color: "#1E3D2B", outline: "none", fontFamily: "var(--font-body)", resize: "none", boxSizing: "border-box" }}
                 />
               </div>
               <div>
@@ -521,14 +539,14 @@ function ClientsPage() {
                   value={cancelForm.refund_amount}
                   onChange={(e) => setCancelForm((p) => ({ ...p, refund_amount: e.target.value }))}
                   placeholder="0"
-                  style={{ width: "100%", borderRadius: 8, border: "1.5px solid #DCDAD2", padding: "8px 10px", fontSize: ".82rem", color: "#1E3D2B", outline: "none", fontFamily: "var(--font-body)", boxSizing: "border-box" }}
+                  style={{ width: "100%", borderRadius: 8, border: "1.5px solid #E2E7E5", padding: "8px 10px", fontSize: ".82rem", color: "#1E3D2B", outline: "none", fontFamily: "var(--font-body)", boxSizing: "border-box" }}
                 />
               </div>
             </div>
             {/* Footer */}
             <div style={{ display: "flex", gap: 8, padding: "14px 20px", borderTop: "1px solid #EDEAE1", justifyContent: "flex-end" }}>
               <button onClick={() => setCancelDraft(null)} disabled={cancelling}
-                style={{ borderRadius: 8, border: "1.5px solid #DCDAD2", background: "#F1EEE6", color: "#43453F", padding: "7px 16px", fontSize: ".78rem", fontWeight: 700, cursor: "pointer" }}>
+                style={{ borderRadius: 8, border: "1.5px solid #E2E7E5", background: "#EEF1F1", color: "#43453F", padding: "7px 16px", fontSize: ".78rem", fontWeight: 700, cursor: "pointer" }}>
                 Cerrar
               </button>
               <button onClick={submitCancel} disabled={cancelling || !cancelForm.reason.trim()}

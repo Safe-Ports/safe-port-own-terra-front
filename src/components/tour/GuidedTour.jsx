@@ -20,7 +20,7 @@ const WELCOME_ROUTE = "/ecosistema";
 const COLORS = {
   deep: "#1E3D2B",
   mid: "#355E3B",
-  surface: "#FBFAF6",
+  surface: "#FFFFFF",
   text: "#3B3A34",
   muted: "#83867C",
 };

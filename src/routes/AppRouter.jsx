@@ -64,7 +64,7 @@ const PropertiesModule = lazyWithRetry(() => import("@/apps/properties/Propertie
 function PageLoader() {
   return (
     <div className="flex min-h-[50vh] items-center justify-center">
-      <div className="rounded-[28px] border border-[#DCDAD2] bg-white/88 px-5 py-4 text-sm font-semibold text-[#5A4E41] shadow-[0_18px_40px_rgba(24,18,14,.08)]">
+      <div className="rounded-[28px] border border-[#E2E7E5] bg-white/88 px-5 py-4 text-sm font-semibold text-[#3F4644] shadow-[0_18px_40px_rgba(30,61,43,.08)]">
         Cargando espacio de trabajo...
       </div>
     </div>
@@ -138,7 +138,12 @@ function AppRouter() {
           </Route>
           <Route element={<AppShell />}>
             <Route path="/dashboard" element={<RequireFeature app="lands"><DashboardPage /></RequireFeature>} />
-            <Route path="/lotes" element={<RequireFeature app="lands"><LotsPage /></RequireFeature>} />
+            {/* Carga de Lotes y Calculadora son pantallas de administración: crean
+                el inventario y definen la fórmula con la que se vende. Piden
+                "write" —que el rol seller no tiene— en vez de sólo acceso a Lands.
+                El vendedor sigue usando la fórmula activa al armar un contrato; lo
+                que no puede es definirla. */}
+            <Route path="/lotes" element={<RequireFeature feature="lands.write"><LotsPage /></RequireFeature>} />
             <Route path="/fraccionamientos" element={<RequireFeature app="lands"><FracsPage /></RequireFeature>} />
             <Route path="/track-lotes" element={<RequireFeature app="lands"><LotTrackPage /></RequireFeature>} />
             <Route path="/clientes" element={<RequireFeature feature="lands.clients"><ClientsPage /></RequireFeature>} />
@@ -148,7 +153,7 @@ function AppRouter() {
             <Route path="/alertas" element={<Navigate to="/pagos" replace />} />
             <Route path="/pagos" element={<RequireFeature feature="lands.payments"><PaymentsPage /></RequireFeature>} />
             <Route path="/reportes" element={<RequireFeature feature="lands.reports"><ReportsPage /></RequireFeature>} />
-            <Route path="/calculadora" element={<RequireFeature app="lands"><CalculatorPage /></RequireFeature>} />
+            <Route path="/calculadora" element={<RequireFeature feature="lands.write"><CalculatorPage /></RequireFeature>} />
             <Route path="/perfil" element={<ProfilePage />} />
             <Route path="/configuracion" element={<RequireFeature feature="core.config"><SettingsPage /></RequireFeature>} />
           </Route>

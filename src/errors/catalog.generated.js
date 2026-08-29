@@ -68,22 +68,6 @@ export const ERROR_CATALOG = {
     "name": "AUTH_INVALID_RESET_TOKEN",
     "severity": "warning"
   },
-  "OT-AUTH-2013": {
-    "action": "Vuelve a escribirla; si no la recuerdas, usa \"Olvidé mi contraseña\".",
-    "domain": "AUTH",
-    "http_status": 400,
-    "message": "Tu contraseña actual no es correcta.",
-    "name": "AUTH_WRONG_CURRENT_PASSWORD",
-    "severity": "warning"
-  },
-  "OT-AUTH-2014": {
-    "action": "Elige una distinta.",
-    "domain": "AUTH",
-    "http_status": 400,
-    "message": "La nueva contraseña es igual a la actual.",
-    "name": "AUTH_SAME_PASSWORD",
-    "severity": "warning"
-  },
   "OT-CALC-1001": {
     "action": "Revisa la sintaxis: solo se permiten números, variables, + - * / % ^, paréntesis y funciones (min, max, abs, round, floor, ceil, sqrt, pow).",
     "domain": "CALC",
@@ -244,14 +228,6 @@ export const ERROR_CATALOG = {
     "name": "DOC_DUPLICATE_FOLDER",
     "severity": "warning"
   },
-  "OT-DOC-3002": {
-    "action": "Las carpetas creadas automáticamente por app no se pueden eliminar.",
-    "domain": "DOC",
-    "http_status": 403,
-    "message": "Esta es una carpeta de sistema.",
-    "name": "DOC_SYSTEM_FOLDER",
-    "severity": "warning"
-  },
   "OT-INM-3001": {
     "action": "Cierra o transfiere las ventas antes de archivarlo.",
     "domain": "INM",
@@ -273,14 +249,6 @@ export const ERROR_CATALOG = {
     "domain": "LOT",
     "http_status": 400,
     "message": "Selecciona un cliente para apartar el lote.",
-    "name": "LOT_CLIENT_REQUIRED",
-    "severity": "warning"
-  },
-  "OT-LOT-1003": {
-    "action": "Busca o crea el cliente antes de confirmar el apartado.",
-    "domain": "LOT",
-    "http_status": 400,
-    "message": "Falta indicar el cliente interesado.",
     "name": "LOT_CLIENT_REQUIRED",
     "severity": "warning"
   },
@@ -346,14 +314,6 @@ export const ERROR_CATALOG = {
     "http_status": 409,
     "message": "Este pago no se puede modificar.",
     "name": "PAY_INVALID_STATUS",
-    "severity": "warning"
-  },
-  "OT-PAY-3003": {
-    "action": "Revisa el monto: no puede exceder lo que falta por cobrar.",
-    "domain": "PAY",
-    "http_status": 409,
-    "message": "El abono supera el saldo de la cuota.",
-    "name": "PAY_OVERPAYMENT",
     "severity": "warning"
   },
   "OT-RPT-1010": {
@@ -426,14 +386,6 @@ export const ERROR_CATALOG = {
     "http_status": 400,
     "message": "El archivo tiene demasiadas filas.",
     "name": "RPT_TOO_MANY_ROWS",
-    "severity": "warning"
-  },
-  "OT-RPT-1035": {
-    "action": "En Excel presiona Ctrl+Fin para ver hasta dónde llega el rango usado, selecciona esas filas y columnas vacías, elimínalas (clic derecho → Eliminar, no solo Suprimir contenido), guarda y vuelve a subirlo.",
-    "domain": "RPT",
-    "http_status": 400,
-    "message": "El archivo tiene formato (bordes, colores) aplicado mucho más allá de tus datos reales.",
-    "name": "RPT_PHANTOM_RANGE",
     "severity": "warning"
   },
   "OT-SUB-2001": {

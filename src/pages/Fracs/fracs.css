@@ -578,7 +578,7 @@
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  background: rgba(251, 250, 246, 0.86);
+  background: rgba(255, 255, 255, 0.86);
   border: 1px solid var(--bd);
   border-radius: 18px;
 }
@@ -665,7 +665,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: #e7e4db;
+  background: #EBEFED;
   cursor: zoom-in;
 }
 
@@ -750,7 +750,7 @@
      encima — había que sacarlo del panel para poder scrollear. `contain` sí
      corresponde en modales y cajones, donde el fondo no debe moverse. */
   scrollbar-width: thin;
-  scrollbar-color: rgba(53, 94, 59, 0.42) rgba(220, 218, 210, 0.45);
+  scrollbar-color: rgba(53, 94, 59, 0.42) rgba(226, 231, 229, 0.45);
 }
 
 .frac-lots-scroll::-webkit-scrollbar {
@@ -758,7 +758,7 @@
 }
 
 .frac-lots-scroll::-webkit-scrollbar-track {
-  background: rgba(220, 218, 210, 0.45);
+  background: rgba(226, 231, 229, 0.45);
   border-radius: 999px;
 }
 
@@ -1764,7 +1764,7 @@
   border: 1.5px dashed var(--leaf);
   border-radius: 12px;
   padding: 12px;
-  background: var(--tan-lt, #DCEBD6);
+  background: var(--tan-lt, #E3EDE3);
 }
 /* Buscar y "Nuevo" conviven en una fila: dar de alta no debe requerir buscar
    primero cuando ya se sabe que el cliente no existe. */
@@ -1828,7 +1828,7 @@
   cursor: pointer;
 }
 .client-row:last-child { border-bottom: none; }
-.client-row:hover { background: var(--tan-lt, #DCEBD6); }
+.client-row:hover { background: var(--tan-lt, #E3EDE3); }
 .client-row-empty {
   padding: 10px 11px;
   font-size: 12.5px;
@@ -2341,7 +2341,7 @@
   font-size: 10.5px;
   font-weight: 800;
 }
-.mx-pill.ok { background: #DCEBD6; color: #2F5A38; }
+.mx-pill.ok { background: #E3EDE3; color: #2F5A38; }
 .mx-pill.wr { background: #FAEBD3; color: #8A5A1E; }
 .mx-pill.sd { background: var(--mid); color: #fff; }
 

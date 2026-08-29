@@ -76,7 +76,7 @@ function InlineDocumentsPanel({ entityType, entityId, entityLabel, compact = fal
     : openDocumentUpload({ linkType: entityType, linkedId: entityId, lotCode: entityType === "lot" ? entityId : "" }));
 
   return (
-    <section className={`rounded-[24px] border border-[rgba(67,69,63,0.10)] bg-[#FBFAF6] ${compact ? "p-3" : "p-4"}`}>
+    <section className={`rounded-[24px] border border-[rgba(67,69,63,0.10)] bg-[#FFFFFF] ${compact ? "p-3" : "p-4"}`}>
       <div className="flex items-center justify-between gap-3">
         <div>
           <div className="font-mono text-[0.62rem] uppercase tracking-[0.16em] text-[#83867C]">

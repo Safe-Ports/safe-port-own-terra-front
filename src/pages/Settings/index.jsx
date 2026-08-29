@@ -421,7 +421,7 @@ function SettingsPage() {
               <div className="fg" style={{ minWidth: 120 }}>
                 <label className="fl">Rol</label>
                 <select className="fi" value={newUser.role} onChange={(e) => setNewUser((p) => ({ ...p, role: e.target.value }))}>
-                  <option value="vendor">Vendedor</option>
+                  <option value="vendor">Colaborador</option>
                   <option value="admin">Administrador</option>
                 </select>
               </div>
@@ -505,7 +505,7 @@ function SettingsPage() {
         onCancel={closeDeleteDialog}
         onConfirm={confirmDeleteUser}
       >
-        <p className="text-sm text-[#5A4E41]">
+        <p className="text-sm text-[#3F4644]">
           Perderá el acceso de inmediato y dejará de aparecer en esta lista. No se borra
           nada: queda desactivado y su actividad se conserva para auditoría.
         </p>
@@ -527,7 +527,7 @@ function SettingsPage() {
         onCancel={closeDeleteDialog}
         onConfirm={confirmTransferAndDelete}
       >
-        <p className="text-sm text-[#5A4E41]">
+        <p className="text-sm text-[#3F4644]">
           Todavía tiene registros a su nombre. Se reasignarán a la persona que elijas y
           después se completará la baja.
         </p>
@@ -543,7 +543,7 @@ function SettingsPage() {
             </div>
           ))}
         </div>
-        <label className="mt-4 block text-sm font-semibold text-[#5A4E41]">
+        <label className="mt-4 block text-sm font-semibold text-[#3F4644]">
           Traspasar a
           {transferCandidates.length === 0 ? (
             <p className="mt-1 text-sm font-normal text-[#83867C]">
@@ -560,7 +560,7 @@ function SettingsPage() {
               <option value="">Selecciona un usuario...</option>
               {transferCandidates.map((u) => (
                 <option key={u.id} value={u.id}>
-                  {u.name} · {u.role === "admin" ? "Administrador" : "Vendedor"}
+                  {u.name} · {u.role === "admin" ? "Administrador" : "Colaborador"}
                 </option>
               ))}
             </select>
@@ -574,8 +574,8 @@ function SettingsPage() {
         subtitle="Administración de la organización y usuarios del equipo."
         steps={[
           { title: "Información de la organización", text: "Aquí puedes ver el nombre y detalles de tu organización. Solo administradores pueden editar esta información." },
-          { title: "Usuarios del equipo", text: "Lista de todos los usuarios activos con su rol (Admin o Vendedor). Puedes crear nuevos usuarios con el botón '+ Nuevo usuario'." },
-          { title: "Roles disponibles", text: "Admin: acceso completo a todas las funciones incluyendo configuración y eliminación de usuarios. Vendor: acceso a operaciones comerciales sin configuración." },
+          { title: "Usuarios del equipo", text: "Lista de todos los usuarios activos con su rol (Administrador o Colaborador). Puedes crear nuevos usuarios con el botón '+ Nuevo usuario'." },
+          { title: "Roles disponibles", text: "Administrador: maneja la organización, el equipo, los accesos y la operación completa. Colaborador: opera su cartera de clientes, aparta lotes y agenda citas, sin tocar configuración ni el inventario." },
           { title: "Restablecer contraseña", text: "Como administrador puedes generar una nueva contraseña temporal para cualquier usuario del equipo." },
           { title: "Eliminar usuario", text: "Solo los administradores pueden eliminar usuarios. Esta acción es irreversible y elimina el acceso del usuario al sistema." },
         ]}

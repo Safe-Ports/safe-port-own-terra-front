@@ -7,6 +7,18 @@ import { currency, progress } from "@/services/formatters";
 import { contractService } from "@/services/contractService";
 import Button from "@/components/Button";
 import GuideModal from "@/components/shared/GuideModal";
+import PendingApproval from "./PendingApproval";
+
+// El estado que guarda la base no es el que se lee. "pending_approval" es una
+// clave, no una frase.
+const ESTADO = {
+  pending_approval: { label: "Por aprobar", cls: "pending-approval" },
+  rejected: { label: "Rechazado", cls: "rejected" },
+  active: { label: "Vigente", cls: "paid" },
+  completed: { label: "Liquidado", cls: "paid" },
+  cancelled: { label: "Cancelado", cls: "pending" },
+  defaulted: { label: "En mora", cls: "pending" },
+};
 
 function SalesPage() {
   const { contracts, setEditingContract, openModal, openContractCreate, openDocumentUpload, openClientReport, showToast } = useAppContext();
@@ -31,6 +43,8 @@ function SalesPage() {
   };
 
   return (
+    <>
+    <PendingApproval />
     <div className="card">
       <div className="card-hd">
         <div className="card-title"><HiDocumentText style={{ display: "inline", verticalAlign: "-2px" }} /> Repositorio de Contratos</div>
@@ -64,7 +78,14 @@ function SalesPage() {
                 <td>{currency(contract.amount)}</td>
                 <td>{progress(contract.payments_summary?.paid ?? 0, contract.payments_summary?.total ?? 0)}%</td>
                 <td>
-                  <span className={`pc-chip ${contract.type === "reserve" ? "pending" : "paid"}`}>{contract.status || contract.type}</span>
+                  <span className={`pc-chip ${ESTADO[contract.status]?.cls || (contract.type === "reserve" ? "pending" : "paid")}`}>
+                    {ESTADO[contract.status]?.label || contract.status || contract.type}
+                  </span>
+                  {/* El motivo va junto al estado: es lo que quien lo armó
+                      necesita para saber qué corregir. */}
+                  {contract.status === "rejected" && contract.rejection_reason && (
+                    <span className="pa-reason">{contract.rejection_reason}</span>
+                  )}
                 </td>
                 <td style={{ whiteSpace: "nowrap" }}>
                   <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => { setEditingContract(contract); openModal("contractModal"); }}>Editar</button>{" "}
@@ -97,6 +118,7 @@ function SalesPage() {
         ]}
       />
     </div>
+    </>
   );
 }
 

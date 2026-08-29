@@ -2,7 +2,7 @@ import { createPortal } from "react-dom";
 import { HiCheckCircle, HiExclamationTriangle } from "react-icons/hi2";
 import useEscapeKey from "@/hooks/useEscapeKey";
 
-const BD = "#E7E4DB";
+const BD = "#EBEFED";
 const ERR = "#dc2626";
 const WARN = "#92400e";
 
@@ -66,7 +66,7 @@ export default function ImportResultsModal({ open, onClose, summary }) {
                   <tr>
                     {["Fila", "Columna", "Detalle"].map((h) => (
                       <th key={h} style={{
-                        padding: "6px 10px", background: "#F1EEE6", color: "#43453F",
+                        padding: "6px 10px", background: "#EEF1F1", color: "#43453F",
                         fontWeight: 700, textAlign: "left", borderBottom: `1px solid ${BD}`,
                         whiteSpace: "nowrap",
                       }}>{h}</th>
@@ -75,7 +75,7 @@ export default function ImportResultsModal({ open, onClose, summary }) {
                 </thead>
                 <tbody>
                   {rows.map((r, i) => (
-                    <tr key={i} style={{ background: i % 2 === 0 ? "white" : "#FBFAF6" }}>
+                    <tr key={i} style={{ background: i % 2 === 0 ? "white" : "#FFFFFF" }}>
                       <td style={{ padding: "6px 10px", borderBottom: `1px solid ${BD}`, color: "#43453F", whiteSpace: "nowrap" }}>
                         {r.row ?? "—"}
                       </td>

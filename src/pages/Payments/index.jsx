@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import GuideModal from "@/components/shared/GuideModal";
@@ -6,10 +6,12 @@ import {
   HiOutlinePlus, HiOutlinePencil, HiOutlineTrash, HiOutlineCalendar,
   HiOutlineXMark, HiOutlineMagnifyingGlass, HiOutlineChevronDown,
   HiOutlineFunnel, HiOutlineEllipsisVertical,
-  HiArrowTrendingDown, HiBanknotes, HiCreditCard, HiMagnifyingGlass,
-  HiPhone, HiBars3, HiPlusCircle,
+  HiArrowTrendingDown, HiArrowTrendingUp, HiBanknotes, HiCreditCard, HiMagnifyingGlass,
+  HiPhone, HiBars3, HiPlusCircle, HiOutlineWallet, HiOutlineClock, HiOutlineChartBar,
+  HiOutlinePaperClip, HiOutlineArrowUpTray,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
+import { paymentService } from "@/services/paymentService";
 import { useLandsGuide } from "@/context/LandsGuideContext";
 import { expenseService, CAT_LABEL, CAT_STYLE } from "@/services/expenseService";
 import { employeeService } from "@/services/employeeService";
@@ -22,7 +24,6 @@ import useEscapeKey from "@/hooks/useEscapeKey";
 const reqText = (label) => (v) => (!v || !String(v).trim() ? `${label} es obligatorio.` : "");
 const reqNum = (label) => (v) => (v === "" || v == null || isNaN(Number(v)) || Number(v) <= 0 ? `Ingresa un ${label} válido (> 0).` : "");
 const EGRESO_RULES = { concepto: reqText("El concepto"), monto: reqNum("monto") };
-const COBRO_RULES = { clientId: reqText("El cliente"), contractId: reqText("El contrato"), cuota: reqNum("número de cuota"), amount: reqNum("monto") };
 import { currency, relativeDays } from "@/services/formatters";
 import Avatar from "@/components/Avatar";
 import Button from "@/components/Button";
@@ -108,6 +109,133 @@ function getMonthlyData(ingresos, expenses) {
     if (m) m.egresos += Number(e.monto || 0);
   });
   return months;
+}
+
+/* Selector de archivo: el input nativo se ve de otra época y no dice nada del
+   archivo elegido. Este muestra nombre y peso, y deja quitarlo sin reabrir el
+   explorador. El input real queda oculto pero accesible por teclado. */
+function FilePicker({ value, onChange, accept, hint }) {
+  const inputRef = useRef(null);
+  const [dentro, setDentro] = useState(false);
+
+  const tomar = (archivo) => { if (archivo) onChange(archivo); };
+  const peso = (b) => b < 1024 * 1024
+    ? `${Math.max(1, Math.round(b / 1024))} KB`
+    : `${(b / 1024 / 1024).toFixed(1)} MB`;
+
+  if (value) {
+    return (
+      <div style={{
+        display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
+        border: "1.5px solid var(--earth)", background: "rgba(53,94,59,.06)", borderRadius: 11,
+      }}>
+        <HiOutlinePaperClip style={{ fontSize: "1.1rem", color: "var(--earth)", flexShrink: 0 }} />
+        <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+          <span style={{ fontSize: ".82rem", fontWeight: 600, overflow: "hidden",
+                         textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value.name}</span>
+          <span style={{ fontSize: ".72rem", color: "var(--mu)" }}>{peso(value.size)}</span>
+        </span>
+        <button type="button" onClick={() => { onChange(null); if (inputRef.current) inputRef.current.value = ""; }}
+          aria-label="Quitar archivo"
+          style={{ border: "none", background: "transparent", cursor: "pointer",
+                   color: "var(--mu)", fontSize: "1.1rem", lineHeight: 1, padding: 4 }}>
+          <HiOutlineXMark />
+        </button>
+        <input ref={inputRef} type="file" accept={accept} style={{ display: "none" }}
+          onChange={e => tomar(e.target.files?.[0])} />
+      </div>
+    );
+  }
+
+  return (
+    <label
+      onDragOver={e => { e.preventDefault(); setDentro(true); }}
+      onDragLeave={() => setDentro(false)}
+      onDrop={e => { e.preventDefault(); setDentro(false); tomar(e.dataTransfer.files?.[0]); }}
+      style={{
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+        padding: "16px 12px", cursor: "pointer", textAlign: "center",
+        border: `1.5px dashed ${dentro ? "var(--earth)" : "rgba(67,69,63,.22)"}`,
+        background: dentro ? "rgba(53,94,59,.06)" : "var(--sf2)",
+        borderRadius: 11, transition: "border-color .12s, background .12s",
+      }}>
+      <HiOutlineArrowUpTray style={{ fontSize: "1.25rem", color: "var(--mu)" }} />
+      <span style={{ fontSize: ".82rem", fontWeight: 600 }}>Elegir archivo o arrastrarlo aquí</span>
+      {hint && <span style={{ fontSize: ".72rem", color: "var(--mu)", lineHeight: 1.4 }}>{hint}</span>}
+      <input ref={inputRef} type="file" accept={accept} style={{ display: "none" }}
+        onChange={e => tomar(e.target.files?.[0])} />
+    </label>
+  );
+}
+
+/* Sparkline: área + línea de 2px + punto en el último dato, que es el que la
+   tarjeta está reportando arriba. */
+function Sparkline({ serie = [], color, id }) {
+  if (serie.length < 2) return null;
+  const W = 220, H = 46, P = 3;
+  const max = Math.max(...serie), min = Math.min(...serie);
+  const rango = max - min || 1;
+  const x = i => P + (i * (W - P * 2)) / (serie.length - 1);
+  const y = v => H - P - ((v - min) / rango) * (H - P * 2);
+  const linea = serie.map((v, i) => `${i ? "L" : "M"} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ");
+  const area  = `${linea} L ${x(serie.length - 1).toFixed(1)} ${H} L ${x(0).toFixed(1)} ${H} Z`;
+  const ultimo = serie.length - 1;
+  const plano = max === min;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="46" preserveAspectRatio="none"
+         role="img" aria-hidden="true" style={{ display: "block", marginTop: 12 }}>
+      <defs>
+        <linearGradient id={`sp-${id}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.20" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {!plano && <path d={area} fill={`url(#sp-${id})`} />}
+      <path d={linea} fill="none" stroke={color} strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+      <circle cx={x(ultimo)} cy={y(serie[ultimo])} r="4" fill={color} />
+    </svg>
+  );
+}
+
+/* Tarjeta de KPI: icono, variación contra el mes anterior, cifra y su serie.
+   `invertido` marca los indicadores donde subir es malo —mora y egresos—, para
+   que el color diga si la noticia es buena, no solo hacia dónde va la flecha. */
+function KpiCard({ tono, icono, icono2, label, valor, pie, delta, invertido, serie, color, id, error, cargando, sinPermiso }) {
+  const hayDelta = delta !== null && delta !== undefined && isFinite(delta);
+  const sube  = hayDelta && delta > 0.05;
+  const baja  = hayDelta && delta < -0.05;
+  const bueno = invertido ? baja : sube;
+  const malo  = invertido ? sube : baja;
+  const clase = !hayDelta || (!sube && !baja) ? "flat" : bueno ? "up" : "down";
+
+  return (
+    <div className={`cf-kpi ${tono}`}>
+      <div className="top">
+        <span className="ico">{icono}</span>
+        {icono2 && <span className="ico2">{icono2}</span>}
+      </div>
+      <div className="head">
+        <span className="lbl">{label}</span>
+        {hayDelta && (
+          <span className={`delta ${clase}`}
+            title={`Contra el mes anterior${malo ? " — atención" : ""}`}>
+            {sube ? "▲" : baja ? "▼" : "—"} {Math.abs(delta).toFixed(1)}%
+          </span>
+        )}
+      </div>
+      <div className="val">{error ? "—" : cargando ? "…" : valor}</div>
+      <div className="foot">
+        {error
+          ? (sinPermiso
+              ? "Tu cuenta no tiene acceso a las cifras de cobranza."
+              : "No se pudo cargar. Reintenta en unos segundos.")
+          : cargando ? "Cargando…" : pie}
+      </div>
+      {!error && !cargando && <Sparkline serie={serie} color={color} id={id} />}
+    </div>
+  );
 }
 
 /* ── Gráfica SVG ─────────────────────────────────────────────── */
@@ -348,6 +476,11 @@ function EgresoModal({ initial, onClose, onSave }) {
     employee_id: initial?.employee_id || "",
     provider_id: initial?.provider_id || "",
   });
+  // Un egreso puede ser plata que ya salió o un compromiso a futuro, y son cosas
+  // distintas: solo lo pagado cuenta en el flujo del mes. Antes todo nacía
+  // pendiente y había que acordarse de marcarlo en un segundo paso.
+  const [cuando, setCuando] = useState(initial?.status === "paid" ? "pagado" : "programado");
+  const [file, setFile] = useState(null);
   const fe = useFieldErrors();
   const set = k => e => { const v = e.target.value; setForm(p => ({ ...p, [k]: v })); fe.clear(k); };
 
@@ -368,6 +501,10 @@ function EgresoModal({ initial, onClose, onSave }) {
       ...form,
       employee_id: form.categoria === "nomina" ? (form.employee_id || null) : null,
       provider_id: form.categoria === "proveedores" ? (form.provider_id || null) : null,
+      // Cuando ya está pagado, la fecha capturada es la del pago, no un límite.
+      paid: cuando === "pagado",
+      paid_date: cuando === "pagado" ? form.due_date : null,
+      _file: file,
     });
   };
   return (
@@ -408,8 +545,35 @@ function EgresoModal({ initial, onClose, onSave }) {
                 {(providers || []).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select></div>
           )}
+          <div className="fg">
+            <label className="fl">¿Este egreso ya se pagó?</label>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {[
+                { id: "pagado", titulo: "Ya está pagado", detalle: "El dinero ya salió. Cuenta en los egresos y en el flujo del mes." },
+                { id: "programado", titulo: "Programado para después", detalle: "Queda pendiente con su fecha límite. No afecta el flujo hasta que lo pagues." },
+              ].map(op => {
+                const activo = cuando === op.id;
+                return (
+                  <label key={op.id}
+                    style={{
+                      display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer",
+                      border: `1.5px solid ${activo ? "var(--earth)" : "rgba(67,69,63,.14)"}`,
+                      background: activo ? "rgba(53,94,59,.06)" : "transparent",
+                      borderRadius: 11, padding: "10px 12px",
+                    }}>
+                    <input type="radio" name="momento-egreso" checked={activo}
+                      onChange={() => setCuando(op.id)} style={{ marginTop: 3 }} />
+                    <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                      <span style={{ fontWeight: 700, fontSize: ".84rem" }}>{op.titulo}</span>
+                      <span style={{ fontSize: ".75rem", color: "var(--mu)", lineHeight: 1.4 }}>{op.detalle}</span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <div className="fg"><label className="fl">Fecha límite</label>
+            <div className="fg"><label className="fl">{cuando === "pagado" ? "Fecha de pago" : "Fecha límite"}</label>
               <input className="fi" type="date" value={form.due_date} onChange={set("due_date")} /></div>
             <div className="fg"><label className="fl">Recurrencia</label>
               <select className="fi" value={form.recurrencia} onChange={set("recurrencia")}>
@@ -418,6 +582,12 @@ function EgresoModal({ initial, onClose, onSave }) {
                 <option value="quincenal">Quincenal</option>
                 <option value="semanal">Semanal</option>
               </select></div>
+          </div>
+          <div className="fg">
+            <label className="fl">Comprobante (opcional)</label>
+            <FilePicker value={file} onChange={setFile}
+              accept="application/pdf,image/jpeg,image/png,image/webp"
+              hint="PDF o imagen. Puedes registrarlo ahora y subirlo después." />
           </div>
           <div className="fg"><label className="fl">Notas (opcional)</label>
             <input className="fi" value={form.notes} onChange={set("notes")} placeholder="Referencia, proveedor…" /></div>
@@ -434,19 +604,92 @@ function EgresoModal({ initial, onClose, onSave }) {
 }
 
 /* ── Modal cobro ─────────────────────────────────────────────── */
-function CobroModal({ clients, contracts, onClose, onSave }) {
+function CobroModal({ clients, contracts, payments, onClose, onSave, busy }) {
   useEscapeKey(onClose);
-  const [form, setForm] = useState({
-    clientId: "", contractId: "", cuota: "", amount: "",
-    paid_date: new Date().toISOString().split("T")[0], notes: "",
-  });
-  const fe = useFieldErrors();
-  const set = k => e => { const v = e.target.value; setForm(p => ({ ...p, [k]: v })); fe.clear(k); };
-  const save = () => { if (fe.validate(form, COBRO_RULES)) onSave(form); };
+  const [form, setForm] = useState({ clientId: "", contractId: "", paymentId: "", amount: "" });
+  const [modo, setModo] = useState("completa");
+  const [file, setFile] = useState(null);
+  const [err, setErr] = useState("");
+  const set = k => e => { const v = e.target.value; setForm(p => ({ ...p, [k]: v })); setErr(""); };
+
   const filtContracts = contracts.filter(c => !form.clientId || String(c.client?.id) === form.clientId);
+
+  /* Las cuotas reales del contrato, en orden. Antes había que escribir el número
+     de cuota a ciegas y el guardado fallaba en silencio si no existía. */
+  const cuotas = useMemo(() => {
+    if (!form.contractId) return [];
+    return payments
+      .filter(p => String(p.contract?.id) === String(form.contractId) &&
+                   ["pending", "overdue", "partial"].includes(p.status))
+      .sort((a, b) => Number(a.installment_n) - Number(b.installment_n));
+  }, [payments, form.contractId]);
+
+  const cuota = cuotas.find(c => String(c.id) === String(form.paymentId)) || null;
+  const saldo = cuota ? Math.max(Number(cuota.amount || 0) - Number(cuota.amount_paid || 0), 0) : 0;
+  const siguientes = cuota ? cuotas.filter(c => Number(c.installment_n) > Number(cuota.installment_n)) : [];
+  const totalSiguientes = siguientes.reduce(
+    (s, p) => s + Math.max(Number(p.amount || 0) - Number(p.amount_paid || 0), 0), 0);
+
+  const elegirCuota = e => {
+    const id = e.target.value;
+    const elegida = cuotas.find(c => String(c.id) === String(id));
+    const pend = elegida ? Math.max(Number(elegida.amount || 0) - Number(elegida.amount_paid || 0), 0) : 0;
+    setForm(p => ({ ...p, paymentId: id, amount: pend ? String(pend) : "" }));
+    setModo("completa");
+    setErr("");
+  };
+
+  const elegirModo = siguiente => {
+    setModo(siguiente);
+    setErr("");
+    if (siguiente === "completa") setForm(p => ({ ...p, amount: String(saldo) }));
+    if (siguiente === "parcial")  setForm(p => ({ ...p, amount: "" }));
+    if (siguiente === "varias")   setForm(p => ({ ...p, amount: String(saldo + totalSiguientes) }));
+  };
+
+  const val = Number(form.amount);
+  const invalid = form.amount === "" || isNaN(val) || val <= 0;
+
+  const reparto = useMemo(() => {
+    if (!cuota || invalid || modo !== "varias") return [];
+    const filas = [];
+    let resta = val;
+    const cola = [{ p: cuota, pend: saldo }, ...siguientes.map(p => ({
+      p, pend: Math.max(Number(p.amount || 0) - Number(p.amount_paid || 0), 0),
+    }))];
+    for (let i = 0; i < cola.length && resta > 0.001; i++) {
+      const { p, pend } = cola[i];
+      if (pend <= 0) continue;
+      const aplica = i === cola.length - 1 ? resta : Math.min(resta, pend);
+      filas.push({ id: p.id, n: p.installment_n, aplica, salda: aplica >= pend - 0.001 });
+      resta -= aplica;
+    }
+    return filas;
+  }, [cuota, invalid, modo, val, saldo, siguientes]);
+
+  const save = () => {
+    if (!form.clientId)   { setErr("Elige el cliente."); return; }
+    if (!form.contractId) { setErr("Elige el contrato."); return; }
+    if (!cuota)           { setErr("Elige la cuota que se está cobrando."); return; }
+    if (invalid)          { setErr("Ingresa un monto mayor a $0."); return; }
+    if (modo === "parcial" && val >= saldo - 0.001) {
+      setErr(`Un abono parcial debe ser menor a ${currency(saldo)}.`); return;
+    }
+    if (modo === "varias" && reparto.length < 2) {
+      setErr("El monto no alcanza para más de una cuota."); return;
+    }
+    onSave({
+      contractId: form.contractId,
+      paymentId: cuota.id,
+      amount: Number(val.toFixed(2)),
+      paymentIds: modo === "varias" ? reparto.map(f => f.id) : null,
+      file,
+    });
+  };
+
   return (
     <div className="modal-overlay">
-      <div className="modal-box" style={{ maxWidth: 440 }}>
+      <div className="modal-box" style={{ maxWidth: 460 }}>
         <div className="modal-hd">
           <div className="modal-ico"><HiBanknotes /></div>
           <div style={{ flex: 1 }}>
@@ -457,33 +700,112 @@ function CobroModal({ clients, contracts, onClose, onSave }) {
         </div>
         <div className="modal-body">
           <div className="fg"><label className="fl">Cliente</label>
-            <select {...fe.fieldProps("clientId")} value={form.clientId} onChange={set("clientId")}>
+            <select className="fi" value={form.clientId}
+              onChange={e => { set("clientId")(e); setForm(p => ({ ...p, contractId: "", paymentId: "", amount: "" })); }}>
               <option value="">— Seleccionar —</option>
               {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            <FieldError msg={fe.errors.clientId} /></div>
+            </select></div>
           <div className="fg"><label className="fl">Contrato / Lote</label>
-            <select {...fe.fieldProps("contractId")} value={form.contractId} onChange={set("contractId")}>
+            <select className="fi" value={form.contractId}
+              onChange={e => { set("contractId")(e); setForm(p => ({ ...p, paymentId: "", amount: "" })); }}>
               <option value="">— Seleccionar —</option>
               {filtContracts.map(c => <option key={c.id} value={c.id}>{c.contract_number}</option>)}
-            </select>
-            <FieldError msg={fe.errors.contractId} /></div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <div className="fg"><label className="fl">N° cuota</label>
-              <input {...fe.fieldProps("cuota")} type="number" value={form.cuota} onChange={set("cuota")} placeholder="1" />
-              <FieldError msg={fe.errors.cuota} /></div>
-            <div className="fg"><label className="fl">Monto</label>
-              <input {...fe.fieldProps("amount")} type="number" value={form.amount} onChange={set("amount")} placeholder="0" />
-              <FieldError msg={fe.errors.amount} /></div>
-          </div>
-          <div className="fg"><label className="fl">Fecha de cobro</label>
-            <input className="fi" type="date" value={form.paid_date} onChange={set("paid_date")} /></div>
-          <div className="fg"><label className="fl">Notas (opcional)</label>
-            <input className="fi" value={form.notes} onChange={set("notes")} placeholder="Transferencia, efectivo…" /></div>
+            </select></div>
+
+          {form.contractId && (
+            <div className="fg"><label className="fl">Cuota</label>
+              <select className="fi" value={form.paymentId} onChange={elegirCuota}>
+                <option value="">— Seleccionar —</option>
+                {cuotas.map(c => {
+                  const pend = Math.max(Number(c.amount || 0) - Number(c.amount_paid || 0), 0);
+                  return (
+                    <option key={c.id} value={c.id}>
+                      Cuota {c.installment_n} · {currency(pend)} · vence {fmtD(c.due_date)}
+                    </option>
+                  );
+                })}
+              </select>
+              {cuotas.length === 0 && (
+                <div style={{ marginTop: 6, fontSize: ".76rem", color: "var(--mu)" }}>
+                  Este contrato no tiene cuotas por cobrar.
+                </div>
+              )}
+            </div>
+          )}
+
+          {cuota && (
+            <>
+              <div className="fg">
+                <label className="fl">¿Qué cobro vas a registrar?</label>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {[
+                    { id: "completa", titulo: "Saldar la cuota", detalle: `Cobra los ${currency(saldo)} que restan.` },
+                    { id: "parcial",  titulo: "Abono parcial",   detalle: "El cliente entrega menos; la cuota queda con saldo." },
+                    ...(siguientes.length
+                      ? [{ id: "varias", titulo: "Pagar varias cuotas", detalle: `Reparte desde esta cuota. Hay ${siguientes.length} más por cobrar.` }]
+                      : []),
+                  ].map(op => {
+                    const activo = modo === op.id;
+                    return (
+                      <label key={op.id}
+                        style={{
+                          display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer",
+                          border: `1.5px solid ${activo ? "var(--earth)" : "rgba(67,69,63,.14)"}`,
+                          background: activo ? "rgba(53,94,59,.06)" : "transparent",
+                          borderRadius: 11, padding: "10px 12px",
+                        }}>
+                        <input type="radio" name="modo-cobro-manual" checked={activo}
+                          onChange={() => elegirModo(op.id)} style={{ marginTop: 3 }} />
+                        <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                          <span style={{ fontWeight: 700, fontSize: ".84rem" }}>{op.titulo}</span>
+                          <span style={{ fontSize: ".75rem", color: "var(--mu)", lineHeight: 1.4 }}>{op.detalle}</span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="fg">
+                <label className="fl">{modo === "varias" ? "Monto total recibido" : "Monto a cobrar ahora"}</label>
+                <input className={`fi ${err ? "is-invalid" : ""}`} type="number" min="0" step="0.01"
+                  value={form.amount} onChange={set("amount")} />
+                {modo === "varias" && reparto.length > 1 && (
+                  <div style={{ marginTop: 10, border: "1px solid rgba(67,69,63,.12)", borderRadius: 10, overflow: "hidden" }}>
+                    <div style={{ padding: "7px 11px", background: "var(--sf2)", fontSize: ".72rem", fontWeight: 700, letterSpacing: ".04em", color: "var(--mu)" }}>
+                      SE APLICARÁ A {reparto.length} CUOTAS
+                    </div>
+                    {reparto.map(f => (
+                      <div key={f.id} style={{ display: "flex", justifyContent: "space-between", padding: "7px 11px", fontSize: ".78rem", borderTop: "1px solid rgba(67,69,63,.07)" }}>
+                        <span>Cuota {f.n}</span>
+                        <span style={{ display: "flex", gap: 9 }}>
+                          <span style={{ fontWeight: 700 }}>{currency(f.aplica)}</span>
+                          <span style={{ fontSize: ".7rem", fontWeight: 700, color: f.salda ? "#2F6A38" : "#2f5fa8" }}>
+                            {f.salda ? "salda" : "parcial"}
+                          </span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="fg">
+                <label className="fl">Comprobante (opcional)</label>
+                <FilePicker value={file} onChange={setFile}
+                  accept="application/pdf,image/jpeg,image/png,image/webp"
+                  hint="PDF o imagen. Puedes registrar el cobro ahora y subirlo después." />
+              </div>
+            </>
+          )}
+
+          <FieldError msg={err} />
         </div>
         <div className="modal-foot">
-          <Button variant="secondary" style={{ flex: 1 }} onClick={onClose}>Cancelar</Button>
-          <Button variant="primary" style={{ flex: 2 }} onClick={save}>Registrar cobro</Button>
+          <Button variant="secondary" style={{ flex: 1 }} onClick={onClose} disabled={busy}>Cancelar</Button>
+          <Button variant="primary" style={{ flex: 2 }} onClick={save} disabled={busy}>
+            {busy ? "Registrando…" : modo === "varias" && reparto.length > 1 ? `Cobrar ${reparto.length} cuotas` : "Registrar cobro"}
+          </Button>
         </div>
       </div>
     </div>
@@ -491,24 +813,75 @@ function CobroModal({ clients, contracts, onClose, onSave }) {
 }
 
 /* ── Modal abono / cobro de cuota ────────────────────────────── */
-function AbonoModal({ payment, onClose, onConfirm, busy }) {
+function AbonoModal({ payment, siguientes = [], onClose, onConfirm, busy }) {
   useEscapeKey(onClose);
   const total   = Number(payment.amount || 0);
   const abonado = Number(payment.amount_paid || 0);
   const saldo   = Math.max(total - abonado, 0);
+
+  // El tipo de cobro se elige, no se adivina por el monto. Antes el mismo campo
+  // significaba tres cosas distintas según lo que se escribiera, y quien cobraba
+  // no tenía forma de saber qué iba a pasar hasta después de confirmar.
+  const haySiguientes = siguientes.length > 0;
+  const [modo, setModo]   = useState("completa");
   const [monto, setMonto] = useState(saldo ? String(saldo) : "");
+  const [file, setFile]   = useState(null);
   const [err, setErr]     = useState("");
 
-  const val       = Number(monto);
-  // Sin tope mínimo/máximo: solo exigimos un monto positivo (permite abono parcial,
-  // saldar la cuota completa o incluso registrar de más).
-  const invalid   = monto === "" || isNaN(val) || val <= 0;
-  const restante  = Math.max(saldo - (isNaN(val) ? 0 : val), 0);
-  const esParcial = !invalid && val < saldo - 0.001;
+  const totalSiguientes = useMemo(
+    () => siguientes.reduce((s, p) => s + Math.max(Number(p.amount || 0) - Number(p.amount_paid || 0), 0), 0),
+    [siguientes],
+  );
+
+  const elegirModo = (siguiente) => {
+    setModo(siguiente);
+    setErr("");
+    if (siguiente === "completa") setMonto(String(saldo));
+    if (siguiente === "parcial")  setMonto("");
+    if (siguiente === "varias")   setMonto(String(saldo + totalSiguientes));
+  };
+
+  const val     = Number(monto);
+  const invalid = monto === "" || isNaN(val) || val <= 0;
+
+  // El reparto arranca en la cuota abierta, no en la más vieja: quien entró por la
+  // cuota 5 está cobrando de la 5 en adelante.
+  const reparto = useMemo(() => {
+    if (invalid || modo !== "varias") return [];
+    const filas = [];
+    let resta = val;
+    const cola = [{ p: payment, pend: saldo }, ...siguientes.map(p => ({
+      p, pend: Math.max(Number(p.amount || 0) - Number(p.amount_paid || 0), 0),
+    }))];
+    for (let i = 0; i < cola.length && resta > 0.001; i++) {
+      const { p, pend } = cola[i];
+      if (pend <= 0) continue;
+      const esUltima = i === cola.length - 1;
+      const aplica = esUltima ? resta : Math.min(resta, pend);
+      filas.push({ id: p.id, n: p.installment_n, aplica, salda: aplica >= pend - 0.001 });
+      resta -= aplica;
+    }
+    return filas;
+  }, [invalid, modo, val, saldo, payment, siguientes]);
+
+  const restante = Math.max(saldo - (isNaN(val) ? 0 : val), 0);
+  const sobrante = Math.max((isNaN(val) ? 0 : val) - saldo, 0);
 
   const confirm = () => {
     if (invalid) { setErr("Ingresa un monto mayor a $0."); return; }
-    onConfirm(Number(val.toFixed(2)));
+    if (modo === "parcial" && val >= saldo - 0.001) {
+      setErr(`Un abono parcial debe ser menor a ${currency(saldo)}. Elige "Saldar la cuota" si va completa.`);
+      return;
+    }
+    if (modo === "varias" && reparto.length < 2) {
+      setErr("El monto no alcanza para más de una cuota. Elige otra opción de pago.");
+      return;
+    }
+    onConfirm(
+      Number(val.toFixed(2)),
+      modo === "varias" ? reparto.map(f => f.id) : null,
+      file,
+    );
   };
 
   return (
@@ -543,22 +916,84 @@ function AbonoModal({ payment, onClose, onConfirm, busy }) {
               </>
             )}
           </div>
+
           <div className="fg">
-            <label className="fl">Monto a cobrar ahora</label>
+            <label className="fl">¿Qué cobro vas a registrar?</label>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {[
+                { id: "completa", titulo: "Saldar la cuota", detalle: `Cobra los ${currency(saldo)} que restan de esta cuota.` },
+                { id: "parcial",  titulo: "Abono parcial",   detalle: "El cliente entrega menos; la cuota queda con saldo." },
+                ...(haySiguientes
+                  ? [{ id: "varias", titulo: "Pagar varias cuotas", detalle: `Reparte desde esta cuota en adelante. Hay ${siguientes.length} más por cobrar.` }]
+                  : []),
+              ].map(op => {
+                const activo = modo === op.id;
+                return (
+                  <label key={op.id}
+                    style={{
+                      display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer",
+                      border: `1.5px solid ${activo ? "var(--earth)" : "rgba(67,69,63,.14)"}`,
+                      background: activo ? "rgba(53,94,59,.06)" : "transparent",
+                      borderRadius: 11, padding: "10px 12px",
+                    }}>
+                    <input type="radio" name="modo-cobro" checked={activo}
+                      onChange={() => elegirModo(op.id)} style={{ marginTop: 3 }} />
+                    <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                      <span style={{ fontWeight: 700, fontSize: ".84rem" }}>{op.titulo}</span>
+                      <span style={{ fontSize: ".75rem", color: "var(--mu)", lineHeight: 1.4 }}>{op.detalle}</span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="fg">
+            <label className="fl">{modo === "varias" ? "Monto total recibido" : "Monto a cobrar ahora"}</label>
             <input className={`fi ${err ? "is-invalid" : ""}`} type="number" min="0" step="0.01"
               value={monto} onChange={e => { setMonto(e.target.value); setErr(""); }} autoFocus />
             <FieldError msg={err} />
-            {!err && !invalid && (
-              <div style={{ marginTop: 6, fontSize: ".76rem", fontWeight: 600, color: esParcial ? "#2f5fa8" : "#2F6A38" }}>
-                {esParcial ? `Abono parcial · quedará un saldo de ${currency(restante)}` : "Salda la cuota completa"}
+            {!err && !invalid && modo === "completa" && (
+              <div style={{ marginTop: 6, fontSize: ".76rem", fontWeight: 600, color: "#2F6A38" }}>
+                {sobrante > 0.001 ? `Salda la cuota · ${currency(sobrante)} de más` : "Salda la cuota completa"}
               </div>
             )}
+            {!err && !invalid && modo === "parcial" && val < saldo - 0.001 && (
+              <div style={{ marginTop: 6, fontSize: ".76rem", fontWeight: 600, color: "#2f5fa8" }}>
+                Quedará un saldo de {currency(restante)}
+              </div>
+            )}
+            {!err && modo === "varias" && reparto.length > 1 && (
+              <div style={{ marginTop: 10, border: "1px solid rgba(67,69,63,.12)", borderRadius: 10, overflow: "hidden" }}>
+                <div style={{ padding: "7px 11px", background: "var(--sf2)", fontSize: ".72rem", fontWeight: 700, letterSpacing: ".04em", color: "var(--mu)" }}>
+                  SE APLICARÁ A {reparto.length} CUOTAS
+                </div>
+                {reparto.map(f => (
+                  <div key={f.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 11px", fontSize: ".78rem", borderTop: "1px solid rgba(67,69,63,.07)" }}>
+                    <span>Cuota {f.n}</span>
+                    <span style={{ display: "flex", gap: 9, alignItems: "center" }}>
+                      <span style={{ fontWeight: 700 }}>{currency(f.aplica)}</span>
+                      <span style={{ fontSize: ".7rem", fontWeight: 700, color: f.salda ? "#2F6A38" : "#2f5fa8" }}>
+                        {f.salda ? "salda" : "parcial"}
+                      </span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="fg">
+            <label className="fl">Comprobante (opcional)</label>
+            <FilePicker value={file} onChange={setFile}
+              accept="application/pdf,image/jpeg,image/png,image/webp"
+              hint="PDF o imagen. Si no lo tienes a la mano, registra el cobro igual y súbelo después." />
           </div>
         </div>
         <div className="modal-foot">
           <Button variant="secondary" style={{ flex: 1 }} onClick={onClose} disabled={busy}>Cancelar</Button>
           <Button variant="primary" style={{ flex: 2 }} onClick={confirm} disabled={busy}>
-            {busy ? "Registrando…" : esParcial ? "Registrar abono" : "Registrar cobro"}
+            {busy ? "Registrando…" : modo === "varias" ? `Cobrar ${reparto.length} cuotas` : modo === "parcial" ? "Registrar abono" : "Registrar cobro"}
           </Button>
         </div>
       </div>
@@ -612,7 +1047,7 @@ const ESTADO_EG  = [["all","Todos los estados"],["pending","Pendiente"],["overdu
 const ESTADO_AL  = [["all","Todas las alertas"],["roja","Urgentes"],["amarilla","Próximas"]];
 
 export default function PaymentsPage() {
-  const { payments, clients, contracts, quickPay, sendReminder, showToast, showError } = useAppContext();
+  const { payments, clients, contracts, quickPay, collectOnContract, sendReminder, showToast, showError } = useAppContext();
   const qc = useQueryClient();
   const navigate = useNavigate();
 
@@ -662,21 +1097,21 @@ export default function PaymentsPage() {
   /* ── expense mutations ── */
   const createExpense = useMutation({
     mutationFn: expenseService.create,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["expenses"] }); setModal(null); showToast("Egreso registrado"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["expenses"] }); qc.invalidateQueries({ queryKey: ["payments"] }); setModal(null); showToast("Egreso registrado"); },
     onError: e => showError(e, "Error al guardar egreso"),
   });
   const updateExpense = useMutation({
     mutationFn: ({ id, data }) => expenseService.update(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["expenses"] }); setModal(null); setEditing(null); showToast("Egreso actualizado"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["expenses"] }); qc.invalidateQueries({ queryKey: ["payments"] }); setModal(null); setEditing(null); showToast("Egreso actualizado"); },
     onError: e => showError(e, "Error al actualizar egreso"),
   });
   const deleteExpense = useMutation({
     mutationFn: expenseService.delete,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["expenses"] }); showToast("Egreso eliminado"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["expenses"] }); qc.invalidateQueries({ queryKey: ["payments"] }); showToast("Egreso eliminado"); },
   });
   const markPaidExpense = useMutation({
     mutationFn: expenseService.markPaid,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["expenses"] }); showToast("Egreso marcado como pagado"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["expenses"] }); qc.invalidateQueries({ queryKey: ["payments"] }); showToast("Egreso marcado como pagado"); },
   });
 
   /* ── normalizar ingresos ── */
@@ -703,12 +1138,7 @@ export default function PaymentsPage() {
   /* ── KPIs respetan desde/hasta ── */
   // "cancelled" queda fuera de ambos KPIs (dinero que no entrará); "partial" aporta
   // lo ya abonado a Cobrado y el remanente a Por cobrar, igual que el backend.
-  const inCobradoAmt   = ingresos
-    .filter(p => (p.status === "paid" || p.status === "partial") && inRange(p.due_date, desde, hasta))
-    .reduce((s, p) => s + (Number(p.amount_paid ?? (p.status === "paid" ? p.amount : 0)) || 0), 0);
   const inPendienteArr = ingresos.filter(p => ["pending", "overdue", "partial"].includes(p.status) && inRange(p.due_date, desde, hasta));
-  const inCobrado      = ingresos.filter(p => p.status === "paid" && inRange(p.due_date, desde, hasta));
-  const inPendienteAmt = inPendienteArr.reduce((s, p) => s + Math.max(Number(p.amount || 0) - Number(p.amount_paid || 0), 0), 0);
   const monthlyData    = useMemo(() => getMonthlyData(ingresos, expenses), [ingresos, expenses]);
 
   /* ── alertas ── */
@@ -759,25 +1189,75 @@ export default function PaymentsPage() {
 
   /* ── handlers ── */
   const handlePagar = r => isEg ? markPaidExpense.mutate(r.id) : setAbono(r);
-  const confirmAbono = async (amount) => {
+  const confirmAbono = async (amount, paymentIds, file) => {
     setAbonoBusy(true);
-    const ok = await quickPay(abono.id, amount);
+    // Un solo destino sigue por mark-paid; varias cuotas van por el cobro del
+    // contrato, que es quien sabe repartir y deja un único recibo.
+    const ok = paymentIds?.length
+      ? await collectOnContract(abono.contract?.id, { amount, paymentIds, file })
+      : await quickPay(abono.id, amount, file);
     setAbonoBusy(false);
     if (ok) setAbono(null);
   };
+
+  /* Cuotas del mismo contrato que siguen a la abierta: son las que puede alcanzar
+     un pago más grande, en orden de vencimiento. */
+  const siguientesDelContrato = useMemo(() => {
+    if (!abono?.contract?.id) return [];
+    return ingresos
+      .filter(p =>
+        p.contract?.id === abono.contract.id &&
+        p.id !== abono.id &&
+        ["pending", "overdue", "partial"].includes(p.status) &&
+        Number(p.installment_n) > Number(abono.installment_n))
+      .sort((a, b) => Number(a.installment_n) - Number(b.installment_n));
+  }, [abono, ingresos]);
+  /* El modal de arriba antes solo se cerraba: el formulario no guardaba nada.
+     Ahora pasa por el mismo cobro que el de la fila. */
+  const guardarCobroManual = async ({ contractId, paymentId, amount, paymentIds, file }) => {
+    setAbonoBusy(true);
+    const ok = paymentIds?.length
+      ? await collectOnContract(contractId, { amount, paymentIds, file })
+      : await quickPay(paymentId, amount, file);
+    setAbonoBusy(false);
+    if (ok) setModal(null);
+  };
+
   const handleSaveEgreso = form => {
     const body = { concepto: form.concepto, categoria: form.categoria, monto: Number(form.monto),
       due_date: form.due_date, recurrencia: form.recurrencia || null, notes: form.notes || null,
       employee_id: form.employee_id || null, provider_id: form.provider_id || null };
-    editing ? updateExpense.mutate({ id: editing.id, data: body }) : createExpense.mutate(body);
+    if (editing) {
+      updateExpense.mutate({ id: editing.id, data: body });
+      return;
+    }
+    // `paid` decide si el egreso nace pagado o programado; el backend pone la
+    // fecha de pago solo en el primer caso.
+    createExpense.mutate({ ...body, paid: !!form.paid, paid_date: form.paid_date || null });
   };
 
   /* ── KPIs extra: mora + egresos operativos ── */
   const moraArr    = ingresos.filter(p => p.status === "overdue");
-  const moraAmt    = moraArr.reduce((s, p) => s + Math.max(Number(p.amount || 0) - Number(p.amount_paid || 0), 0), 0);
-  const moraCount  = new Set(moraArr.map(p => p.client?.id).filter(Boolean)).size;
-  const egresosMesAmt = expenses.filter(e => e.status === "paid").reduce((s, e) => s + Number(e.monto || 0), 0);
-  const flujoNeto  = inCobradoAmt - egresosMesAmt;
+  // Las tarjetas ya no suman la lista que bajó la página: eso se quedaba corto
+  // apenas la organización pasaba el tope de la consulta. Se invalidan con la
+  // misma llave que los pagos, así que un cobro las refresca al instante.
+  const { data: kpiData, isError: kpiError, isPending: kpiPending, error: kpiErrObj } = useQuery({
+    queryKey: ["payments", "kpis"],
+    queryFn: () => paymentService.kpis({ months: 6 }),
+    // Un 403 no se arregla reintentando: es el permiso, no la red.
+    retry: (n, err) => err?.response?.status !== 403 && n < 2,
+  });
+  const kpiSinPermiso = kpiErrObj?.response?.status === 403;
+  // Si la consulta falla, las tarjetas NO muestran $0: un cero es indistinguible
+  // de "no hay nada" y esconde el error. Muestran un guion y lo dicen.
+  const vacio = { amount: 0, count: 0, series: [], delta: null };
+  const k = {
+    collected:   kpiData?.collected   || vacio,
+    outstanding: kpiData?.outstanding || vacio,
+    overdue:     kpiData?.overdue     || vacio,
+    expenses:    kpiData?.expenses    || vacio,
+    net_flow:    kpiData?.net_flow    ?? 0,
+  };
 
   /* ── Amortización por contrato (progreso "24/84") ── */
   const amortRows = useMemo(() => {
@@ -853,12 +1333,26 @@ export default function PaymentsPage() {
         .cf-btn-ghost{background:var(--sf);color:var(--danger);border-color:var(--bd)}
         .cf-btn-ghost:hover{border-color:var(--danger)}
         .cf-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
-        .cf-kpi{background:var(--sf);border:1px solid var(--bd);border-left:3px solid var(--bd);border-radius:18px;box-shadow:var(--sh);padding:16px 18px}
-        .cf-kpi.income{border-left-color:var(--leaf)}.cf-kpi.due{border-left-color:var(--mid)}.cf-kpi.mora{border-left-color:var(--danger)}.cf-kpi.exp{border-left-color:#C98A2B}
-        .cf-kpi .lbl{font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}
-        .cf-kpi .val{margin-top:8px;font-size:1.55rem;font-weight:800;color:var(--deep);line-height:1}
+        .cf-kpi{background:var(--sf);border:1px solid var(--bd);border-radius:18px;box-shadow:var(--sh);padding:16px 18px 6px;display:flex;flex-direction:column}
+        .cf-kpi .top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+        .cf-kpi .ico{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;font-size:1.15rem}
+        .cf-kpi .ico2{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-size:1rem;background:var(--sf2);color:var(--mu)}
+        .cf-kpi.income .ico{background:rgba(111,175,107,.16);color:var(--mid)}
+        .cf-kpi.due .ico{background:rgba(111,175,107,.16);color:var(--mid)}
+        .cf-kpi.mora .ico{background:rgba(192,57,43,.11);color:var(--danger)}
+        .cf-kpi.exp .ico{background:rgba(201,138,43,.15);color:#b0791f}
+        .cf-kpi .head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+        .cf-kpi .lbl{font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
+        .cf-kpi.income .lbl{color:var(--mid)}.cf-kpi.due .lbl{color:var(--mid)}
+        .cf-kpi.mora .lbl{color:var(--danger)}.cf-kpi.exp .lbl{color:#b0791f}
+        .cf-kpi .delta{display:inline-flex;align-items:center;gap:3px;font-size:.7rem;font-weight:700;
+          padding:3px 8px;border-radius:999px;white-space:nowrap;font-variant-numeric:tabular-nums}
+        .cf-kpi .delta.up{background:rgba(111,175,107,.16);color:#2F6A38}
+        .cf-kpi .delta.down{background:rgba(201,138,43,.16);color:#b0791f}
+        .cf-kpi .delta.flat{background:rgba(192,57,43,.10);color:var(--danger)}
+        .cf-kpi .val{margin-top:10px;font-size:2.05rem;font-weight:800;color:var(--deep);line-height:1.05;font-variant-numeric:tabular-nums}
         .cf-kpi.income .val{color:var(--mid)}.cf-kpi.mora .val{color:var(--danger)}.cf-kpi.exp .val{color:#b0791f}
-        .cf-kpi .foot{margin-top:6px;font-size:11.5px;color:var(--mu)}
+        .cf-kpi .foot{margin-top:7px;font-size:12px;color:var(--mu)}
         .cf-panel{background:var(--sf);border:1px solid var(--bd);border-radius:20px;box-shadow:var(--sh);overflow:hidden}
         .cf-tabs{display:flex;gap:2px;border-bottom:1px solid var(--line-soft);padding:0 8px}
         .cf-tab{padding:14px 18px;border:0;background:none;cursor:pointer;font-family:var(--font-body);font-size:13.5px;font-weight:600;color:var(--mu);border-bottom:2px solid transparent;margin-bottom:-1px}
@@ -915,10 +1409,18 @@ export default function PaymentsPage() {
       </div>
 
       <div className="cf-kpis" data-tour="pagos-kpis">
-        <div className="cf-kpi income"><div className="lbl">Ingresos del mes</div><div className="val">{currency(inCobradoAmt)}</div><div className="foot">{inCobrado.length} cobros aplicados</div></div>
-        <div className="cf-kpi due"><div className="lbl">Por cobrar</div><div className="val">{currency(inPendienteAmt)}</div><div className="foot">{inPendienteArr.length} cuotas pendientes</div></div>
-        <div className="cf-kpi mora"><div className="lbl">Pagos atrasados</div><div className="val">{currency(moraAmt)}</div><div className="foot">{moraCount} cliente{moraCount === 1 ? "" : "s"} en mora</div></div>
-        <div className="cf-kpi exp"><div className="lbl">Egresos operativos</div><div className="val">{currency(egresosMesAmt)}</div><div className="foot">flujo neto {currency(flujoNeto)}</div></div>
+        <KpiCard tono="income" icono={<HiArrowTrendingUp />} label="Ingresos del mes"
+          valor={currency(k.collected.amount)} pie={`${k.collected.count} cobros aplicados`}
+          delta={k.collected.delta} serie={k.collected.series} color="#6FAF6B" id="ing" error={kpiError} cargando={kpiPending} sinPermiso={kpiSinPermiso} />
+        <KpiCard tono="due" icono={<HiOutlineWallet />} icono2={<HiOutlineClock />} label="Por cobrar"
+          valor={currency(k.outstanding.amount)} pie={`${k.outstanding.count} cuotas pendientes`}
+          serie={k.outstanding.series} color="#6FAF6B" id="cob" error={kpiError} cargando={kpiPending} sinPermiso={kpiSinPermiso} />
+        <KpiCard tono="mora" icono={<HiOutlineClock />} label="Pagos atrasados"
+          valor={currency(k.overdue.amount)} pie={`${k.overdue.count} cliente${k.overdue.count === 1 ? "" : "s"} en mora`}
+          delta={k.overdue.delta} invertido serie={k.overdue.series} color="#C0392B" id="mora" error={kpiError} cargando={kpiPending} sinPermiso={kpiSinPermiso} />
+        <KpiCard tono="exp" icono={<HiOutlineChartBar />} label="Egresos operativos"
+          valor={currency(k.expenses.amount)} pie={`flujo neto ${currency(k.net_flow)}`}
+          delta={k.expenses.delta} invertido serie={k.expenses.series} color="#C98A2B" id="egr" error={kpiError} cargando={kpiPending} sinPermiso={kpiSinPermiso} />
       </div>
 
       <div className="cf-panel">
@@ -979,9 +1481,9 @@ export default function PaymentsPage() {
         {tab === "egresos" && (
           <>
             <div className="cf-neto">
-              <div>Ingresos del mes<b style={{ color: "var(--mid)" }}>{currency(inCobradoAmt)}</b></div>
-              <div>Egresos<b style={{ color: "var(--danger)" }}>−{currency(egresosMesAmt)}</b></div>
-              <div>Flujo neto<b style={{ color: flujoNeto >= 0 ? "var(--mid)" : "var(--danger)" }}>{currency(flujoNeto)}</b></div>
+              <div>Ingresos del mes<b style={{ color: "var(--mid)" }}>{currency(k.collected.amount)}</b></div>
+              <div>Egresos<b style={{ color: "var(--danger)" }}>−{currency(k.expenses.amount)}</b></div>
+              <div>Flujo neto<b style={{ color: k.net_flow >= 0 ? "var(--mid)" : "var(--danger)" }}>{currency(k.net_flow)}</b></div>
             </div>
             <div className="cf-toolbar">
               <label className="cf-search"><span><HiMagnifyingGlass /></span><input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Buscar egreso…" /></label>
@@ -1012,8 +1514,11 @@ export default function PaymentsPage() {
 
       {modal === "tipo"   && <TipoModal onSelect={t => setModal(t)} onClose={() => setModal(null)} />}
       {modal === "egreso" && <EgresoModal initial={editing} onClose={() => { setModal(null); setEditing(null); }} onSave={handleSaveEgreso} />}
-      {modal === "cobro"  && <CobroModal clients={clients} contracts={contracts} onClose={() => setModal(null)} onSave={() => setModal(null)} />}
-      {abono && <AbonoModal payment={abono} busy={abonoBusy} onClose={() => setAbono(null)} onConfirm={confirmAbono} />}
+      {modal === "cobro"  && (
+        <CobroModal clients={clients} contracts={contracts} payments={ingresos} busy={abonoBusy}
+          onClose={() => setModal(null)} onSave={guardarCobroManual} />
+      )}
+      {abono && <AbonoModal payment={abono} siguientes={siguientesDelContrato} busy={abonoBusy} onClose={() => setAbono(null)} onConfirm={confirmAbono} />}
       <GuideModal
         open={showGuide}
         onClose={() => setShowGuide(false)}

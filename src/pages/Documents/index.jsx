@@ -292,7 +292,7 @@ export default function DocumentsPage() {
           border-bottom:1px solid rgba(67,69,63,.08); transition:background .14s;
           font-family: var(--font-body);
         }
-        .doc-sidebar-item:hover { background:#F1EEE6; }
+        .doc-sidebar-item:hover { background:#EEF1F1; }
         .doc-sidebar-item.active { background:rgba(111,175,107,.08); color:#1E3D2B; font-weight:600; border-left-color:#6FAF6B; }
         .doc-sidebar-item .count {
           margin-left:auto; font-size:.7rem; font-weight:500; font-family: var(--font-body);
@@ -308,7 +308,7 @@ export default function DocumentsPage() {
           border-bottom:1px solid rgba(67,69,63,.08); transition:background .14s;
           font-family: var(--font-body);
         }
-        .doc-folder-row:hover { background:#F1EEE6; }
+        .doc-folder-row:hover { background:#EEF1F1; }
         .doc-folder-row.active { background:rgba(111,175,107,.08); color:#1E3D2B; font-weight:600; border-left-color:#6FAF6B; }
         .doc-folder-chevron { width:13px; font-size:.58rem; color:#83867C; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
         .doc-folder-icon { width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:rgba(111,175,107,.12); font-size:.95rem; flex-shrink:0; }
@@ -333,7 +333,7 @@ export default function DocumentsPage() {
           padding:8px 11px; background:none; border:none; cursor:pointer; border-radius:8px;
           font-size:.78rem; color:#43453F; text-align:left; font-family: var(--font-body);
         }
-        .doc-folder-menu button:hover { background:#F1EEE6; }
+        .doc-folder-menu button:hover { background:#EEF1F1; }
         .doc-folder-menu button.danger { color:#C0392B; }
         .doc-folder-rename {
           flex:1; font-size:.8rem; padding:4px 8px; border-radius:8px;
@@ -387,7 +387,7 @@ export default function DocumentsPage() {
           display:flex; align-items:center; gap:8px; padding:8px 12px;
           border-radius:8px; cursor:pointer; font-size:.83rem; color:#43453F;
         }
-        .move-tree-row:hover { background:#F1EEE6; }
+        .move-tree-row:hover { background:#EEF1F1; }
         .move-tree-row.current { background:rgba(111,175,107,.1); font-weight:600; }
         .move-current-badge {
           font-size:.65rem; background:var(--forest); color:#fff;
@@ -397,7 +397,7 @@ export default function DocumentsPage() {
 
         /* confirm modal */
         .modal-overlay { position:fixed; inset:0; background:rgba(20,30,22,.45); backdrop-filter:blur(6px); z-index:9000; display:flex; align-items:center; justify-content:center; }
-        .modal-box { background:#FBFAF6; border:1px solid var(--bd); border-radius:22px; padding:24px; width:100%; box-shadow:0 24px 60px rgba(0,0,0,.22); }
+        .modal-box { background:#FFFFFF; border:1px solid var(--bd); border-radius:22px; padding:24px; width:100%; box-shadow:0 24px 60px rgba(0,0,0,.22); }
         .modal-title { font-family: var(--font-title); font-weight:600; font-size:1.15rem; margin-bottom:8px; color:#1E3D2B; }
 
         /* header chip + buscador pill + tarjetas de documento (idéntico a usr-row del Vault) */
