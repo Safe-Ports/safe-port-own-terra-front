@@ -142,6 +142,7 @@ function Asistente({ onSalir }) {
   const [fracId, setFracId] = useState(guardado?.fracId ?? "");
   const [fracNuevo, setFracNuevo] = useState("");
   const [creandoFrac, setCreandoFrac] = useState(false);
+  const [planoSubiendo, setPlanoSubiendo] = useState(false);
   const fracElegido = fracs.find((f) => String(f.id) === String(fracId)) || null;
 
   /* Deja la pantalla lista para otro proyecto. Lo cargado no se toca: son datos
@@ -150,6 +151,23 @@ function Asistente({ onSalir }) {
     guardarAvance(orgId, null);
     setHechos({}); setRevisiones({}); setArchivos({});
     setPasoActivo(0); setFracId(""); setVerTabla(false); setError("");
+  };
+
+  /* El plano es lo que hace usable el fraccionamiento: sin él, la vista de lotes
+     queda vacía y hay que volver después a buscarlo. Pedirlo acá, mientras se
+     tiene el proyecto en la cabeza, evita ese viaje de vuelta. */
+  const subirPlano = async (file) => {
+    if (!file || !fracId) return;
+    setPlanoSubiendo(true);
+    try {
+      await inmuebleService.uploadMap(fracId, file);
+      await qc.invalidateQueries({ queryKey: ["inmuebles"] });
+      showToast?.("Plano cargado");
+    } catch {
+      showToast?.("No se pudo subir el plano; puedes cargarlo después", "warning");
+    } finally {
+      setPlanoSubiendo(false);
+    }
   };
 
   const crearFrac = async () => {
@@ -388,6 +406,37 @@ function Asistente({ onSalir }) {
           </>
         )}
       </div>
+
+      {/* El plano: sin él la vista de lotes queda vacía. */}
+      {fracId && (
+        <div className="mx-auto mt-3 max-w-[560px] rounded-[14px] border border-[#E2E7E5] bg-white p-5">
+          <div className="text-[0.66rem] font-bold uppercase tracking-[0.09em] text-[#83867C]">
+            Plano del fraccionamiento
+          </div>
+          {fracElegido?.image_url ? (
+            <div className="mt-2 flex items-center gap-3">
+              <img src={fracElegido.image_url} alt=""
+                className="h-12 w-16 rounded-[8px] object-cover" />
+              <span className="text-[0.8rem] font-bold text-[#2F6A38]">Ya tiene plano</span>
+            </div>
+          ) : (
+            <>
+              <p className="mt-1 text-[0.75rem] leading-relaxed text-[#83867C]">
+                Opcional, pero sin plano la vista de lotes queda vacía y hay que volver
+                a cargarlo después.
+              </p>
+              <div className="mt-3">
+                <FilePicker
+                  value={null}
+                  onChange={subirPlano}
+                  accept="image/jpeg,image/png,image/webp"
+                  hint={planoSubiendo ? "Subiendo…" : "Imagen del plano: JPG, PNG o WebP."}
+                />
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Barra de pasos */}
       <div className="mx-auto mt-8 flex max-w-[720px] items-center">
@@ -647,6 +696,11 @@ function Asistente({ onSalir }) {
             </p>
             {/* Terminar sin poder ver el resultado deja al usuario preguntándose
                 si de verdad quedó cargado. */}
+            {!fracElegido?.image_url && (
+              <div className="mt-3 rounded-[10px] border border-[#E2C08B] bg-[#FDF6E9] px-4 py-2.5 text-[0.76rem] leading-relaxed text-[#8A6A2B]">
+                Quedó sin plano: la vista de lotes va a verse vacía hasta que cargues uno.
+              </div>
+            )}
             <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
               {fracId && (
                 <button

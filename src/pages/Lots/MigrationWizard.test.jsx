@@ -29,7 +29,8 @@ function elegirFraccionamiento(container, id = "frac-1") {
 }
 
 function elegirArchivo(container) {
-  const input = container.querySelector('input[type="file"]');
+  // Hay dos inputs: el del plano (imágenes) y el de la fase (hoja de cálculo).
+  const input = container.querySelector('input[type="file"][accept*="csv"]');
   Object.defineProperty(input, "files", {
     value: [new File(["a"], "lotes.csv")], configurable: true,
   });
@@ -227,7 +228,7 @@ describe("Asistente de migración: la revisión del archivo", () => {
     // ponerlos y quedarían repartidos por nombre, que es frágil.
     const { container } = render(<MigrationWizard onSalir={() => {}} />);
     expect(container.textContent).toContain("Elige primero el fraccionamiento");
-    expect(container.querySelector('input[type="file"]')).toBeNull();
+    expect(container.querySelector('input[type="file"][accept*="csv"]')).toBeNull();
   });
 
   it("manda los lotes al fraccionamiento elegido", async () => {
@@ -308,5 +309,32 @@ describe("Asistente de migración: varios fraccionamientos", () => {
     await act(async () => clickPorTexto(container, "Migrar otro fraccionamiento"));
     expect(container.textContent).not.toContain("Migración completa");
     expect(container.textContent).toContain("Elige primero el fraccionamiento");
+  });
+});
+
+describe("Asistente de migración: el plano", () => {
+  beforeEach(() => {
+    importCsv.mockReset();
+    window.localStorage.clear();
+  });
+
+  it("ofrece cargar el plano al elegir un fraccionamiento que no tiene", async () => {
+    const { container } = render(<MigrationWizard onSalir={() => {}} />);
+    await act(async () => elegirFraccionamiento(container));
+    expect(container.textContent).toContain("Plano del fraccionamiento");
+    expect(container.textContent).toContain("la vista de lotes queda vacía");
+  });
+
+  it("avisa al terminar si quedó sin plano", () => {
+    // Es exactamente el hueco que hace volver al proyecto días después.
+    window.localStorage.setItem("ot_migracion", JSON.stringify({
+      "org-test": {
+        pasoActivo: 2, fracId: "frac-1",
+        hechos: { lotes: { imported: 3 }, clientes: { imported: 3 },
+                  contratos: { imported: 3, installments: 156 } },
+      },
+    }));
+    const { container } = render(<MigrationWizard onSalir={() => {}} />);
+    expect(container.textContent).toContain("Quedó sin plano");
   });
 });
