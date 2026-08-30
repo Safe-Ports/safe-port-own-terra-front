@@ -2338,65 +2338,6 @@
    columnas que sí son la plantilla, para que se lea como un agregado de pantalla. */
 .mx-extra { border-left: 2px solid var(--bd); }
 
-/* La celda siempre ocupa un renglón: el detalle va en el desplegable, así que
-   un lote con diez archivos no estira su fila. */
-.mx-files-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: var(--sf2);
-  border: 1px solid var(--bd);
-  color: var(--tx2);
-  font-size: 10.5px;
-  font-weight: 700;
-  font-family: inherit;
-  cursor: pointer;
-}
-.mx-files-btn:hover { border-color: var(--forest); color: var(--forest); }
-.mx-files-caret { transition: transform .12s; }
-.mx-files-caret.abierto { transform: rotate(180deg); }
-
-/* Se dibuja sobre el body (portal), fuera del contenedor con scroll que lo
-   recortaría. De ahí la posición fija y el z-index alto. */
-.mx-files-pop {
-  position: fixed;
-  z-index: 60;
-  max-height: 280px;
-  overflow-y: auto;
-  padding: 6px;
-  border-radius: 12px;
-  background: var(--sf);
-  border: 1px solid var(--bd);
-  box-shadow: 0 10px 28px rgba(31, 33, 28, .16);
-}
-.mx-files-pop-h {
-  padding: 4px 8px 6px;
-  font-size: 9.5px;
-  font-weight: 750;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.mx-files-item {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 8px;
-  border-radius: 8px;
-  color: var(--tx2);
-  font-size: 11.5px;
-  font-weight: 600;
-  text-decoration: none;
-}
-.mx-files-item span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.mx-files-item:hover { background: var(--sf2); color: var(--forest); }
-
 .mx-pill {
   display: inline-block;
   padding: 2px 9px;

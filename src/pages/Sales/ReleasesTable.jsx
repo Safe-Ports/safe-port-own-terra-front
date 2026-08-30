@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { HiArrowUturnLeft, HiOutlineClock } from "react-icons/hi2";
 import { contractService } from "@/services/contractService";
 import FilePicker from "@/components/shared/FilePicker";
+import FilesDropdown from "@/components/shared/FilesDropdown";
 import { parseApiError } from "@/errors/parseApiError";
 import Button from "@/components/Button";
 
@@ -150,6 +151,7 @@ export default function ReleasesTable() {
                 <th style={{ textAlign: "right" }}>Cobrado</th>
                 <th style={{ textAlign: "right" }}>Devuelto</th>
                 <th style={{ textAlign: "right" }}>Retenido</th>
+                <th>Del apartado</th>
                 <th>Liquidación</th>
               </tr>
             </thead>
@@ -180,6 +182,14 @@ export default function ReleasesTable() {
                     </td>
                     <td style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", color: "#b0791f" }}>
                       {hubo && f.settled ? money(f.retained) : "—"}
+                    </td>
+                    <td>
+                      {/* Los archivos que se subieron al apartar. Salen de la
+                          ficha del lote al liberarlo —el lote ya está libre—
+                          pero no se borran: si hubo devolución o retención,
+                          son la evidencia de lo que se cobró. */}
+                      <FilesDropdown archivos={f.files} titulo={f.lot_label || "Apartado"}
+                                     vacio="Sin archivos" />
                     </td>
                     <td>
                       {!hubo ? (

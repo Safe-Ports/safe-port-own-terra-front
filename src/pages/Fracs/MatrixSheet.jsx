@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { HiArrowDownTray, HiOutlinePaperClip, HiChevronDown } from "react-icons/hi2";
+import { HiArrowDownTray } from "react-icons/hi2";
+import FilesDropdown from "@/components/shared/FilesDropdown";
 import { lotService } from "@/services/lotService";
 import { documentService } from "@/services/documentService";
 import { measure } from "@/services/formatters";
@@ -54,105 +54,6 @@ function quienLoTiene(lot) {
   }
   return <span className="mx-no">—</span>;
 }
-
-/**
- * Los archivos del lote, detrás de un desplegable.
- *
- * En lista abierta un lote con diez archivos estiraba su fila hasta romper la
- * lectura de la tabla; acá la celda siempre ocupa un renglón y el detalle se
- * pide cuando hace falta.
- *
- * El panel va en un portal con posición fija porque la tabla vive dentro de un
- * contenedor con scroll: cualquier panel posicionado dentro quedaría recortado
- * en el borde. Por lo mismo se cierra al hacer scroll —seguir a la celda
- * mientras se desplaza costaría más de lo que vale.
- */
-function CeldaArchivos({ archivos, lote }) {
-  const [abierto, setAbierto] = useState(false);
-  const [pos, setPos] = useState(null);
-  const botonRef = useRef(null);
-  const panelRef = useRef(null);
-
-  const cantidad = archivos?.length || 0;
-
-  useEffect(() => {
-    if (!abierto) return undefined;
-
-    const cerrar = () => setAbierto(false);
-    const alClic = (e) => {
-      if (botonRef.current?.contains(e.target)) return;
-      if (panelRef.current?.contains(e.target)) return;
-      setAbierto(false);
-    };
-    const alTeclado = (e) => { if (e.key === "Escape") { setAbierto(false); botonRef.current?.focus(); } };
-
-    document.addEventListener("mousedown", alClic);
-    document.addEventListener("keydown", alTeclado);
-    // En captura: el scroll del contenedor de la tabla no burbujea.
-    window.addEventListener("scroll", cerrar, true);
-    window.addEventListener("resize", cerrar);
-    return () => {
-      document.removeEventListener("mousedown", alClic);
-      document.removeEventListener("keydown", alTeclado);
-      window.removeEventListener("scroll", cerrar, true);
-      window.removeEventListener("resize", cerrar);
-    };
-  }, [abierto]);
-
-  if (cantidad === 0) return <span className="mx-no">—</span>;
-
-  const alternar = () => {
-    if (abierto) { setAbierto(false); return; }
-    const r = botonRef.current.getBoundingClientRect();
-    const ancho = 260;
-    setPos({
-      top: r.bottom + 6,
-      // Si la celda está pegada al borde derecho, el panel se alinea por su
-      // derecha en vez de salirse de la pantalla.
-      left: Math.max(8, Math.min(r.left, window.innerWidth - ancho - 8)),
-      ancho,
-    });
-    setAbierto(true);
-  };
-
-  return (
-    <>
-      <button
-        ref={botonRef}
-        type="button"
-        className="mx-files-btn"
-        onClick={alternar}
-        aria-expanded={abierto}
-        aria-haspopup="true"
-      >
-        <HiOutlinePaperClip aria-hidden="true" />
-        {cantidad} archivo{cantidad === 1 ? "" : "s"}
-        <HiChevronDown aria-hidden="true" className={abierto ? "mx-files-caret abierto" : "mx-files-caret"} />
-      </button>
-
-      {abierto && pos && createPortal(
-        <div
-          ref={panelRef}
-          className="mx-files-pop"
-          role="dialog"
-          aria-label={`Archivos del lote ${lote}`}
-          style={{ top: pos.top, left: pos.left, width: pos.ancho }}
-        >
-          <div className="mx-files-pop-h">Lote {lote}</div>
-          {archivos.map((a) => (
-            <a key={a.id} href={a.download_url} target="_blank" rel="noreferrer"
-               className="mx-files-item" title={a.name}>
-              <HiOutlinePaperClip aria-hidden="true" />
-              <span>{a.name}</span>
-            </a>
-          ))}
-        </div>,
-        document.body
-      )}
-    </>
-  );
-}
-
 
 /** Importe con separador de miles; vacío si no hay dato. */
 function money(value) {
@@ -266,7 +167,8 @@ export default function MatrixSheet({ lots, fracId, fracName, loading, showError
                     ))}
                     <td>{quienLoTiene(lot)}</td>
                     <td className="mx-extra">
-                      <CeldaArchivos archivos={archivosPorLote[lot.id]} lote={lot.code} />
+                      <FilesDropdown archivos={archivosPorLote[lot.id]}
+                                     titulo={`Lote ${lot.code}`} />
                     </td>
                   </tr>
                 );
