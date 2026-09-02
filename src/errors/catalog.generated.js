@@ -84,6 +84,14 @@ export const ERROR_CATALOG = {
     "name": "AUTH_SAME_PASSWORD",
     "severity": "warning"
   },
+  "OT-AUTH-2015": {
+    "action": "Espera unos minutos antes de volver a intentar.",
+    "domain": "AUTH",
+    "http_status": 401,
+    "message": "Demasiados intentos fallidos.",
+    "name": "AUTH_TOO_MANY_ATTEMPTS",
+    "severity": "warning"
+  },
   "OT-CALC-1001": {
     "action": "Revisa la sintaxis: solo se permiten números, variables, + - * / % ^, paréntesis y funciones (min, max, abs, round, floor, ceil, sqrt, pow).",
     "domain": "CALC",
@@ -274,14 +282,6 @@ export const ERROR_CATALOG = {
     "http_status": 403,
     "message": "Esta es una carpeta de sistema.",
     "name": "DOC_SYSTEM_FOLDER",
-    "severity": "warning"
-  },
-  "OT-INM-3001": {
-    "action": "Cierra o transfiere las ventas antes de archivarlo.",
-    "domain": "INM",
-    "http_status": 409,
-    "message": "No se puede archivar el inmueble: tiene ventas activas.",
-    "name": "INM_HAS_SOLD_LOTS",
     "severity": "warning"
   },
   "OT-LOT-1001": {

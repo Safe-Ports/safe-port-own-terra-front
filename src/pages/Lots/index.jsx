@@ -256,6 +256,11 @@ function LotsPage() {
   // formulario de secciones quedaba atenuado cuando ya se había importado, y
   // ambos competían por la misma pantalla. Ahora se elige uno.
   const [modoCarga, setModoCarga] = useState("manual");
+  // Lotes ya vendidos del fraccionamiento en edición: no impiden archivarlo,
+  // pero conviene avisar antes de que desaparezcan del inventario.
+  const fracSoldLots = projects.find(
+    (p) => String(p.id) === String(draftProject._editingFracId)
+  )?.sold ?? 0;
   // La migración carga la inmobiliaria entera —varios fraccionamientos, cartera
   // y contratos—, así que vive fuera del editor, que trabaja sobre un proyecto.
   const [migrando, setMigrando] = useState(false);
@@ -1100,6 +1105,11 @@ function LotsPage() {
               <p style={{ fontSize: "0.84rem", color: "#43453F", lineHeight: 1.6 }}>
                 Esta acción eliminará el fraccionamiento <strong>{draftProject.name}</strong> y todos sus lotes de forma permanente. No se puede deshacer.
               </p>
+              {fracSoldLots > 0 && (
+                <p style={{ fontSize: "0.8rem", color: "#92400e", background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: 8, padding: "8px 10px", lineHeight: 1.5 }}>
+                  Tiene <strong>{fracSoldLots}</strong> lote{fracSoldLots !== 1 ? "s" : ""} vendido{fracSoldLots !== 1 ? "s" : ""}. Se {fracSoldLots !== 1 ? "archivan" : "archiva"} junto con el fraccionamiento; los contratos, pagos y recibos de esas ventas se conservan.
+                </p>
+              )}
               <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8 }}>
                 <button className="lot-edit-ghost" onClick={() => setShowDeleteFracConfirm(false)}>Cancelar</button>
                 <button
