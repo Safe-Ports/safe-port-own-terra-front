@@ -906,7 +906,15 @@ export function AppProvider({ children }) {
   const deleteFrac = async (id) => {
     try {
       await inmuebleService.delete(id);
-      await queryClient.invalidateQueries({ queryKey: ["inmuebles"] });
+      // Archivar el inmueble cascadea a sus lotes en el backend, así que no
+      // alcanza con invalidar ["inmuebles"]: el mapa, el track y los KPIs
+      // seguirían mostrando lotes que ya no existen hasta recargar la página.
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["inmuebles"] }),
+        queryClient.invalidateQueries({ queryKey: ["lots"] }),
+        queryClient.invalidateQueries({ queryKey: ["lot-track"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] }),
+      ]);
       showToast("Fraccionamiento eliminado");
     } catch (err) {
       showError(err, "Error al eliminar el fraccionamiento");
