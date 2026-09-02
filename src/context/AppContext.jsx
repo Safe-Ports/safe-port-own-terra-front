@@ -916,8 +916,12 @@ export function AppProvider({ children }) {
         queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] }),
       ]);
       showToast("Fraccionamiento eliminado");
+      return null;
     } catch (err) {
-      showError(err, "Error al eliminar el fraccionamiento");
+      // Se devuelve el error ya parseado: si el archivado se bloqueó por
+      // contratos con cobranza viva, la pantalla necesita el detalle para
+      // decir cuáles son en vez de cerrar el diálogo con un toast genérico.
+      return showError(err, "Error al eliminar el fraccionamiento");
     }
   };
 

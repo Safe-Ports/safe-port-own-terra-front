@@ -256,6 +256,12 @@ function LotsPage() {
   // formulario de secciones quedaba atenuado cuando ya se había importado, y
   // ambos competían por la misma pantalla. Ahora se elige uno.
   const [modoCarga, setModoCarga] = useState("manual");
+  // Contratos con cobranza viva que impidieron archivar. Se guardan del 409 para
+  // listarlos en el mismo diálogo: antes el error cerraba el modal y navegaba
+  // afuera, así que el usuario se quedaba sin saber cuáles cerrar.
+  const [blockingContracts, setBlockingContracts] = useState(null);
+  // Total real de bloqueantes: el backend sólo enumera los primeros diez.
+  const [blockingTotal, setBlockingTotal] = useState(0);
   // Lotes ya vendidos del fraccionamiento en edición: no impiden archivarlo,
   // pero conviene avisar antes de que desaparezcan del inventario.
   const fracSoldLots = projects.find(
@@ -1091,7 +1097,7 @@ function LotsPage() {
       />
 
       {showDeleteFracConfirm && (
-        <div className="lot-edit-overlay" onClick={() => setShowDeleteFracConfirm(false)}>
+        <div className="lot-edit-overlay" onClick={() => { setShowDeleteFracConfirm(false); setBlockingContracts(null); }}>
           <div className="lot-edit-modal" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
             <div className="lot-edit-head">
               <div className="lot-edit-badge" style={{ background: "#fee2e2", color: "#991b1b", borderColor: "#fca5a5" }}>!</div>
@@ -1099,19 +1105,42 @@ function LotsPage() {
                 <div className="lot-edit-title">Eliminar fraccionamiento</div>
                 <div className="lot-edit-sub">{draftProject.name}</div>
               </div>
-              <button className="lot-edit-close" onClick={() => setShowDeleteFracConfirm(false)}>×</button>
+              <button className="lot-edit-close" onClick={() => { setShowDeleteFracConfirm(false); setBlockingContracts(null); }}>×</button>
             </div>
             <div className="lot-edit-body" style={{ gap: 12 }}>
               <p style={{ fontSize: "0.84rem", color: "#43453F", lineHeight: 1.6 }}>
                 Esta acción eliminará el fraccionamiento <strong>{draftProject.name}</strong> y todos sus lotes de forma permanente. No se puede deshacer.
               </p>
+              {blockingContracts?.length > 0 && (
+                <div style={{ fontSize: "0.8rem", color: "#7f1d1d", background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 8, padding: "10px 12px", lineHeight: 1.5 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 6 }}>
+                    No se puede archivar: hay cobranza en curso
+                  </div>
+                  <div style={{ marginBottom: 8 }}>
+                    Cierra o cancela est{blockingContracts.length !== 1 ? "as ventas" : "a venta"} desde Ventas y volvé a intentar.
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: 18 }}>
+                    {blockingContracts.map((c) => (
+                      <li key={c.id} style={{ marginBottom: 2 }}>
+                        <strong>{c.contract_number}</strong>
+                        {c.lot ? ` · lote ${c.lot}` : ""} · {c.pending_payments} cuota{c.pending_payments !== 1 ? "s" : ""} por cobrar
+                      </li>
+                    ))}
+                  </ul>
+                  {blockingTotal > blockingContracts.length && (
+                    <div style={{ marginTop: 6, opacity: 0.8 }}>
+                      …y {blockingTotal - blockingContracts.length} más.
+                    </div>
+                  )}
+                </div>
+              )}
               {fracSoldLots > 0 && (
                 <p style={{ fontSize: "0.8rem", color: "#92400e", background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: 8, padding: "8px 10px", lineHeight: 1.5 }}>
                   Tiene <strong>{fracSoldLots}</strong> lote{fracSoldLots !== 1 ? "s" : ""} vendido{fracSoldLots !== 1 ? "s" : ""}. Se {fracSoldLots !== 1 ? "archivan" : "archiva"} junto con el fraccionamiento; los contratos, pagos y recibos de esas ventas se conservan.
                 </p>
               )}
               <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8 }}>
-                <button className="lot-edit-ghost" onClick={() => setShowDeleteFracConfirm(false)}>Cancelar</button>
+                <button className="lot-edit-ghost" onClick={() => { setShowDeleteFracConfirm(false); setBlockingContracts(null); }}>Cancelar</button>
                 <button
                   className="lot-edit-primary"
                   style={{ background: "#C0392B", borderColor: "#991b1b" }}
@@ -1119,8 +1148,16 @@ function LotsPage() {
                   onClick={async () => {
                     setDeletingFrac(true);
                     try {
-                      await deleteFrac(draftProject._editingFracId);
+                      const error = await deleteFrac(draftProject._editingFracId);
+                      if (error) {
+                        // El diálogo se queda abierto con el detalle a la vista;
+                        // navegar afuera dejaba al usuario sin el motivo.
+                        setBlockingContracts(error.details?.contracts ?? []);
+                        setBlockingTotal(error.details?.active_contracts ?? 0);
+                        return;
+                      }
                       setShowDeleteFracConfirm(false);
+                      setBlockingContracts(null);
                       navigate("/fraccionamientos");
                     } finally {
                       setDeletingFrac(false);

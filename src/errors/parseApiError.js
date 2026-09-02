@@ -25,7 +25,8 @@ const STATUS_TO_CODE = {
 /**
  * @returns {{
  *   code: string, title: string, message: string, action: string,
- *   requestId: (string|null), httpStatus: (number|null), severity: string, isLocalRef: boolean
+ *   requestId: (string|null), httpStatus: (number|null), severity: string,
+ *   isLocalRef: boolean, details: Object
  * }}
  */
 export function parseApiError(error, fallbackMessage) {
@@ -38,6 +39,10 @@ export function parseApiError(error, fallbackMessage) {
   let backendMessage = "";
   let requestId = null;
   let isLocalRef = false;
+  // Los `details` del envelope (qué contratos bloquean, qué lote falló…) son lo
+  // único que le permite a la pantalla decir algo accionable en vez de repetir
+  // el mensaje genérico del catálogo.
+  const details = data?.error?.details ?? {};
 
   if (data?.error?.code) {
     // Caso ideal: el backend ya respondió con nuestro envelope homologado.
@@ -68,6 +73,7 @@ export function parseApiError(error, fallbackMessage) {
     httpStatus: status,
     severity: meta.severity,
     isLocalRef,
+    details,
   };
 }
 
