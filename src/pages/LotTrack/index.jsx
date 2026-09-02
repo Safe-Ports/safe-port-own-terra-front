@@ -131,7 +131,17 @@ const LotRow = memo(function LotRow({ row, onOpenRow, onOpenContact }) {
     >
       <td className="lt-first">
         <div className="lt-code">{row.code}</div>
-        <div className="lt-cell-sub">{row.inmueble_name}</div>
+        <div className="lt-cell-sub">
+          {row.inmueble_name}
+          {row.is_archived && (
+            <span
+              style={{ marginLeft: 6, padding: "1px 6px", borderRadius: 999, background: "#e5e7eb", color: "#4b5563", fontSize: "0.7rem", fontWeight: 600 }}
+              title="El lote salió del inventario; su historial se conserva"
+            >
+              archivado
+            </span>
+          )}
+        </div>
       </td>
       <td>
         <span className={`lt-pill ${meta.cls}`}><span className="lt-dot" />{meta.label}</span>
@@ -345,6 +355,10 @@ function TimelineDrawer({ row, onClose }) {
 export default function LotTrackPage() {
   const { fracs = [], showError } = useAppContext();
   const [statusFilter, setStatusFilter] = useState("");
+  // Los lotes archivados salen del inventario, pero el track es la historia del
+  // inventario: sin esto, archivar un fraccionamiento borraba de la vista justo
+  // los lotes que más interesa poder rastrear.
+  const [includeArchived, setIncludeArchived] = useState(false);
   const [fracFilter, setFracFilter] = useState("");
   const [sort, setSort] = useState("recent");
   const [search, setSearch] = useState("");
@@ -369,16 +383,17 @@ export default function LotTrackPage() {
 
   // Volver a la primera página al cambiar cualquier filtro: si estabas en la 4 y
   // el nuevo filtro deja 2 páginas, la consulta traería una página vacía.
-  useEffect(() => { setPage(1); }, [statusFilter, fracFilter, debounced, sort]);
+  useEffect(() => { setPage(1); }, [statusFilter, fracFilter, debounced, sort, includeArchived]);
 
   const params = useMemo(() => ({
     ...(statusFilter ? { status: statusFilter } : {}),
     ...(fracFilter ? { inmueble_id: fracFilter } : {}),
     ...(debounced ? { search: debounced } : {}),
+    ...(includeArchived ? { include_archived: true } : {}),
     sort,
     page,
     limit: PER_PAGE,
-  }), [statusFilter, fracFilter, debounced, sort, page]);
+  }), [statusFilter, fracFilter, debounced, sort, page, includeArchived]);
 
   const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ["lot-track", params],
@@ -445,6 +460,13 @@ export default function LotTrackPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+        <button
+          className={`lt-filter${includeArchived ? " on" : ""}`}
+          onClick={() => setIncludeArchived((v) => !v)}
+          title="Muestra también los lotes archivados, con su recorrido completo"
+        >
+          Incluir archivados
+        </button>
       </div>
 
       {isLoading ? (
@@ -453,7 +475,7 @@ export default function LotTrackPage() {
         <EmptyState
           title="Sin lotes que mostrar"
           description={
-            debounced || statusFilter || fracFilter
+            debounced || statusFilter || fracFilter || includeArchived
               ? "Ningún lote coincide con los filtros aplicados."
               : "Cuando cargues lotes y empieces a apartarlos, su seguimiento aparece aquí."
           }

@@ -903,9 +903,9 @@ export function AppProvider({ children }) {
     }
   };
 
-  const deleteFrac = async (id) => {
+  const deleteFrac = async (id, { force = false, silentCodes = [] } = {}) => {
     try {
-      await inmuebleService.delete(id);
+      await inmuebleService.delete(id, { force });
       // Archivar el inmueble cascadea a sus lotes en el backend, así que no
       // alcanza con invalidar ["inmuebles"]: el mapa, el track y los KPIs
       // seguirían mostrando lotes que ya no existen hasta recargar la página.
@@ -921,7 +921,11 @@ export function AppProvider({ children }) {
       // Se devuelve el error ya parseado: si el archivado se bloqueó por
       // contratos con cobranza viva, la pantalla necesita el detalle para
       // decir cuáles son en vez de cerrar el diálogo con un toast genérico.
-      return showError(err, "Error al eliminar el fraccionamiento");
+      const parsed = parseApiError(err, "Error al archivar el fraccionamiento");
+      // Los códigos que la pantalla ya presenta a la vista no van también por
+      // toast: repetido abajo era ruido que tapaba el propio diálogo.
+      if (!silentCodes.includes(parsed.code)) showError(err, "Error al archivar el fraccionamiento");
+      return parsed;
     }
   };
 

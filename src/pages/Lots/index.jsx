@@ -1102,22 +1102,22 @@ function LotsPage() {
             <div className="lot-edit-head">
               <div className="lot-edit-badge" style={{ background: "#fee2e2", color: "#991b1b", borderColor: "#fca5a5" }}>!</div>
               <div>
-                <div className="lot-edit-title">Eliminar fraccionamiento</div>
+                <div className="lot-edit-title">Archivar fraccionamiento</div>
                 <div className="lot-edit-sub">{draftProject.name}</div>
               </div>
               <button className="lot-edit-close" onClick={() => { setShowDeleteFracConfirm(false); setBlockingContracts(null); }}>×</button>
             </div>
             <div className="lot-edit-body" style={{ gap: 12 }}>
               <p style={{ fontSize: "0.84rem", color: "#43453F", lineHeight: 1.6 }}>
-                Esta acción eliminará el fraccionamiento <strong>{draftProject.name}</strong> y todos sus lotes de forma permanente. No se puede deshacer.
+                Se archivará el fraccionamiento <strong>{draftProject.name}</strong> y todos sus lotes: salen del inventario y dejan de contar para tu plan. El historial —contratos, pagos, recibos, documentos y la bitácora de cada lote— se conserva.
               </p>
               {blockingContracts?.length > 0 && (
                 <div style={{ fontSize: "0.8rem", color: "#7f1d1d", background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 8, padding: "10px 12px", lineHeight: 1.5 }}>
                   <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                    No se puede archivar: hay cobranza en curso
+                    Hay cobranza en curso
                   </div>
                   <div style={{ marginBottom: 8 }}>
-                    Cierra o cancela est{blockingContracts.length !== 1 ? "as ventas" : "a venta"} desde Ventas y volvé a intentar.
+                    Est{blockingContracts.length !== 1 ? "as ventas siguen" : "a venta sigue"} cobrándose. Si archivás igual, l{blockingContracts.length !== 1 ? "os lotes salen" : "el lote sale"} del inventario pero la cobranza sigue corriendo y podés seguirla desde Ventas y Pagos.
                   </div>
                   <ul style={{ margin: 0, paddingLeft: 18 }}>
                     {blockingContracts.map((c) => (
@@ -1134,7 +1134,7 @@ function LotsPage() {
                   )}
                 </div>
               )}
-              {fracSoldLots > 0 && (
+              {fracSoldLots > 0 && !blockingContracts && (
                 <p style={{ fontSize: "0.8rem", color: "#92400e", background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: 8, padding: "8px 10px", lineHeight: 1.5 }}>
                   Tiene <strong>{fracSoldLots}</strong> lote{fracSoldLots !== 1 ? "s" : ""} vendido{fracSoldLots !== 1 ? "s" : ""}. Se {fracSoldLots !== 1 ? "archivan" : "archiva"} junto con el fraccionamiento; los contratos, pagos y recibos de esas ventas se conservan.
                 </p>
@@ -1148,12 +1148,20 @@ function LotsPage() {
                   onClick={async () => {
                     setDeletingFrac(true);
                     try {
-                      const error = await deleteFrac(draftProject._editingFracId);
+                      // Segundo intento: el usuario ya vio qué ventas eran.
+                      const forzar = blockingContracts !== null;
+                      const error = await deleteFrac(draftProject._editingFracId, {
+                        force: forzar,
+                        // El 409 por cobranza no es un fallo que anunciar por
+                        // toast: se muestra dentro del diálogo, que es donde el
+                        // usuario está mirando.
+                        silentCodes: ["OT-CON-3001"],
+                      });
                       if (error) {
-                        // El diálogo se queda abierto con el detalle a la vista;
-                        // navegar afuera dejaba al usuario sin el motivo.
-                        setBlockingContracts(error.details?.contracts ?? []);
-                        setBlockingTotal(error.details?.active_contracts ?? 0);
+                        if (error.code === "OT-CON-3001") {
+                          setBlockingContracts(error.details?.contracts ?? []);
+                          setBlockingTotal(error.details?.active_contracts ?? 0);
+                        }
                         return;
                       }
                       setShowDeleteFracConfirm(false);
@@ -1164,7 +1172,11 @@ function LotsPage() {
                     }
                   }}
                 >
-                  {deletingFrac ? "Eliminando..." : "Sí, eliminar"}
+                  {deletingFrac
+                    ? "Archivando..."
+                    : blockingContracts
+                    ? "Archivar de todos modos"
+                    : "Sí, archivar"}
                 </button>
               </div>
             </div>
