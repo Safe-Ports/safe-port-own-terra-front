@@ -59,7 +59,10 @@ export const FEATURE_LABEL = {
   "lands.reports": "Reportes Lands",
 };
 
-const ADMIN_ROLES = new Set(["admin", "superadmin"]);
+// Solo "admin": el CHECK de la tabla `users` admite exactamente 'admin' y
+// 'vendor', así que ningún usuario puede tener "superadmin". Estaba de más y
+// hacía creer que existe un tercer rol global.
+const ADMIN_ROLES = new Set(["admin"]);
 
 export function defaultPermissionsFor(appKey, role) {
   if (role === "admin") return [`${appKey}.*`];
@@ -78,7 +81,13 @@ const getAppRows = (user) => {
 };
 
 const getPermissions = (user) => {
-  const rows = getAppRows(user);
+  // Solo las asignaciones ACTIVAS, igual que el backend
+  // (`has_app_permission` filtra por `row.is_active` antes de mirar nada más).
+  // Acá se recorrían todas, así que revocar un acceso desactivando la asignación
+  // seguía habilitando la UI: menú y secciones a la vista, y un 403 en cada
+  // pantalla que el usuario abría. `canAccessApp`, diez líneas más abajo, sí lo
+  // comprobaba — el filtro faltaba únicamente en este camino.
+  const rows = getAppRows(user).filter((row) => row?.is_active !== false);
   const fromRows = rows.flatMap((row) => {
     const key = row?.app_key || row?.key || row?.app;
     const role = row?.role;
@@ -147,7 +156,13 @@ export function canUseFeature(user, feature) {
     "lands.reports": () => canAccessApp(user, "lands") && hasPermission(user, "lands.reports"),
   };
 
-  return checks[feature]?.() || hasPermission(user, feature);
+  // Si la función existe, su respuesta es la final. Antes esto era
+  // `checks[feature]?.() || hasPermission(user, feature)`, y como cada check está
+  // escrito `canAccessApp(...) && hasPermission(...)`, justo cuando el `&&` daba
+  // false —el caso que se quería bloquear— el `||` lo reintentaba sin el
+  // `canAccessApp`. El guard quedaba decorativo.
+  if (feature in checks) return checks[feature]();
+  return hasPermission(user, feature);
 }
 
 export function getDeniedMessage(feature) {

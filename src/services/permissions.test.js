@@ -62,3 +62,52 @@ describe("permissions catalog", () => {
     expect(canUseFeature(user, "core.config")).toBe(true);
   });
 });
+
+// ── Coherencia con el backend ────────────────────────────────────────────────
+// El backend es el que manda; esto es un espejo para no ofrecerle al usuario
+// pantallas que después le van a devolver un 403.
+
+describe("permisos: acceso revocado y guards", () => {
+  const colaborador = (apps) => ({ role: "vendor", apps, permissions: [] });
+
+  it("una asignación desactivada no da permisos", () => {
+    // El backend filtra por is_active antes de mirar nada; acá se recorrían
+    // todas las filas, así que revocar un acceso desactivándolo no hacía efecto
+    // en la UI: menú visible y 403 en cada pantalla.
+    const user = colaborador([
+      { app_key: "lands", role: "seller", is_active: false },
+    ]);
+    expect(canAccessApp(user, "lands")).toBe(false);
+    expect(canUseFeature(user, "lands.clients")).toBe(false);
+    expect(canUseFeature(user, "lands.sales")).toBe(false);
+  });
+
+  it("la misma asignación activa sí los da", () => {
+    const user = colaborador([
+      { app_key: "lands", role: "seller", is_active: true },
+    ]);
+    expect(canAccessApp(user, "lands")).toBe(true);
+    expect(canUseFeature(user, "lands.clients")).toBe(true);
+  });
+
+  it("un permiso suelto no saltea el acceso a la app", () => {
+    // El fallback `|| hasPermission(...)` reintentaba el check sin el
+    // canAccessApp, así que un permiso colgado de una app a la que ya no se
+    // entra volvía a abrir la sección.
+    const user = { role: "vendor", apps: [], permissions: ["lands.write"] };
+    expect(canAccessApp(user, "lands")).toBe(false);
+    expect(canUseFeature(user, "lands.write")).toBe(false);
+  });
+
+  it("un colaborador sin asignaciones no entra a ninguna vertical", () => {
+    const user = colaborador([]);
+    expect(canAccessApp(user, "lands")).toBe(false);
+    expect(canUseFeature(user, "lands.read")).toBe(false);
+  });
+
+  it("el admin sigue entrando a todo", () => {
+    const admin = { role: "admin", apps: [], permissions: [] };
+    expect(canAccessApp(admin, "lands")).toBe(true);
+    expect(canUseFeature(admin, "lands.write")).toBe(true);
+  });
+});
