@@ -24,7 +24,26 @@ vi.mock("@/services/folderService", () => ({ folderService: {} }));
 
 const apiPost = vi.fn();
 const apiGet = vi.fn();
-vi.mock("@/services/api", () => ({ default: { post: (...a) => apiPost(...a), get: (...a) => apiGet(...a) } }));
+// `api.js` es el dueño de los tokens: `startSession` los guarda al iniciar sesión
+// y `readSessionTokens` los relee al persistir el perfil. El mock los implementa
+// de verdad contra localStorage —no como no-ops— porque justamente lo que se
+// prueba acá es qué termina guardado en la sesión.
+const SESSION_KEY = "lm_session";
+vi.mock("@/services/api", () => ({
+  default: { post: (...a) => apiPost(...a), get: (...a) => apiGet(...a) },
+  startSession: ({ access_token, refresh_token }) => {
+    const previa = JSON.parse(window.localStorage.getItem("lm_session") || "null") || {};
+    window.localStorage.setItem(
+      "lm_session",
+      JSON.stringify({ ...previa, token: access_token, refresh_token })
+    );
+  },
+  readSessionTokens: () => {
+    const s = JSON.parse(window.localStorage.getItem("lm_session") || "null");
+    return s?.token ? { token: s.token, refresh_token: s.refresh_token } : null;
+  },
+  replaceSessionTokens: vi.fn(),
+}));
 
 function Probe() {
   const { currentUser, login } = useAppContext();

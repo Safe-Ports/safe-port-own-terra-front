@@ -1120,7 +1120,7 @@ const ESTADO_EG  = [["all","Todos los estados"],["pending","Pendiente"],["overdu
 const ESTADO_AL  = [["all","Todas las alertas"],["roja","Urgentes"],["amarilla","Próximas"]];
 
 export default function PaymentsPage() {
-  const { payments, clients, contracts, quickPay, collectOnContract, sendReminder, showToast, showError } = useAppContext();
+  const { payments, clients, contracts, datosIncompletos, quickPay, collectOnContract, sendReminder, showToast, showError } = useAppContext();
   const qc = useQueryClient();
   const navigate = useNavigate();
 
@@ -1452,6 +1452,10 @@ export default function PaymentsPage() {
         .cf-btn-ghost{background:var(--sf);color:var(--danger);border-color:var(--bd)}
         .cf-btn-ghost:hover{border-color:var(--danger)}
         .cf-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+        .cf-aviso-parcial{display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;
+          padding:12px 14px;border:1px solid #C98A2B;border-left-width:3px;border-radius:6px;
+          background:rgba(201,138,43,.08);color:inherit;font-size:13.5px;line-height:1.5}
+        .cf-aviso-parcial svg{flex:none;margin-top:2px;color:#C98A2B;font-size:16px}
         .cf-kpi{background:var(--sf);border:1px solid var(--bd);border-radius:18px;box-shadow:var(--sh);padding:16px 18px 6px;display:flex;flex-direction:column}
         .cf-kpi .top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
         .cf-kpi .ico{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;font-size:1.15rem}
@@ -1542,6 +1546,18 @@ export default function PaymentsPage() {
           valor={currency(k.expenses.amount)} pie={`flujo neto ${currency(k.net_flow)}`}
           delta={k.expenses.delta} invertido serie={k.expenses.series} color="#C98A2B" id="egr" error={kpiError} cargando={kpiPending} sinPermiso={kpiSinPermiso} />
       </div>
+
+      {datosIncompletos?.payments && (
+        <div className="cf-aviso-parcial" role="status">
+          <HiOutlineClock aria-hidden="true" />
+          <span>
+            Se cargaron <strong>{datosIncompletos.payments.cargados}</strong> de{" "}
+            <strong>{datosIncompletos.payments.total}</strong> cuotas. Las listas de
+            mora, alertas y amortización de abajo solo cubren esas; los indicadores
+            de arriba sí abarcan todo.
+          </span>
+        </div>
+      )}
 
       <div className="cf-panel">
         <div className="cf-tabs" data-tour="pagos-tabs">

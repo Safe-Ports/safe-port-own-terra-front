@@ -2,7 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePersistentState } from "@/hooks/usePersistentState";
-import api from "@/services/api";
+import { useSessionState } from "@/hooks/useSessionState";
+import api, { startSession } from "@/services/api";
 import { clientService } from "@/services/clientService";
 import { inmuebleService } from "@/services/inmuebleService";
 import { mapFileFromUrl } from "@/utils/mapImage";
@@ -24,7 +25,7 @@ const AppContext = createContext(null);
 export function AppProvider({ children }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [currentUser, setCurrentUser] = usePersistentState("lm_session", null);
+  const [currentUser, setCurrentUser] = useSessionState(null);
 
   // ── Rehidratación de sesión (fuente de verdad = backend) ────────────────────
   // La sesión persiste en localStorage, pero role/permissions/apps pueden quedar
@@ -79,40 +80,78 @@ export function AppProvider({ children }) {
   }, []);
 
   // ── Data queries ──────────────────────────────────────────────────────────
+  // OJO con estos topes. Son colecciones globales SIN paginar, y varias pantallas
+  // calculan totales filtrando y reduciendo estos arreglos. Cuando la organización
+  // tiene más filas que el tope, lo que sobra no llega y esos cálculos quedan mal
+  // por abajo sin que nada lo delate: la pantalla se ve completa igual. El caso
+  // grave es `payments` — un contrato a 96 meses son 96 cuotas, así que con 200
+  // no entran ni tres contratos— y el tope no se puede subir desde acá: el
+  // backend topa `limit` en 200 (le=200 en el router de pagos).
+  //
+  // El arreglo de fondo es que las pantallas pidan agregados al servidor (que ya
+  // los expone: /payments/kpis, /payments/stats, /dashboard) y paginen los
+  // listados, en vez de recalcular sobre una muestra. Mientras tanto, acá se
+  // guarda cuánto se cargó de cuánto hay, para que la UI pueda avisarlo en vez
+  // de mostrar un número incompleto como si fuera el bueno.
+  // `total` ausente => se asume completo: mejor no avisar que avisar de más.
+  const conCobertura = (r) => ({
+    items: r.items || [],
+    total: typeof r.total === "number" ? r.total : (r.items || []).length,
+  });
+
   const { data: clientsData, isLoading: clientsLoading } = useQuery({
     queryKey: ["clients"],
-    queryFn: () => clientService.list({ limit: 100 }).then((r) => r.items),
+    queryFn: () => clientService.list({ limit: 100 }).then((r) => conCobertura(r)),
     enabled: !!currentUser && !authHydrating,
   });
-  const clients = clientsData || [];
+  const clients = clientsData?.items || [];
 
   const { data: fracsData, isLoading: fracsLoading } = useQuery({
     queryKey: ["inmuebles"],
-    queryFn: () => inmuebleService.list({ limit: 50 }).then((r) => r.items),
+    queryFn: () => inmuebleService.list({ limit: 50 }).then((r) => conCobertura(r)),
     enabled: !!currentUser && !authHydrating,
   });
-  const fracs = fracsData || [];
+  const fracs = fracsData?.items || [];
 
   const { data: contractsData, isLoading: contractsLoading } = useQuery({
     queryKey: ["contracts"],
-    queryFn: () => contractService.list({ limit: 100 }).then((r) => r.items),
+    queryFn: () => contractService.list({ limit: 100 }).then((r) => conCobertura(r)),
     enabled: !!currentUser && !authHydrating,
   });
-  const contracts = contractsData || [];
+  const contracts = contractsData?.items || [];
 
   const { data: paymentsData, isLoading: paymentsLoading } = useQuery({
     queryKey: ["payments"],
-    queryFn: () => paymentService.list({ limit: 200 }).then((r) => r.items),
+    queryFn: () => paymentService.list({ limit: 200 }).then((r) => conCobertura(r)),
     enabled: !!currentUser && !authHydrating,
   });
-  const payments = paymentsData || [];
+  const payments = paymentsData?.items || [];
 
   const { data: documentsData, isLoading: documentsLoading } = useQuery({
     queryKey: ["documents"],
-    queryFn: () => documentService.list({ limit: 100 }).then((r) => r.items),
+    queryFn: () => documentService.list({ limit: 100 }).then((r) => conCobertura(r)),
     enabled: !!currentUser && !authHydrating,
   });
-  const documents = documentsData || [];
+  const documents = documentsData?.items || [];
+
+  /**
+   * Qué colecciones llegaron incompletas, para que la pantalla pueda decirlo.
+   *
+   * `{ payments: { cargados: 200, total: 4800 } }` — solo aparecen las que están
+   * recortadas; si una entró entera, no figura.
+   */
+  const datosIncompletos = (() => {
+    const fuera = {};
+    for (const [clave, d] of Object.entries({
+      clients: clientsData, fracs: fracsData, contracts: contractsData,
+      payments: paymentsData, documents: documentsData,
+    })) {
+      if (d && d.total > d.items.length) {
+        fuera[clave] = { cargados: d.items.length, total: d.total };
+      }
+    }
+    return Object.keys(fuera).length ? fuera : null;
+  })();
 
   const { data: notificationCount = 0, refetch: refetchNotifications } = useQuery({
     queryKey: ["notifications-unread"],
@@ -331,6 +370,11 @@ export function AppProvider({ children }) {
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   const applyAuthSession = (data, remember = true) => {
+    // Los tokens primero y por su dueño (`api.js`): el escritor de la sesión
+    // relee de ahí los vigentes al persistir el perfil, así que si el par nuevo
+    // no estuviera guardado todavía, el perfil se escribiría sobre el par de la
+    // sesión anterior y el inicio de sesión no serviría de nada.
+    startSession(data);
     setCurrentUser({
       token: data.access_token,
       refresh_token: data.refresh_token,
@@ -993,6 +1037,7 @@ export function AppProvider({ children }) {
     payments,
     documents,
     // Flags de carga (primer fetch) para mostrar skeletons en las páginas.
+    datosIncompletos,
     clientsLoading,
     fracsLoading,
     contractsLoading,

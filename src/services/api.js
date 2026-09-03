@@ -153,4 +153,40 @@ export function replaceSessionTokens({ access_token, refresh_token }) {
   saveSession({ ...session, token: access_token, refresh_token });
 }
 
+// ── Este módulo es el dueño de los tokens ────────────────────────────────────
+// Los renueva el interceptor de arriba, en cualquier momento y sin avisarle a
+// React. Por eso el estado de React NO puede ser la fuente de los tokens: entre
+// que se lee y se vuelve a escribir puede haber pasado una renovación, y el
+// escritor de React devolvería el par viejo a localStorage. El refresh siguiente
+// viajaría con un refresh_token cuyo `sid` el backend ya revocó al rotarlo, y al
+// usuario lo echaría a la pantalla de acceso en mitad de lo que estuviera
+// haciendo. Las dos funciones de acá abajo son el contrato con AppContext:
+// React guarda el PERFIL, este módulo guarda los TOKENS.
+
+/**
+ * Los tokens vigentes en este instante, leídos de localStorage.
+ *
+ * @returns {{token: string, refresh_token: string} | null} El par vigente, o
+ *   null si no hay sesión.
+ */
+export function readSessionTokens() {
+  const session = getSession();
+  if (!session?.token) return null;
+  return { token: session.token, refresh_token: session.refresh_token };
+}
+
+/**
+ * Estrena el par de tokens de una sesión nueva (inicio de sesión, registro).
+ *
+ * Se llama ANTES de guardar el perfil en React, para que el perfil se escriba ya
+ * sobre los tokens buenos. A diferencia de `replaceSessionTokens`, no exige que
+ * exista una sesión previa.
+ *
+ * @param {{access_token: string, refresh_token: string}} par Tokens recién
+ *   emitidos por el backend.
+ */
+export function startSession({ access_token, refresh_token }) {
+  saveSession({ ...(getSession() || {}), token: access_token, refresh_token });
+}
+
 export default api;
