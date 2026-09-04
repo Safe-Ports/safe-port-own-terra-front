@@ -660,10 +660,17 @@ function IngresoModal({ onClose, onSave, busy }) {
 }
 
 /* ── Modal cobro ─────────────────────────────────────────────── */
-function CobroModal({ clients, contracts, payments, onClose, onSave, busy }) {
+function CobroModal({ clients, contracts, payments, onClose, onSave, busy, contratoInicial }) {
   useEscapeKey(onClose);
   const [form, setForm] = useState({
-    clientId: "", contractId: "", paymentId: "", amount: "",
+    // Con `contratoInicial` el modal abre ya apuntando a ese contrato: es el
+    // botón de cobro de la tabla de amortización, que antes pasaba la cuota
+    // concreta. Ahora el próximo vencimiento lo calcula la base y la pantalla
+    // no tiene la fila de la cuota a mano, así que se apunta al contrato — que
+    // además es sobre lo que cobra el backend.
+    clientId: contratoInicial?.client?.id ? String(contratoInicial.client.id) : "",
+    contractId: contratoInicial?.id ? String(contratoInicial.id) : "",
+    paymentId: "", amount: "",
     paid_date: new Date().toISOString().split("T")[0],
   });
   const [modo, setModo] = useState("completa");
@@ -1131,6 +1138,7 @@ export default function PaymentsPage() {
   const [modal,     setModal]     = useState(null);
   const [editing,   setEditing]   = useState(null);
   const [abono,     setAbono]     = useState(null);   // cuota (payment) en cobro/abono
+  const [cobroContrato, setCobroContrato] = useState(null); // contrato desde el que se abre el cobro
   const [abonoBusy, setAbonoBusy] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   useLandsGuide(() => setShowGuide(true));
@@ -1211,13 +1219,28 @@ export default function PaymentsPage() {
   /* ── KPIs respetan desde/hasta ── */
   // "cancelled" queda fuera de ambos KPIs (dinero que no entrará); "partial" aporta
   // lo ya abonado a Cobrado y el remanente a Por cobrar, igual que el backend.
-  const inPendienteArr = ingresos.filter(p => ["pending", "overdue", "partial"].includes(p.status) && inRange(p.due_date, desde, hasta));
   const monthlyData    = useMemo(() => getMonthlyData(ingresos, expenses), [ingresos, expenses]);
 
   /* ── alertas ── */
+  // Las cuotas vencidas y las que vencen pronto salen de sus endpoints, no de
+  // filtrar `ingresos`: ese arreglo llega recortado a 200 filas y con eso no
+  // entran ni tres contratos a 96 meses, así que faltaban alertas sin que nada
+  // lo delatara. `/payments/overdue` devuelve TODAS las vencidas de la
+  // organización y `/payments/upcoming` las de los próximos días.
+  const { data: vencidas = [] } = useQuery({
+    queryKey: ["payments", "overdue"],
+    queryFn: () => paymentService.overdue(),
+    retry: (n, err) => err?.response?.status !== 403 && n < 2,
+  });
+  const { data: porVencer = [] } = useQuery({
+    queryKey: ["payments", "upcoming", 7],
+    queryFn: () => paymentService.upcoming({ days: 7 }),
+    retry: (n, err) => err?.response?.status !== 403 && n < 2,
+  });
+
   const alertas = useMemo(() => {
     const out = [];
-    ingresos.filter(p => p.status === "overdue" || (p.status === "pending" && relativeDays(p.due_date) <= 7 && relativeDays(p.due_date) >= 0))
+    [...vencidas, ...porVencer.filter(p => p.status === "pending")]
       .forEach(p => out.push({
         tipo: "ingreso", urgencia: p.status === "overdue" ? "roja" : "amarilla",
         titulo: `${p.status === "overdue" ? "Cuota vencida" : "Vence pronto"} — ${p.client?.name || ""}`,
@@ -1234,7 +1257,7 @@ export default function PaymentsPage() {
         raw: e,
       }));
     return out.sort((a, b) => (a.urgencia === "roja" ? 0 : 1) - (b.urgencia === "roja" ? 0 : 1));
-  }, [ingresos, egresosNorm]);
+  }, [vencidas, porVencer, egresosNorm]);
 
   const alertasRojas = alertas.filter(a => a.urgencia === "roja").length;
   const filtAlertas  = alertas.filter(a => estado === "all" || a.urgencia === estado);
@@ -1356,7 +1379,6 @@ export default function PaymentsPage() {
   };
 
   /* ── KPIs extra: mora + egresos operativos ── */
-  const moraArr    = ingresos.filter(p => p.status === "overdue");
   // Las tarjetas ya no suman la lista que bajó la página: eso se quedaba corto
   // apenas la organización pasaba el tope de la consulta. Se invalidan con la
   // misma llave que los pagos, así que un cobro las refresca al instante.
@@ -1379,27 +1401,23 @@ export default function PaymentsPage() {
   };
 
   /* ── Amortización por contrato (progreso "24/84") ── */
+  // Todo sale de `payments_summary`, que lo calcula la base por contrato: los
+  // conteos y ahora también `next_due_date`. Antes el próximo vencimiento se
+  // deducía recorriendo el listado global de cuotas, recortado a 200 filas —
+  // así que a los contratos que quedaban fuera del corte la columna "Vence" les
+  // salía vacía y el semáforo siempre en verde, aunque estuvieran vencidos.
   const amortRows = useMemo(() => {
-    const byContract = {};
-    for (const p of payments) {
-      const cid = p.contract?.id || p.contract_id;
-      if (cid) (byContract[cid] ||= []).push(p);
-    }
     const today = new Date(); today.setHours(0, 0, 0, 0);
     return contracts
       .filter(c => c.status === "active" && (c.total_months || c.payments_summary?.total || 0) > 0)
       .map(c => {
         const ps = c.payments_summary || {};
         const total = c.total_months || ps.total || 0;
-        const mine = byContract[c.id] || [];
-        const next = mine
-          .filter(p => p.status === "pending" || p.status === "overdue")
-          .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))[0];
-        const hasOverdue = (ps.overdue || 0) > 0 || mine.some(p => p.status === "overdue");
+        const venc = ps.next_due_date || null;
         let estado = "ok";
-        if (hasOverdue) estado = "late";
-        else if (next) {
-          const days = Math.ceil((new Date(`${next.due_date}T12:00:00`) - today) / 86400000);
+        if ((ps.overdue || 0) > 0) estado = "late";
+        else if (venc) {
+          const days = Math.ceil((new Date(`${venc}T12:00:00`) - today) / 86400000);
           if (days >= 0 && days <= 5) estado = "soon";
         }
         return {
@@ -1409,11 +1427,11 @@ export default function PaymentsPage() {
           proj: c.lot?.inmueble_name || "",
           paid: ps.paid || 0, total,
           cuota: Number(c.monthly_payment || 0),
-          venc: next?.due_date || null,
-          estado, nextPayment: next, contract: c,
+          venc,
+          estado, contract: c,
         };
       });
-  }, [contracts, payments]);
+  }, [contracts]);
 
   const amortProjects = useMemo(
     () => [...new Set(amortRows.map(r => r.proj).filter(Boolean))].sort(),
@@ -1552,9 +1570,10 @@ export default function PaymentsPage() {
           <HiOutlineClock aria-hidden="true" />
           <span>
             Se cargaron <strong>{datosIncompletos.payments.cargados}</strong> de{" "}
-            <strong>{datosIncompletos.payments.total}</strong> cuotas. Las listas de
-            mora, alertas y amortización de abajo solo cubren esas; los indicadores
-            de arriba sí abarcan todo.
+            <strong>{datosIncompletos.payments.total}</strong> cuotas. El{" "}
+            <strong>Registro de Ingresos</strong> y su gráfica mensual solo cubren
+            esas. Los indicadores, las alertas y las amortizaciones vienen
+            calculados del servidor y sí abarcan todo.
           </span>
         </div>
       )}
@@ -1600,7 +1619,7 @@ export default function PaymentsPage() {
                           <td className={`cf-venc ${r.estado === "late" ? "late" : ""}`}>{r.venc ? fmtD(r.venc) : "—"}</td>
                           <td><span className={`cf-badge ${r.estado}`}>{AMORT_EST[r.estado]}</span></td>
                           <td><div className="cf-acts">
-                            <button className="cf-ico pay" title="Registrar pago" onClick={() => r.nextPayment ? setAbono(r.nextPayment) : setModal("cobro")}><HiBanknotes /></button>
+                            <button className="cf-ico pay" title="Registrar pago" onClick={() => { setCobroContrato(r.contract); setModal("cobro"); }}><HiBanknotes /></button>
                             {link ? <a className="cf-ico wa" href={link} target="_blank" rel="noreferrer" title="Recordatorio por WhatsApp"><HiPhone /></a>
                                   : <button className="cf-ico" title="Sin teléfono del cliente" disabled style={{ opacity: .4, cursor: "default" }}><HiPhone /></button>}
                             <button className="cf-ico" title="Historial de amortización" onClick={() => navigate("/reportes")}><HiBars3 /></button>
@@ -1670,7 +1689,8 @@ export default function PaymentsPage() {
       {modal === "egreso" && <EgresoModal initial={editing} onClose={() => { setModal(null); setEditing(null); }} onSave={handleSaveEgreso} />}
       {modal === "cobro"  && (
         <CobroModal clients={clients} contracts={contracts} payments={ingresos} busy={abonoBusy}
-          onClose={() => setModal(null)} onSave={guardarCobroManual} />
+          key={cobroContrato?.id || "nuevo"} contratoInicial={cobroContrato}
+          onClose={() => { setModal(null); setCobroContrato(null); }} onSave={guardarCobroManual} />
       )}
       {modal === "ingreso" && (
         <IngresoModal busy={abonoBusy} onClose={() => setModal(null)} onSave={guardarIngreso} />
