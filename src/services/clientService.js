@@ -1,4 +1,4 @@
-import api from "./api";
+import api, { TIMEOUT_ARCHIVO } from "./api";
 
 export const clientService = {
   // Fase 2 de la migración: la cartera con su Clave Cliente, que es lo que
@@ -20,7 +20,7 @@ export const clientService = {
   contracts: (id)           => api.get(`/clients/${id}/contracts`).then(r => r.data),
   payments:  (id, params = {}) => api.get(`/clients/${id}/payments`, { params }).then(r => r.data),
   statement: (id)           => api.get(`/clients/${id}/statement`).then(r => r.data),
-  statementPdf: (id)        => api.get(`/clients/${id}/statement/pdf`, { responseType: "blob" }).then(r => r.data),
+  statementPdf: (id)        => api.get(`/clients/${id}/statement/pdf`, { responseType: "blob", timeout: TIMEOUT_ARCHIVO }).then(r => r.data),
   sendStatement: (id, body = {}) => api.post(`/clients/${id}/statement/send-email`, body).then(r => r.data),
   getApps:   (id)           => api.get(`/clients/${id}/apps`).then(r => r.data),
   assignApp: (id, appKey)   => api.post(`/clients/${id}/apps/${appKey}`).then(r => r.data),

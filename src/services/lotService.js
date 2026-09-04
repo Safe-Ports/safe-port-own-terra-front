@@ -1,4 +1,4 @@
-import api from "./api";
+import api, { TIMEOUT_ARCHIVO } from "./api";
 
 export const lotService = {
   // El comprobante del apartado va aparte: se aparta con el cliente enfrente y
@@ -40,5 +40,5 @@ export const lotService = {
   // Descarga con las columnas de la plantilla, así que el archivo se puede
   // volver a subir por el importador.
   matrixExport: (params = {}) =>
-    api.get("/lots/matrix-export", { params, responseType: "blob" }).then((r) => r.data),
+    api.get("/lots/matrix-export", { params, responseType: "blob", timeout: TIMEOUT_ARCHIVO }).then((r) => r.data),
 };

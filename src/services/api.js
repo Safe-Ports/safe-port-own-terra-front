@@ -14,6 +14,20 @@ const api = axios.create({
   timeout: 15000,
 });
 
+/**
+ * Timeout para las peticiones que GENERAN un archivo: PDF de contrato, estado de
+ * cuenta, exportaciones a Excel.
+ *
+ * El de 15 s de arriba está pensado para una llamada normal, y a estas no les
+ * alcanza: en un fraccionamiento grande el navegador cortaba a los 15 s mientras
+ * el servidor seguía armando el archivo, así que el usuario veía un error de red
+ * sobre una operación que en realidad terminaba bien — y solía reintentarla,
+ * duplicando el trabajo del servidor.
+ *
+ * Los mismos 120 s que ya usaban las importaciones masivas.
+ */
+export const TIMEOUT_ARCHIVO = 120000;
+
 const SESSION_KEY = "lm_session";
 
 function getSession() {
@@ -69,14 +83,31 @@ api.interceptors.response.use(
         error.__refLocal = localRef();
       }
       const requestId = envelope?.request_id || headerRef || error.__refLocal;
+      // Lo que se manda a Sentry va DEPURADO. Antes viajaba `error.response.data`
+      // entero y la URL con su query string, o sea que nombres, correos,
+      // teléfonos y montos de clientes finales terminaban en un tercero fuera
+      // del circuito. Son datos de los que OwnTerra es ENCARGADO, no dueño.
+      //
+      // Para diagnosticar alcanza con el código del catálogo, la Ref y —de los
+      // 422— qué campos fallaron, nunca con qué valores.
+      const camposInvalidos = Array.isArray(error.response?.data?.error?.details)
+        ? error.response.data.error.details
+            .map((d) => (Array.isArray(d?.loc) ? d.loc.join(".") : d?.loc))
+            .filter(Boolean)
+        : undefined;
+
       Sentry.captureException(error, {
         level,
         tags: { source: "api", kind, code, request_id: requestId },
         extra: {
           method: error.config?.method?.toUpperCase(),
-          url: error.config?.url,
+          // Sin query string: ahí viajan los términos de búsqueda, que suelen
+          // ser el nombre de un cliente.
+          url: error.config?.url?.split("?")[0],
           status: status ?? null,
-          responseData: error.response?.data ?? null,
+          errorCode: code ?? null,
+          errorMessage: envelope?.message ?? null,
+          camposInvalidos,
         },
       });
 

@@ -1,4 +1,4 @@
-import api, { BASE_URL } from "./api";
+import api, { BASE_URL, TIMEOUT_ARCHIVO } from "./api";
 
 const MIME_EXTENSIONS = {
   "application/pdf": "pdf",
@@ -56,6 +56,7 @@ export const documentService = {
       const response = await api.get(`/documents/${id}/download`, {
         params: { inline },
         responseType: "blob",
+        timeout: TIMEOUT_ARCHIVO,
       });
       return {
         blob: response.data,

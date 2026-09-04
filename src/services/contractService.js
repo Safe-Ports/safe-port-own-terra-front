@@ -1,4 +1,4 @@
-import api from "./api";
+import api, { TIMEOUT_ARCHIVO } from "./api";
 
 export const contractService = {
   // Fase 3 de la migración: va por tandas, no por archivo entero. Con 1500
@@ -29,7 +29,7 @@ export const contractService = {
   complete: (id) => api.post(`/contracts/${id}/complete`).then((r) => r.data),
   delete: (id) => api.delete(`/contracts/${id}`),
   downloadPdf: async (id) => {
-    const response = await api.get(`/contracts/${id}/pdf`, { responseType: "blob" });
+    const response = await api.get(`/contracts/${id}/pdf`, { responseType: "blob", timeout: TIMEOUT_ARCHIVO });
     return response.data;
   },
 };

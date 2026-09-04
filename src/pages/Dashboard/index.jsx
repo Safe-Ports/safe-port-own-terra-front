@@ -34,14 +34,7 @@ const VIZ = {
 /* ── helpers ─────────────────────────────────────────────────── */
 const NOW   = new Date();
 const CY    = NOW.getFullYear();
-const CM    = NOW.getMonth(); // 0-indexed
 
-function isMonth(dateStr, year, month) {
-  if (!dateStr) return false;
-  const d = new Date(`${dateStr}T12:00:00`);
-  return d.getFullYear() === year && d.getMonth() === month;
-}
-const isThisMonth = s => isMonth(s, CY, CM);
 
 
 function compactNum(n) {
@@ -248,7 +241,16 @@ export default function DashboardPage() {
   const expenses = expRaw || [];
 
   /* ── KPI calculations ── */
-  const salesThisMonth = useMemo(() => contracts.filter(c => isThisMonth(c.contract_date)).length, [contracts]);
+  // El conteo lo hace la base, no el navegador. `contracts` del contexto llega
+  // recortado a 100 filas, así que filtrarlo daba menos contratos de los que
+  // hubo en el mes y nada lo delataba. Es la misma consulta que ya alimenta el
+  // KPI "Ventas del mes" de BusinessKpis.
+  const { data: kpisNegocio } = useQuery({
+    queryKey: ["dashboard-kpis", 6],
+    queryFn: () => dashboardService.kpis(6),
+    staleTime: 60_000,
+  });
+  const salesThisMonth = kpisNegocio?.sales?.value ?? null;
 
   const totalLots    = fracs.reduce((s, f) => s + (f.total_lots     || 0), 0);
   const availLots    = fracs.reduce((s, f) => s + (f.available_lots || 0), 0);
@@ -355,7 +357,7 @@ export default function DashboardPage() {
             <div>
               <div className="db-card-title">Contratos firmados</div>
               <div style={{ fontSize:".7rem", color:"var(--mu)", marginTop:4 }}>
-                Contratos registrados · <strong style={{ color:"var(--tx)" }}>{salesThisMonth} este mes</strong>
+                Contratos registrados{salesThisMonth !== null && <> · <strong style={{ color:"var(--tx)" }}>{salesThisMonth} este mes</strong></>}
               </div>
             </div>
             <div style={{ fontSize:".7rem", fontWeight:600, color:"var(--mu)",
