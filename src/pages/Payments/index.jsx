@@ -1533,8 +1533,8 @@ export default function PaymentsPage() {
       </div>
 
       <div className="cf-kpis" data-tour="pagos-kpis">
-        <KpiCard tono="income" icono={<HiArrowTrendingUp />} label="Ingresos del mes"
-          valor={currency(k.collected.amount)} pie={`${k.collected.count} cobros aplicados`}
+        <KpiCard tono="income" icono={<HiArrowTrendingUp />} label="Cobrado del mes"
+          valor={currency(k.collected.amount)} pie={`${k.collected.count} cuotas saldadas`}
           delta={k.collected.delta} serie={k.collected.series} color="#6FAF6B" id="ing" error={kpiError} cargando={kpiPending} sinPermiso={kpiSinPermiso} />
         <KpiCard tono="due" icono={<HiOutlineWallet />} icono2={<HiOutlineClock />} label="Por cobrar"
           valor={currency(k.outstanding.amount)} pie={`${k.outstanding.count} cuotas pendientes`}
@@ -1635,7 +1635,7 @@ export default function PaymentsPage() {
         {tab === "egresos" && (
           <>
             <div className="cf-neto">
-              <div>Ingresos del mes<b style={{ color: "var(--mid)" }}>{currency(k.collected.amount)}</b></div>
+              <div>Cobrado del mes<b style={{ color: "var(--mid)" }}>{currency(k.collected.amount)}</b></div>
               <div>Egresos<b style={{ color: "var(--danger)" }}>−{currency(k.expenses.amount)}</b></div>
               <div>Flujo neto<b style={{ color: k.net_flow >= 0 ? "var(--mid)" : "var(--danger)" }}>{currency(k.net_flow)}</b></div>
             </div>

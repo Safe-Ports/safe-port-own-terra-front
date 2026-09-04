@@ -104,7 +104,7 @@ export default function BusinessKpis() {
     <>
     <style>{ESTILOS}</style>
     <div className="biz-kpis">
-      <Card icono={<HiOutlineBanknotes />} tono={t.verde} label="Ingresos del mes"
+      <Card icono={<HiOutlineBanknotes />} tono={t.verde} label="Cobrado del mes"
         valor={money(data.revenue.value)} detalle={data.revenue.detail}
         delta={data.revenue.delta} serie={data.revenue.series} />
       <Card icono={<HiOutlineShoppingBag />} tono={t.verde} label="Ventas del mes"
