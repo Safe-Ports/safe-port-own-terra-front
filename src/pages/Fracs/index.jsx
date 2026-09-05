@@ -4,6 +4,7 @@ import { HiMap, HiBookmark, HiSquares2X2, HiXMark } from "react-icons/hi2";
 import GuideModal from "@/components/shared/GuideModal";
 import PhoneInput from "@/components/shared/PhoneInput";
 import ClientPicker from "@/components/shared/ClientPicker";
+import FilePicker from "@/components/shared/FilePicker";
 import DocumentUploadFields, { useDocumentUpload } from "@/components/shared/DocumentUploadFields";
 import MatrixSheet from "./MatrixSheet";
 import { Link, useNavigate } from "react-router-dom";
@@ -226,7 +227,9 @@ function FracsPage() {
   // Qué proyecto está ABIERTO en esta vista (galería vs. detalle). Es local a la
   // página: el `selectedFracId` global se auto-reselecciona en el contexto (lo usan
   // los contratos), así que no sirve para "sin selección". null = galería.
-  const [openFracId, setOpenFracId] = useState(null);
+  const [openFracId, setOpenFracId] = useState(
+    () => new URLSearchParams(window.location.search).get("frac") || null,
+  );
 
   const openFrac = (id) => { setOpenFracId(id); setSelectedFracId(id); };
 
@@ -263,6 +266,8 @@ function FracsPage() {
   const showApptForm = panelMode === "cita";
   const setApartarOpen = (v) => setPanelMode((m) => ((typeof v === "function" ? v(m === "apartar") : v) ? "apartar" : null));
   const [apartarUntil, setApartarUntil] = useState("");   // datetime-local
+  const [apartarMonto, setApartarMonto] = useState("");   // opcional: hay apartados de palabra
+  const [apartarFiles, setApartarFiles] = useState([]);  // comprobantes, pueden llegar después
   const [apartarBusy, setApartarBusy] = useState(false);
   const [apartarClient, setApartarClient] = useState(null); // {id, name, phone, email} | null
   const [ventaClient, setVentaClient] = useState(null);     // comprador elegido para el contrato
@@ -514,6 +519,27 @@ function FracsPage() {
   };
 
   // ── Apartado con expiración ──────────────────────────────────────────────
+  /* El comprobante no bloquea el apartado: si su subida falla, la reserva ya
+     quedó hecha y el papel se puede adjuntar después. */
+  const subirComprobantes = async (lotId) => {
+    if (apartarFiles.length === 0) return;
+    try {
+      await lotService.reservationReceipt(lotId, apartarFiles);
+      // La ficha y la matriz leen documentos: sin esto el archivo recién subido
+      // no aparece hasta recargar. Son dos claves distintas —la global del
+      // contexto y la del expediente de la entidad—, así que no basta con una.
+      await queryClient.invalidateQueries({ queryKey: ["documents"] });
+      await queryClient.invalidateQueries({ queryKey: ["documents-entity"] });
+    } catch {
+      showToast(
+        apartarFiles.length === 1
+          ? "Lote apartado, pero no se pudo subir el comprobante"
+          : "Lote apartado, pero no se pudieron subir los comprobantes",
+        "warning",
+      );
+    }
+  };
+
   const reserveLot = async () => {
     if (!selectedLot || !apartarUntil || !apartarClient) return;
     setApartarBusy(true);
@@ -522,9 +548,12 @@ function FracsPage() {
         status: "reserved",
         reserved_until: new Date(apartarUntil).toISOString(),
         client_id: apartarClient.id,
+        // Opcional: se puede apartar de palabra y cargar el monto después.
+        ...(apartarMonto ? { reserved_amount: Number(apartarMonto) } : {}),
       });
+      await subirComprobantes(selectedLot.id);
       await queryClient.invalidateQueries({ queryKey: ["lots"] });
-      setApartarOpen(false); setApartarUntil(""); setApartarClient(null);
+      setApartarOpen(false); setApartarUntil(""); setApartarClient(null); setApartarMonto(""); setApartarFiles([]);
       showToast("Lote apartado");
     } catch (err) {
       showError(err, "No se pudo apartar el lote");
@@ -540,9 +569,11 @@ function FracsPage() {
       await lotService.update(selectedLot.id, {
         reserved_until: new Date(apartarUntil).toISOString(),
         ...(apartarClient?.id ? { client_id: apartarClient.id } : {}),
+        ...(apartarMonto ? { reserved_amount: Number(apartarMonto) } : {}),
       });
+      await subirComprobantes(selectedLot.id);
       await queryClient.invalidateQueries({ queryKey: ["lots"] });
-      setApartarOpen(false); setApartarUntil(""); setApartarClient(null);
+      setApartarOpen(false); setApartarUntil(""); setApartarClient(null); setApartarMonto(""); setApartarFiles([]);
       showToast("Vencimiento actualizado");
     } catch (err) {
       showError(err, "No se pudo extender el apartado");
@@ -844,6 +875,26 @@ function FracsPage() {
                           min={toLocalInput(new Date())}
                           onChange={(e) => setApartarUntil(e.target.value)}
                         />
+                        <label className="frac-appt-lbl">Monto del apartado (opcional)</label>
+                        <input
+                          type="number" min="0" step="0.01" placeholder="0.00"
+                          className="frac-apartar-input"
+                          value={apartarMonto}
+                          onChange={(e) => setApartarMonto(e.target.value)}
+                        />
+                        <div style={{ fontSize: ".72rem", color: "var(--mu)", marginTop: -4, lineHeight: 1.4 }}>
+                          Se propondrá como enganche al generar el contrato, así que baja el capital a financiar.
+                        </div>
+
+                        <label className="frac-appt-lbl">Comprobantes (opcional)</label>
+                        <FilePicker
+                          multiple
+                          value={apartarFiles}
+                          onChange={setApartarFiles}
+                          accept="application/pdf,image/jpeg,image/png,image/webp"
+                          hint="PDF o imagen. Puedes subir varios —transferencia, identificación—. Quedan en los documentos del lote."
+                        />
+
                         <Button
                           variant="primary"
                           onClick={selectedLot.status === "reserved" ? extendReservation : reserveLot}

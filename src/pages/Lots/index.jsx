@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import MigrationWizard from "./MigrationWizard";
 import { useNavigate } from "react-router-dom";
 import { HiChevronLeft, HiChevronRight, HiCube, HiMap, HiPencil, HiXMark } from "react-icons/hi2";
 import * as XLSX from "xlsx";
@@ -251,6 +252,24 @@ function LotsPage() {
     setDraftProject({ mode: "selector", name: "Nuevo Fraccionamiento", mapUrl: "", sections: [], cadProcessing: false });
   }, []);
 
+  // Cargar a mano y cargar por archivo son dos caminos que se estorban: el
+  // formulario de secciones quedaba atenuado cuando ya se había importado, y
+  // ambos competían por la misma pantalla. Ahora se elige uno.
+  const [modoCarga, setModoCarga] = useState("manual");
+  // Contratos con cobranza viva que impidieron archivar. Se guardan del 409 para
+  // listarlos en el mismo diálogo: antes el error cerraba el modal y navegaba
+  // afuera, así que el usuario se quedaba sin saber cuáles cerrar.
+  const [blockingContracts, setBlockingContracts] = useState(null);
+  // Total real de bloqueantes: el backend sólo enumera los primeros diez.
+  const [blockingTotal, setBlockingTotal] = useState(0);
+  // Lotes ya vendidos del fraccionamiento en edición: no impiden archivarlo,
+  // pero conviene avisar antes de que desaparezcan del inventario.
+  const fracSoldLots = projects.find(
+    (p) => String(p.id) === String(draftProject._editingFracId)
+  )?.sold ?? 0;
+  // La migración carga la inmobiliaria entera —varios fraccionamientos, cartera
+  // y contratos—, así que vive fuera del editor, que trabaja sobre un proyecto.
+  const [migrando, setMigrando] = useState(false);
   const [sectionName, setSectionName] = useState("");
   // Se conserva como texto mientras el usuario escribe para permitir borrar
   // completamente el valor antes de capturar una nueva cantidad.
@@ -583,6 +602,9 @@ function LotsPage() {
   // builder manual de secciones se deshabilita. Para agregar un lote olvidado se usa
   // el "+" de cada sección (que ahora agrega 1).
   const importedByFile = (importSummary?.imported ?? 0) > 0;
+  // Al volver a un borrador que vino de archivo, se abre en ese modo: es donde
+  // está el contexto de lo que se cargó.
+  useEffect(() => { if (importedByFile) setModoCarga("archivo"); }, [importedByFile]);
 
   const updateMap = async (file) => {
     if (!isSupportedMapImage(file)) {
@@ -747,6 +769,31 @@ function LotsPage() {
                   />
                 </div>
               </div>
+              <div style={{ display: "flex", gap: 8, margin: "4px 0 14px" }}>
+                {[
+                  { id: "manual", titulo: "Cargar a mano", detalle: "Secciones y número de lotes" },
+                  { id: "archivo", titulo: "Importar archivo", detalle: "Excel o CSV" },
+                ].map(op => {
+                  const activo = modoCarga === op.id;
+                  return (
+                    <button key={op.id} type="button" onClick={() => setModoCarga(op.id)}
+                      style={{
+                        flex: 1, textAlign: "left", cursor: "pointer", borderRadius: 12,
+                        padding: "10px 13px", background: activo ? "rgba(53,94,59,.07)" : "transparent",
+                        border: `1.5px solid ${activo ? "var(--earth)" : "rgba(67,69,63,.14)"}`,
+                        fontFamily: "var(--font-body)",
+                      }}>
+                      <span style={{ display: "block", fontWeight: 700, fontSize: ".85rem",
+                                     color: activo ? "var(--earth)" : "var(--tx)" }}>{op.titulo}</span>
+                      <span style={{ display: "block", fontSize: ".72rem", color: "var(--mu)", marginTop: 1 }}>
+                        {op.detalle}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {modoCarga === "manual" && (
               <div className="lots-section-form" data-tour="frac-secciones" style={importedByFile ? { opacity: 0.5 } : undefined}>
                 <div className="lots-section-name">
                   <div className="lots-builder-label">
@@ -794,11 +841,15 @@ function LotsPage() {
                   Agregar
                 </button>
               </div>
-              {importedByFile && (
+              )}
+
+              {modoCarga === "manual" && importedByFile && (
                 <div className="lots-import-hint">
                   Lotes importados por archivo. Para agregar uno olvidado, usa el <b>+</b> de la sección abajo.
                 </div>
               )}
+
+              {modoCarga === "archivo" && (
               <div className="lots-excel-row" data-tour="frac-excel">
                 <div>
                   <span className="lots-excel-title">Llenar con Excel o CSV</span>
@@ -835,6 +886,7 @@ function LotsPage() {
                   onChange={handleExcelFile}
                 />
               </div>
+              )}
             </div>
 
             {/* Matrix board */}
@@ -1045,22 +1097,50 @@ function LotsPage() {
       />
 
       {showDeleteFracConfirm && (
-        <div className="lot-edit-overlay" onClick={() => setShowDeleteFracConfirm(false)}>
+        <div className="lot-edit-overlay" onClick={() => { setShowDeleteFracConfirm(false); setBlockingContracts(null); }}>
           <div className="lot-edit-modal" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
             <div className="lot-edit-head">
               <div className="lot-edit-badge" style={{ background: "#fee2e2", color: "#991b1b", borderColor: "#fca5a5" }}>!</div>
               <div>
-                <div className="lot-edit-title">Eliminar fraccionamiento</div>
+                <div className="lot-edit-title">Archivar fraccionamiento</div>
                 <div className="lot-edit-sub">{draftProject.name}</div>
               </div>
-              <button className="lot-edit-close" onClick={() => setShowDeleteFracConfirm(false)}>×</button>
+              <button className="lot-edit-close" onClick={() => { setShowDeleteFracConfirm(false); setBlockingContracts(null); }}>×</button>
             </div>
             <div className="lot-edit-body" style={{ gap: 12 }}>
               <p style={{ fontSize: "0.84rem", color: "#43453F", lineHeight: 1.6 }}>
-                Esta acción eliminará el fraccionamiento <strong>{draftProject.name}</strong> y todos sus lotes de forma permanente. No se puede deshacer.
+                Se archivará el fraccionamiento <strong>{draftProject.name}</strong> y todos sus lotes: salen del inventario y dejan de contar para tu plan. El historial —contratos, pagos, recibos, documentos y la bitácora de cada lote— se conserva.
               </p>
+              {blockingContracts?.length > 0 && (
+                <div style={{ fontSize: "0.8rem", color: "#7f1d1d", background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 8, padding: "10px 12px", lineHeight: 1.5 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 6 }}>
+                    Hay cobranza en curso
+                  </div>
+                  <div style={{ marginBottom: 8 }}>
+                    Est{blockingContracts.length !== 1 ? "as ventas siguen" : "a venta sigue"} cobrándose. Si archivás igual, l{blockingContracts.length !== 1 ? "os lotes salen" : "el lote sale"} del inventario pero la cobranza sigue corriendo y podés seguirla desde Ventas y Pagos.
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: 18 }}>
+                    {blockingContracts.map((c) => (
+                      <li key={c.id} style={{ marginBottom: 2 }}>
+                        <strong>{c.contract_number}</strong>
+                        {c.lot ? ` · lote ${c.lot}` : ""} · {c.pending_payments} cuota{c.pending_payments !== 1 ? "s" : ""} por cobrar
+                      </li>
+                    ))}
+                  </ul>
+                  {blockingTotal > blockingContracts.length && (
+                    <div style={{ marginTop: 6, opacity: 0.8 }}>
+                      …y {blockingTotal - blockingContracts.length} más.
+                    </div>
+                  )}
+                </div>
+              )}
+              {fracSoldLots > 0 && !blockingContracts && (
+                <p style={{ fontSize: "0.8rem", color: "#92400e", background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: 8, padding: "8px 10px", lineHeight: 1.5 }}>
+                  Tiene <strong>{fracSoldLots}</strong> lote{fracSoldLots !== 1 ? "s" : ""} vendido{fracSoldLots !== 1 ? "s" : ""}. Se {fracSoldLots !== 1 ? "archivan" : "archiva"} junto con el fraccionamiento; los contratos, pagos y recibos de esas ventas se conservan.
+                </p>
+              )}
               <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8 }}>
-                <button className="lot-edit-ghost" onClick={() => setShowDeleteFracConfirm(false)}>Cancelar</button>
+                <button className="lot-edit-ghost" onClick={() => { setShowDeleteFracConfirm(false); setBlockingContracts(null); }}>Cancelar</button>
                 <button
                   className="lot-edit-primary"
                   style={{ background: "#C0392B", borderColor: "#991b1b" }}
@@ -1068,15 +1148,35 @@ function LotsPage() {
                   onClick={async () => {
                     setDeletingFrac(true);
                     try {
-                      await deleteFrac(draftProject._editingFracId);
+                      // Segundo intento: el usuario ya vio qué ventas eran.
+                      const forzar = blockingContracts !== null;
+                      const error = await deleteFrac(draftProject._editingFracId, {
+                        force: forzar,
+                        // El 409 por cobranza no es un fallo que anunciar por
+                        // toast: se muestra dentro del diálogo, que es donde el
+                        // usuario está mirando.
+                        silentCodes: ["OT-CON-3001"],
+                      });
+                      if (error) {
+                        if (error.code === "OT-CON-3001") {
+                          setBlockingContracts(error.details?.contracts ?? []);
+                          setBlockingTotal(error.details?.active_contracts ?? 0);
+                        }
+                        return;
+                      }
                       setShowDeleteFracConfirm(false);
+                      setBlockingContracts(null);
                       navigate("/fraccionamientos");
                     } finally {
                       setDeletingFrac(false);
                     }
                   }}
                 >
-                  {deletingFrac ? "Eliminando..." : "Sí, eliminar"}
+                  {deletingFrac
+                    ? "Archivando..."
+                    : blockingContracts
+                    ? "Archivar de todos modos"
+                    : "Sí, archivar"}
                 </button>
               </div>
             </div>
@@ -1217,7 +1317,9 @@ function LotsPage() {
         </div>
       </section>
 
-      {draftProject.mode === "selector" ? (
+      {migrando ? (
+        <MigrationWizard onSalir={() => setMigrando(false)} />
+      ) : draftProject.mode === "selector" ? (
         <section className="rounded-[28px] border border-[#E2E7E5] bg-white/88 p-8 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
           <div className="mx-auto max-w-[660px] text-center">
             <h2 className="font-display text-[1.65rem] text-forest">Carga de Lotes</h2>
@@ -1271,6 +1373,24 @@ function LotsPage() {
                 </button>
               </div>
 
+            </div>
+
+            {/* Traer una inmobiliaria que ya opera. Va aparte de los métodos de
+                arriba porque no carga un proyecto: carga la empresa entera. */}
+            <div className="mt-7 border-t border-[#E2E7E5] pt-6 text-left sm:flex sm:items-center sm:gap-5">
+              <div className="flex-1">
+                <div className="font-display text-[1rem] text-forest">¿Vienes de otro sistema?</div>
+                <p className="mt-1 text-[0.78rem] leading-relaxed text-[#83867C]">
+                  Trae un fraccionamiento que ya opera: sus lotes, los clientes que compraron
+                  y sus contratos con la cobranza al día. Tres pasos, una vez por proyecto.
+                </p>
+              </div>
+              <button
+                onClick={() => setMigrando(true)}
+                className="mt-4 shrink-0 rounded-[9px] border-2 border-[#355E3B] px-5 py-2.5 text-[0.8rem] font-bold text-[#355E3B] transition-colors hover:bg-[#355E3B] hover:text-white sm:mt-0"
+              >
+                Migrar fraccionamiento
+              </button>
             </div>
           </div>
         </section>

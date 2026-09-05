@@ -1,6 +1,7 @@
-import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { HiArrowDownTray, HiEye, HiPlus, HiTrash } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
+import { documentService, toBackendEntityType } from "@/services/documentService";
 
 const titleMap = {
   contract: "Documentos del contrato",
@@ -53,17 +54,22 @@ function DocRow({ document, readOnly, openDocumentPreview, downloadDocument, del
  */
 function InlineDocumentsPanel({ entityType, entityId, entityLabel, compact = false, onUpload }) {
   const {
-    getLinkedDocuments,
     openDocumentPreview,
     downloadDocument,
     deleteDocument,
     openDocumentUpload
   } = useAppContext();
 
-  const documents = useMemo(
-    () => getLinkedDocuments(entityType, entityId),
-    [entityId, entityType, getLinkedDocuments]
-  );
+  /* Se piden los de esta entidad en vez de filtrar la lista del contexto: esa
+     trae los 100 documentos más recientes de toda la organización, así que en
+     una inmobiliaria con miles de lotes el expediente de un lote viejo salía
+     vacío aunque sus archivos existieran. La clave comparte prefijo con la que
+     el contexto invalida al subir o borrar. */
+  const { data: documents = [] } = useQuery({
+    queryKey: ["documents-entity", toBackendEntityType(entityType), entityId],
+    queryFn: () => documentService.forEntity(toBackendEntityType(entityType), entityId),
+    enabled: !!entityType && !!entityId,
+  });
 
   // Solo el expediente del cliente separa identidad (core) vs operación (app)
   const splitByIdentity = entityType === "client";

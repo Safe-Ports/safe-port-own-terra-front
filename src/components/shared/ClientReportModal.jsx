@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { HiPrinter } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 import Modal from "@/components/ui/Modal";
@@ -70,28 +71,75 @@ function buildPrintHTML(data) {
 }
 
 function ClientReportModal() {
-  const { ui, clients, contracts, payments, reportClientId, closeClientReport, showToast, showError } = useAppContext();
+  const { ui, reportClientId, closeClientReport, showToast, showError } = useAppContext();
   const [downloading, setDownloading] = useState(false);
   const [sending, setSending] = useState(false);
 
+  // Los datos de ESTE cliente, pedidos al servidor.
+  //
+  // Antes salían de filtrar los arreglos globales del contexto, que vienen
+  // recortados (contratos 100, cuotas 200 como mucho). O sea que a un cliente con
+  // contratos fuera de ese corte se le mostraba —y se le IMPRIMÍA— un estado de
+  // cuenta al que le faltaban cuotas: "pagado" y "saldo" quedaban mal. Y como el
+  // botón "Descargar PDF" pide el estado de cuenta al backend, que sí ve todo,
+  // los dos papeles del mismo cliente podían no coincidir.
+  //
+  // Estos endpoints devuelven las cuotas y contratos del cliente COMPLETOS, sin
+  // paginar; son los mismos que ya usa el estado de cuenta de la pantalla de
+  // Reportes, que por eso siempre estuvo bien.
+  const habilitado = Boolean(ui.clientReport && reportClientId);
+  const { data: cliente } = useQuery({
+    queryKey: ["client-detail", reportClientId],
+    queryFn: () => clientService.get(reportClientId),
+    enabled: habilitado,
+  });
+  const { data: contractsData, isPending: contratosCargando } = useQuery({
+    queryKey: ["client-contracts", reportClientId],
+    queryFn: () => clientService.contracts(reportClientId),
+    enabled: habilitado,
+  });
+  const { data: paymentsData, isPending: cuotasCargando } = useQuery({
+    queryKey: ["client-payments", reportClientId],
+    queryFn: () => clientService.payments(reportClientId),
+    enabled: habilitado,
+  });
+
+  const cargando = habilitado && (contratosCargando || cuotasCargando || !cliente);
+
   const data = useMemo(() => {
-    const client = clients.find((item) => item.id === reportClientId);
-    if (!client) return null;
-    const clientContracts = contracts.filter((c) => String(c.client?.id) === String(client.id));
-    const clientPayments = payments.filter((p) => String(p.client?.id) === String(client.id));
+    if (!cliente) return null;
+    const clientContracts = contractsData?.items || [];
+    const clientPayments = paymentsData?.items || [];
     const totalInvestment = clientContracts.reduce((sum, c) => sum + Number(c.amount || 0), 0);
     const totalPaid = clientPayments
       .filter((p) => p.status === "paid")
       .reduce((sum, p) => sum + Number(p.amount || 0), 0);
     return {
-      client,
+      client: cliente,
       clientContracts,
       clientPayments,
       totalInvestment,
       totalPaid,
       balance: Math.max(0, totalInvestment - totalPaid),
     };
-  }, [clients, contracts, payments, reportClientId]);
+  }, [cliente, contractsData, paymentsData]);
+
+  // Mientras llegan, no se pinta un estado de cuenta a medias: los importes de
+  // este modal se imprimen y se le entregan al cliente.
+  if (cargando) {
+    return (
+      <Modal
+        open={ui.clientReport}
+        icon={<HiPrinter />}
+        title="Estado de cuenta"
+        subtitle="Cargando los movimientos del cliente…"
+        onClose={closeClientReport}
+        width="max-w-[920px]"
+      >
+        <div className="py-10 text-center text-sm text-[#83867C]">Cargando…</div>
+      </Modal>
+    );
+  }
 
   if (!data) return null;
 

@@ -5,6 +5,7 @@ import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
 import { currency, progress } from "@/services/formatters";
 import { contractService } from "@/services/contractService";
+import ReleasesTable from "./ReleasesTable";
 import Button from "@/components/Button";
 import GuideModal from "@/components/shared/GuideModal";
 import PendingApproval from "./PendingApproval";
@@ -118,6 +119,7 @@ function SalesPage() {
         ]}
       />
     </div>
+    <ReleasesTable />
     </>
   );
 }

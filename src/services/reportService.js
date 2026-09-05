@@ -1,4 +1,4 @@
-import api from "./api";
+import api, { TIMEOUT_ARCHIVO } from "./api";
 
 export const reportService = {
   sales: (params = {}) =>
@@ -11,5 +11,5 @@ export const reportService = {
     api.get("/reports/inventory").then((r) => r.data),
 
   downloadSales: (params = {}) =>
-    api.get("/reports/sales", { params, responseType: "blob" }).then((r) => r.data),
+    api.get("/reports/sales", { params, responseType: "blob", timeout: TIMEOUT_ARCHIVO }).then((r) => r.data),
 };

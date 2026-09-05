@@ -2,7 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePersistentState } from "@/hooks/usePersistentState";
-import api from "@/services/api";
+import { useSessionState } from "@/hooks/useSessionState";
+import api, { startSession } from "@/services/api";
 import { clientService } from "@/services/clientService";
 import { inmuebleService } from "@/services/inmuebleService";
 import { mapFileFromUrl } from "@/utils/mapImage";
@@ -24,7 +25,7 @@ const AppContext = createContext(null);
 export function AppProvider({ children }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [currentUser, setCurrentUser] = usePersistentState("lm_session", null);
+  const [currentUser, setCurrentUser] = useSessionState(null);
 
   // ── Rehidratación de sesión (fuente de verdad = backend) ────────────────────
   // La sesión persiste en localStorage, pero role/permissions/apps pueden quedar
@@ -79,40 +80,78 @@ export function AppProvider({ children }) {
   }, []);
 
   // ── Data queries ──────────────────────────────────────────────────────────
+  // OJO con estos topes. Son colecciones globales SIN paginar, y varias pantallas
+  // calculan totales filtrando y reduciendo estos arreglos. Cuando la organización
+  // tiene más filas que el tope, lo que sobra no llega y esos cálculos quedan mal
+  // por abajo sin que nada lo delate: la pantalla se ve completa igual. El caso
+  // grave es `payments` — un contrato a 96 meses son 96 cuotas, así que con 200
+  // no entran ni tres contratos— y el tope no se puede subir desde acá: el
+  // backend topa `limit` en 200 (le=200 en el router de pagos).
+  //
+  // El arreglo de fondo es que las pantallas pidan agregados al servidor (que ya
+  // los expone: /payments/kpis, /payments/stats, /dashboard) y paginen los
+  // listados, en vez de recalcular sobre una muestra. Mientras tanto, acá se
+  // guarda cuánto se cargó de cuánto hay, para que la UI pueda avisarlo en vez
+  // de mostrar un número incompleto como si fuera el bueno.
+  // `total` ausente => se asume completo: mejor no avisar que avisar de más.
+  const conCobertura = (r) => ({
+    items: r.items || [],
+    total: typeof r.total === "number" ? r.total : (r.items || []).length,
+  });
+
   const { data: clientsData, isLoading: clientsLoading } = useQuery({
     queryKey: ["clients"],
-    queryFn: () => clientService.list({ limit: 100 }).then((r) => r.items),
+    queryFn: () => clientService.list({ limit: 100 }).then((r) => conCobertura(r)),
     enabled: !!currentUser && !authHydrating,
   });
-  const clients = clientsData || [];
+  const clients = clientsData?.items || [];
 
   const { data: fracsData, isLoading: fracsLoading } = useQuery({
     queryKey: ["inmuebles"],
-    queryFn: () => inmuebleService.list({ limit: 50 }).then((r) => r.items),
+    queryFn: () => inmuebleService.list({ limit: 50 }).then((r) => conCobertura(r)),
     enabled: !!currentUser && !authHydrating,
   });
-  const fracs = fracsData || [];
+  const fracs = fracsData?.items || [];
 
   const { data: contractsData, isLoading: contractsLoading } = useQuery({
     queryKey: ["contracts"],
-    queryFn: () => contractService.list({ limit: 100 }).then((r) => r.items),
+    queryFn: () => contractService.list({ limit: 100 }).then((r) => conCobertura(r)),
     enabled: !!currentUser && !authHydrating,
   });
-  const contracts = contractsData || [];
+  const contracts = contractsData?.items || [];
 
   const { data: paymentsData, isLoading: paymentsLoading } = useQuery({
     queryKey: ["payments"],
-    queryFn: () => paymentService.list({ limit: 200 }).then((r) => r.items),
+    queryFn: () => paymentService.list({ limit: 200 }).then((r) => conCobertura(r)),
     enabled: !!currentUser && !authHydrating,
   });
-  const payments = paymentsData || [];
+  const payments = paymentsData?.items || [];
 
   const { data: documentsData, isLoading: documentsLoading } = useQuery({
     queryKey: ["documents"],
-    queryFn: () => documentService.list({ limit: 100 }).then((r) => r.items),
+    queryFn: () => documentService.list({ limit: 100 }).then((r) => conCobertura(r)),
     enabled: !!currentUser && !authHydrating,
   });
-  const documents = documentsData || [];
+  const documents = documentsData?.items || [];
+
+  /**
+   * Qué colecciones llegaron incompletas, para que la pantalla pueda decirlo.
+   *
+   * `{ payments: { cargados: 200, total: 4800 } }` — solo aparecen las que están
+   * recortadas; si una entró entera, no figura.
+   */
+  const datosIncompletos = (() => {
+    const fuera = {};
+    for (const [clave, d] of Object.entries({
+      clients: clientsData, fracs: fracsData, contracts: contractsData,
+      payments: paymentsData, documents: documentsData,
+    })) {
+      if (d && d.total > d.items.length) {
+        fuera[clave] = { cargados: d.items.length, total: d.total };
+      }
+    }
+    return Object.keys(fuera).length ? fuera : null;
+  })();
 
   const { data: notificationCount = 0, refetch: refetchNotifications } = useQuery({
     queryKey: ["notifications-unread"],
@@ -235,11 +274,16 @@ export function AppProvider({ children }) {
   const closeModal = (modal) => setUi((p) => ({ ...p, [modal]: false }));
   const toggleSidebar = () => setUi((p) => ({ ...p, sidebarOpen: !p.sidebarOpen }));
   const closeSidebar = () => setUi((p) => ({ ...p, sidebarOpen: false }));
-  const showToast = (message, kind = "success") => {
+  // Memoizadas: un consumidor que las ponga en las dependencias de un useEffect
+  // —para mostrar el error de una consulta, por ejemplo— entraba en bucle. El
+  // toast re-renderiza el provider, eso cambiaba la identidad de la función, y
+  // el efecto volvía a dispararse sin fin.
+  const toastTimer = useRef(null);
+  const showToast = useCallback((message, kind = "success") => {
     setToast(typeof message === "object" ? message : { kind, message });
-    window.clearTimeout(showToast._timer);
-    showToast._timer = window.setTimeout(() => setToast(null), 2600);
-  };
+    window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 2600);
+  }, []);
   // keep a stable ref so effects without showToast in deps can still call it
   showToastRef.current = showToast;
 
@@ -300,13 +344,15 @@ export function AppProvider({ children }) {
     setCurrentUser((prev) => (prev ? { ...prev, ...partial } : prev));
   };
 
-  const showError = (error, fallbackMessage) => {
+  const showError = useCallback((error, fallbackMessage) => {
     const parsed = parseApiError(error, fallbackMessage);
     setToast({ kind: "error", ...parsed });
-    window.clearTimeout(showToast._timer);
-    showToast._timer = window.setTimeout(() => setToast(null), 9000);
+    // El temporizador vive en un ref, no colgado de la función: antes se perdía
+    // en cada render y el toast anterior nunca se cancelaba.
+    window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 9000);
     return parsed;
-  };
+  }, []);
 
   // Aviso global de tope de plan (OT-SUB-4001): el interceptor de api.js emite este
   // evento en cualquier escritura bloqueada por cuota; aquí lo presentamos con el
@@ -315,8 +361,8 @@ export function AppProvider({ children }) {
     const onQuota = (e) => {
       const parsed = parseApiError({ response: { data: e.detail } });
       setToast({ kind: "error", ...parsed });
-      window.clearTimeout(showToast._timer);
-      showToast._timer = window.setTimeout(() => setToast(null), 9000);
+      window.clearTimeout(toastTimer.current);
+      toastTimer.current = window.setTimeout(() => setToast(null), 9000);
     };
     window.addEventListener("ownterra:quota-exceeded", onQuota);
     return () => window.removeEventListener("ownterra:quota-exceeded", onQuota);
@@ -324,6 +370,11 @@ export function AppProvider({ children }) {
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   const applyAuthSession = (data, remember = true) => {
+    // Los tokens primero y por su dueño (`api.js`): el escritor de la sesión
+    // relee de ahí los vigentes al persistir el perfil, así que si el par nuevo
+    // no estuviera guardado todavía, el perfil se escribiría sobre el par de la
+    // sesión anterior y el inicio de sesión no serviría de nada.
+    startSession(data);
     setCurrentUser({
       token: data.access_token,
       refresh_token: data.refresh_token,
@@ -622,10 +673,10 @@ export function AppProvider({ children }) {
     }
   };
 
-  const quickPay = async (paymentId, amount, file) => {
+  const quickPay = async (paymentId, amount, file, paidDate) => {
     try {
       await paymentService.markPaid(paymentId, {
-        paid_date: new Date().toISOString().split("T")[0],
+        paid_date: paidDate || new Date().toISOString().split("T")[0],
         payment_method: "transfer",
         amount_paid: amount,
       });
@@ -647,11 +698,11 @@ export function AppProvider({ children }) {
     }
   };
 
-  const collectOnContract = async (contractId, { amount, paymentIds, file } = {}) => {
+  const collectOnContract = async (contractId, { amount, paymentIds, file, paidDate } = {}) => {
     try {
       const data = await paymentService.collect(contractId, {
         amount,
-        paid_date: new Date().toISOString().split("T")[0],
+        paid_date: paidDate || new Date().toISOString().split("T")[0],
         payment_method: "transfer",
         ...(paymentIds?.length ? { payment_ids: paymentIds } : {}),
       });
@@ -763,12 +814,10 @@ export function AppProvider({ children }) {
     closeModal("documentPreview");
   };
 
-  const getLinkedDocuments = (entityType, entityId) => {
-    const backendType = toBackendEntityType(entityType);
-    return documents.filter(
-      (doc) => doc.entity_type === backendType && String(doc.entity_id) === String(entityId)
-    );
-  };
+  /* Ya no existe un getLinkedDocuments: filtraba `documents`, que son los 100
+     más recientes de toda la organización, y el expediente de una entidad vieja
+     salía vacío aunque sus archivos existieran. Cada panel pide los suyos con
+     documentService.forEntity. */
 
   // ── Fraccionamientos ──────────────────────────────────────────────────────
   // Primer paso del asistente ("Guardar y continuar" en la pantalla de nombre+plano):
@@ -898,13 +947,29 @@ export function AppProvider({ children }) {
     }
   };
 
-  const deleteFrac = async (id) => {
+  const deleteFrac = async (id, { force = false, silentCodes = [] } = {}) => {
     try {
-      await inmuebleService.delete(id);
-      await queryClient.invalidateQueries({ queryKey: ["inmuebles"] });
+      await inmuebleService.delete(id, { force });
+      // Archivar el inmueble cascadea a sus lotes en el backend, así que no
+      // alcanza con invalidar ["inmuebles"]: el mapa, el track y los KPIs
+      // seguirían mostrando lotes que ya no existen hasta recargar la página.
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["inmuebles"] }),
+        queryClient.invalidateQueries({ queryKey: ["lots"] }),
+        queryClient.invalidateQueries({ queryKey: ["lot-track"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] }),
+      ]);
       showToast("Fraccionamiento eliminado");
+      return null;
     } catch (err) {
-      showError(err, "Error al eliminar el fraccionamiento");
+      // Se devuelve el error ya parseado: si el archivado se bloqueó por
+      // contratos con cobranza viva, la pantalla necesita el detalle para
+      // decir cuáles son en vez de cerrar el diálogo con un toast genérico.
+      const parsed = parseApiError(err, "Error al archivar el fraccionamiento");
+      // Los códigos que la pantalla ya presenta a la vista no van también por
+      // toast: repetido abajo era ruido que tapaba el propio diálogo.
+      if (!silentCodes.includes(parsed.code)) showError(err, "Error al archivar el fraccionamiento");
+      return parsed;
     }
   };
 
@@ -972,6 +1037,7 @@ export function AppProvider({ children }) {
     payments,
     documents,
     // Flags de carga (primer fetch) para mostrar skeletons en las páginas.
+    datosIncompletos,
     clientsLoading,
     fracsLoading,
     contractsLoading,
@@ -1042,7 +1108,6 @@ export function AppProvider({ children }) {
     openDocumentPreview,
     closeDocumentPreview,
     downloadDocument,
-    getLinkedDocuments,
     openClientReport,
     closeClientReport,
     sendClientMessage,

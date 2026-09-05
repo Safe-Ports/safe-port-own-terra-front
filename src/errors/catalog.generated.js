@@ -164,6 +164,14 @@ export const ERROR_CATALOG = {
     "name": "CON_TOO_RECENT",
     "severity": "warning"
   },
+  "OT-CON-3004": {
+    "action": "Reasigna el lote a un vendedor activo o elige otro.",
+    "domain": "CON",
+    "http_status": 409,
+    "message": "El vendedor asignado está deshabilitado.",
+    "name": "CON_SELLER_INACTIVE",
+    "severity": "warning"
+  },
   "OT-DOC-1010": {
     "action": "Sube uno más pequeño.",
     "domain": "DOC",
@@ -245,11 +253,11 @@ export const ERROR_CATALOG = {
     "severity": "warning"
   },
   "OT-LOT-1002": {
-    "action": "Elige el cliente potencial antes de confirmar el apartado.",
+    "action": "Indica una fecha de vencimiento futura al apartar.",
     "domain": "LOT",
     "http_status": 400,
-    "message": "Selecciona un cliente para apartar el lote.",
-    "name": "LOT_CLIENT_REQUIRED",
+    "message": "El vencimiento del apartado no es válido.",
+    "name": "LOT_RESERVATION_INVALID",
     "severity": "warning"
   },
   "OT-LOT-3002": {
@@ -277,10 +285,10 @@ export const ERROR_CATALOG = {
     "severity": "warning"
   },
   "OT-NET-9001": {
-    "action": "Revisa tu conexión a internet e intenta de nuevo.",
+    "action": "Puede ser tu conexión o que el servicio no esté disponible por el momento. Intenta de nuevo en unos segundos.",
     "domain": "NET",
     "http_status": null,
-    "message": "No pudimos conectar.",
+    "message": "No pudimos conectar con el servidor.",
     "name": "NET_OFFLINE",
     "severity": "error"
   },
@@ -402,6 +410,14 @@ export const ERROR_CATALOG = {
     "http_status": 403,
     "message": "La suscripción está cancelada.",
     "name": "SUB_CANCELLED",
+    "severity": "warning"
+  },
+  "OT-SUB-4001": {
+    "action": "Mejora tu plan para agregar más.",
+    "domain": "SUB",
+    "http_status": 403,
+    "message": "Alcanzaste el límite de tu plan.",
+    "name": "SUB_QUOTA_EXCEEDED",
     "severity": "warning"
   },
   "OT-SYS-1000": {

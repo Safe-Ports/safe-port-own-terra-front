@@ -14,6 +14,20 @@ const api = axios.create({
   timeout: 15000,
 });
 
+/**
+ * Timeout para las peticiones que GENERAN un archivo: PDF de contrato, estado de
+ * cuenta, exportaciones a Excel.
+ *
+ * El de 15 s de arriba está pensado para una llamada normal, y a estas no les
+ * alcanza: en un fraccionamiento grande el navegador cortaba a los 15 s mientras
+ * el servidor seguía armando el archivo, así que el usuario veía un error de red
+ * sobre una operación que en realidad terminaba bien — y solía reintentarla,
+ * duplicando el trabajo del servidor.
+ *
+ * Los mismos 120 s que ya usaban las importaciones masivas.
+ */
+export const TIMEOUT_ARCHIVO = 120000;
+
 const SESSION_KEY = "lm_session";
 
 function getSession() {
@@ -69,14 +83,31 @@ api.interceptors.response.use(
         error.__refLocal = localRef();
       }
       const requestId = envelope?.request_id || headerRef || error.__refLocal;
+      // Lo que se manda a Sentry va DEPURADO. Antes viajaba `error.response.data`
+      // entero y la URL con su query string, o sea que nombres, correos,
+      // teléfonos y montos de clientes finales terminaban en un tercero fuera
+      // del circuito. Son datos de los que OwnTerra es ENCARGADO, no dueño.
+      //
+      // Para diagnosticar alcanza con el código del catálogo, la Ref y —de los
+      // 422— qué campos fallaron, nunca con qué valores.
+      const camposInvalidos = Array.isArray(error.response?.data?.error?.details)
+        ? error.response.data.error.details
+            .map((d) => (Array.isArray(d?.loc) ? d.loc.join(".") : d?.loc))
+            .filter(Boolean)
+        : undefined;
+
       Sentry.captureException(error, {
         level,
         tags: { source: "api", kind, code, request_id: requestId },
         extra: {
           method: error.config?.method?.toUpperCase(),
-          url: error.config?.url,
+          // Sin query string: ahí viajan los términos de búsqueda, que suelen
+          // ser el nombre de un cliente.
+          url: error.config?.url?.split("?")[0],
           status: status ?? null,
-          responseData: error.response?.data ?? null,
+          errorCode: code ?? null,
+          errorMessage: envelope?.message ?? null,
+          camposInvalidos,
         },
       });
 
@@ -151,6 +182,42 @@ export function replaceSessionTokens({ access_token, refresh_token }) {
   const session = getSession();
   if (!session) return;
   saveSession({ ...session, token: access_token, refresh_token });
+}
+
+// ── Este módulo es el dueño de los tokens ────────────────────────────────────
+// Los renueva el interceptor de arriba, en cualquier momento y sin avisarle a
+// React. Por eso el estado de React NO puede ser la fuente de los tokens: entre
+// que se lee y se vuelve a escribir puede haber pasado una renovación, y el
+// escritor de React devolvería el par viejo a localStorage. El refresh siguiente
+// viajaría con un refresh_token cuyo `sid` el backend ya revocó al rotarlo, y al
+// usuario lo echaría a la pantalla de acceso en mitad de lo que estuviera
+// haciendo. Las dos funciones de acá abajo son el contrato con AppContext:
+// React guarda el PERFIL, este módulo guarda los TOKENS.
+
+/**
+ * Los tokens vigentes en este instante, leídos de localStorage.
+ *
+ * @returns {{token: string, refresh_token: string} | null} El par vigente, o
+ *   null si no hay sesión.
+ */
+export function readSessionTokens() {
+  const session = getSession();
+  if (!session?.token) return null;
+  return { token: session.token, refresh_token: session.refresh_token };
+}
+
+/**
+ * Estrena el par de tokens de una sesión nueva (inicio de sesión, registro).
+ *
+ * Se llama ANTES de guardar el perfil en React, para que el perfil se escriba ya
+ * sobre los tokens buenos. A diferencia de `replaceSessionTokens`, no exige que
+ * exista una sesión previa.
+ *
+ * @param {{access_token: string, refresh_token: string}} par Tokens recién
+ *   emitidos por el backend.
+ */
+export function startSession({ access_token, refresh_token }) {
+  saveSession({ ...(getSession() || {}), token: access_token, refresh_token });
 }
 
 export default api;

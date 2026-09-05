@@ -56,6 +56,15 @@ function excelInput(container) {
   return container.querySelector('input[type="file"][accept=".xlsx,.xls,.csv,.txt"]');
 }
 
+/* Cargar a mano y por archivo son dos caminos separados: hay que entrar al de
+   archivo antes de que exista el input. */
+function entrarAModoArchivo(container) {
+  const boton = [...container.querySelectorAll("button")]
+    .find(b => b.textContent.includes("Importar archivo"));
+  if (!boton) throw new Error("no se encontró la opción de importar archivo");
+  boton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+}
+
 function selectFile(input, file) {
   Object.defineProperty(input, "files", { value: [file], configurable: true });
   input.dispatchEvent(new Event("change", { bubbles: true }));
@@ -83,6 +92,7 @@ describe("Carga de lotes desde Excel/CSV: import real contra un fraccionamiento 
     lotList.mockResolvedValue({ items: [{ id: "lot-1", code: "A-01", status: "available" }] });
 
     const { container } = renderPage();
+    await act(async () => entrarAModoArchivo(container));
     const file = new File(["contenido"], "lotes.csv");
     await act(async () => selectFile(excelInput(container), file));
 
@@ -98,6 +108,7 @@ describe("Carga de lotes desde Excel/CSV: import real contra un fraccionamiento 
     });
 
     const { container } = renderPage();
+    await act(async () => entrarAModoArchivo(container));
     const file = new File(["contenido"], "lotes.csv");
     await act(async () => selectFile(excelInput(container), file));
 

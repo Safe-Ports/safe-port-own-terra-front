@@ -2334,6 +2334,10 @@
 /* Marca lo que hay que llenar antes de que el archivo sirva de algo. */
 .mx-miss { color: var(--danger); font-weight: 700; font-size: 11px; }
 
+/* "Files asociados" no sale en la descarga; el borde izquierdo la separa de las
+   columnas que sí son la plantilla, para que se lea como un agregado de pantalla. */
+.mx-extra { border-left: 2px solid var(--bd); }
+
 .mx-pill {
   display: inline-block;
   padding: 2px 9px;

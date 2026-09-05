@@ -23,6 +23,11 @@ export const expenseService = {
   create: (body)        => api.post("/expenses", body).then(r => r.data),
   update: (id, body)    => api.patch(`/expenses/${id}`, body).then(r => r.data),
   delete: (id)          => api.delete(`/expenses/${id}`),
+  receipt: (id, file) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return api.post(`/expenses/${id}/receipt`, fd).then(r => r.data);
+  },
   markPaid: (id) => api.patch(`/expenses/${id}`, {
     status: "paid",
     paid_date: new Date().toISOString().split("T")[0],

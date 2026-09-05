@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import GuideModal from "@/components/shared/GuideModal";
@@ -8,9 +8,12 @@ import {
   HiOutlineFunnel, HiOutlineEllipsisVertical,
   HiArrowTrendingDown, HiArrowTrendingUp, HiBanknotes, HiCreditCard, HiMagnifyingGlass,
   HiPhone, HiBars3, HiPlusCircle, HiOutlineWallet, HiOutlineClock, HiOutlineChartBar,
-  HiOutlinePaperClip, HiOutlineArrowUpTray,
+  HiOutlinePaperClip,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
+import FilePicker from "@/components/shared/FilePicker";
+import IncomesPanel from "./IncomesPanel";
+import { incomeService, INCOME_CAT } from "@/services/incomeService";
 import { paymentService } from "@/services/paymentService";
 import { useLandsGuide } from "@/context/LandsGuideContext";
 import { expenseService, CAT_LABEL, CAT_STYLE } from "@/services/expenseService";
@@ -109,63 +112,6 @@ function getMonthlyData(ingresos, expenses) {
     if (m) m.egresos += Number(e.monto || 0);
   });
   return months;
-}
-
-/* Selector de archivo: el input nativo se ve de otra época y no dice nada del
-   archivo elegido. Este muestra nombre y peso, y deja quitarlo sin reabrir el
-   explorador. El input real queda oculto pero accesible por teclado. */
-function FilePicker({ value, onChange, accept, hint }) {
-  const inputRef = useRef(null);
-  const [dentro, setDentro] = useState(false);
-
-  const tomar = (archivo) => { if (archivo) onChange(archivo); };
-  const peso = (b) => b < 1024 * 1024
-    ? `${Math.max(1, Math.round(b / 1024))} KB`
-    : `${(b / 1024 / 1024).toFixed(1)} MB`;
-
-  if (value) {
-    return (
-      <div style={{
-        display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
-        border: "1.5px solid var(--earth)", background: "rgba(53,94,59,.06)", borderRadius: 11,
-      }}>
-        <HiOutlinePaperClip style={{ fontSize: "1.1rem", color: "var(--earth)", flexShrink: 0 }} />
-        <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-          <span style={{ fontSize: ".82rem", fontWeight: 600, overflow: "hidden",
-                         textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value.name}</span>
-          <span style={{ fontSize: ".72rem", color: "var(--mu)" }}>{peso(value.size)}</span>
-        </span>
-        <button type="button" onClick={() => { onChange(null); if (inputRef.current) inputRef.current.value = ""; }}
-          aria-label="Quitar archivo"
-          style={{ border: "none", background: "transparent", cursor: "pointer",
-                   color: "var(--mu)", fontSize: "1.1rem", lineHeight: 1, padding: 4 }}>
-          <HiOutlineXMark />
-        </button>
-        <input ref={inputRef} type="file" accept={accept} style={{ display: "none" }}
-          onChange={e => tomar(e.target.files?.[0])} />
-      </div>
-    );
-  }
-
-  return (
-    <label
-      onDragOver={e => { e.preventDefault(); setDentro(true); }}
-      onDragLeave={() => setDentro(false)}
-      onDrop={e => { e.preventDefault(); setDentro(false); tomar(e.dataTransfer.files?.[0]); }}
-      style={{
-        display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-        padding: "16px 12px", cursor: "pointer", textAlign: "center",
-        border: `1.5px dashed ${dentro ? "var(--earth)" : "rgba(67,69,63,.22)"}`,
-        background: dentro ? "rgba(53,94,59,.06)" : "var(--sf2)",
-        borderRadius: 11, transition: "border-color .12s, background .12s",
-      }}>
-      <HiOutlineArrowUpTray style={{ fontSize: "1.25rem", color: "var(--mu)" }} />
-      <span style={{ fontSize: ".82rem", fontWeight: 600 }}>Elegir archivo o arrastrarlo aquí</span>
-      {hint && <span style={{ fontSize: ".72rem", color: "var(--mu)", lineHeight: 1.4 }}>{hint}</span>}
-      <input ref={inputRef} type="file" accept={accept} style={{ display: "none" }}
-        onChange={e => tomar(e.target.files?.[0])} />
-    </label>
-  );
 }
 
 /* Sparkline: área + línea de 2px + punto en el último dato, que es el que la
@@ -377,6 +323,7 @@ function PagoTable({ rows, isEgreso, historial, onPagar, onRecordar, onEdit, onD
           <th>Vence</th>
           <th>Estado</th>
           <th>Días</th>
+          <th>Comprobante</th>
           {!historial && <th/>}
         </tr>
       </thead>
@@ -428,6 +375,18 @@ function PagoTable({ rows, isEgreso, historial, onPagar, onRecordar, onEdit, onD
               <td><span className={`pc-chip ${status}`}>{ESTADO_LABEL[status] || status}</span></td>
               {/* Días */}
               <td><span className={`days-badge ${cls}`}>{lbl}</span></td>
+              {/* Comprobante */}
+              <td>
+                {r.receipt_url ? (
+                  <a href={r.receipt_url} target="_blank" rel="noreferrer"
+                     style={{ display: "inline-flex", alignItems: "center", gap: 4,
+                              fontSize: ".76rem", color: "var(--earth)", fontWeight: 600 }}>
+                    <HiOutlinePaperClip /> Ver
+                  </a>
+                ) : (
+                  <span style={{ fontSize: ".76rem", color: "var(--mu)" }}>—</span>
+                )}
+              </td>
               {/* Acciones */}
               {!historial && (
                 <td>
@@ -603,10 +562,117 @@ function EgresoModal({ initial, onClose, onSave }) {
   );
 }
 
-/* ── Modal cobro ─────────────────────────────────────────────── */
-function CobroModal({ clients, contracts, payments, onClose, onSave, busy }) {
+/* ── Modal ingreso ────────────────────────────────────────────────
+   El espejo del de egresos: pide si el dinero ya entró o se espera, porque solo
+   lo recibido cuenta en el flujo del mes. */
+function IngresoModal({ onClose, onSave, busy }) {
   useEscapeKey(onClose);
-  const [form, setForm] = useState({ clientId: "", contractId: "", paymentId: "", amount: "" });
+  const [form, setForm] = useState({
+    concepto: "", categoria: "otro", monto: "",
+    due_date: new Date().toISOString().split("T")[0], notes: "",
+  });
+  const [cuando, setCuando] = useState("recibido");
+  const [file, setFile] = useState(null);
+  const [err, setErr] = useState("");
+  const set = k => e => { const v = e.target.value; setForm(p => ({ ...p, [k]: v })); setErr(""); };
+
+  const guardar = () => {
+    if (!form.concepto.trim()) { setErr("Escribe de qu\u00e9 es el ingreso."); return; }
+    const monto = Number(form.monto);
+    if (!form.monto || isNaN(monto) || monto <= 0) { setErr("Ingresa un monto mayor a $0."); return; }
+    onSave({ ...form, monto, received: cuando === "recibido", _file: file });
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-box" style={{ maxWidth: 430 }}>
+        <div className="modal-hd">
+          <div className="modal-ico"><HiArrowTrendingUp /></div>
+          <div style={{ flex: 1 }}>
+            <div className="modal-title" style={{ fontSize: "1.3rem" }}>Registrar ingreso</div>
+            <div className="modal-sub">Dinero que no viene de la cobranza de un lote</div>
+          </div>
+          <button className="modal-close" onClick={onClose}><HiOutlineXMark /></button>
+        </div>
+        <div className="modal-body">
+          <div className="fg"><label className="fl">Concepto</label>
+            <input className="fi" value={form.concepto} onChange={set("concepto")}
+              placeholder="Renta de bodega, venta de maquinaria\u2026" autoFocus /></div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="fg"><label className="fl">Categor\u00eda</label>
+              <select className="fi" value={form.categoria} onChange={set("categoria")}>
+                {Object.entries(INCOME_CAT).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select></div>
+            <div className="fg"><label className="fl">Monto</label>
+              <input className="fi" type="number" min="0" step="0.01" value={form.monto}
+                onChange={set("monto")} placeholder="0.00" /></div>
+          </div>
+
+          <div className="fg">
+            <label className="fl">\u00bfEl dinero ya entr\u00f3?</label>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {[
+                { id: "recibido", titulo: "Ya lo recib\u00ed", detalle: "Cuenta en el flujo del mes." },
+                { id: "esperado", titulo: "Se espera", detalle: "Queda pendiente con su fecha. No afecta el flujo hasta que entre." },
+              ].map(op => {
+                const activo = cuando === op.id;
+                return (
+                  <label key={op.id} style={{
+                    display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer",
+                    border: `1.5px solid ${activo ? "var(--earth)" : "rgba(67,69,63,.14)"}`,
+                    background: activo ? "rgba(53,94,59,.06)" : "transparent",
+                    borderRadius: 11, padding: "10px 12px",
+                  }}>
+                    <input type="radio" name="momento-ingreso" checked={activo}
+                      onChange={() => setCuando(op.id)} style={{ marginTop: 3 }} />
+                    <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                      <span style={{ fontWeight: 700, fontSize: ".84rem" }}>{op.titulo}</span>
+                      <span style={{ fontSize: ".75rem", color: "var(--mu)", lineHeight: 1.4 }}>{op.detalle}</span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="fg"><label className="fl">{cuando === "recibido" ? "Fecha del ingreso" : "Fecha esperada"}</label>
+            <input className="fi" type="date" value={form.due_date} onChange={set("due_date")} /></div>
+
+          <div className="fg">
+            <label className="fl">Comprobante (opcional)</label>
+            <FilePicker value={file} onChange={setFile}
+              accept="application/pdf,image/jpeg,image/png,image/webp"
+              hint="PDF o imagen. Puedes registrarlo ahora y subirlo despu\u00e9s." />
+          </div>
+
+          <FieldError msg={err} />
+        </div>
+        <div className="modal-foot">
+          <Button variant="secondary" style={{ flex: 1 }} onClick={onClose} disabled={busy}>Cancelar</Button>
+          <Button variant="primary" style={{ flex: 2 }} onClick={guardar} disabled={busy}>
+            {busy ? "Guardando\u2026" : "Registrar ingreso"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Modal cobro ─────────────────────────────────────────────── */
+function CobroModal({ clients, contracts, payments, onClose, onSave, busy, contratoInicial }) {
+  useEscapeKey(onClose);
+  const [form, setForm] = useState({
+    // Con `contratoInicial` el modal abre ya apuntando a ese contrato: es el
+    // botón de cobro de la tabla de amortización, que antes pasaba la cuota
+    // concreta. Ahora el próximo vencimiento lo calcula la base y la pantalla
+    // no tiene la fila de la cuota a mano, así que se apunta al contrato — que
+    // además es sobre lo que cobra el backend.
+    clientId: contratoInicial?.client?.id ? String(contratoInicial.client.id) : "",
+    contractId: contratoInicial?.id ? String(contratoInicial.id) : "",
+    paymentId: "", amount: "",
+    paid_date: new Date().toISOString().split("T")[0],
+  });
   const [modo, setModo] = useState("completa");
   const [file, setFile] = useState(null);
   const [err, setErr] = useState("");
@@ -683,6 +749,7 @@ function CobroModal({ clients, contracts, payments, onClose, onSave, busy }) {
       paymentId: cuota.id,
       amount: Number(val.toFixed(2)),
       paymentIds: modo === "varias" ? reparto.map(f => f.id) : null,
+      paidDate: form.paid_date,
       file,
     });
   };
@@ -790,14 +857,27 @@ function CobroModal({ clients, contracts, payments, onClose, onSave, busy }) {
                 )}
               </div>
 
-              <div className="fg">
-                <label className="fl">Comprobante (opcional)</label>
-                <FilePicker value={file} onChange={setFile}
-                  accept="application/pdf,image/jpeg,image/png,image/webp"
-                  hint="PDF o imagen. Puedes registrar el cobro ahora y subirlo después." />
-              </div>
             </>
           )}
+
+          {!cuota && (
+            <div style={{ fontSize: ".76rem", color: "var(--mu)", lineHeight: 1.45,
+                          background: "var(--sf2)", borderRadius: 10, padding: "9px 12px" }}>
+              Elige la cuota y aparecerá el monto con las opciones de cobro.
+            </div>
+          )}
+
+          <div className="fg">
+            <label className="fl">Fecha del cobro</label>
+            <input className="fi" type="date" value={form.paid_date} onChange={set("paid_date")} />
+          </div>
+
+          <div className="fg">
+            <label className="fl">Comprobante (opcional)</label>
+            <FilePicker value={file} onChange={setFile}
+              accept="application/pdf,image/jpeg,image/png,image/webp"
+              hint="PDF o imagen. Puedes registrar el cobro ahora y subirlo después." />
+          </div>
 
           <FieldError msg={err} />
         </div>
@@ -1047,7 +1127,7 @@ const ESTADO_EG  = [["all","Todos los estados"],["pending","Pendiente"],["overdu
 const ESTADO_AL  = [["all","Todas las alertas"],["roja","Urgentes"],["amarilla","Próximas"]];
 
 export default function PaymentsPage() {
-  const { payments, clients, contracts, quickPay, collectOnContract, sendReminder, showToast, showError } = useAppContext();
+  const { payments, clients, contracts, datosIncompletos, quickPay, collectOnContract, sendReminder, showToast, showError } = useAppContext();
   const qc = useQueryClient();
   const navigate = useNavigate();
 
@@ -1058,6 +1138,7 @@ export default function PaymentsPage() {
   const [modal,     setModal]     = useState(null);
   const [editing,   setEditing]   = useState(null);
   const [abono,     setAbono]     = useState(null);   // cuota (payment) en cobro/abono
+  const [cobroContrato, setCobroContrato] = useState(null); // contrato desde el que se abre el cobro
   const [abonoBusy, setAbonoBusy] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   useLandsGuide(() => setShowGuide(true));
@@ -1138,13 +1219,33 @@ export default function PaymentsPage() {
   /* ── KPIs respetan desde/hasta ── */
   // "cancelled" queda fuera de ambos KPIs (dinero que no entrará); "partial" aporta
   // lo ya abonado a Cobrado y el remanente a Por cobrar, igual que el backend.
-  const inPendienteArr = ingresos.filter(p => ["pending", "overdue", "partial"].includes(p.status) && inRange(p.due_date, desde, hasta));
   const monthlyData    = useMemo(() => getMonthlyData(ingresos, expenses), [ingresos, expenses]);
 
   /* ── alertas ── */
+  // Las cuotas vencidas y las que vencen pronto salen de sus endpoints, no de
+  // filtrar `ingresos`: ese arreglo llega recortado a 200 filas y con eso no
+  // entran ni tres contratos a 96 meses, así que faltaban alertas sin que nada
+  // lo delatara. `/payments/overdue` devuelve TODAS las vencidas de la
+  // organización y `/payments/upcoming` las de los próximos días.
+  // Los dos endpoints responden {items, total}, no un arreglo pelado. Sin este
+  // `select` llegaba el objeto entero y `porVencer.filter(...)` tiraba la pantalla
+  // de Pagos completa. El `= []` no salvaba nada: solo cubre `undefined`.
+  const { data: vencidas = [] } = useQuery({
+    queryKey: ["payments", "overdue"],
+    queryFn: () => paymentService.overdue(),
+    select: (d) => (Array.isArray(d) ? d : d?.items ?? []),
+    retry: (n, err) => err?.response?.status !== 403 && n < 2,
+  });
+  const { data: porVencer = [] } = useQuery({
+    queryKey: ["payments", "upcoming", 7],
+    queryFn: () => paymentService.upcoming({ days: 7 }),
+    select: (d) => (Array.isArray(d) ? d : d?.items ?? []),
+    retry: (n, err) => err?.response?.status !== 403 && n < 2,
+  });
+
   const alertas = useMemo(() => {
     const out = [];
-    ingresos.filter(p => p.status === "overdue" || (p.status === "pending" && relativeDays(p.due_date) <= 7 && relativeDays(p.due_date) >= 0))
+    [...vencidas, ...porVencer.filter(p => p.status === "pending")]
       .forEach(p => out.push({
         tipo: "ingreso", urgencia: p.status === "overdue" ? "roja" : "amarilla",
         titulo: `${p.status === "overdue" ? "Cuota vencida" : "Vence pronto"} — ${p.client?.name || ""}`,
@@ -1161,7 +1262,7 @@ export default function PaymentsPage() {
         raw: e,
       }));
     return out.sort((a, b) => (a.urgencia === "roja" ? 0 : 1) - (b.urgencia === "roja" ? 0 : 1));
-  }, [ingresos, egresosNorm]);
+  }, [vencidas, porVencer, egresosNorm]);
 
   const alertasRojas = alertas.filter(a => a.urgencia === "roja").length;
   const filtAlertas  = alertas.filter(a => estado === "all" || a.urgencia === estado);
@@ -1214,13 +1315,47 @@ export default function PaymentsPage() {
   }, [abono, ingresos]);
   /* El modal de arriba antes solo se cerraba: el formulario no guardaba nada.
      Ahora pasa por el mismo cobro que el de la fila. */
-  const guardarCobroManual = async ({ contractId, paymentId, amount, paymentIds, file }) => {
+  const guardarCobroManual = async ({ contractId, paymentId, amount, paymentIds, file, paidDate }) => {
     setAbonoBusy(true);
     const ok = paymentIds?.length
-      ? await collectOnContract(contractId, { amount, paymentIds, file })
-      : await quickPay(paymentId, amount, file);
+      ? await collectOnContract(contractId, { amount, paymentIds, file, paidDate })
+      : await quickPay(paymentId, amount, file, paidDate);
     setAbonoBusy(false);
     if (ok) setModal(null);
+  };
+
+  const guardarIngreso = async (form) => {
+    setAbonoBusy(true);
+    try {
+      const creado = await incomeService.create({
+        concepto: form.concepto, categoria: form.categoria, monto: form.monto,
+        due_date: form.due_date, notes: form.notes || null, received: form.received,
+      });
+      // El comprobante no bloquea: el ingreso ya quedó registrado.
+      if (form._file) {
+        try { await incomeService.receipt(creado.id, form._file); }
+        catch { showToast("Ingreso registrado, pero no se pudo subir el comprobante", "warning"); }
+      }
+      qc.invalidateQueries({ queryKey: ["incomes"] });
+      qc.invalidateQueries({ queryKey: ["payments"] });
+      setModal(null);
+      showToast("Ingreso registrado");
+    } catch (e) {
+      showError(e, "No se pudo registrar el ingreso");
+    } finally {
+      setAbonoBusy(false);
+    }
+  };
+
+  const marcarIngresoRecibido = async (fila) => {
+    try {
+      await incomeService.update(fila.id, { status: "received" });
+      qc.invalidateQueries({ queryKey: ["incomes"] });
+      qc.invalidateQueries({ queryKey: ["payments"] });
+      showToast("Ingreso marcado como recibido");
+    } catch (e) {
+      showError(e, "No se pudo marcar el ingreso");
+    }
   };
 
   const handleSaveEgreso = form => {
@@ -1233,11 +1368,22 @@ export default function PaymentsPage() {
     }
     // `paid` decide si el egreso nace pagado o programado; el backend pone la
     // fecha de pago solo en el primer caso.
-    createExpense.mutate({ ...body, paid: !!form.paid, paid_date: form.paid_date || null });
+    createExpense.mutate(
+      { ...body, paid: !!form.paid, paid_date: form.paid_date || null },
+      {
+        // El comprobante se sube después de crear, y no bloquea: el egreso ya
+        // quedó registrado aunque falle la subida.
+        onSuccess: async (creado) => {
+          if (!form._file || !creado?.id) return;
+          try { await expenseService.receipt(creado.id, form._file); }
+          catch { showToast("Egreso registrado, pero no se pudo subir el comprobante", "warning"); }
+          qc.invalidateQueries({ queryKey: ["expenses"] });
+        },
+      },
+    );
   };
 
   /* ── KPIs extra: mora + egresos operativos ── */
-  const moraArr    = ingresos.filter(p => p.status === "overdue");
   // Las tarjetas ya no suman la lista que bajó la página: eso se quedaba corto
   // apenas la organización pasaba el tope de la consulta. Se invalidan con la
   // misma llave que los pagos, así que un cobro las refresca al instante.
@@ -1260,27 +1406,23 @@ export default function PaymentsPage() {
   };
 
   /* ── Amortización por contrato (progreso "24/84") ── */
+  // Todo sale de `payments_summary`, que lo calcula la base por contrato: los
+  // conteos y ahora también `next_due_date`. Antes el próximo vencimiento se
+  // deducía recorriendo el listado global de cuotas, recortado a 200 filas —
+  // así que a los contratos que quedaban fuera del corte la columna "Vence" les
+  // salía vacía y el semáforo siempre en verde, aunque estuvieran vencidos.
   const amortRows = useMemo(() => {
-    const byContract = {};
-    for (const p of payments) {
-      const cid = p.contract?.id || p.contract_id;
-      if (cid) (byContract[cid] ||= []).push(p);
-    }
     const today = new Date(); today.setHours(0, 0, 0, 0);
     return contracts
       .filter(c => c.status === "active" && (c.total_months || c.payments_summary?.total || 0) > 0)
       .map(c => {
         const ps = c.payments_summary || {};
         const total = c.total_months || ps.total || 0;
-        const mine = byContract[c.id] || [];
-        const next = mine
-          .filter(p => p.status === "pending" || p.status === "overdue")
-          .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))[0];
-        const hasOverdue = (ps.overdue || 0) > 0 || mine.some(p => p.status === "overdue");
+        const venc = ps.next_due_date || null;
         let estado = "ok";
-        if (hasOverdue) estado = "late";
-        else if (next) {
-          const days = Math.ceil((new Date(`${next.due_date}T12:00:00`) - today) / 86400000);
+        if ((ps.overdue || 0) > 0) estado = "late";
+        else if (venc) {
+          const days = Math.ceil((new Date(`${venc}T12:00:00`) - today) / 86400000);
           if (days >= 0 && days <= 5) estado = "soon";
         }
         return {
@@ -1290,11 +1432,11 @@ export default function PaymentsPage() {
           proj: c.lot?.inmueble_name || "",
           paid: ps.paid || 0, total,
           cuota: Number(c.monthly_payment || 0),
-          venc: next?.due_date || null,
-          estado, nextPayment: next, contract: c,
+          venc,
+          estado, contract: c,
         };
       });
-  }, [contracts, payments]);
+  }, [contracts]);
 
   const amortProjects = useMemo(
     () => [...new Set(amortRows.map(r => r.proj).filter(Boolean))].sort(),
@@ -1333,6 +1475,10 @@ export default function PaymentsPage() {
         .cf-btn-ghost{background:var(--sf);color:var(--danger);border-color:var(--bd)}
         .cf-btn-ghost:hover{border-color:var(--danger)}
         .cf-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+        .cf-aviso-parcial{display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;
+          padding:12px 14px;border:1px solid #C98A2B;border-left-width:3px;border-radius:6px;
+          background:rgba(201,138,43,.08);color:inherit;font-size:13.5px;line-height:1.5}
+        .cf-aviso-parcial svg{flex:none;margin-top:2px;color:#C98A2B;font-size:16px}
         .cf-kpi{background:var(--sf);border:1px solid var(--bd);border-radius:18px;box-shadow:var(--sh);padding:16px 18px 6px;display:flex;flex-direction:column}
         .cf-kpi .top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
         .cf-kpi .ico{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;font-size:1.15rem}
@@ -1403,14 +1549,15 @@ export default function PaymentsPage() {
           <div className="cf-sub">Gestión de amortizaciones y flujo de caja</div>
         </div>
         <div className="cf-top-actions" data-tour="pagos-registrar">
+          <button className="cf-btn cf-btn-ghost" onClick={() => setModal("ingreso")}><HiArrowTrendingUp /> Registrar ingreso</button>
           <button className="cf-btn cf-btn-ghost" onClick={() => { setEditing(null); setModal("egreso"); }}><HiArrowTrendingDown /> Registrar egreso</button>
           <button className="cf-btn cf-btn-primary" onClick={() => setModal("cobro")}><HiPlusCircle /> Registrar pago</button>
         </div>
       </div>
 
       <div className="cf-kpis" data-tour="pagos-kpis">
-        <KpiCard tono="income" icono={<HiArrowTrendingUp />} label="Ingresos del mes"
-          valor={currency(k.collected.amount)} pie={`${k.collected.count} cobros aplicados`}
+        <KpiCard tono="income" icono={<HiArrowTrendingUp />} label="Cobrado del mes"
+          valor={currency(k.collected.amount)} pie={`${k.collected.count} cuotas saldadas`}
           delta={k.collected.delta} serie={k.collected.series} color="#6FAF6B" id="ing" error={kpiError} cargando={kpiPending} sinPermiso={kpiSinPermiso} />
         <KpiCard tono="due" icono={<HiOutlineWallet />} icono2={<HiOutlineClock />} label="Por cobrar"
           valor={currency(k.outstanding.amount)} pie={`${k.outstanding.count} cuotas pendientes`}
@@ -1423,9 +1570,23 @@ export default function PaymentsPage() {
           delta={k.expenses.delta} invertido serie={k.expenses.series} color="#C98A2B" id="egr" error={kpiError} cargando={kpiPending} sinPermiso={kpiSinPermiso} />
       </div>
 
+      {datosIncompletos?.payments && (
+        <div className="cf-aviso-parcial" role="status">
+          <HiOutlineClock aria-hidden="true" />
+          <span>
+            Se cargaron <strong>{datosIncompletos.payments.cargados}</strong> de{" "}
+            <strong>{datosIncompletos.payments.total}</strong> cuotas. El{" "}
+            <strong>Registro de Ingresos</strong> y su gráfica mensual solo cubren
+            esas. Los indicadores, las alertas y las amortizaciones vienen
+            calculados del servidor y sí abarcan todo.
+          </span>
+        </div>
+      )}
+
       <div className="cf-panel">
         <div className="cf-tabs" data-tour="pagos-tabs">
           <button className={`cf-tab ${tab === "amort" ? "on" : ""}`} onClick={() => setTab("amort")}>Amortizaciones de Lotes</button>
+          <button className={`cf-tab ${tab === "ingresos" ? "on" : ""}`} onClick={() => { setTab("ingresos"); setEstado("all"); setSearch(""); setPage(1); }}>Registro de Ingresos</button>
           <button className={`cf-tab ${tab === "egresos" ? "on" : ""}`} onClick={() => { setTab("egresos"); setEstado("all"); setSearch(""); setPage(1); }}>Registro de Egresos</button>
         </div>
 
@@ -1463,7 +1624,7 @@ export default function PaymentsPage() {
                           <td className={`cf-venc ${r.estado === "late" ? "late" : ""}`}>{r.venc ? fmtD(r.venc) : "—"}</td>
                           <td><span className={`cf-badge ${r.estado}`}>{AMORT_EST[r.estado]}</span></td>
                           <td><div className="cf-acts">
-                            <button className="cf-ico pay" title="Registrar pago" onClick={() => r.nextPayment ? setAbono(r.nextPayment) : setModal("cobro")}><HiBanknotes /></button>
+                            <button className="cf-ico pay" title="Registrar pago" onClick={() => { setCobroContrato(r.contract); setModal("cobro"); }}><HiBanknotes /></button>
                             {link ? <a className="cf-ico wa" href={link} target="_blank" rel="noreferrer" title="Recordatorio por WhatsApp"><HiPhone /></a>
                                   : <button className="cf-ico" title="Sin teléfono del cliente" disabled style={{ opacity: .4, cursor: "default" }}><HiPhone /></button>}
                             <button className="cf-ico" title="Historial de amortización" onClick={() => navigate("/reportes")}><HiBars3 /></button>
@@ -1478,10 +1639,27 @@ export default function PaymentsPage() {
           </>
         )}
 
+        {tab === "ingresos" && (
+          <div className="card-body" style={{ padding: 0 }}>
+            <div className="cf-toolbar">
+              <label className="cf-search"><span><HiMagnifyingGlass /></span>
+                <input value={search} onChange={e => setSearch(e.target.value)}
+                  placeholder="Buscar por concepto…" /></label>
+              <select className="cf-field" value={estado} onChange={e => setEstado(e.target.value)}>
+                <option value="all">Todos los estados</option>
+                <option value="received">Recibidos</option>
+                <option value="pending">Por recibir</option>
+              </select>
+            </div>
+            <IncomesPanel busqueda={search} estado={estado}
+              onMarcarRecibido={marcarIngresoRecibido} />
+          </div>
+        )}
+
         {tab === "egresos" && (
           <>
             <div className="cf-neto">
-              <div>Ingresos del mes<b style={{ color: "var(--mid)" }}>{currency(k.collected.amount)}</b></div>
+              <div>Cobrado del mes<b style={{ color: "var(--mid)" }}>{currency(k.collected.amount)}</b></div>
               <div>Egresos<b style={{ color: "var(--danger)" }}>−{currency(k.expenses.amount)}</b></div>
               <div>Flujo neto<b style={{ color: k.net_flow >= 0 ? "var(--mid)" : "var(--danger)" }}>{currency(k.net_flow)}</b></div>
             </div>
@@ -1516,7 +1694,11 @@ export default function PaymentsPage() {
       {modal === "egreso" && <EgresoModal initial={editing} onClose={() => { setModal(null); setEditing(null); }} onSave={handleSaveEgreso} />}
       {modal === "cobro"  && (
         <CobroModal clients={clients} contracts={contracts} payments={ingresos} busy={abonoBusy}
-          onClose={() => setModal(null)} onSave={guardarCobroManual} />
+          key={cobroContrato?.id || "nuevo"} contratoInicial={cobroContrato}
+          onClose={() => { setModal(null); setCobroContrato(null); }} onSave={guardarCobroManual} />
+      )}
+      {modal === "ingreso" && (
+        <IngresoModal busy={abonoBusy} onClose={() => setModal(null)} onSave={guardarIngreso} />
       )}
       {abono && <AbonoModal payment={abono} siguientes={siguientesDelContrato} busy={abonoBusy} onClose={() => setAbono(null)} onConfirm={confirmAbono} />}
       <GuideModal

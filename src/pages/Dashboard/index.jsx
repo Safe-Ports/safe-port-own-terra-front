@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import GuideModal from "@/components/shared/GuideModal";
+import BusinessKpis from "@/components/shared/BusinessKpis";
+import QuickSummary from "@/components/shared/QuickSummary";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
@@ -11,7 +13,6 @@ import { dashboardService } from "@/services/dashboardService";
 import {
   HiOutlineSquares2X2, HiOutlineDocumentText,
   HiOutlineChevronDown, HiOutlineArrowRight,
-  HiMiniArrowTrendingUp, HiMiniArrowTrendingDown,
 } from "react-icons/hi2";
 import { Skeleton } from "@/components/ui/Skeleton";
 
@@ -33,20 +34,8 @@ const VIZ = {
 /* ── helpers ─────────────────────────────────────────────────── */
 const NOW   = new Date();
 const CY    = NOW.getFullYear();
-const CM    = NOW.getMonth(); // 0-indexed
 
-function isMonth(dateStr, year, month) {
-  if (!dateStr) return false;
-  const d = new Date(`${dateStr}T12:00:00`);
-  return d.getFullYear() === year && d.getMonth() === month;
-}
-const isThisMonth = s => isMonth(s, CY, CM);
-const isLastMonth = s => isMonth(s, CM === 0 ? CY - 1 : CY, CM === 0 ? 11 : CM - 1);
 
-function pct(cur, prev) {
-  if (!prev) return null;
-  return ((cur - prev) / Math.abs(prev) * 100).toFixed(1);
-}
 
 function compactNum(n) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -55,29 +44,6 @@ function compactNum(n) {
 }
 
 /* ── KPI Card ────────────────────────────────────────────────── */
-function KpiCard({ label, value, sub, change }) {
-  const up = change !== null && Number(change) >= 0;
-  return (
-    <div className="ot-card" style={{ padding: "16px 18px" }}>
-      <div style={{ fontSize: ".68rem", fontWeight: 700, textTransform: "uppercase",
-        letterSpacing: ".1em", color: "var(--mu)", marginBottom: 6 }}>{label}</div>
-      <div style={{ fontFamily: "var(--font-body)", fontSize: "1.7rem",
-        fontWeight: 700, color: "var(--tx)", lineHeight: 1.1 }}>{value}</div>
-      <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4 }}>
-        {change !== null ? (
-          <span style={{ display: "flex", alignItems: "center", gap: 2, fontSize: ".72rem",
-            fontWeight: 700, color: up ? "var(--mid)" : "var(--danger)" }}>
-            {up ? <HiMiniArrowTrendingUp /> : <HiMiniArrowTrendingDown />}
-            {Math.abs(change)}% vs mes anterior
-          </span>
-        ) : (
-          <span style={{ fontSize: ".72rem", color: "var(--mu)" }}>{sub}</span>
-        )}
-      </div>
-    </div>
-  );
-}
-
 /* ── Donut Chart (multi-segmento) ────────────────────────────── */
 function DonutChart({ segments, total, centerLabel }) {
   const R = 44;
@@ -266,7 +232,7 @@ export default function DashboardPage() {
   });
   const teamPerf = teamRaw?.team || [];
 
-  /* expenses for resumen financiero */
+  /* egresos para la gráfica de ingresos vs egresos */
   const { data: expRaw } = useQuery({
     queryKey: ["expenses"],
     queryFn:  () => expenseService.list({ limit: 500 }).then(r => r.items),
@@ -275,36 +241,22 @@ export default function DashboardPage() {
   const expenses = expRaw || [];
 
   /* ── KPI calculations ── */
-  const revThisMonth = useMemo(() =>
-    payments.filter(p => p.status === "paid" && isThisMonth(p.paid_date || p.due_date))
-            .reduce((s, p) => s + Number(p.amount || 0), 0), [payments]);
-
-  const revLastMonth = useMemo(() =>
-    payments.filter(p => p.status === "paid" && isLastMonth(p.paid_date || p.due_date))
-            .reduce((s, p) => s + Number(p.amount || 0), 0), [payments]);
-
-  const salesThisMonth = useMemo(() => contracts.filter(c => isThisMonth(c.contract_date)).length, [contracts]);
-  const salesLastMonth = useMemo(() => contracts.filter(c => isLastMonth(c.contract_date)).length, [contracts]);
+  // El conteo lo hace la base, no el navegador. `contracts` del contexto llega
+  // recortado a 100 filas, así que filtrarlo daba menos contratos de los que
+  // hubo en el mes y nada lo delataba. Es la misma consulta que ya alimenta el
+  // KPI "Ventas del mes" de BusinessKpis.
+  const { data: kpisNegocio } = useQuery({
+    queryKey: ["dashboard-kpis", 6],
+    queryFn: () => dashboardService.kpis(6),
+    staleTime: 60_000,
+  });
+  const salesThisMonth = kpisNegocio?.sales?.value ?? null;
 
   const totalLots    = fracs.reduce((s, f) => s + (f.total_lots     || 0), 0);
   const availLots    = fracs.reduce((s, f) => s + (f.available_lots || 0), 0);
   const soldLots     = fracs.reduce((s, f) => s + (f.sold_lots      || 0), 0);
   const reservedLots = fracs.reduce((s, f) => s + (f.reserved_lots  || 0), 0);
   const inTramite    = Math.max(0, totalLots - availLots - soldLots - reservedLots);
-
-  const activeContracts = contracts.filter(c => c.status === "active").length;
-
-  /* ── Resumen financiero YTD ── */
-  const ytdRevenue = useMemo(() =>
-    payments.filter(p => p.status === "paid" && p.paid_date?.startsWith(String(CY)))
-            .reduce((s, p) => s + Number(p.amount || 0), 0), [payments]);
-
-  const ytdCostos = useMemo(() =>
-    expenses.filter(e => e.status === "paid" && (e.paid_date || e.due_date)?.startsWith(String(CY)))
-            .reduce((s, e) => s + Number(e.monto || 0), 0), [expenses]);
-
-  const ytdUtilidad = ytdRevenue - ytdCostos;
-  const margen      = ytdRevenue > 0 ? (ytdUtilidad / ytdRevenue * 100).toFixed(1) : "0.0";
 
   /* ── Chart data (monthly) ── */
   const monthlyChart = useMemo(() => {
@@ -345,7 +297,6 @@ export default function DashboardPage() {
   return (
     <>
       <style>{`
-        .db-grid6 { display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:18px; }
         .db-charts { display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px; }
         .db-row3  { display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px; }
         .db-card  { background:var(--sf);border:1px solid var(--bd);border-radius:20px;overflow:hidden;box-shadow:var(--sh); }
@@ -356,40 +307,13 @@ export default function DashboardPage() {
         .db-accion { display:flex;align-items:center;gap:10px;padding:14px 16px;border-radius:14px;border:1.5px solid var(--bd);background:var(--sf);cursor:pointer;transition:all .14s;flex:1;font-family:inherit; }
         .db-accion:hover { border-color:var(--forest);background:var(--tan-lt); }
         .db-accion-ico { width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
-        .db-fin-row { display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line-soft);font-size:.83rem; }
-        .db-fin-row:last-child { border-bottom:none; }
 
-        @media (max-width:1200px) { .db-grid6 { grid-template-columns:repeat(3,1fr); } }
         @media (max-width:900px)  { .db-charts,.db-row3 { grid-template-columns:1fr; } }
       `}</style>
 
       {/* ── 6 KPIs ── */}
-      <div className="db-grid6">
-        <KpiCard label="Ingresos del mes"
-          value={compactCurrency(revThisMonth)}
-          sub="Cobros aplicados"
-          change={pct(revThisMonth, revLastMonth)} />
-        <KpiCard label="Ventas del mes"
-          value={salesThisMonth}
-          sub="Contratos nuevos"
-          change={pct(salesThisMonth, salesLastMonth)} />
-        <KpiCard label="Lotes disponibles"
-          value={availLots}
-          sub={`${totalLots} en inventario`}
-          change={null} />
-        <KpiCard label="Lotes vendidos"
-          value={soldLots}
-          sub="Total histórico"
-          change={null} />
-        <KpiCard label="Inventario total"
-          value={totalLots}
-          sub="lotes en total"
-          change={null} />
-        <KpiCard label="Contratos activos"
-          value={activeContracts}
-          sub={`${clients.length} clientes`}
-          change={null} />
-      </div>
+      <BusinessKpis />
+      <QuickSummary />
 
       {/* ── 3 gráficas ── */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
@@ -433,7 +357,7 @@ export default function DashboardPage() {
             <div>
               <div className="db-card-title">Contratos firmados</div>
               <div style={{ fontSize:".7rem", color:"var(--mu)", marginTop:4 }}>
-                Contratos registrados · <strong style={{ color:"var(--tx)" }}>{salesThisMonth} este mes</strong>
+                Contratos registrados{salesThisMonth !== null && <> · <strong style={{ color:"var(--tx)" }}>{salesThisMonth} este mes</strong></>}
               </div>
             </div>
             <div style={{ fontSize:".7rem", fontWeight:600, color:"var(--mu)",
@@ -477,7 +401,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Ventas recientes + Top vendedores + Resumen financiero ── */}
+      {/* ── Ventas recientes + Top vendedores ── */}
       <div className="db-row3">
 
         {/* Ventas recientes */}
@@ -575,48 +499,6 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Resumen financiero YTD */}
-        <div className="db-card">
-          <div className="db-card-hd">
-            <div className="db-card-title">Resumen financiero (YTD)</div>
-          </div>
-          <div style={{ padding: "16px 18px" }}>
-            <div className="db-fin-row">
-              <span style={{ color: "var(--tx2)" }}>Ingresos totales</span>
-              <strong style={{ color: "var(--forest)" }}>{currency(ytdRevenue)}</strong>
-            </div>
-            <div className="db-fin-row">
-              <span style={{ color: "var(--tx2)" }}>Costos operativos</span>
-              <strong style={{ color: "var(--danger)" }}>{currency(ytdCostos)}</strong>
-            </div>
-            <div className="db-fin-row">
-              <span style={{ color: "var(--tx2)" }}>Utilidad bruta</span>
-              <strong style={{ color: ytdUtilidad >= 0 ? "var(--forest)" : "var(--danger)" }}>
-                {currency(ytdUtilidad)}
-              </strong>
-            </div>
-            {/* Margen card */}
-            <div style={{ marginTop: 12, background: "var(--tan-lt)", borderRadius: 12,
-              padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <div style={{ fontSize: ".68rem", fontWeight: 700, textTransform: "uppercase",
-                  letterSpacing: ".08em", color: "var(--tan-dk)" }}>Margen de utilidad</div>
-                <div style={{ fontFamily: "var(--font-body)", fontSize: "1.6rem",
-                  fontWeight: 700, color: "var(--forest)", lineHeight: 1.1 }}>{margen}%</div>
-              </div>
-              {/* Mini sparkline */}
-              <svg width="60" height="30" viewBox="0 0 60 30">
-                <polyline
-                  points={monthlyChart.filter(m => m.ingresos > 0).map((m, i, arr) => {
-                    const maxR = Math.max(...arr.map(x => x.ingresos), 1);
-                    return `${i * (60 / Math.max(arr.length - 1, 1))},${30 - (m.ingresos / maxR) * 26}`;
-                  }).join(" ")}
-                  fill="none" stroke={VIZ.ingresos} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                />
-              </svg>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* ── Acciones rápidas ── */}
@@ -647,11 +529,11 @@ export default function DashboardPage() {
         title="Panel principal"
         subtitle="Vista consolidada de indicadores clave de tu negocio inmobiliario."
         steps={[
-          { title: "KPIs del mes", text: "Los 6 indicadores al inicio muestran ingresos, ventas, lotes disponibles, vendidos, inventario total y contratos activos. El porcentaje compara con el mes anterior." },
+          { title: "KPIs del mes", text: "Los indicadores al inicio muestran ingresos, ventas, lotes disponibles, vendidos e inventario total. El porcentaje compara con el mes anterior, y solo aparece donde hay historia para compararlo." },
           { title: "Gráficas de tendencia", text: "Las gráficas muestran ingresos vs egresos y contratos cerrados mes a mes durante el año. Úsalas para detectar tendencias de cobranza y ventas." },
           { title: "Top vendedores", text: "Ranking mensual del equipo por número de contratos cerrados. Se actualiza en tiempo real con los contratos del mes en curso." },
           { title: "Ventas recientes", text: "Los últimos 5 contratos registrados con su cliente, fraccionamiento, monto y estado. Haz clic en 'Ver todos' para ir al repositorio completo." },
-          { title: "Resumen financiero YTD", text: "Acumulado del año: ingresos totales, egresos y utilidad neta con margen porcentual. Los datos se actualizan conforme se registran pagos y gastos." },
+          { title: "Resumen rápido", text: "Debajo de los indicadores, lo que pide acción este mes: cuotas por cobrar, apartados que vencen y clientes en mora. Cada uno lleva a la pantalla donde se resuelve." },
           { title: "Acciones rápidas", text: "Botones directos para registrar los flujos más frecuentes: nuevo contrato, cobro de cliente, egreso operativo e incorporar nuevo cliente." },
         ]}
       />

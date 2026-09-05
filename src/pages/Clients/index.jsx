@@ -196,23 +196,41 @@ function ClientsPage() {
   const sellerName = selected?.seller?.name || selected?.seller || "";
   const sellerInitials = selected?.seller?.initials || sellerName.slice(0, 2).toUpperCase();
 
-  // Client's contracts + payment progress
+  // Los contratos y las cuotas del cliente seleccionado, pedidos al servidor.
+  //
+  // Antes salían de filtrar los arreglos globales del contexto, que llegan
+  // recortados (contratos 100, cuotas 200 como mucho). A un cliente cuyos
+  // contratos quedaban fuera de ese corte se le mostraba la ficha vacía o con
+  // menos contratos de los que tiene, y el avance de pago —"3 de 12 cuotas"—
+  // salía mal porque le faltaban filas. Estos endpoints devuelven lo del cliente
+  // COMPLETO, sin paginar.
+  const { data: clientContractsData } = useQuery({
+    queryKey: ["client-contracts", selected?.id],
+    queryFn: () => clientService.contracts(selected.id),
+    enabled: !!selected?.id,
+  });
+  const { data: clientPaymentsData } = useQuery({
+    queryKey: ["client-payments", selected?.id],
+    queryFn: () => clientService.payments(selected.id),
+    enabled: !!selected?.id,
+  });
+
   const clientContracts = useMemo(
-    () => contracts.filter((c) => String(c.client?.id) === String(selected?.id)),
-    [contracts, selected?.id]
+    () => clientContractsData?.items || [],
+    [clientContractsData]
   );
 
   const paidCountByContract = useMemo(() => {
     const map = {};
-    payments.forEach((p) => {
-      if (!p.contract?.id) return;
-      const key = String(p.contract.id);
+    (clientPaymentsData?.items || []).forEach((p) => {
+      const key = String(p.contract_id ?? p.contract?.id ?? "");
+      if (!key) return;
       if (!map[key]) map[key] = { paid: 0, total: 0 };
       map[key].total += 1;
       if (p.status === "paid") map[key].paid += 1;
     });
     return map;
-  }, [payments]);
+  }, [clientPaymentsData]);
 
   return (
     <>

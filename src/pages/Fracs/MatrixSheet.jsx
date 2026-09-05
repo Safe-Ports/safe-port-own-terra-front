@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { HiArrowDownTray } from "react-icons/hi2";
+import FilesDropdown from "@/components/shared/FilesDropdown";
 import { lotService } from "@/services/lotService";
+import { documentService } from "@/services/documentService";
 import { measure } from "@/services/formatters";
 
 /**
@@ -21,8 +24,36 @@ const HEADERS = [
 /** Servicios en el mismo orden en que aparecen en la plantilla. */
 const SERVICE_KEYS = ["agua", "luz", "drenaje", "gas", "internet", "pavimento"];
 
+/* Va aparte de HEADERS a propósito: HEADERS espeja la plantilla de importación
+   y el archivo que se descarga lo genera el backend con esa misma lista. Esta
+   columna es solo de pantalla —enlaces al Vault— y por eso no viaja en la
+   descarga: un archivo con una celda de links no se podría volver a importar. */
+const COL_ARCHIVOS = "Files asociados";
+
 const STATUS_ES = { available: "disponible", reserved: "apartado", sold: "vendido" };
 const STATUS_CLS = { available: "ok", reserved: "wr", sold: "sd" };
+
+/**
+ * Quién tiene el lote. Son dos orígenes distintos y hasta ahora la matriz solo
+ * miraba uno: el vendedor que un administrador asigna, y —si nadie lo asignó—
+ * quien lo apartó, que en la práctica es quien lo está trabajando.
+ *
+ * `reserved_by_id` no se limpia al liberar el apartado, así que solo cuenta
+ * mientras el lote siga apartado: si no, un lote disponible mostraría a alguien
+ * que ya no tiene nada que ver con él.
+ */
+function quienLoTiene(lot) {
+  if (lot.seller_name) return lot.seller_name;
+  if (lot.status === "reserved" && lot.reserved_by_name) {
+    return (
+      <span style={{ display: "inline-flex", flexDirection: "column", lineHeight: 1.25 }}>
+        <span>{lot.reserved_by_name}</span>
+        <span style={{ fontSize: ".68rem", color: "var(--mu)" }}>lo apartó</span>
+      </span>
+    );
+  }
+  return <span className="mx-no">—</span>;
+}
 
 /** Importe con separador de miles; vacío si no hay dato. */
 function money(value) {
@@ -38,6 +69,14 @@ function money(value) {
  */
 export default function MatrixSheet({ lots, fracId, fracName, loading, showError }) {
   const [downloading, setDownloading] = useState(null);
+
+  /* Si falla, la matriz se pinta igual: los archivos son un extra de la vista,
+     no la vista. */
+  const { data: archivosPorLote = {} } = useQuery({
+    queryKey: ["documents", "for-lots", fracId],
+    queryFn: () => documentService.forLots(fracId),
+    enabled: !!fracId,
+  });
 
   const missing = useMemo(
     () => lots.filter((l) => !l.area_m2 && !l.price_contado).length,
@@ -97,6 +136,7 @@ export default function MatrixSheet({ lots, fracId, fracName, loading, showError
                 {HEADERS.map((h, i) => (
                   <th key={h} className={i === 0 ? "mx-stick" : ""}>{h}</th>
                 ))}
+                <th className="mx-extra">{COL_ARCHIVOS}</th>
               </tr>
             </thead>
             <tbody>
@@ -125,7 +165,11 @@ export default function MatrixSheet({ lots, fracId, fracName, loading, showError
                         {lot.services?.[k] ? "Sí" : "No"}
                       </td>
                     ))}
-                    <td>{lot.seller_name || <span className="mx-no">—</span>}</td>
+                    <td>{quienLoTiene(lot)}</td>
+                    <td className="mx-extra">
+                      <FilesDropdown archivos={archivosPorLote[lot.id]}
+                                     titulo={`Lote ${lot.code}`} />
+                    </td>
                   </tr>
                 );
               })}
@@ -137,6 +181,8 @@ export default function MatrixSheet({ lots, fracId, fracName, loading, showError
       <div className="mx-foot">
         El archivo descargado se puede editar en Excel y volver a subir desde
         <b> Carga de Lotes</b>: usa exactamente las columnas que espera el importador.
+        <b> Files asociados</b> queda fuera de la descarga —son enlaces al Vault— para
+        que el archivo se siga pudiendo reimportar tal cual.
       </div>
     </article>
   );

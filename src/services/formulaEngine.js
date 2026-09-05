@@ -67,18 +67,35 @@ const FUNCS = {
 const CONSTS = { pi: Math.PI, e: Math.E };
 
 const OPS = {
-  "+": { prec: 2, assoc: "L", fn: (a, b) => a + b },
-  "-": { prec: 2, assoc: "L", fn: (a, b) => a - b },
-  "*": { prec: 3, assoc: "L", fn: (a, b) => a * b },
-  "/": { prec: 3, assoc: "L", fn: (a, b) => a / b },
-  "%": { prec: 3, assoc: "L", fn: (a, b) => a % b },
-  "^": { prec: 4, assoc: "R", fn: (a, b) => a ** b },
+  "+":  { prec: 2, assoc: "L", fn: (a, b) => a + b },
+  "-":  { prec: 2, assoc: "L", fn: (a, b) => a - b },
+  "*":  { prec: 3, assoc: "L", fn: (a, b) => a * b },
+  "/":  { prec: 3, assoc: "L", fn: (a, b) => a / b },
+  // Módulo con el signo del DIVISOR, como Python — no el de JS, que toma el del
+  // dividendo. `-7 % 3` da 2 en el backend y daba -1 acá.
+  "%":  { prec: 3, assoc: "L", fn: (a, b) => ((a % b) + b) % b },
+  // División entera: el backend acepta `//` (ast.FloorDiv) y acá ni siquiera
+  // tokenizaba. Redondea hacia abajo, también como Python: -7 // 2 = -4.
+  "//": { prec: 3, assoc: "L", fn: (a, b) => Math.floor(a / b) },
+  "^":  { prec: 4, assoc: "R", fn: (a, b) => a ** b },
 };
+
+// El menos unario liga MÁS flojo que la potencia y más fuerte que * / % //,
+// igual que en Python: `-2^2` es -(2^2) = -4, no (-2)^2 = 4. Antes el unario se
+// volcaba a la salida antes de apilar cualquier operador, así que se aplicaba
+// primero y el front mostraba una mensualidad distinta a la que guardaba el
+// backend. El 3.5 es a propósito: cae entre `*` (3) y `^` (4).
+const PREC_UNARIO = 3.5;
+
+// Mismo tope que el backend (`_MAX_FORMULA_LEN`), para que una fórmula
+// demasiado larga falle acá y no al guardar.
+const MAX_LARGO = 1000;
 
 export class FormulaError extends Error {}
 
 function tokenize(formula) {
   const src = String(formula).replace(/\*\*/g, "^");
+  if (src.length > MAX_LARGO) throw new FormulaError("La fórmula es demasiado larga");
   const tokens = [];
   let i = 0;
   while (i < src.length) {
@@ -88,6 +105,12 @@ function tokenize(formula) {
       let num = "";
       while (i < src.length && /[0-9.]/.test(src[i])) num += src[i++];
       if ((num.match(/\./g) || []).length > 1) throw new FormulaError("Número inválido");
+      // Notación científica: `1e3`, `1.5e-4`. El AST de Python la entiende y acá
+      // el `e` se iba como nombre de variable, así que `1e3` reventaba con
+      // "falta el valor de la variable «e3»". Solo se consume el exponente si de
+      // verdad hay dígitos detrás; si no, la `e` sigue siendo la constante.
+      const exp = /^[eE][+-]?\d+/.exec(src.slice(i));
+      if (exp) { num += exp[0]; i += exp[0].length; }
       tokens.push({ type: "num", value: parseFloat(num) });
       continue;
     }
@@ -98,6 +121,9 @@ function tokenize(formula) {
       continue;
     }
     if (c === "(" || c === ")" || c === ",") { tokens.push({ type: c }); i++; continue; }
+    // Los de dos caracteres primero, o `//` se leería como dos divisiones.
+    const dos = src.slice(i, i + 2);
+    if (OPS[dos]) { tokens.push({ type: "op", value: dos }); i += 2; continue; }
     if (OPS[c]) { tokens.push({ type: "op", value: c }); i++; continue; }
     throw new FormulaError(`Carácter no permitido: «${c}»`);
   }
@@ -150,9 +176,12 @@ function toRPN(tokens) {
         const o1 = OPS[t.value];
         while (stack.length) {
           const top = stack[stack.length - 1];
-          if (top.type === "uminus") { out.push(stack.pop()); continue; }
-          if (top.type !== "op") break;
-          const o2 = OPS[top.value];
+          // El unario ya no se vuelca siempre: compite por precedencia como
+          // cualquier operador, que es lo que hace que `-2^2` dé -4 y no 4.
+          const o2 = top.type === "uminus" ? { prec: PREC_UNARIO }
+                   : top.type === "op"     ? OPS[top.value]
+                   : null;
+          if (!o2) break;
           if ((o1.assoc === "L" && o1.prec <= o2.prec) || (o1.assoc === "R" && o1.prec < o2.prec)) {
             out.push(stack.pop());
           } else break;
@@ -194,7 +223,10 @@ function evalRPN(rpn, variables) {
     } else if (t.type === "op") {
       if (st.length < 2) throw new FormulaError("Fórmula inválida");
       const b = st.pop(), a = st.pop();
-      if ((t.value === "/" || t.value === "%") && b === 0) throw new FormulaError("División por cero");
+      // El backend frena truediv, mod Y floordiv contra cero (OT-CALC-1003).
+      if ((t.value === "/" || t.value === "%" || t.value === "//") && b === 0) {
+        throw new FormulaError("División por cero");
+      }
       st.push(OPS[t.value].fn(a, b));
     } else if (t.type === "func") {
       const fn = FUNCS[t.value];
