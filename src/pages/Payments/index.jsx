@@ -1227,14 +1227,19 @@ export default function PaymentsPage() {
   // entran ni tres contratos a 96 meses, así que faltaban alertas sin que nada
   // lo delatara. `/payments/overdue` devuelve TODAS las vencidas de la
   // organización y `/payments/upcoming` las de los próximos días.
+  // Los dos endpoints responden {items, total}, no un arreglo pelado. Sin este
+  // `select` llegaba el objeto entero y `porVencer.filter(...)` tiraba la pantalla
+  // de Pagos completa. El `= []` no salvaba nada: solo cubre `undefined`.
   const { data: vencidas = [] } = useQuery({
     queryKey: ["payments", "overdue"],
     queryFn: () => paymentService.overdue(),
+    select: (d) => (Array.isArray(d) ? d : d?.items ?? []),
     retry: (n, err) => err?.response?.status !== 403 && n < 2,
   });
   const { data: porVencer = [] } = useQuery({
     queryKey: ["payments", "upcoming", 7],
     queryFn: () => paymentService.upcoming({ days: 7 }),
+    select: (d) => (Array.isArray(d) ? d : d?.items ?? []),
     retry: (n, err) => err?.response?.status !== 403 && n < 2,
   });
 
