@@ -1,9 +1,13 @@
 import { useState } from "react";
-import { HiArrowLeft, HiCheckBadge, HiClock, HiMapPin, HiPlus, HiQrCode, HiShieldCheck, HiTruck, HiUser } from "react-icons/hi2";
+import { HiCheckBadge, HiClock, HiMapPin, HiShieldCheck, HiTruck, HiUser } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
 import EcoLayout from "@/pages/Ecosystem/EcoLayout";
+import { PROPERTY_ACTION_ICONS, PROPERTY_ENTITY_ICONS } from "../../components/propertiesIconCatalog";
 import Modal from "@/components/ui/Modal";
 import "./access-control.css";
+
+const { back: HiArrowLeft, create: HiPlus } = PROPERTY_ACTION_ICONS;
+const { access: HiQrCode } = PROPERTY_ENTITY_ICONS;
 
 const initialPasses=[
   {folio:"AC-1842",kind:"Proveedor",name:"Plomería Díaz",target:"Torre Jacarandas · Depto. 302",window:"Hoy · 14:00–16:00",host:"Fernando Demo",status:"expected",note:"Permitir acceso a cuarto de máquinas. Lleva herramienta."},
@@ -24,7 +28,7 @@ function AccessControlPage(){
   const createPass=event=>{event.preventDefault();const pass={...draft,folio:`AC-${String(Date.now()).slice(-4)}`,status:"expected"};setPasses(current=>[pass,...current]);setSelectedId(pass.folio);setCreating(false);setDraft({kind:"Visita",name:"",target:"",window:"",host:"",note:""});};
   const advancePass=()=>setPasses(current=>current.map(item=>item.folio===selected.folio?{...item,status:item.status==="expected"?"inside":"completed"}:item));
   return <EcoLayout active="properties" title="OwnTerra Properties" subtitle="Operación · Accesos"><main className="access-page">
-    <header className="access-heading"><button type="button" onClick={()=>navigate("/properties/condominios/operacion")}><HiArrowLeft/> Operación condominal</button><div><span>Caseta, visitas y paquetería</span><h1>Accesos sin fricción.</h1><p>La caseta recibe instrucciones claras para visitas, proveedores y entregas.</p></div><button type="button" onClick={()=>setCreating(true)}><HiPlus/> Crear pase</button></header>
+    <header className="access-heading"><button type="button" onClick={()=>navigate("/properties/comunidades/operacion")}><HiArrowLeft/> Operación comunitaria</button><div><span>Caseta, visitas y paquetería</span><h1>Accesos sin fricción.</h1><p>La caseta recibe instrucciones claras para visitas, proveedores y entregas.</p></div><button type="button" onClick={()=>setCreating(true)}><HiPlus/> Crear pase</button></header>
     <section className="access-principle"><HiShieldCheck/><div><strong>Una vista pública, una sola tarea.</strong><p>Seguridad abre el enlace o escanea el QR, compara identificación, sigue instrucciones y registra entrada o salida.</p></div><span>Sin usuario · Sin contraseña</span></section>
     <section className="access-layout">
       <div className="access-queue"><header><div><span>Hoy</span><h2>Personas y entregas</h2></div><strong>{passes.filter(item=>item.status!=="completed").length} activas</strong></header>{passes.map(pass=><button type="button" className={selected.folio===pass.folio?"active":""} key={pass.folio} onClick={()=>setSelectedId(pass.folio)}><span className="access-kind">{pass.kind==="Entrega"?<HiTruck/>:<HiUser/>}</span><span><small>{pass.kind} · {pass.folio}</small><strong>{pass.name}</strong><em>{pass.target}</em></span><i className={pass.status}>{statusLabel[pass.status]}</i></button>)}</div>

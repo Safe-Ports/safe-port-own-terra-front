@@ -62,6 +62,8 @@ export const FEATURE_LABEL = {
   "properties.owners.read": "Propietarios",
   "properties.properties.read": "Propiedades",
   "properties.units.read": "Unidades",
+  "properties.rent.read": "Rentas",
+  "properties.rent.write": "Operación de rentas",
 };
 
 const ADMIN_ROLES = new Set(["admin", "superadmin"]);
@@ -77,6 +79,8 @@ export function defaultPermissionsFor(appKey, role) {
       "properties.properties.write",
       "properties.units.read",
       "properties.units.write",
+      "properties.rent.read",
+      "properties.rent.write",
     ];
   }
   if (appKey === "properties" && role === "viewer") {
@@ -85,6 +89,7 @@ export function defaultPermissionsFor(appKey, role) {
       "properties.owners.read",
       "properties.properties.read",
       "properties.units.read",
+      "properties.rent.read",
     ];
   }
   if (role === "admin") return [`${appKey}.*`];
@@ -180,6 +185,8 @@ export function canUseFeature(user, feature) {
     "properties.owners.read": () => canAccessApp(user, "properties") && hasPermission(user, "properties.owners.read"),
     "properties.properties.read": () => canAccessApp(user, "properties") && hasPermission(user, "properties.properties.read"),
     "properties.units.read": () => canAccessApp(user, "properties") && hasPermission(user, "properties.units.read"),
+    "properties.rent.read": () => canAccessApp(user, "properties") && hasPermission(user, "properties.rent.read"),
+    "properties.rent.write": () => canAccessApp(user, "properties") && hasPermission(user, "properties.rent.write"),
   };
 
   return checks[feature]?.() || hasPermission(user, feature);

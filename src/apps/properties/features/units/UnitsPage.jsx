@@ -1,17 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
-import { HiArchiveBox, HiArrowLeft, HiArrowRight, HiHomeModern, HiMagnifyingGlass, HiPencilSquare, HiPlus, HiQueueList, HiViewColumns } from "react-icons/hi2";
+import { HiQueueList, HiViewColumns } from "react-icons/hi2";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import FieldError from "@/components/shared/FieldError";
 import Modal from "@/components/ui/Modal";
 import { useAppContext } from "@/context/AppContext";
 import EcoLayout from "@/pages/Ecosystem/EcoLayout";
 import { usePropertiesData } from "../../data/PropertiesDataContext";
+import { PROPERTY_ACTION_ICONS, PROPERTY_ENTITY_ICONS } from "../../components/propertiesIconCatalog";
 import { EMPTY_UNIT, UNIT_STATUS_LABEL, UNIT_TYPE_LABEL, validateUnit } from "./unitModel";
 import "./units.css";
 import "./unit-status-board.css";
 
 const money = (value) => value ? new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(value) : "Sin definir";
 const STATUS_ORDER = ["available", "rented", "maintenance", "archived"];
+const { archive: HiArchiveBox, back: HiArrowLeft, create: HiPlus, edit: HiPencilSquare, open: HiArrowRight, search: HiMagnifyingGlass } = PROPERTY_ACTION_ICONS;
+const { unit: HiHomeModern } = PROPERTY_ENTITY_ICONS;
 
 function UnitsPage() {
   const navigate = useNavigate();

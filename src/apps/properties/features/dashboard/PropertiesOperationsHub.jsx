@@ -1,16 +1,12 @@
 import { useState } from "react";
-import {
-  HiArrowLeft,
-  HiArrowRight,
-  HiBuildingOffice2,
-  HiChatBubbleLeftRight,
-  HiMegaphone,
-  HiWrenchScrewdriver,
-} from "react-icons/hi2";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
 import EcoLayout from "@/pages/Ecosystem/EcoLayout";
+import { PROPERTY_ACTION_ICONS, PROPERTY_ENTITY_ICONS } from "../../components/propertiesIconCatalog";
 import "./properties-dashboard.css";
+
+const { back: HiArrowLeft, open: HiArrowRight } = PROPERTY_ACTION_ICONS;
+const { portfolio: HiBuildingOffice2, operations: HiWrenchScrewdriver, commercial: HiMegaphone, relationships: HiChatBubbleLeftRight } = PROPERTY_ENTITY_ICONS;
 
 const areas = [
   {
@@ -31,15 +27,17 @@ const areas = [
     icon: HiWrenchScrewdriver,
     summary: "Rentas, contratos y atención cotidiana en un solo flujo.",
     items: [
-      ["Condominios", "Configuración, directorio y relaciones por unidad", "/properties/condominios", "properties.properties.read"],
-      ["Cuotas y adeudos", "Cargos, pagos y saldos por unidad", "/properties/condominios/operacion?module=charges", "properties.properties.read"],
-      ["Comunicados", "Avisos oficiales, audiencias y lecturas", "/properties/condominios/operacion?module=communications", "properties.properties.read"],
-      ["Amenidades", "Disponibilidad y reservaciones", "/properties/condominios/operacion?module=amenities", "properties.properties.read"],
-      ["Comité y votaciones", "Acuerdos, aprobaciones y participación", "/properties/condominios/operacion?module=committee", "properties.properties.read"],
-      ["Reportes condominales", "Cobranza, actividad y gobernanza", "/properties/condominios/operacion?module=reports", "properties.properties.read"],
+      ["Comunidades", "Condominios, privadas, plazas, complejos de cabañas y hoteles", "/properties/comunidades", "properties.properties.read"],
+      ["Cuotas y adeudos", "Cargos, pagos y saldos por unidad", "/properties/comunidades/operacion?module=charges", "properties.properties.read"],
+      ["Servicios y medidores", "Agua, luz, gas, lecturas, recibos, responsables y anomalías", "/properties/comunidades/operacion?module=utilities", "properties.properties.read"],
+      ["Comunicados", "Avisos oficiales, audiencias y lecturas", "/properties/comunidades/operacion?module=communications", "properties.properties.read"],
+      ["Amenidades", "Disponibilidad y reservaciones", "/properties/comunidades/operacion?module=amenities", "properties.properties.read"],
+      ["Comité y votaciones", "Acuerdos, aprobaciones y participación", "/properties/comunidades/operacion?module=committee", "properties.properties.read"],
+      ["Reportes de comunidad", "Cobranza, actividad y gobernanza", "/properties/comunidades/operacion?module=reports", "properties.properties.read"],
       ["Estatus de unidades", "Disponibilidad de casas, departamentos y espacios", "/properties/unidades?view=board", "properties.units.read"],
       ["Contratos", "Vigencias, renovaciones e historial", "/properties/modulos/contratos"],
-      ["Rentas", "Cobranza, vencimientos y renovaciones", "/properties/rentas"],
+      ["Rentas", "Prospectos, contratos, cobranza, renovaciones e inspecciones", "/properties/rentas", "properties.rent.read"],
+      ["Hospedaje", "Reservaciones, huéspedes, check-in, limpieza, tarifas y cobros", "/properties/rentas/hospedaje", "properties.rent.read"],
       ["Tickets y mantenimiento", "Solicitudes, conversación, prioridades y responsables", "/properties/tickets"],
       ["Accesos, visitas y paquetería", "Pases, entradas, salidas y entregas para caseta", "/properties/accesos"],
       ["Inspecciones", "Checklists, evidencia y firmas", "/properties/modulos/inspecciones"],
@@ -54,7 +52,8 @@ const areas = [
     icon: HiMegaphone,
     summary: "Del inventario publicado a una relación comercial.",
     items: [
-      ["Publicaciones", "Renta, venta y disponibilidad", "/properties/modulos/publicaciones"],
+      ["Marketplace de renta", "Publicaciones, disponibilidad, precio y consultas", "/properties/publicaciones", "properties.rent.read"],
+      ["Publicaciones de venta", "Próxima etapa de comercialización", "/properties/modulos/publicaciones"],
       ["Prospectos", "Interesados, visitas y negociación", "/properties/modulos/prospectos"],
     ],
   },

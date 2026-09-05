@@ -1,13 +1,4 @@
 import { useMemo, useState } from "react";
-import {
-  HiArchiveBox,
-  HiArrowLeft,
-  HiBuildingOffice2,
-  HiMagnifyingGlass,
-  HiPencilSquare,
-  HiPlus,
-  HiUserGroup,
-} from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
 import FieldError from "@/components/shared/FieldError";
 import Modal from "@/components/ui/Modal";
@@ -15,9 +6,12 @@ import { useAppContext } from "@/context/AppContext";
 import EcoLayout from "@/pages/Ecosystem/EcoLayout";
 import { EMPTY_OWNER, validateOwner } from "./ownerModel";
 import { usePropertiesData } from "../../data/PropertiesDataContext";
+import { PROPERTY_ACTION_ICONS, PROPERTY_ENTITY_ICONS } from "../../components/propertiesIconCatalog";
 import "./owners.css";
 
 const TYPE_LABEL = { individual: "Persona física", company: "Persona moral" };
+const { archive: HiArchiveBox, back: HiArrowLeft, create: HiPlus, edit: HiPencilSquare, search: HiMagnifyingGlass } = PROPERTY_ACTION_ICONS;
+const { owner: HiUserGroup } = PROPERTY_ENTITY_ICONS;
 
 function OwnersPage() {
   const navigate = useNavigate();
@@ -150,7 +144,7 @@ function OwnersPage() {
         onClose={closeModal}
         title={editingId === "new" ? "Nuevo propietario" : "Editar propietario"}
         subtitle="Información mínima para iniciar su expediente."
-        icon={<HiBuildingOffice2 />}
+        icon={<HiUserGroup />}
         width="max-w-[660px]"
         footer={(
           <><button className="owners-secondary" type="button" onClick={closeModal}>Cancelar</button><button className="owners-primary" type="submit" form="owner-form">Guardar propietario</button></>

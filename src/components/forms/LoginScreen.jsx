@@ -161,6 +161,12 @@ function LoginView({ onForgot, onRegister }) {
         {loading ? "Ingresando..." : "Iniciar sesión"}
       </button>
 
+      <a className="lf-public-catalog" href="/rentas">
+        <span aria-hidden="true">⌂</span>
+        Explorar inmuebles en renta
+        <span aria-hidden="true">→</span>
+      </a>
+
       <div style={{ textAlign: "center", marginTop: 16, fontSize: ".82rem", color: "#83867C" }}>
         ¿No tienes cuenta?{" "}
         <button

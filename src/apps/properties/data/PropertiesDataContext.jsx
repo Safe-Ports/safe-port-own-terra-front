@@ -4,8 +4,11 @@ import { createProperty } from "../features/properties/propertyModel";
 import { createUnit } from "../features/units/unitModel";
 import { createTicket } from "../features/tickets/ticketModel";
 import { createCommunity, createCommunityPerson, createPersonUnitRelation } from "../features/community/communityModel";
-import { createAnnouncement, createCondoCharge, createReservation, createVote } from "../features/condo/condoOperationsModel";
-import { demoAmenities, demoAnnouncements, demoCommunities, demoCommunityPeople, demoCondoCharges, demoOwners, demoPersonUnitRelations, demoProperties, demoReservations, demoTickets, demoUnits, demoVotes } from "./demoPropertiesData";
+import { createAnnouncement, createCondoCharge, createReservation, createUtilityReading, createUtilityService, createVote } from "../features/condo/condoOperationsModel";
+import { completeRentalInspection, createRentalInspection, createRentalLease, createRentalPayment, createRentalProspect, createRentalTenant } from "../features/rent/rentalModel";
+import { demoRentalInspections, demoRentalLeases, demoRentalPayments, demoRentalProspects, demoRentalTenants } from "../features/rent/demoRentalData";
+import { changeRentalListingStatus, createRentalListing, persistRentalListings, readRentalInquiries, readRentalListings, updateRentalListing } from "../features/listings/listingModel";
+import { demoAmenities, demoAnnouncements, demoCommunities, demoCommunityPeople, demoCondoCharges, demoOwners, demoPersonUnitRelations, demoProperties, demoReservations, demoTickets, demoUnits, demoUtilityReadings, demoUtilityServices, demoVotes } from "./demoPropertiesData";
 
 const PropertiesDataContext = createContext(null);
 
@@ -22,6 +25,14 @@ export function PropertiesDataProvider({ children }) {
   const [amenities]=useState(demoAmenities);
   const [reservations,setReservations]=useState(demoReservations);
   const [votes,setVotes]=useState(demoVotes);
+  const [utilityServices,setUtilityServices]=useState(demoUtilityServices);
+  const [utilityReadings,setUtilityReadings]=useState(demoUtilityReadings);
+  const [rentalProspects,setRentalProspects]=useState(() => [...readRentalInquiries(), ...demoRentalProspects]);
+  const [rentalTenants,setRentalTenants]=useState(demoRentalTenants);
+  const [rentalLeases,setRentalLeases]=useState(demoRentalLeases);
+  const [rentalPayments,setRentalPayments]=useState(demoRentalPayments);
+  const [rentalInspections,setRentalInspections]=useState(demoRentalInspections);
+  const [rentalListings,setRentalListings]=useState(() => readRentalListings());
 
   const value = useMemo(() => ({
     owners,
@@ -31,7 +42,8 @@ export function PropertiesDataProvider({ children }) {
     communities,
     communityPeople,
     personUnitRelations,
-    condoCharges,announcements,amenities,reservations,votes,
+    condoCharges,announcements,amenities,reservations,votes,utilityServices,utilityReadings,
+    rentalProspects,rentalTenants,rentalLeases,rentalPayments,rentalInspections,rentalListings,
     addOwner: (draft) => setOwners((current) => [createOwner(draft), ...current]),
     updateOwner: (id, draft) => setOwners((current) => current.map((owner) => owner.id === id
       ? { ...owner, ...draft, name: draft.name.trim(), email: draft.email.trim().toLowerCase(), phone: draft.phone.trim(), notes: draft.notes.trim() }
@@ -81,7 +93,24 @@ export function PropertiesDataProvider({ children }) {
     addReservation:(draft)=>setReservations(current=>[createReservation(draft,current),...current]),
     addVote:(draft)=>setVotes(current=>[createVote(draft),...current]),
     castVote:(id,choice)=>setVotes(current=>current.map(item=>item.id===id?{...item,[choice]:(item[choice]||0)+1}:item)),
-  }), [owners, properties, units, tickets, communities, communityPeople, personUnitRelations, condoCharges, announcements, amenities, reservations, votes]);
+    addUtilityService:(draft)=>setUtilityServices(current=>[createUtilityService(draft),...current]),
+    addUtilityReading:(serviceId,draft)=>{const service=utilityServices.find(item=>item.id===serviceId);const result=createUtilityReading(service,draft);setUtilityServices(current=>current.map(item=>item.id===serviceId?result.service:item));setUtilityReadings(current=>[result.reading,...current]);return result;},
+    reportUtilityPayment:(id,evidenceName)=>setUtilityServices(current=>current.map(item=>item.id===id?{...item,status:"reported_paid",evidenceName:evidenceName?.trim()||"Comprobante registrado",updatedAt:new Date().toISOString()}:item)),
+    verifyUtilityPayment:(id)=>setUtilityServices(current=>current.map(item=>item.id===id?{...item,status:"verified",updatedAt:new Date().toISOString()}:item)),
+    addRentalProspect:(draft)=>{const prospect=createRentalProspect(draft);setRentalProspects(current=>[prospect,...current]);return prospect;},
+    changeRentalProspectStatus:(id,status)=>setRentalProspects(current=>current.map(item=>item.id===id?{...item,status,updatedAt:new Date().toISOString()}:item)),
+    addRentalTenant:(draft)=>{const tenant=createRentalTenant(draft);setRentalTenants(current=>[tenant,...current]);return tenant;},
+    archiveRentalTenant:(id)=>setRentalTenants(current=>current.map(item=>item.id===id?{...item,status:"archived"}:item)),
+    addRentalLease:(draft)=>{const lease=createRentalLease(draft,rentalLeases);setRentalLeases(current=>[lease,...current]);setUnits(current=>current.map(unit=>unit.id===lease.unitId?{...unit,status:"rented"}:unit));setRentalListings(current=>persistRentalListings(current.map(listing=>listing.unitId===lease.unitId&&listing.status==="published"?changeRentalListingStatus(listing,"paused"):listing)));return lease;},
+    changeRentalLeaseStatus:(id,status)=>{const lease=rentalLeases.find(item=>item.id===id);setRentalLeases(current=>current.map(item=>item.id===id?{...item,status,updatedAt:new Date().toISOString()}:item));if(lease&&status==="ended")setUnits(current=>current.map(unit=>unit.id===lease.unitId?{...unit,status:"available"}:unit));},
+    renewRentalLease:(id,{endDate,rent})=>setRentalLeases(current=>current.map(item=>item.id===id?{...item,endDate,rent:Number(rent)||item.rent,updatedAt:new Date().toISOString()}:item)),
+    addRentalPayment:(draft)=>{const payment=createRentalPayment(draft);setRentalPayments(current=>[payment,...current]);return payment;},
+    addRentalInspection:(draft)=>{const inspection=createRentalInspection(draft);setRentalInspections(current=>[inspection,...current]);return inspection;},
+    completeRentalInspection:(id,evidenceCount)=>setRentalInspections(current=>current.map(item=>item.id===id?completeRentalInspection(item,evidenceCount):item)),
+    addRentalListing:(draft)=>{const listing=createRentalListing(draft,units,rentalListings);setRentalListings(current=>persistRentalListings([listing,...current]));return listing;},
+    updateRentalListing:(id,draft)=>{const current=rentalListings.find(item=>item.id===id);if(!current)throw new Error("Publicación no encontrada.");const listing=updateRentalListing(current,draft,units,rentalListings);setRentalListings(rows=>persistRentalListings(rows.map(item=>item.id===id?listing:item)));return listing;},
+    changeRentalListingStatus:(id,status)=>{const listing=rentalListings.find(item=>item.id===id);if(!listing)throw new Error("Publicación no encontrada.");const unit=units.find(item=>item.id===listing.unitId);if(status==="published"&&unit?.status!=="available")throw new Error("La unidad debe estar disponible antes de publicarla.");setRentalListings(current=>persistRentalListings(current.map(item=>item.id===id?changeRentalListingStatus(item,status):item)));},
+  }), [owners, properties, units, tickets, communities, communityPeople, personUnitRelations, condoCharges, announcements, amenities, reservations, votes, utilityServices, utilityReadings, rentalProspects, rentalTenants, rentalLeases, rentalPayments, rentalInspections, rentalListings]);
 
   return <PropertiesDataContext.Provider value={value}>{children}</PropertiesDataContext.Provider>;
 }

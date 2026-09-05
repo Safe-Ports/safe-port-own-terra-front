@@ -9,9 +9,9 @@ export const demoOwners = [
 
 export const demoProperties = [
   {id:"prop-jacarandas",name:"Torre Jacarandas",ownerId:"own-camino",type:"apartment_building",address:"Av. Jacarandas 184",city:"Ciudad de México",state:"CDMX",description:"Edificio residencial de seis niveles con elevador y roof garden.",status:"active",unitsCount:6,occupiedUnits:4},
-  {id:"prop-olivo",name:"Casa Olivo",ownerId:"own-ana",type:"house",address:"Paseo del Olivo 42",city:"Valle de Bravo",state:"Estado de México",description:"Casa amueblada con jardín y acceso controlado.",status:"active",unitsCount:1,occupiedUnits:1},
+  {id:"prop-olivo",name:"Casa Olivo",ownerId:"own-ana",type:"house",address:"Paseo del Olivo 42",city:"Valle de Bravo",state:"Estado de México",description:"Casa amueblada con jardín y acceso controlado.",status:"active",unitsCount:1,occupiedUnits:0},
   {id:"prop-plaza",name:"Plaza Norte",ownerId:"own-norte",type:"commercial",address:"Av. Universidad 910",city:"Monterrey",state:"Nuevo León",description:"Plaza de servicios de barrio con estacionamiento frontal.",status:"active",unitsCount:5,occupiedUnits:3},
-  {id:"prop-bosque",name:"Refugio Bosque Alto",ownerId:"own-elena",type:"mixed",address:"Camino al Mirador km 3.5",city:"Tapalpa",state:"Jalisco",description:"Conjunto de cabañas para estancia media y larga.",status:"active",unitsCount:4,occupiedUnits:2},
+  {id:"prop-bosque",name:"Refugio Bosque Alto",ownerId:"own-elena",type:"mixed",address:"Camino al Mirador km 3.5",city:"Tapalpa",state:"Jalisco",description:"Complejo de cabañas con hospedaje, áreas comunes y operación compartida.",status:"active",unitsCount:4,occupiedUnits:2},
   {id:"prop-centro",name:"Oficinas Centro 27",ownerId:"own-camino",type:"office",address:"República de Uruguay 27",city:"Ciudad de México",state:"CDMX",description:"Piso de oficinas flexibles en edificio histórico rehabilitado.",status:"active",unitsCount:4,occupiedUnits:3},
   {id:"prop-arboleda",name:"Residencial La Arboleda",ownerId:"own-javier",type:"apartment_building",address:"Av. Patria 1450",city:"Zapopan",state:"Jalisco",description:"Departamentos familiares con áreas verdes y vigilancia.",status:"active",unitsCount:4,occupiedUnits:3},
 ];
@@ -23,7 +23,7 @@ export const demoUnits = [
   {id:"unit-j401",propertyId:"prop-jacarandas",ownerId:"",identifier:"Departamento 401",type:"apartment",floor:"4",area:82,bedrooms:2,bathrooms:2,suggestedRent:20500,status:"available",description:"Disponible para entrega inmediata."},
   {id:"unit-j501",propertyId:"prop-jacarandas",ownerId:"",identifier:"Penthouse 501",type:"penthouse",floor:"5",area:145,bedrooms:3,bathrooms:3,suggestedRent:34000,status:"rented",description:"Roof privado."},
   {id:"unit-jp1",propertyId:"prop-jacarandas",ownerId:"",identifier:"Estacionamiento P-12",type:"parking",floor:"S1",area:13,bedrooms:0,bathrooms:0,suggestedRent:1800,status:"available",description:"Cajón independiente."},
-  {id:"unit-olivo",propertyId:"prop-olivo",ownerId:"",identifier:"Casa principal",type:"house",floor:"",area:210,bedrooms:4,bathrooms:3.5,suggestedRent:39000,status:"rented",description:"Jardín, chimenea y estudio."},
+  {id:"unit-olivo",propertyId:"prop-olivo",ownerId:"",identifier:"Casa principal",type:"house",floor:"",area:210,bedrooms:4,bathrooms:3.5,suggestedRent:39000,status:"available",description:"Jardín, chimenea y estudio."},
   {id:"unit-p1",propertyId:"prop-plaza",ownerId:"",identifier:"Local 1 · Café",type:"commercial_unit",floor:"PB",area:58,bedrooms:0,bathrooms:1,suggestedRent:16800,status:"rented",description:"Frente a acceso principal."},
   {id:"unit-p2",propertyId:"prop-plaza",ownerId:"",identifier:"Local 2 · Servicios",type:"commercial_unit",floor:"PB",area:44,bedrooms:0,bathrooms:1,suggestedRent:13200,status:"available",description:"Instalación eléctrica trifásica."},
   {id:"unit-p3",propertyId:"prop-plaza",ownerId:"",identifier:"Local 3 · Farmacia",type:"commercial_unit",floor:"PB",area:91,bedrooms:0,bathrooms:1,suggestedRent:24500,status:"rented",description:"Local ancla."},
@@ -59,6 +59,7 @@ export const demoTickets = [
 export const demoCommunities = [
   {id:"community-jacarandas",propertyId:"prop-jacarandas",name:"Comunidad Torre Jacarandas",kind:"condominium",regime:"Régimen de propiedad en condominio",administrator:"Own Terra Administración",contactEmail:"administracion@jacarandas.demo",contactPhone:"55 4100 2211",operationFrequency:"monthly",timezone:"America/Mexico_City",currency:"MXN",status:"active"},
   {id:"community-arboleda",propertyId:"prop-arboleda",name:"Privada La Arboleda",kind:"private_community",regime:"Asociación de residentes",administrator:"Administración La Arboleda",contactEmail:"contacto@arboleda.demo",contactPhone:"33 4100 8820",operationFrequency:"monthly",timezone:"America/Mexico_City",currency:"MXN",status:"active"},
+  {id:"community-bosque",propertyId:"prop-bosque",name:"Comunidad Refugio Bosque Alto",kind:"cabin_complex",regime:"Complejo privado de hospedaje",administrator:"Operación Refugio Bosque Alto",contactEmail:"hola@bosquealto.demo",contactPhone:"33 1402 7788",operationFrequency:"daily",timezone:"America/Mexico_City",currency:"MXN",status:"active"},
 ];
 
 export const demoCommunityPeople = [
@@ -90,3 +91,18 @@ export const demoAnnouncements = [{id:"announcement-1",communityId:"community-ja
 export const demoAmenities = [{id:"amenity-roof",communityId:"community-jacarandas",name:"Roof garden",capacity:24,status:"available"},{id:"amenity-salon",communityId:"community-jacarandas",name:"Salón de usos múltiples",capacity:40,status:"available"}];
 export const demoReservations = [{id:"reservation-1",communityId:"community-jacarandas",amenityId:"amenity-roof",personName:"Mariana Torres",date:"2026-08-29",time:"18:00",status:"confirmed"}];
 export const demoVotes = [{id:"vote-1",communityId:"community-jacarandas",title:"Renovación de pintura en lobby",description:"Aprobación del presupuesto presentado por el comité.",closesAt:"2026-08-31",yes:14,no:3,abstain:2,status:"open"}];
+
+export const demoUtilityServices = [
+  {id:"utility-water-common",communityId:"community-jacarandas",unitId:"",type:"water",name:"Agua de áreas comunes",provider:"SACMEX",accountReference:"•••• 1842",meterNumber:"AG-JAC-001",payerRole:"administration",billingCycle:"bimonthly",dueDate:"2026-09-05",status:"due_soon",previousReading:1248,currentReading:1396,unit:"m³",amount:4280,evidenceName:"Recibo agua jul-ago.pdf",updatedAt:"2026-08-25T10:30:00Z",anomaly:false},
+  {id:"utility-light-common",communityId:"community-jacarandas",unitId:"",type:"electricity",name:"Luz de pasillos y elevador",provider:"CFE",accountReference:"•••• 6721",meterNumber:"CFE-JAC-COM",payerRole:"administration",billingCycle:"monthly",dueDate:"2026-08-28",status:"overdue",previousReading:8830,currentReading:10490,unit:"kWh",amount:6930,evidenceName:"",updatedAt:"2026-08-24T16:20:00Z",anomaly:true},
+  {id:"utility-gas-j201",communityId:"community-jacarandas",unitId:"unit-j201",type:"gas",name:"Gas estacionario",provider:"Global Gas",accountReference:"•••• 2098",meterNumber:"GG-J201",payerRole:"resident",billingCycle:"monthly",dueDate:"2026-09-02",status:"reported_paid",previousReading:42,currentReading:68,unit:"L",amount:780,evidenceName:"Comprobante gas agosto.jpg",updatedAt:"2026-08-25T18:05:00Z",anomaly:false},
+  {id:"utility-water-j101",communityId:"community-jacarandas",unitId:"unit-j101",type:"water",name:"Consumo individual",provider:"SACMEX",accountReference:"•••• 5104",meterNumber:"AG-J101",payerRole:"tenant",billingCycle:"bimonthly",dueDate:"2026-09-08",status:"pending_evidence",previousReading:184,currentReading:207,unit:"m³",amount:640,evidenceName:"",updatedAt:"2026-08-20T09:15:00Z",anomaly:false},
+  {id:"utility-water-bosque",communityId:"community-bosque",unitId:"",type:"water",name:"Cisterna del complejo",provider:"Pozo y abastecimiento local",accountReference:"Contrato interno",meterNumber:"BA-CIS-01",payerRole:"administration",billingCycle:"monthly",dueDate:"2026-09-01",status:"incident",previousReading:310,currentReading:492,unit:"m³",amount:3200,evidenceName:"Lectura cisterna 25-08.jpg",updatedAt:"2026-08-25T07:40:00Z",anomaly:true},
+  {id:"utility-gas-pino",communityId:"community-bosque",unitId:"unit-pino",type:"gas",name:"Tanque de gas",provider:"Gas Tapalpa",accountReference:"•••• 4410",meterNumber:"GT-PINO",payerRole:"administration",billingCycle:"on_demand",dueDate:"2026-08-30",status:"due_soon",previousReading:76,currentReading:31,unit:"%",amount:1850,evidenceName:"",updatedAt:"2026-08-26T08:10:00Z",anomaly:false},
+];
+
+export const demoUtilityReadings = [
+  {id:"reading-1",serviceId:"utility-water-common",value:1396,recordedAt:"2026-08-25",recordedBy:"Fernando · Administración",evidenceName:"Medidor agua 25-08.jpg",note:"Lectura regular."},
+  {id:"reading-2",serviceId:"utility-light-common",value:10490,recordedAt:"2026-08-24",recordedBy:"Mariana · Administración",evidenceName:"Medidor CFE 24-08.jpg",note:"Incremento superior al promedio; revisar elevador."},
+  {id:"reading-3",serviceId:"utility-water-bosque",value:492,recordedAt:"2026-08-25",recordedBy:"Raúl · Operación",evidenceName:"Lectura cisterna 25-08.jpg",note:"Posible fuga en línea común."},
+];

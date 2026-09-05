@@ -1,23 +1,18 @@
 import { useMemo, useState } from "react";
-import {
-  HiArchiveBox,
-  HiArrowLeft,
-  HiBuildingOffice2,
-  HiMagnifyingGlass,
-  HiMapPin,
-  HiPencilSquare,
-  HiPlus,
-} from "react-icons/hi2";
+import { HiMapPin } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
 import FieldError from "@/components/shared/FieldError";
 import Modal from "@/components/ui/Modal";
 import { useAppContext } from "@/context/AppContext";
 import EcoLayout from "@/pages/Ecosystem/EcoLayout";
 import { usePropertiesData } from "../../data/PropertiesDataContext";
+import { PROPERTY_ACTION_ICONS, PROPERTY_ENTITY_ICONS } from "../../components/propertiesIconCatalog";
 import { EMPTY_PROPERTY, PROPERTY_TYPE_LABEL, validateProperty } from "./propertyModel";
 import "./properties.css";
 
 const containerTypes = new Set(["apartment_building", "commercial", "office", "warehouse", "industrial", "mixed"]);
+const { archive: HiArchiveBox, back: HiArrowLeft, create: HiPlus, edit: HiPencilSquare, search: HiMagnifyingGlass } = PROPERTY_ACTION_ICONS;
+const { property: HiBuildingOffice2 } = PROPERTY_ENTITY_ICONS;
 
 function PropertiesPage() {
   const navigate = useNavigate();

@@ -3224,6 +3224,36 @@ textarea.is-invalid {
   opacity: 0.7;
 }
 
+.lf-public-catalog {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 10px;
+  padding: 11px 14px;
+  border: 1px solid rgba(44, 102, 110, 0.28);
+  border-radius: 11px;
+  background: rgba(44, 102, 110, 0.06);
+  color: var(--deep);
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  transition: all .25s ease;
+}
+
+.lf-public-catalog:hover {
+  border-color: rgba(44, 102, 110, 0.55);
+  background: rgba(44, 102, 110, 0.1);
+  transform: translateY(-1px);
+}
+
+.lf-public-catalog:focus-visible {
+  outline: 3px solid rgba(44, 102, 110, 0.22);
+  outline-offset: 2px;
+}
+
 .btn-spinner {
   width: 16px;
   height: 16px;

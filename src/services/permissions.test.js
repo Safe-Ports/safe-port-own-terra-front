@@ -52,6 +52,15 @@ describe("permissions catalog", () => {
 
     expect(canUseFeature(user, "properties.owners.read")).toBe(true);
     expect(canUseFeature(user, "properties.owners.write")).toBe(false);
+    expect(canUseFeature(user, "properties.rent.read")).toBe(true);
+    expect(canUseFeature(user, "properties.rent.write")).toBe(false);
+  });
+
+  it("allows a Properties manager to operate rentals", () => {
+    const user = { role: "vendor", apps: [{ app_key: "properties", role: "manager", is_active: true }] };
+
+    expect(canUseFeature(user, "properties.rent.read")).toBe(true);
+    expect(canUseFeature(user, "properties.rent.write")).toBe(true);
   });
 
   it("un colaborador sin asignaciones no entra a Lands", () => {

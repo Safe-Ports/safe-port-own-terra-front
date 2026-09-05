@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { HiArchiveBox, HiBuildingStorefront, HiMagnifyingGlass, HiPencilSquare, HiPlus, HiSquares2X2 } from "react-icons/hi2";
 import EcoLayout from "./EcoLayout";
 import { SkeletonRows } from "@/components/ui/Skeleton";
 import InlineError from "@/components/shared/InlineError";
@@ -10,254 +11,110 @@ import { providerService } from "@/services/providerService";
 import { useAppContext } from "@/context/AppContext";
 import { parseApiError } from "@/errors/parseApiError";
 import useEscapeKey from "@/hooks/useEscapeKey";
+import { PROVIDER_TYPES, normalizeProviderType, providerSearchText, providerTypeMeta } from "./providerCatalog";
+import "@/styles/provider-directory.css";
 
-const blankDraft = { name: "", categoria: "", tax_id: "", phone: "", notes: "" };
-const initials = (name = "") => name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+const blankDraft = { name: "", categoria: "servicios", tax_id: "", phone: "", notes: "" };
+const initials = (name = "") => name.split(" ").filter(Boolean).map((part) => part[0]).slice(0, 2).join("").toUpperCase();
 
 function EcosystemProveedores() {
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
   const { showToast, showError } = useAppContext();
   const [query, setQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
   const [showArchived, setShowArchived] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
   const [modal, setModal] = useState(null);
   const [formError, setFormError] = useState(null);
+  const fieldErrors = useFieldErrors();
   useEscapeKey(() => setModal(null), Boolean(modal));
-  const fe = useFieldErrors();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["providers", "eco-providers", showArchived],
-    queryFn: () => providerService.list({ limit: 100, is_archived: showArchived }),
-  });
-  const providers = data?.items ?? [];
+  const providersQuery = useQuery({ queryKey: ["providers", "ecosystem-directory", showArchived], queryFn: () => providerService.list({ limit: 100, is_archived: showArchived }) });
+  const providers = providersQuery.data?.items ?? [];
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return providers;
-    return providers.filter((p) => p.name.toLowerCase().includes(q) || (p.categoria || "").toLowerCase().includes(q));
-  }, [providers, query]);
-  const selected = filtered.find((p) => String(p.id) === String(selectedId)) || filtered[0] || null;
+    const search = query.trim().toLowerCase();
+    return providers.filter((provider) => (typeFilter === "all" || normalizeProviderType(provider.categoria) === typeFilter) && (!search || providerSearchText(provider).includes(search)));
+  }, [providers, query, typeFilter]);
+  const selected = filtered.find((provider) => String(provider.id) === String(selectedId)) || filtered[0] || null;
+  const representedTypes = new Set(providers.map((provider) => normalizeProviderType(provider.categoria))).size;
 
+  const finishMutation = (message, saved) => {
+    queryClient.invalidateQueries({ queryKey: ["providers"] });
+    if (saved?.id) setSelectedId(String(saved.id));
+    setModal(null); setFormError(null); showToast(message);
+  };
   const createMutation = useMutation({
-    mutationFn: (draft) => providerService.create({
-      name: draft.name,
-      categoria: draft.categoria || undefined,
-      tax_id: draft.tax_id || undefined,
-      phone: draft.phone || undefined,
-      notes: draft.notes || undefined,
-    }),
-    onSuccess: (created) => {
-      qc.invalidateQueries({ queryKey: ["providers"] });
-      setSelectedId(String(created.id));
-      setModal(null);
-      setFormError(null);
-      showToast("Proveedor registrado");
-    },
-    onError: (err) => setFormError(parseApiError(err, "Error al registrar el proveedor")),
+    mutationFn: (draft) => providerService.create({ name: draft.name.trim(), categoria: draft.categoria, tax_id: draft.tax_id || undefined, phone: draft.phone || undefined, notes: draft.notes || undefined }),
+    onSuccess: (saved) => finishMutation("Proveedor registrado en el Ecosistema", saved),
+    onError: (error) => setFormError(parseApiError(error, "Error al registrar el proveedor")),
   });
-
   const updateMutation = useMutation({
     mutationFn: ({ id, body }) => providerService.update(id, body),
-    onSuccess: (updated) => {
-      qc.invalidateQueries({ queryKey: ["providers"] });
-      setSelectedId(String(updated.id));
-      setModal(null);
-      setFormError(null);
-      showToast("Proveedor actualizado");
-    },
-    onError: (err) => setFormError(parseApiError(err, "Error al actualizar el proveedor")),
+    onSuccess: (saved) => finishMutation("Proveedor actualizado", saved),
+    onError: (error) => setFormError(parseApiError(error, "Error al actualizar el proveedor")),
   });
-
   const archiveMutation = useMutation({
     mutationFn: (id) => providerService.archive(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["providers"] });
-      setSelectedId(null);
-      showToast("Proveedor dado de baja");
-    },
-    onError: (err) => showError(err, "Error al dar de baja al proveedor"),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["providers"] }); setSelectedId(null); showToast("Proveedor dado de baja"); },
+    onError: (error) => showError(error, "Error al dar de baja al proveedor"),
   });
 
-  const openCreate = () => {
-    setFormError(null);
-    fe.clearAll();
-    setModal({ mode: "create", draft: blankDraft });
-  };
-  const openEdit = (provider) => {
-    setFormError(null);
-    fe.clearAll();
-    setModal({
-      mode: "edit",
-      providerId: provider.id,
-      draft: {
-        name: provider.name || "",
-        categoria: provider.categoria || "",
-        tax_id: provider.tax_id || "",
-        phone: provider.phone || "",
-        notes: provider.notes || "",
-      },
-    });
-  };
-  const setDraft = (patch) => setModal((m) => ({ ...m, draft: { ...m.draft, ...patch } }));
-
+  const openCreate = () => { setFormError(null); fieldErrors.clearAll(); setModal({ mode: "create", draft: { ...blankDraft } }); };
+  const openEdit = (provider) => { setFormError(null); fieldErrors.clearAll(); setModal({ mode: "edit", providerId: provider.id, draft: { name: provider.name || "", categoria: normalizeProviderType(provider.categoria), tax_id: provider.tax_id || "", phone: provider.phone || "", notes: provider.notes || "" } }); };
+  const setDraft = (patch) => setModal((current) => ({ ...current, draft: { ...current.draft, ...patch } }));
   const saveDraft = () => {
-    const draft = modal.draft;
-    setFormError(null);
-    fe.clearAll();
-    if (!draft.name.trim()) { fe.setErrors({ name: "El nombre es obligatorio." }); return; }
-    if (modal.mode === "create") {
-      createMutation.mutate(draft);
-      return;
-    }
-    updateMutation.mutate({
-      id: modal.providerId,
-      body: {
-        name: draft.name,
-        categoria: draft.categoria || null,
-        tax_id: draft.tax_id || null,
-        phone: draft.phone || null,
-        notes: draft.notes || null,
-      },
-    });
+    fieldErrors.clearAll(); setFormError(null);
+    if (!modal.draft.name.trim()) { fieldErrors.setErrors({ name: "El nombre o razón social es obligatorio." }); return; }
+    if (modal.mode === "create") { createMutation.mutate(modal.draft); return; }
+    updateMutation.mutate({ id: modal.providerId, body: { name: modal.draft.name.trim(), categoria: modal.draft.categoria, tax_id: modal.draft.tax_id || null, phone: modal.draft.phone || null, notes: modal.draft.notes || null } });
   };
+  const pending = createMutation.isPending || updateMutation.isPending;
 
-  if (isLoading) {
-    return (
-      <EcoLayout active="providers" title="Proveedores" subtitle="Materiales, subcontratas y terceros a quienes la org paga">
-        <SkeletonRows rows={5} />
-      </EcoLayout>
-    );
-  }
+  return <EcoLayout active="providers" title="Proveedores" subtitle="Directorio compartido por todo el Ecosistema">
+    <main className="provider-page">
+      <section className="provider-hero"><div><span>OWN TERRA CORE</span><h1>Una sola red de proveedores.</h1><p>Registra empresas y profesionales una vez; después asígnalos a Lands, Properties, Construction o cualquier operación de la organización.</p></div><button type="button" onClick={openCreate}><HiPlus /> Nuevo proveedor</button></section>
 
-  return (
-    <EcoLayout active="providers" title="Proveedores" subtitle="Materiales, subcontratas y terceros a quienes la org paga">
-      <div className="ag-hero">
-        <div>
-          <div className="ag-kicker">Ecosistema Core</div>
-          <h2>Proveedores</h2>
-          <p>Materiales, subcontratistas y terceros externos. Igual que Personal: se registran para presupuesto y pagos — <b>nunca tienen usuario ni acceso a la app</b>.</p>
+      <section className="provider-kpis" aria-label="Resumen del directorio">
+        <article><HiBuildingStorefront /><span><small>Proveedores {showArchived ? "archivados" : "activos"}</small><strong>{providers.length}</strong></span></article>
+        <article><HiSquares2X2 /><span><small>Tipos representados</small><strong>{representedTypes}</strong></span></article>
+        <article><HiArchiveBox /><span><small>Alta</small><strong>Directa</strong><em>La invitación no es obligatoria</em></span></article>
+      </section>
+
+      <section className="provider-toolbar">
+        <label><HiMagnifyingGlass /><input aria-label="Buscar proveedores" placeholder="Buscar por nombre, RFC, teléfono o notas" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
+        <select aria-label="Filtrar por tipo" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">Todos los tipos</option>{PROVIDER_TYPES.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}</select>
+        <div><button type="button" className={!showArchived ? "active" : ""} onClick={() => setShowArchived(false)}>Activos</button><button type="button" className={showArchived ? "active" : ""} onClick={() => setShowArchived(true)}>Dados de baja</button></div>
+      </section>
+
+      {providersQuery.isLoading ? <section className="provider-state"><SkeletonRows rows={5} /></section> : null}
+      {providersQuery.isError ? <section className="provider-state"><InlineError error={parseApiError(providersQuery.error, "No pudimos cargar el directorio de proveedores")} /><button type="button" onClick={() => providersQuery.refetch()}>Reintentar</button></section> : null}
+      {!providersQuery.isLoading && !providersQuery.isError ? <section className="provider-workspace">
+        <div className="provider-list"><header><strong>{filtered.length} proveedores</strong><span>Catálogo de la organización</span></header>
+          {filtered.map((provider) => { const meta = providerTypeMeta(provider.categoria); return <button type="button" key={provider.id} className={String(provider.id) === String(selected?.id) ? "active" : ""} onClick={() => setSelectedId(String(provider.id))}><i>{initials(provider.name)}</i><span><strong>{provider.name}</strong><small>{meta.label}</small></span><em>{showArchived ? "Baja" : "Activo"}</em></button>; })}
+          {!filtered.length ? <div className="provider-empty"><HiBuildingStorefront /><strong>No encontramos proveedores</strong><p>Ajusta los filtros o registra el primero directamente.</p><button type="button" onClick={openCreate}>Registrar proveedor</button></div> : null}
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button className="ag-primary" onClick={openCreate}>Nuevo proveedor</button>
-        </div>
+        <article className="provider-detail">{selected ? <>
+          <header><i>{initials(selected.name)}</i><div><span>{providerTypeMeta(selected.categoria).label}</span><h2>{selected.name}</h2><p>{selected.tax_id || "RFC sin registrar"} · {selected.phone || "Teléfono sin registrar"}</p></div>{!showArchived ? <button type="button" onClick={() => openEdit(selected)}><HiPencilSquare /> Editar</button> : null}</header>
+          <div className="provider-role"><span>REGISTRO CORE</span><h3>Disponible para todas las verticales</h3><p>Este proveedor pertenece a la organización, no a una app específica. Darlo de alta no crea un usuario ni le concede acceso.</p><div><b>Lands</b><b>Properties</b><b>Construction</b></div></div>
+          <dl><div><dt>Tipo de proveedor</dt><dd>{providerTypeMeta(selected.categoria).label}</dd></div><div><dt>Forma de alta</dt><dd>Registro directo</dd></div><div><dt>Acceso a Own Terra</dt><dd>Sin acceso</dd></div><div><dt>Estado</dt><dd>{showArchived ? "Dado de baja" : "Activo"}</dd></div></dl>
+          <section><span>Notas operativas</span><p>{selected.notes || "Todavía no hay notas para este proveedor."}</p></section>
+          {!showArchived ? <footer><button type="button" onClick={() => archiveMutation.mutate(selected.id)} disabled={archiveMutation.isPending}><HiArchiveBox /> {archiveMutation.isPending ? "Dando de baja…" : "Dar de baja"}</button><small>Invitarlo a un portal será una acción separada cuando necesite colaborar en una orden.</small></footer> : null}
+        </> : <div className="provider-empty"><HiBuildingStorefront /><strong>Selecciona un proveedor</strong><p>Aquí verás su clasificación y alcance dentro del Ecosistema.</p></div>}</article>
+      </section> : null}
+    </main>
+
+    {modal ? <div className="provider-modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && setModal(null)}><div className="provider-modal" role="dialog" aria-modal="true" aria-labelledby="provider-modal-title">
+      <header><div><span>CATÁLOGO DEL ECOSISTEMA</span><h2 id="provider-modal-title">{modal.mode === "create" ? "Nuevo proveedor" : "Editar proveedor"}</h2><p>Se registra directamente. No necesita correo ni invitación para existir en el catálogo.</p></div><button type="button" aria-label="Cerrar" onClick={() => setModal(null)}>×</button></header>
+      <div className="provider-modal-body"><InlineError error={formError} onDismiss={() => setFormError(null)} />
+        <label className="wide"><span>Nombre o razón social *</span><input {...fieldErrors.fieldProps("name")} value={modal.draft.name} onChange={(event) => { setDraft({ name: event.target.value }); fieldErrors.clear("name"); }} placeholder="Ej. Hidráulica del Centro" /><FieldError msg={fieldErrors.errors.name} /></label>
+        <label><span>Tipo de proveedor *</span><select value={modal.draft.categoria} onChange={(event) => setDraft({ categoria: event.target.value })}>{PROVIDER_TYPES.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}</select><small>{providerTypeMeta(modal.draft.categoria).description}</small></label>
+        <label><span>RFC</span><input value={modal.draft.tax_id} onChange={(event) => setDraft({ tax_id: event.target.value.toUpperCase() })} placeholder="Opcional" /></label>
+        <label><span>Teléfono</span><PhoneInput inputClassName="provider-phone" value={modal.draft.phone} onChange={(phone) => setDraft({ phone })} /></label>
+        <label className="wide"><span>Notas operativas</span><textarea rows="3" value={modal.draft.notes} onChange={(event) => setDraft({ notes: event.target.value })} placeholder="Especialidad, cobertura, contacto o condiciones relevantes" /></label>
       </div>
-
-      <div className="usr-layout" style={{ marginTop: 16 }}>
-        <div className="usr-card">
-          <div className="usr-list-head">
-            <div className="usr-list-title">Proveedores ({filtered.length})</div>
-            <label className="usr-search">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-              <input placeholder="Buscar por nombre o categoría..." value={query} onChange={(e) => setQuery(e.target.value)} />
-            </label>
-            <div className="usr-fil-row" style={{ marginTop: 12, marginBottom: 0 }}>
-              <button className={`usr-fil ${!showArchived ? "on" : ""}`} onClick={() => setShowArchived(false)}>Activos</button>
-              <button className={`usr-fil ${showArchived ? "on" : ""}`} onClick={() => setShowArchived(true)}>Dados de baja</button>
-            </div>
-          </div>
-          <div className="usr-list">
-            {filtered.map((p) => (
-              <button key={p.id} className={`usr-item ${String(p.id) === String(selected?.id) ? "active" : ""}`} onClick={() => setSelectedId(String(p.id))}>
-                <span className="usr-av">{p.initials || initials(p.name)}</span>
-                <span className="usr-info">
-                  <span className="usr-name" style={{ display: "block" }}>{p.name}</span>
-                  <span className="usr-mail" style={{ display: "block" }}>{p.categoria || "Sin categoría"}</span>
-                </span>
-              </button>
-            ))}
-            {filtered.length === 0 && (
-              <div className="usr-empty">{showArchived ? "No hay proveedores dados de baja." : "Aún no hay proveedores registrados."}</div>
-            )}
-          </div>
-        </div>
-
-        <div className="usr-card">
-          {!selected ? (
-            <div className="usr-empty">Registra un proveedor para empezar a asignarle presupuesto y pagos.</div>
-          ) : (
-            <>
-              <div className="usr-d-head">
-                <span className="usr-d-av">{selected.initials || initials(selected.name)}</span>
-                <div style={{ minWidth: 0 }}>
-                  <div className="usr-d-name">{selected.name}</div>
-                  <div className="usr-d-meta">{selected.categoria || "Sin categoría"} · {selected.phone || "sin teléfono"}{selected.tax_id ? ` · ${selected.tax_id}` : ""}</div>
-                </div>
-              </div>
-              <div className="usr-d-body">
-                <div className="usr-d-intro">
-                  Este proveedor vive en el <b>Core</b> como registro de terceros — sin usuario ni contraseña. Opera fuera del software, nunca dentro.
-                </div>
-                {selected.notes && (
-                  <div className="usr-access-note" style={{ marginTop: 8 }}>{selected.notes}</div>
-                )}
-                <div className="usr-list-bar" style={{ marginTop: 18 }}>
-                  {!showArchived && (
-                    <>
-                      <button className="usr-add-btn" onClick={() => openEdit(selected)}>Editar proveedor</button>
-                      <button
-                        className="usr-btn-ghost"
-                        disabled={archiveMutation.isPending}
-                        onClick={() => archiveMutation.mutate(selected.id)}
-                      >
-                        {archiveMutation.isPending ? "Dando de baja..." : "Dar de baja"}
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {modal && (
-        <div className="usr-modal-overlay" onClick={(e) => e.target === e.currentTarget && setModal(null)}>
-          <div className="usr-modal">
-            <div className="usr-modal-head">
-              <div>
-                <div className="usr-modal-title">{modal.mode === "create" ? "Nuevo proveedor" : "Editar proveedor"}</div>
-                <div className="usr-modal-sub">Registro de terceros en el Core — sin usuario ni acceso a ninguna app.</div>
-              </div>
-              <button className="usr-modal-close" onClick={() => setModal(null)}>x</button>
-            </div>
-            <div className="usr-modal-body">
-              <InlineError error={formError} onDismiss={() => setFormError(null)} />
-              <div className="usr-field-row">
-                <div className="usr-field">
-                  <label className="usr-field-lbl">Nombre</label>
-                  <input {...fe.fieldProps("name", "usr-input")} value={modal.draft.name} onChange={(e) => { setDraft({ name: e.target.value }); fe.clear("name"); }} />
-                  <FieldError msg={fe.errors.name} />
-                </div>
-                <div className="usr-field">
-                  <label className="usr-field-lbl">Categoría</label>
-                  <input className="usr-input" placeholder="Materiales, mano de obra externa, terreno..." value={modal.draft.categoria} onChange={(e) => setDraft({ categoria: e.target.value })} />
-                </div>
-              </div>
-              <div className="usr-field-row">
-                <div className="usr-field">
-                  <label className="usr-field-lbl">RFC</label>
-                  <input className="usr-input" value={modal.draft.tax_id} onChange={(e) => setDraft({ tax_id: e.target.value })} />
-                </div>
-                <div className="usr-field">
-                  <label className="usr-field-lbl">Teléfono</label>
-                  <PhoneInput inputClassName="usr-input" value={modal.draft.phone} onChange={(v) => setDraft({ phone: v })} />
-                </div>
-              </div>
-              <div className="usr-field">
-                <label className="usr-field-lbl">Notas</label>
-                <input className="usr-input" value={modal.draft.notes} onChange={(e) => setDraft({ notes: e.target.value })} />
-              </div>
-            </div>
-            <div className="usr-modal-foot">
-              <button className="usr-btn-ghost" onClick={() => setModal(null)}>Cancelar</button>
-              <button className="usr-btn-primary" onClick={saveDraft} disabled={createMutation.isPending || updateMutation.isPending}>
-                {createMutation.isPending || updateMutation.isPending ? "Guardando..." : "Guardar"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </EcoLayout>
-  );
+      <footer><p>Podrás asignarlo a obras, servicios o mantenimientos después.</p><div><button type="button" onClick={() => setModal(null)}>Cancelar</button><button type="button" onClick={saveDraft} disabled={pending}>{pending ? "Guardando…" : "Guardar proveedor"}</button></div></footer>
+    </div></div> : null}
+  </EcoLayout>;
 }
 
 export default EcosystemProveedores;

@@ -50,6 +50,8 @@ const PortfolioWorkspace = lazyWithRetry(() => import("@/apps/properties/feature
 const TicketsPage = lazyWithRetry(() => import("@/apps/properties/features/tickets/TicketsPage"));
 const AccessControlPage = lazyWithRetry(() => import("@/apps/properties/features/access/AccessControlPage"));
 const RentOperationsPage = lazyWithRetry(() => import("@/apps/properties/features/rent/RentOperationsPage"));
+const RentalListingsPage = lazyWithRetry(() => import("@/apps/properties/features/listings/RentalListingsPage"));
+const HospitalityOperationsPage = lazyWithRetry(() => import("@/apps/properties/features/hospitality/HospitalityOperationsPage"));
 const ServiceNetworkPage = lazyWithRetry(() => import("@/apps/properties/features/service/ServiceNetworkPage"));
 const CommunityWorkspace = lazyWithRetry(() => import("@/apps/properties/features/community/CommunityWorkspace"));
 const CondoOperationsSuite = lazyWithRetry(() => import("@/apps/properties/features/condo/CondoOperationsSuite"));
@@ -130,10 +132,14 @@ function AppRouter() {
             <Route path="estatus-unidades" element={<Navigate to="/properties/unidades?view=board" replace />} />
             <Route path="tickets" element={<RequireFeature feature="properties.units.read"><TicketsPage /></RequireFeature>} />
             <Route path="accesos" element={<RequireFeature feature="properties.units.read"><AccessControlPage /></RequireFeature>} />
-            <Route path="rentas" element={<RequireFeature feature="properties.units.read"><RentOperationsPage /></RequireFeature>} />
+            <Route path="rentas" element={<RequireFeature feature="properties.rent.read"><RentOperationsPage /></RequireFeature>} />
+            <Route path="publicaciones" element={<RequireFeature feature="properties.rent.read"><RentalListingsPage /></RequireFeature>} />
+            <Route path="rentas/hospedaje" element={<RequireFeature feature="properties.rent.read"><HospitalityOperationsPage /></RequireFeature>} />
             <Route path="responsables" element={<RequireFeature feature="properties.units.read"><ServiceNetworkPage /></RequireFeature>} />
-            <Route path="condominios" element={<RequireFeature feature="properties.properties.read"><CommunityWorkspace /></RequireFeature>} />
-            <Route path="condominios/operacion" element={<RequireFeature feature="properties.properties.read"><CondoOperationsSuite /></RequireFeature>} />
+            <Route path="comunidades" element={<RequireFeature feature="properties.properties.read"><CommunityWorkspace /></RequireFeature>} />
+            <Route path="comunidades/operacion" element={<RequireFeature feature="properties.properties.read"><CondoOperationsSuite /></RequireFeature>} />
+            <Route path="condominios" element={<Navigate to="/properties/comunidades" replace />} />
+            <Route path="condominios/operacion" element={<Navigate to="/properties/comunidades/operacion" replace />} />
             <Route path="modulos/:moduleKey" element={<PropertyModulePreview />} />
           </Route>
           <Route element={<AppShell />}>
