@@ -1475,3 +1475,54 @@
   font-family: var(--font-body);
   font-weight: 800;
 }
+
+/* ── Foto de fondo por aplicación ─────────────────────────────────────────
+   Cada card del lanzador Core trae su `--foto` desde el JSX, igual que ya traía
+   su `--tone`. La imagen ocupa la franja de arriba —donde va el icono— y se
+   funde hacia `--surface` antes de llegar al texto: las tres fotos tienen
+   detalle fuerte en la mitad baja (la obra sobre todo), así que dejar el nombre
+   y la descripción sobre la imagen los volvía ilegibles por más que se
+   oscureciera.
+   Va en ::before porque ::after ya lo usa el halo del hover.
+   ──────────────────────────────────────────────────────────────────────── */
+.eco-root .app-launcher:not(.vertical-launcher) .app-card{
+  padding-top: 0;
+}
+.eco-root .app-launcher:not(.vertical-launcher) .app-card::before{
+  content:''; position:absolute; top:0; left:0; right:0; height:210px;
+  background-image:
+    linear-gradient(to bottom,
+      rgba(10,26,20,.42) 0%,
+      rgba(10,26,20,.10) 38%,
+      color-mix(in srgb, var(--surface) 65%, transparent) 74%,
+      var(--surface) 100%),
+    var(--foto, none);
+  background-size: cover, cover;
+  background-position: center, center;
+  pointer-events:none;
+}
+/* El contenido va por encima de la foto. `.app-top` ya tenía z-index propio; el
+   resto lo hereda de este contenedor implícito. */
+.eco-root .app-launcher:not(.vertical-launcher) .app-card > *{
+  position:relative; z-index:1;
+}
+.eco-root .app-launcher:not(.vertical-launcher) .app-top{
+  padding:24px 24px 0;
+}
+.eco-root .app-launcher:not(.vertical-launcher) .app-name,
+.eco-root .app-launcher:not(.vertical-launcher) .app-handle,
+.eco-root .app-launcher:not(.vertical-launcher) .app-desc,
+.eco-root .app-launcher:not(.vertical-launcher) .app-tags,
+.eco-root .app-launcher:not(.vertical-launcher) .app-cta{
+  padding-left:24px; padding-right:24px;
+}
+.eco-root .app-launcher:not(.vertical-launcher) .app-cta{ padding-bottom:24px; }
+/* El icono se apoya sobre la foto: sin fondo propio se perdía contra la imagen. */
+.eco-root .app-launcher:not(.vertical-launcher) .app-icon{
+  box-shadow:0 10px 26px rgba(7,32,24,.28);
+}
+/* Deshabilitada: la foto baja a un segundo plano, como el resto de la tarjeta. */
+.eco-root .app-card.is-disabled::before{ filter:saturate(.55); opacity:.72; }
+@media (prefers-reduced-motion: reduce){
+  .eco-root .app-card{ animation:none }
+}
