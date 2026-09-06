@@ -660,7 +660,7 @@ function IngresoModal({ onClose, onSave, busy }) {
 }
 
 /* ── Modal cobro ─────────────────────────────────────────────── */
-function CobroModal({ clients, contracts, payments, onClose, onSave, busy, contratoInicial }) {
+function CobroModal({ clients, contracts, onClose, onSave, busy, contratoInicial }) {
   useEscapeKey(onClose);
   const [form, setForm] = useState({
     // Con `contratoInicial` el modal abre ya apuntando a ese contrato: es el
@@ -681,14 +681,25 @@ function CobroModal({ clients, contracts, payments, onClose, onSave, busy, contr
   const filtContracts = contracts.filter(c => !form.clientId || String(c.client?.id) === form.clientId);
 
   /* Las cuotas reales del contrato, en orden. Antes había que escribir el número
-     de cuota a ciegas y el guardado fallaba en silencio si no existía. */
+     de cuota a ciegas y el guardado fallaba en silencio si no existía.
+
+     Se piden al servidor filtradas por contrato, no se filtran del listado
+     global de cuotas: ese arreglo llega recortado a 200 filas de TODA la
+     organización, así que un contrato con vencimientos fuera de esa muestra
+     aparecía sin cuotas aunque sí las tuviera. */
+  const { data: cuotasContrato, isFetching: cargandoCuotas } = useQuery({
+    queryKey: ["payments", "byContract", form.contractId],
+    queryFn: () => paymentService.list({ contract_id: form.contractId, limit: 200 }).then(r => r.items || []),
+    enabled: !!form.contractId,
+    staleTime: 15_000,
+  });
+
   const cuotas = useMemo(() => {
     if (!form.contractId) return [];
-    return payments
-      .filter(p => String(p.contract?.id) === String(form.contractId) &&
-                   ["pending", "overdue", "partial"].includes(p.status))
+    return (cuotasContrato || [])
+      .filter(p => ["pending", "overdue", "partial"].includes(p.status))
       .sort((a, b) => Number(a.installment_n) - Number(b.installment_n));
-  }, [payments, form.contractId]);
+  }, [cuotasContrato, form.contractId]);
 
   const cuota = cuotas.find(c => String(c.id) === String(form.paymentId)) || null;
   const saldo = cuota ? Math.max(Number(cuota.amount || 0) - Number(cuota.amount_paid || 0), 0) : 0;
@@ -792,9 +803,14 @@ function CobroModal({ clients, contracts, payments, onClose, onSave, busy, contr
                   );
                 })}
               </select>
-              {cuotas.length === 0 && (
+              {cargandoCuotas && (
                 <div style={{ marginTop: 6, fontSize: ".76rem", color: "var(--mu)" }}>
-                  Este contrato no tiene cuotas por cobrar.
+                  Buscando las cuotas de este contrato…
+                </div>
+              )}
+              {!cargandoCuotas && cuotas.length === 0 && (
+                <div style={{ marginTop: 6, fontSize: ".76rem", color: "var(--mu)" }}>
+                  Este contrato no tiene cuotas pendientes de cobro.
                 </div>
               )}
             </div>
@@ -860,7 +876,7 @@ function CobroModal({ clients, contracts, payments, onClose, onSave, busy, contr
             </>
           )}
 
-          {!cuota && (
+          {!cuota && form.contractId && cuotas.length > 0 && (
             <div style={{ fontSize: ".76rem", color: "var(--mu)", lineHeight: 1.45,
                           background: "var(--sf2)", borderRadius: 10, padding: "9px 12px" }}>
               Elige la cuota y aparecerá el monto con las opciones de cobro.
@@ -1693,7 +1709,7 @@ export default function PaymentsPage() {
       {modal === "tipo"   && <TipoModal onSelect={t => setModal(t)} onClose={() => setModal(null)} />}
       {modal === "egreso" && <EgresoModal initial={editing} onClose={() => { setModal(null); setEditing(null); }} onSave={handleSaveEgreso} />}
       {modal === "cobro"  && (
-        <CobroModal clients={clients} contracts={contracts} payments={ingresos} busy={abonoBusy}
+        <CobroModal clients={clients} contracts={contracts} busy={abonoBusy}
           key={cobroContrato?.id || "nuevo"} contratoInicial={cobroContrato}
           onClose={() => { setModal(null); setCobroContrato(null); }} onSave={guardarCobroManual} />
       )}
