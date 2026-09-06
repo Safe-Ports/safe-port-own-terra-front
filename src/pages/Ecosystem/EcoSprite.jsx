@@ -14,10 +14,6 @@ function EcoSprite() {
       <symbol id="eco-g-homes" viewBox="0 0 247 267">
         <image href="/icons/app-construction.png" width="247" height="267" />
       </symbol>
-      {/* FINANZAS — logo de gráfica ascendente */}
-      <symbol id="eco-g-finanzas" viewBox="0 0 274 300">
-        <image href="/icons/app-finanzas.png" width="274" height="300" />
-      </symbol>
       {/* nav */}
       <symbol id="eco-n-grid" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></g></symbol>
       <symbol id="eco-n-vault" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5" /><circle cx="12" cy="12" r="3" /><line x1="12" y1="5" x2="12" y2="9" /></g></symbol>

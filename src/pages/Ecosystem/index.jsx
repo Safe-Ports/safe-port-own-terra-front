@@ -13,10 +13,6 @@ function EcosystemHub() {
     ? navigate("/dashboard")
     : showToast("Tu usuario no tiene acceso a OwnTerra Lands", "warning");
 
-  const openFinanzas = () => canAccessApp("finanzas")
-    ? navigate("/finanzas")
-    : showToast("Tu usuario no tiene acceso a Finanzas", "warning");
-
   const openVault = () => canUseFeature("core.vault")
     ? navigate("/ecosistema/documentos")
     : showToast("Tu usuario no tiene acceso a OwnTerra Vault", "warning");
@@ -93,20 +89,6 @@ function EcosystemHub() {
       </div>
       <p className="gallery-section-sub">Servicios compartidos por todas las apps core</p>
       <div className="app-launcher vertical-launcher" data-tour="apps-verticales">
-
-        <div className={`app-card ${!canAccessApp("finanzas") ? "is-disabled" : ""}`} onClick={openFinanzas} role="button" tabIndex={0}
-          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && openFinanzas()}>
-          <div className="app-top">
-            <div className="app-icon ic-neutral"><svg><use href="#eco-n-chart" /></svg></div>
-            <span className="app-status st-active">Activo</span>
-          </div>
-          <div className="app-name">Finanzas</div>
-          <div className="app-desc">Ingresos y egresos consolidados de todo el ecosistema, con cobranza y utilidad neta.</div>
-          <div className="app-cta">
-            <span className={`app-open ${!canAccessApp("finanzas") ? "disabled" : ""}`}>{canAccessApp("finanzas") ? "Abrir" : "Sin acceso"}</span>
-            <span className={`app-arrow ${!canAccessApp("finanzas") ? "disabled" : ""}`}>→</span>
-          </div>
-        </div>
 
         <div className="app-card" data-tour="app-agenda" onClick={() => navigate("/ecosistema/agenda")} role="button" tabIndex={0}
           onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && navigate("/ecosistema/agenda")}>
@@ -187,7 +169,7 @@ function EcosystemHub() {
         subtitle="Todas las apps del ecosistema, en un solo lugar."
         steps={[
           { title: "Aplicaciones Core", text: "Los tres productos principales del ecosistema. OwnTerra Lands está activo; Properties y Construction están en desarrollo (próximamente)." },
-          { title: "Aplicaciones Verticales", text: "Servicios compartidos por todas las apps core: Finanzas, Calendario, Mi Día, Formularios, Proveedores y OwnTerra Vault." },
+          { title: "Aplicaciones Verticales", text: "Servicios compartidos por todas las apps core: Calendario, Mi Día, Formularios, Proveedores y OwnTerra Vault." },
           { title: "Ingresar a una app", text: "Haz clic en cualquier tarjeta activa para entrar. Las que aún no tienes asignadas se marcan como \"Sin acceso\" — pídele a un administrador que te las habilite en Equipo." },
         ]}
       />

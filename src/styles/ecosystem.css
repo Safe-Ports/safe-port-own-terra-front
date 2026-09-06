@@ -155,7 +155,6 @@
 .eco-root .ic-lands   {background:linear-gradient(150deg,#ffffff,#eef2ea);--shadow:rgba(78,123,67,.25);}
 .eco-root .ic-neighb  {background:linear-gradient(150deg,#ffffff,#eef2ea);--shadow:rgba(7,57,60,.25);}
 .eco-root .ic-homes   {background:linear-gradient(150deg,#ffffff,#eef2ea);--shadow:rgba(72,169,166,.25);}
-.eco-root .ic-finanzas{background:linear-gradient(150deg,#ffffff,#eaf0f7);--shadow:rgba(64,105,153,.25);}
 
 /* Aplicaciones verticales: un solo tratamiento neutro (no un color por
    tarjeta) — se diferencian por ícono y nombre, no por arcoíris. */

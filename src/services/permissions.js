@@ -21,7 +21,6 @@ export const APP_CATALOG = [
   { key: "homes", name: "OwnTerra Construction", icon: "eco-g-homes", cls: "ic-homes", roles: ["seller", "manager", "viewer"], defaultRole: "seller", desc: "Avance de obra, acabados y postventa de desarrollos habitacionales.", vertical: true, live: false },
   { key: "neighb", name: "Properties", icon: "eco-g-neighb", cls: "ic-neighb", roles: ["seller", "manager", "viewer"], defaultRole: "seller", desc: "Propiedades y comunidades.", vertical: true, live: false },
   { key: "vault", name: "OwnTerra Vault", icon: "eco-n-vault", cls: "ic-lands", roles: ["admin", "editor", "viewer"], defaultRole: "viewer", desc: "Documentos, expedientes y permisos de lectura." },
-  { key: "finanzas", name: "Finanzas", icon: "eco-g-finanzas", cls: "ic-finanzas", roles: ["admin", "collections", "viewer"], defaultRole: "viewer", desc: "Ingresos y egresos de todo el ecosistema.", vertical: true, live: true },
 ];
 
 export const VERTICAL_APP_CATALOG = APP_CATALOG.filter((app) => app.vertical && app.live);

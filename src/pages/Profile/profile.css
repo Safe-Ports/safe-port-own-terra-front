@@ -265,7 +265,6 @@
 .pf-ic-lands { --pf-ico-shadow: rgba(78, 123, 67, .25); }
 .pf-ic-neighb { --pf-ico-shadow: rgba(7, 57, 60, .25); }
 .pf-ic-homes { --pf-ico-shadow: rgba(72, 169, 166, .25); }
-.pf-ic-finanzas { background: linear-gradient(150deg, #ffffff, #eaf0f7); --pf-ico-shadow: rgba(64, 105, 153, .25); }
 
 .pf-app-id { display: flex; flex-direction: column; min-width: 0; gap: 3px; }
 

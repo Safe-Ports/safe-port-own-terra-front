@@ -24,7 +24,6 @@ const APPS = [
  * `gate` decide si el usuario lo tiene habilitado; sin `gate`, está para todos.
  */
 const SERVICES = [
-  { key: "finanzas",    label: "Finanzas",     icon: "eco-n-chart",    to: "/finanzas",                gate: (c) => c.canAccessApp("finanzas") },
   { key: "agenda",      label: "Calendario",   icon: "eco-n-calendar", to: "/ecosistema/agenda" },
   { key: "mi-dia",      label: "Mi Día",       icon: "eco-n-sun",      to: "/ecosistema/mi-dia" },
   { key: "formularios", label: "Formularios",  icon: "eco-n-forms",    to: "/ecosistema/formularios",  gate: (c) => c.canUseFeature("core.forms") },
