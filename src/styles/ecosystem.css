@@ -1478,51 +1478,53 @@
 
 /* ── Foto de fondo por aplicación ─────────────────────────────────────────
    Cada card del lanzador Core trae su `--foto` desde el JSX, igual que ya traía
-   su `--tone`. La imagen ocupa la franja de arriba —donde va el icono— y se
-   funde hacia `--surface` antes de llegar al texto: las tres fotos tienen
-   detalle fuerte en la mitad baja (la obra sobre todo), así que dejar el nombre
-   y la descripción sobre la imagen los volvía ilegibles por más que se
-   oscureciera.
+   su `--tone`. La foto ocupa la franja de arriba y se corta antes del texto:
+   las tres imágenes tienen detalle fuerte abajo —la obra sobre todo— y dejar
+   ahí el nombre y la descripción los volvía ilegibles.
+
+   El velo oscuro va SOLO en la parte alta, donde se apoyan el badge de estado y
+   el icono. Un primer intento lo repartió por toda la franja y dejó las fotos
+   lavadas, pareciendo una mancha en vez de una imagen; y el badge "Activo",
+   que es verde sobre verde, desaparecía contra el follaje.
    Va en ::before porque ::after ya lo usa el halo del hover.
    ──────────────────────────────────────────────────────────────────────── */
-.eco-root .app-launcher:not(.vertical-launcher) .app-card{
-  padding-top: 0;
-}
+.eco-root .app-launcher:not(.vertical-launcher) .app-card{ padding-top:0 }
 .eco-root .app-launcher:not(.vertical-launcher) .app-card::before{
-  content:''; position:absolute; top:0; left:0; right:0; height:210px;
+  content:''; position:absolute; top:0; left:0; right:0; height:188px;
   background-image:
     linear-gradient(to bottom,
-      rgba(10,26,20,.42) 0%,
-      rgba(10,26,20,.10) 38%,
-      color-mix(in srgb, var(--surface) 65%, transparent) 74%,
+      rgba(8,24,18,.55) 0%,
+      rgba(8,24,18,.16) 30%,
+      rgba(8,24,18,0)   52%,
+      color-mix(in srgb, var(--surface) 55%, transparent) 80%,
       var(--surface) 100%),
     var(--foto, none);
   background-size: cover, cover;
-  background-position: center, center;
+  background-position: center, center 42%;
   pointer-events:none;
 }
-/* El contenido va por encima de la foto. `.app-top` ya tenía z-index propio; el
-   resto lo hereda de este contenedor implícito. */
-.eco-root .app-launcher:not(.vertical-launcher) .app-card > *{
-  position:relative; z-index:1;
-}
-.eco-root .app-launcher:not(.vertical-launcher) .app-top{
-  padding:24px 24px 0;
-}
+.eco-root .app-launcher:not(.vertical-launcher) .app-card > *{ position:relative; z-index:1 }
+.eco-root .app-launcher:not(.vertical-launcher) .app-top{ padding:20px 24px 0 }
 .eco-root .app-launcher:not(.vertical-launcher) .app-name,
 .eco-root .app-launcher:not(.vertical-launcher) .app-handle,
 .eco-root .app-launcher:not(.vertical-launcher) .app-desc,
 .eco-root .app-launcher:not(.vertical-launcher) .app-tags,
-.eco-root .app-launcher:not(.vertical-launcher) .app-cta{
-  padding-left:24px; padding-right:24px;
+.eco-root .app-launcher:not(.vertical-launcher) .app-cta{ padding-left:24px; padding-right:24px }
+.eco-root .app-launcher:not(.vertical-launcher) .app-cta{ padding-bottom:24px }
+
+/* El badge se apoya sobre la foto: necesita fondo propio, no un tinte translúcido
+   que dependa de lo que haya detrás. */
+.eco-root .app-launcher:not(.vertical-launcher) .app-status{
+  backdrop-filter:blur(6px); border-color:transparent; color:#fff;
+  text-shadow:0 1px 2px rgba(0,0,0,.35);
 }
-.eco-root .app-launcher:not(.vertical-launcher) .app-cta{ padding-bottom:24px; }
-/* El icono se apoya sobre la foto: sin fondo propio se perdía contra la imagen. */
+.eco-root .app-launcher:not(.vertical-launcher) .st-active{ background:rgba(21,92,66,.82) }
+.eco-root .app-launcher:not(.vertical-launcher) .st-soon{ background:rgba(24,36,30,.62) }
+
+/* El icono se recorta contra la imagen con su propia sombra. */
 .eco-root .app-launcher:not(.vertical-launcher) .app-icon{
-  box-shadow:0 10px 26px rgba(7,32,24,.28);
+  box-shadow:0 12px 30px rgba(6,28,20,.34);
 }
-/* Deshabilitada: la foto baja a un segundo plano, como el resto de la tarjeta. */
-.eco-root .app-card.is-disabled::before{ filter:saturate(.55); opacity:.72; }
-@media (prefers-reduced-motion: reduce){
-  .eco-root .app-card{ animation:none }
-}
+/* Deshabilitada: la foto acompaña el estado en vez de pelearse con él. */
+.eco-root .app-card.is-disabled::before{ filter:saturate(.7); opacity:.85 }
+@media (prefers-reduced-motion: reduce){ .eco-root .app-card{ animation:none } }
