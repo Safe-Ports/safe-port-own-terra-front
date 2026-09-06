@@ -6,6 +6,9 @@ import FilePicker from "@/components/shared/FilePicker";
 import FilesDropdown from "@/components/shared/FilesDropdown";
 import { parseApiError } from "@/errors/parseApiError";
 import Button from "@/components/Button";
+import Pagination, { paginate } from "@/components/shared/Pagination";
+
+const POR_PAGINA = 10;
 
 /* Lotes que volvieron al inventario. Dos caminos con la misma consecuencia:
    cancelar un contrato —que arrastra dinero y hay que liquidar— o soltar un
@@ -104,6 +107,7 @@ function SettleModal({ fila, onClose, onDone }) {
 export default function ReleasesTable() {
   const qc = useQueryClient();
   const [liquidando, setLiquidando] = useState(null);
+  const [page, setPage] = useState(1);
   const { data, isPending, isError } = useQuery({
     queryKey: ["contracts", "releases"],
     queryFn: () => contractService.releases(50),
@@ -114,6 +118,7 @@ export default function ReleasesTable() {
 
   const filas = data || [];
   const porLiquidar = filas.filter(f => !f.settled).length;
+  const filasPagina = paginate(filas, page, POR_PAGINA);
 
   return (
     <>
@@ -156,7 +161,7 @@ export default function ReleasesTable() {
               </tr>
             </thead>
             <tbody>
-              {filas.map((f, i) => {
+              {filasPagina.map((f, i) => {
                 const esContrato = f.kind === "contract";
                 const hubo = Number(f.collected) > 0;
                 return (
@@ -216,6 +221,7 @@ export default function ReleasesTable() {
             </tbody>
           </table>
         )}
+        <Pagination total={filas.length} page={page} limit={POR_PAGINA} onPage={setPage} />
       </div>
     </div>
     </>

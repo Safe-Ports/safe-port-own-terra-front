@@ -9,6 +9,9 @@ import ReleasesTable from "./ReleasesTable";
 import Button from "@/components/Button";
 import GuideModal from "@/components/shared/GuideModal";
 import PendingApproval from "./PendingApproval";
+import Pagination, { paginate } from "@/components/shared/Pagination";
+
+const POR_PAGINA = 10;
 
 // El estado que guarda la base no es el que se lee. "pending_approval" es una
 // clave, no una frase.
@@ -24,7 +27,10 @@ const ESTADO = {
 function SalesPage() {
   const { contracts, setEditingContract, openModal, openContractCreate, openDocumentUpload, openClientReport, showToast } = useAppContext();
   const [showGuide, setShowGuide] = useState(false);
+  const [page, setPage] = useState(1);
   useLandsGuide(() => setShowGuide(true));
+
+  const contractRows = paginate(contracts, page, POR_PAGINA);
 
   const handleDownloadPdf = async (contract) => {
     try {
@@ -66,7 +72,7 @@ function SalesPage() {
             </tr>
           </thead>
           <tbody>
-            {contracts.length ? contracts.map((contract) => (
+            {contracts.length ? contractRows.map((contract) => (
               <tr key={contract.id}>
                 <td>
                   <span className="contract-badge" onClick={() => { setEditingContract(contract); openModal("contractModal"); }}>
@@ -104,6 +110,7 @@ function SalesPage() {
             )}
           </tbody>
         </table>
+        <Pagination total={contracts.length} page={page} limit={POR_PAGINA} onPage={setPage} />
       </div>
       <GuideModal
         open={showGuide}
