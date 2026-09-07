@@ -788,7 +788,13 @@ function CobroModal({ clients, contracts, onClose, onSave, busy, contratoInicial
               onChange={e => { set("contractId")(e); setForm(p => ({ ...p, paymentId: "", amount: "" })); }}>
               <option value="">— Seleccionar —</option>
               {filtContracts.map(c => <option key={c.id} value={c.id}>{c.contract_number}</option>)}
-            </select></div>
+            </select>
+            {form.clientId && filtContracts.length === 0 && (
+              <div style={{ marginTop: 6, fontSize: ".76rem", color: "var(--mu)" }}>
+                Este cliente no tiene ningún contrato asociado.
+              </div>
+            )}
+          </div>
 
           {form.contractId && (
             <div className="fg"><label className="fl">Cuota</label>
