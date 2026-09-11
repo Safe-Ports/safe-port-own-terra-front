@@ -3,13 +3,16 @@ import { useAppContext } from "@/context/AppContext";
 import InlineError from "@/components/shared/InlineError";
 import FieldError from "@/components/shared/FieldError";
 import { useFieldErrors } from "@/hooks/useFieldErrors";
+import { getFieldErrors } from "@/services/errors";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PASSWORD_MIN_LENGTH = 12;
+const passwordLength = (value) => Array.from(value || "").length;
 const REGISTER_RULES = {
   organization_name: (v) => (!v || v.trim().length < 3 ? "El nombre de la empresa debe tener al menos 3 caracteres." : ""),
   name: (v) => (!v || v.trim().length < 2 ? "Tu nombre debe tener al menos 2 caracteres." : ""),
   email: (v) => (!EMAIL_RE.test((v || "").trim()) ? "Escribe un correo electrónico válido." : ""),
-  password: (v) => ((v || "").length < 8 ? "La contraseña debe tener al menos 8 caracteres." : ""),
+  password: (v) => (passwordLength(v) < PASSWORD_MIN_LENGTH ? `Tu contraseña tiene ${passwordLength(v)} caracteres. Necesitas al menos ${PASSWORD_MIN_LENGTH}.` : ""),
   confirm: (v, form) => (v !== form.password ? "Las contraseñas no coinciden." : ""),
 };
 
@@ -275,13 +278,23 @@ function RegisterView({ onBack }) {
   const [registeredEmail, setRegisteredEmail] = useState("");
   const fe = useFieldErrors();
 
-  const set = (key) => (e) => { const v = e.target.value; setForm((p) => ({ ...p, [key]: v })); fe.clear(key); };
+  const set = (key) => (e) => { const v = e.target.value; setForm((p) => ({ ...p, [key]: v })); fe.clear(key); setError(null); };
 
   const submit = async () => {
-    // Validación de llenado: por campo (rojo bajo el input), no en la caja general.
-    if (!fe.validate(form, REGISTER_RULES)) return;
-    setLoading(true);
+    // Mostrar la explicación únicamente al intentar crear la cuenta.
+    if (loading) return;
     setError(null);
+    const fieldErrors = Object.fromEntries(
+      Object.entries(REGISTER_RULES)
+        .map(([key, rule]) => [key, rule(form[key], form)])
+        .filter(([, message]) => message)
+    );
+    fe.setErrors(fieldErrors);
+    if (Object.keys(fieldErrors).length) {
+      setError({ severity: "warning", message: Object.values(fieldErrors).join(" ") });
+      return;
+    }
+    setLoading(true);
     const result = await register({
       organization_name: form.organization_name.trim(),
       name: form.name.trim(),
@@ -293,7 +306,16 @@ function RegisterView({ onBack }) {
       setRegisteredEmail(result.email || form.email.trim());
       return;
     }
-    if (!result.ok) setError(result.error || { message: result.msg || "Error al crear la cuenta. Verifica los datos." });
+    if (!result.ok) {
+      // El contexto conserva los detalles del 422 en el error normalizado.
+      const serverFields = getFieldErrors(result.error);
+      if (serverFields) {
+        fe.setErrors(serverFields);
+        setError({ severity: "warning", message: Object.values(serverFields).join(" ") });
+        return;
+      }
+      setError(result.error || { message: result.msg || "Error al crear la cuenta. Verifica los datos." });
+    }
   };
 
   if (registeredEmail) {
@@ -345,14 +367,17 @@ function RegisterView({ onBack }) {
       <div className="lf-title">Crear cuenta nueva</div>
       <div className="lf-sub">Registra tu empresa y comienza a gestionar tu fraccionamiento.</div>
 
-      <InlineError error={error} />
+      <div id="register-error"><InlineError error={error} /></div>
 
       {fields.map((f) => (
         <div className="lf-field" key={f.key}>
-          <label className="lf-label">{f.label}</label>
+          <label className="lf-label" htmlFor={`register-${f.key}`}>{f.label}</label>
           <div className="lf-input-wrap">
             <span className="lf-ico">{f.ico}</span>
             <input
+              id={`register-${f.key}`}
+              aria-invalid={Boolean(fe.errors[f.key])}
+              aria-describedby={fe.errors[f.key] ? "register-error" : undefined}
               className={fe.errors[f.key] ? "lf-input is-invalid" : "lf-input"}
               type={f.type}
               placeholder={f.placeholder}
@@ -362,35 +387,41 @@ function RegisterView({ onBack }) {
               autoComplete={f.auto}
             />
           </div>
-          <FieldError msg={fe.errors[f.key]} />
+
         </div>
       ))}
 
       <div className="lf-field">
-        <label className="lf-label">Contraseña</label>
+        <label className="lf-label" htmlFor="register-password">Contraseña</label>
         <div className="lf-input-wrap">
           <span className="lf-ico">🔒</span>
           <input
+            id="register-password"
+            aria-invalid={Boolean(fe.errors.password)}
+            aria-describedby={fe.errors.password && error ? "register-password-help register-error" : "register-password-help"}
             className={fe.errors.password ? "lf-input is-invalid" : "lf-input"}
             type={showPass ? "text" : "password"}
-            placeholder="Mínimo 8 caracteres"
+            placeholder="Escribe tu contraseña"
             value={form.password}
             onChange={set("password")}
             onKeyDown={(e) => e.key === "Enter" && submit()}
             autoComplete="new-password"
           />
-          <button className="lf-eye" type="button" onClick={() => setShowPass((v) => !v)} tabIndex={-1}>
+          <button className="lf-eye" type="button" onClick={() => setShowPass((v) => !v)} aria-label={showPass ? "Ocultar contraseña" : "Mostrar contraseña"} aria-pressed={showPass}>
             {showPass ? "🙈" : "👁"}
           </button>
         </div>
-        <FieldError msg={fe.errors.password} />
+        <div id="register-password-help" className="lf-password-help">Mínimo 12 caracteres.</div>
       </div>
 
       <div className="lf-field">
-        <label className="lf-label">Confirmar contraseña</label>
+        <label className="lf-label" htmlFor="register-confirm">Confirmar contraseña</label>
         <div className="lf-input-wrap">
           <span className="lf-ico">🔒</span>
           <input
+            id="register-confirm"
+            aria-invalid={Boolean(fe.errors.confirm)}
+            aria-describedby={fe.errors.confirm && error ? "register-error" : undefined}
             className={fe.errors.confirm ? "lf-input is-invalid" : "lf-input"}
             type={showPass ? "text" : "password"}
             placeholder="Repite la contraseña"
@@ -400,7 +431,7 @@ function RegisterView({ onBack }) {
             autoComplete="new-password"
           />
         </div>
-        <FieldError msg={fe.errors.confirm} />
+
       </div>
 
       <button

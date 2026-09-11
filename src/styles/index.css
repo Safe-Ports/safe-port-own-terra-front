@@ -4617,3 +4617,11 @@ textarea.is-invalid {
 }
 .mx-files-item:hover { background: var(--sf2); color: var(--forest); }
 
+
+/* Ayuda persistente de contraseña en el registro. */
+.lf-password-help {
+  margin-top: 8px;
+  font-size: .78rem;
+  line-height: 1.5;
+  color: var(--text-secondary, #555b55);
+}
