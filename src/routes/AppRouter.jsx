@@ -18,6 +18,7 @@ const EcosystemFormularios = lazyWithRetry(() => import("@/pages/Ecosystem/Formu
 const EcosystemFormEditor = lazyWithRetry(() => import("@/pages/Ecosystem/Formularios/Editor"));
 const EcosystemFormRespuestas = lazyWithRetry(() => import("@/pages/Ecosystem/Formularios/Respuestas"));
 const EcosystemConfiguracion = lazyWithRetry(() => import("@/pages/Ecosystem/Configuracion"));
+const EcosystemRecaudacion = lazyWithRetry(() => import("@/pages/Ecosystem/Recaudacion"));
 const EcosystemPerfil = lazyWithRetry(() => import("@/pages/Ecosystem/Perfil"));
 const DashboardPage = lazyWithRetry(() => import("@/pages/Dashboard"));
 const LotsPage = lazyWithRetry(() => import("@/pages/Lots"));
@@ -80,6 +81,7 @@ function AppRouter() {
           {/* Misma página que /configuracion, servida con el shell del Core para
               quien entra desde el Ecosistema (ver Ecosystem/Configuracion.jsx). */}
           <Route path="/ecosistema/configuracion" element={<RequireFeature feature="core.config"><EcosystemConfiguracion /></RequireFeature>} />
+          <Route path="/ecosistema/recaudacion" element={<RequireFeature feature="core.recaudacion"><EcosystemRecaudacion /></RequireFeature>} />
           {/* Misma página que /perfil, con el shell del Core. El perfil es
               transversal, así que abrirlo no debe mandarte a otra app. */}
           <Route path="/ecosistema/perfil" element={<EcosystemPerfil />} />

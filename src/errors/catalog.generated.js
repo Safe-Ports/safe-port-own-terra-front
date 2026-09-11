@@ -388,6 +388,54 @@ export const ERROR_CATALOG = {
     "name": "PAY_OVERPAYMENT",
     "severity": "warning"
   },
+  "OT-REC-1001": {
+    "action": "Revisa el tipo de link (reusable o cobro único) y los métodos elegidos.",
+    "domain": "REC",
+    "http_status": 400,
+    "message": "Esa opción no aplica para este tipo de link.",
+    "name": "REC_INVALID_LINK_OP",
+    "severity": "warning"
+  },
+  "OT-REC-2001": {
+    "action": "Contacta a soporte para habilitarlo.",
+    "domain": "REC",
+    "http_status": 400,
+    "message": "El Centro de Recaudación no está configurado en el servidor.",
+    "name": "REC_NOT_CONFIGURED",
+    "severity": "error"
+  },
+  "OT-REC-2002": {
+    "action": "Reintenta; si persiste, revisa la configuración del webhook.",
+    "domain": "REC",
+    "http_status": 400,
+    "message": "No se pudo verificar el evento de cobro.",
+    "name": "REC_WEBHOOK_INVALID",
+    "severity": "error"
+  },
+  "OT-REC-3001": {
+    "action": "Completa el alta de la cuenta en Stripe antes de cobrar con ella.",
+    "domain": "REC",
+    "http_status": 409,
+    "message": "La cuenta destino todavía no está verificada.",
+    "name": "REC_ACCOUNT_NOT_VERIFIED",
+    "severity": "warning"
+  },
+  "OT-REC-3002": {
+    "action": "Desactiva o reasigna esos links antes de dar de baja la cuenta.",
+    "domain": "REC",
+    "http_status": 409,
+    "message": "La cuenta tiene links de cobro activos.",
+    "name": "REC_ACCOUNT_HAS_LINKS",
+    "severity": "warning"
+  },
+  "OT-REC-3003": {
+    "action": "Si ya no lo necesitas, expíralo.",
+    "domain": "REC",
+    "http_status": 409,
+    "message": "Un cobro único no se activa ni se desactiva.",
+    "name": "REC_LINK_NOT_TOGGLEABLE",
+    "severity": "warning"
+  },
   "OT-RPT-1010": {
     "action": "Agrega el ID de lote en esa fila.",
     "domain": "RPT",
