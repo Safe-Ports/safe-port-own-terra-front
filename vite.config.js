@@ -124,7 +124,16 @@ export default defineConfig(({ mode }) => {
   },
   server: {
     host: true,
-    port: 5173
+    port: 5173,
+    // Proxy opcional para probar contra una API remota desde localhost.
+    ...(env.DEV_API_PROXY_TARGET ? {
+      proxy: {
+        "/api": {
+          target: env.DEV_API_PROXY_TARGET,
+          changeOrigin: true,
+        },
+      },
+    } : {}),
   }
   };
 });
