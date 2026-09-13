@@ -6,13 +6,10 @@ import { useFieldErrors } from "@/hooks/useFieldErrors";
 import { getFieldErrors } from "@/services/errors";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PASSWORD_MIN_LENGTH = 12;
-const passwordLength = (value) => Array.from(value || "").length;
 const REGISTER_RULES = {
   organization_name: (v) => (!v || v.trim().length < 3 ? "El nombre de la empresa debe tener al menos 3 caracteres." : ""),
   name: (v) => (!v || v.trim().length < 2 ? "Tu nombre debe tener al menos 2 caracteres." : ""),
   email: (v) => (!EMAIL_RE.test((v || "").trim()) ? "Escribe un correo electrónico válido." : ""),
-  password: (v) => (passwordLength(v) < PASSWORD_MIN_LENGTH ? `Tu contraseña tiene ${passwordLength(v)} caracteres. Necesitas al menos ${PASSWORD_MIN_LENGTH}.` : ""),
   confirm: (v, form) => (v !== form.password ? "Las contraseñas no coinciden." : ""),
 };
 
@@ -411,7 +408,7 @@ function RegisterView({ onBack }) {
             {showPass ? "🙈" : "👁"}
           </button>
         </div>
-        <div id="register-password-help" className="lf-password-help">Mínimo 12 caracteres.</div>
+        <div id="register-password-help" className="lf-password-help">Elige la contraseña que quieras.</div>
       </div>
 
       <div className="lf-field">

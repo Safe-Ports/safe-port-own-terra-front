@@ -26,14 +26,10 @@ async function fillRegistration(password = "una frase nueva de prueba") {
 beforeEach(() => register.mockReset());
 
 describe("Registro: requisitos y errores de contraseña", () => {
-  it("muestra ayuda y bloquea contraseñas de menos de 12 caracteres", async () => {
-    const user = await fillRegistration("once-letras");
-    expect(screen.getByText("Mínimo 12 caracteres.")).toBeVisible();
-    expect(screen.queryByText(/Puedes usar una frase larga/)).not.toBeInTheDocument();
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /🚀 Crear cuenta/ }));
-    expect(screen.getByRole("alert")).toHaveTextContent("Tu contraseña tiene 11 caracteres. Necesitas al menos 12.");
-    expect(screen.getByLabelText("Contraseña", { exact: true })).toHaveAttribute("aria-invalid", "true");
+  it("muestra ayuda y deshabilita el envío mientras la contraseña esté vacía", async () => {
+    await fillRegistration("");
+    expect(screen.getByText("Elige la contraseña que quieras.")).toBeVisible();
+    expect(screen.getByRole("button", { name: /🚀 Crear cuenta/ })).toBeDisabled();
     expect(register).not.toHaveBeenCalled();
   });
 
@@ -60,12 +56,12 @@ describe("Registro: requisitos y errores de contraseña", () => {
     expect(await screen.findByText("Confirma tu correo")).toBeVisible();
   });
 
-  it("acepta 12 caracteres sin exigir símbolos o mayúsculas", async () => {
+  it("acepta contraseñas cortas sin exigir un largo mínimo", async () => {
     register.mockResolvedValue({ ok: true, pendingVerification: true });
-    const user = await fillRegistration("abcdefghijkl");
+    const user = await fillRegistration("corta");
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /🚀 Crear cuenta/ }));
-    expect(register).toHaveBeenCalledWith(expect.objectContaining({ password: "abcdefghijkl" }));
+    expect(register).toHaveBeenCalledWith(expect.objectContaining({ password: "corta" }));
     expect(await screen.findByText("Confirma tu correo")).toBeVisible();
   });
 
