@@ -86,8 +86,12 @@ function CuentasTab() {
   const onboard = useMutation({
     mutationFn: (aliasInterno) => recaudacionService.startOnboarding({ alias_interno: aliasInterno }),
     onSuccess: (res) => {
-      // Stripe hospeda el formulario de alta (datos fiscales, CLABE, KYC).
-      window.location.href = res.onboarding_url;
+      // Stripe hospeda el formulario de alta (datos fiscales, CLABE, KYC) en una
+      // pestaña nueva; esta se queda en Recaudación mostrando la cuenta ya creada.
+      window.open(res.onboarding_url, "_blank", "noopener");
+      setModal(false);
+      setAlias("");
+      qc.invalidateQueries({ queryKey: ["rec", "cuentas"] });
     },
     onError: (e) => showError(e, "No se pudo iniciar el alta de la cuenta"),
   });
@@ -100,7 +104,7 @@ function CuentasTab() {
 
   const resumeOnboarding = useMutation({
     mutationFn: (id) => recaudacionService.refreshOnboardingLink(id),
-    onSuccess: (res) => { window.location.href = res.onboarding_url; },
+    onSuccess: (res) => window.open(res.onboarding_url, "_blank", "noopener"),
     onError: (e) => showError(e, "No se pudo reanudar el alta"),
   });
 
