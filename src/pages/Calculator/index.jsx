@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { HiCalculator, HiTrash, HiMagnifyingGlass, HiCheck } from "react-icons/hi2";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SkeletonRows } from "@/components/ui/Skeleton";
 import { currency } from "@/services/formatters";
@@ -207,7 +208,7 @@ function CalculatorPage() {
       <div className="flex items-center justify-between">
         <div>
           <div className="text-lg font-semibold" style={{ color: "var(--tx,#1E3D2B)" }}>
-            🧮 Calculadoras de financiamiento
+            <HiCalculator style={{ display: "inline", verticalAlign: "-2px" }} /> Calculadoras de financiamiento
           </div>
           <div className="text-xs" style={{ color: "var(--mu)" }}>
             Define la fórmula de la mensualidad. La <strong>activa</strong> se usa al concretar una venta.
@@ -217,7 +218,7 @@ function CalculatorPage() {
 
       <div className="grid gap-4" style={{ gridTemplateColumns: "minmax(260px, 340px) 1fr" }}>
         {/* ── Lista ── */}
-        <div className="card" style={{ alignSelf: "start" }}>
+        <div className="card" style={{ alignSelf: "start" }} data-tour="calc-lista">
           <div className="card-hd">
             <div className="card-title">Guardadas</div>
           </div>
@@ -273,9 +274,9 @@ function CalculatorPage() {
 
         {/* ── Editor / estado vacío ── */}
         {!open ? (
-          <div className="card calc-empty">
+          <div className="card calc-empty" data-tour="calc-nueva">
             <div style={{ textAlign: "center", padding: 24 }}>
-              <div style={{ fontSize: "2rem", marginBottom: 8 }}>🧮</div>
+              <div style={{ fontSize: "2rem", marginBottom: 8, display: "flex", justifyContent: "center" }}><HiCalculator /></div>
               <div style={{ fontWeight: 600, color: "var(--tx)", marginBottom: 4 }}>
                 Crea o selecciona una calculadora
               </div>
@@ -286,14 +287,14 @@ function CalculatorPage() {
             </div>
           </div>
         ) : (
-        <div className="card">
+        <div className="card" data-tour="calc-editor">
           <div className="card-hd">
             <div className="card-title">{isEditing ? "Editar calculadora" : "Nueva calculadora"}</div>
             <div style={{ display: "flex", gap: 8 }}>
               {isEditing && (
                 <>
                   <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => remove(editor)}>
-                    🗑 Eliminar
+                    <HiTrash style={{ display: "inline", verticalAlign: "-2px" }} /> Eliminar
                   </button>
                   <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={newCalculator}>
                     + Nueva
@@ -340,15 +341,15 @@ function CalculatorPage() {
             </div>
 
             <div style={{ display: "flex", gap: 10 }}>
-              <button type="button" className="btn-s" onClick={analyze}>🔍 Analizar fórmula</button>
-              <button type="button" className="btn-p" onClick={save} disabled={saving}>
-                {saving ? "Guardando…" : "💾 Guardar configuración"}
+              <button type="button" className="btn-s" data-tour="calc-analizar" onClick={analyze}><HiMagnifyingGlass style={{ display: "inline", verticalAlign: "-2px" }} /> Analizar fórmula</button>
+              <button type="button" className="btn-p" data-tour="calc-guardar" onClick={save} disabled={saving}>
+                {saving ? "Guardando…" : <><HiCheck style={{ display: "inline", verticalAlign: "-2px" }} /> Guardar configuración</>}
               </button>
             </div>
 
             {/* ── Modo prueba ── */}
             {vars.length > 0 && (
-              <div className="calc-panel">
+              <div className="calc-panel" data-tour="calc-prueba">
                 <div style={{ fontWeight: 600, fontSize: ".82rem", color: "var(--tx)", marginBottom: 10 }}>
                   Modo prueba — captura valores para ver la mensualidad
                 </div>

@@ -14,9 +14,9 @@
   width: auto;
   min-width: 92px;
   padding: 0 8px;
-  border: 1px solid var(--bd, #DCDAD2);
+  border: 1px solid var(--bd, #E2E7E5);
   border-radius: 10px;
-  background: var(--sf, #FBFAF6);
+  background: var(--sf, #FFFFFF);
   color: var(--tx, #1E3D2B);
   font-family: var(--font-body, inherit);
   font-size: 0.9rem;

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { HiEye } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 import { documentService, filenameForDocument } from "@/services/documentService";
 import Modal from "@/components/ui/Modal";
@@ -54,7 +55,7 @@ function DocumentPreviewModal() {
   return (
     <Modal
       open={ui.documentPreview}
-      icon="👁"
+      icon={<HiEye />}
       title={document.name}
       subtitle={`${document.category} · ${sizeKb} KB`}
       onClose={closeDocumentPreview}
@@ -69,7 +70,7 @@ function DocumentPreviewModal() {
     >
       <div className="space-y-4">
         {canPreview && !previewUrl && !previewError ? (
-          <div className="rounded-[22px] border border-[#DCDAD2] bg-white p-5 text-sm text-[#43453F]">
+          <div className="rounded-[22px] border border-[#E2E7E5] bg-white p-5 text-sm text-[#43453F]">
             Cargando vista previa...
           </div>
         ) : isImage && previewUrl ? (
@@ -77,7 +78,7 @@ function DocumentPreviewModal() {
         ) : isPdf && previewUrl ? (
           <iframe title={document.name} src={previewUrl} className="h-[70vh] w-full rounded-[20px] border border-[#D9D7CF] bg-white" />
         ) : (
-          <div className="rounded-[22px] border border-[#DCDAD2] bg-white p-5 text-sm text-[#43453F]">
+          <div className="rounded-[22px] border border-[#E2E7E5] bg-white p-5 text-sm text-[#43453F]">
             {previewError
               ? "No se pudo cargar la vista previa."
               : isOffice

@@ -5,6 +5,9 @@ import api from "./api";
 export const calendarService = {
   getSubscription: () => api.get("/calendar/subscription").then((r) => r.data),
   rotate: () => api.post("/calendar/subscription/rotate").then((r) => r.data),
+  // Apaga la publicación del todo. `rotate` muda el enlace a otro igual de
+  // abierto; esto deja de publicar la agenda.
+  revoke: () => api.delete("/calendar/subscription").then((r) => r.data),
 
   // Integración OAuth con Google (para crear eventos con videollamada de Meet).
   googleStatus: () => api.get("/calendar/google/status").then((r) => r.data),

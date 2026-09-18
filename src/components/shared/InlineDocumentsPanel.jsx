@@ -1,6 +1,7 @@
-import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { HiArrowDownTray, HiEye, HiPlus, HiTrash } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
+import { documentService, toBackendEntityType } from "@/services/documentService";
 
 const titleMap = {
   contract: "Documentos del contrato",
@@ -46,19 +47,29 @@ function DocRow({ document, readOnly, openDocumentPreview, downloadDocument, del
   );
 }
 
-function InlineDocumentsPanel({ entityType, entityId, entityLabel, compact = false }) {
+/**
+ * @param {Function} [onUpload] Reemplaza la apertura del modal global. Lo usan
+ *   los paneles laterales, que se dibujan por encima del modal y lo dejarían
+ *   tapado; ahí la subida se muestra dentro del propio panel.
+ */
+function InlineDocumentsPanel({ entityType, entityId, entityLabel, compact = false, onUpload }) {
   const {
-    getLinkedDocuments,
     openDocumentPreview,
     downloadDocument,
     deleteDocument,
     openDocumentUpload
   } = useAppContext();
 
-  const documents = useMemo(
-    () => getLinkedDocuments(entityType, entityId),
-    [entityId, entityType, getLinkedDocuments]
-  );
+  /* Se piden los de esta entidad en vez de filtrar la lista del contexto: esa
+     trae los 100 documentos más recientes de toda la organización, así que en
+     una inmobiliaria con miles de lotes el expediente de un lote viejo salía
+     vacío aunque sus archivos existieran. La clave comparte prefijo con la que
+     el contexto invalida al subir o borrar. */
+  const { data: documents = [] } = useQuery({
+    queryKey: ["documents-entity", toBackendEntityType(entityType), entityId],
+    queryFn: () => documentService.forEntity(toBackendEntityType(entityType), entityId),
+    enabled: !!entityType && !!entityId,
+  });
 
   // Solo el expediente del cliente separa identidad (core) vs operación (app)
   const splitByIdentity = entityType === "client";
@@ -66,10 +77,12 @@ function InlineDocumentsPanel({ entityType, entityId, entityLabel, compact = fal
   const opDocs = splitByIdentity ? documents.filter((d) => !isIdentityDoc(d)) : documents;
 
   const rowProps = { openDocumentPreview, downloadDocument, deleteDocument };
-  const uploadOp = () => openDocumentUpload({ linkType: entityType, linkedId: entityId, lotCode: entityType === "lot" ? entityId : "" });
+  const uploadOp = () => (onUpload
+    ? onUpload()
+    : openDocumentUpload({ linkType: entityType, linkedId: entityId, lotCode: entityType === "lot" ? entityId : "" }));
 
   return (
-    <section className={`rounded-[24px] border border-[rgba(67,69,63,0.10)] bg-[#FBFAF6] ${compact ? "p-3" : "p-4"}`}>
+    <section className={`rounded-[24px] border border-[rgba(67,69,63,0.10)] bg-[#FFFFFF] ${compact ? "p-3" : "p-4"}`}>
       <div className="flex items-center justify-between gap-3">
         <div>
           <div className="font-mono text-[0.62rem] uppercase tracking-[0.16em] text-[#83867C]">

@@ -1,18 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import MigrationWizard from "./MigrationWizard";
 import { useNavigate } from "react-router-dom";
-import { HiChevronLeft, HiChevronRight } from "react-icons/hi2";
+import { HiChevronLeft, HiChevronRight, HiCube, HiMap, HiPencil, HiXMark } from "react-icons/hi2";
 import * as XLSX from "xlsx";
 import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
 import useEscapeKey from "@/hooks/useEscapeKey";
 import { useProjectsQuery } from "@/hooks/queries/useAppQueries";
 import { lotService } from "@/services/lotService";
-import { inmuebleService } from "@/services/inmuebleService";
 import { parseApiError } from "@/errors/parseApiError";
-import { MAP_IMAGE_ACCEPT, isSupportedMapImage, mapFileFromUrl, prepareMapImage } from "@/utils/mapImage";
+import { MAP_IMAGE_ACCEPT, isSupportedMapImage, prepareMapImage } from "@/utils/mapImage";
 import Button from "@/components/Button";
 import GuideModal from "@/components/shared/GuideModal";
 import LotImportFormatModal from "./LotImportFormatModal";
+import ImportResultsModal from "./ImportResultsModal";
 
 const LOT_COLORS = {
   available: { bg: "#dcfce7", border: "#86efac", text: "#15803d" },
@@ -31,7 +32,7 @@ const LOT_TEMPLATE_GUIDE = [
   ["Servicios opcionales", "Agua Potable, Energía Eléctrica, Drenaje, Gas Natural, Internet/Fibra y Pavimento. Activar con: sí, 1, yes, true, x o ✓."],
   ["Vendedor Asignado", "Opcional. Se busca por nombre exacto o parcial entre usuarios activos. Si hay ambigüedad queda sin asignar (advertencia)."],
   ["Archivos aceptados", "XLSX, XLS, CSV o TXT de hasta 10 MB."],
-  ["Importante", "El archivo se valida en el servidor. Los lotes se guardan en cuanto el archivo pasa la validación. No combines celdas ni dejes filas sin ID Lote."],
+  ["Importante", "El fraccionamiento debe existir antes de subir el archivo (créalo primero con \"Guardar y continuar\"). El archivo se valida en el servidor y los lotes se guardan en cuanto pasa la validación. No combines celdas ni dejes filas sin ID Lote."],
 ];
 const LOT_IMPORT_GUIDE_STEPS = [
   {
@@ -68,7 +69,7 @@ const LOT_IMPORT_GUIDE_STEPS = [
   },
   {
     title: "Validación en servidor y errores",
-    text: "La validación ocurre en el servidor. Los lotes válidos se guardan inmediatamente. Si hay errores en filas individuales se muestran con el número de fila para que puedas corregirlos. Columnas no reconocidas se ignoran con una advertencia.",
+    text: "La validación ocurre en el servidor y los lotes válidos se guardan de inmediato — el fraccionamiento ya existe para entonces. Si hay errores se muestran con el número de fila y la columna exacta para que puedas corregirlos. Columnas no reconocidas se ignoran con una advertencia.",
   },
 ];
 const LOT_SELECTOR_GUIDE = {
@@ -89,7 +90,7 @@ const LOT_SELECTOR_GUIDE = {
     },
     {
       title: "Excel y CSV",
-      text: "Para cargar lotes desde Excel o CSV entra primero a Carga Manual, selecciona una imagen o continúa sin plano, y después usa Plantilla y Subir dentro del tablero.",
+      text: "Para cargar lotes desde Excel o CSV entra primero a Carga Manual, guarda el nombre (y opcionalmente el plano), y después usa Plantilla y Subir dentro del tablero.",
     },
   ],
 };
@@ -99,15 +100,15 @@ const LOT_MAP_GUIDE = {
   steps: [
     {
       title: "Nombre del fraccionamiento",
-      text: "Escribe un nombre claro antes de continuar, por ejemplo Residencial Las Palmas. Este será el nombre visible en tu portafolio.",
+      text: "Escribe un nombre claro antes de guardar, por ejemplo Residencial Las Palmas. Este será el nombre visible en tu portafolio.",
     },
     {
       title: "Subir imagen del plano",
-      text: "Selecciona una imagen JPG, PNG o WEBP. La imagen se mostrará como referencia mientras construyes y revisas la matriz de lotes.",
+      text: "Selecciona una imagen JPG, PNG o WEBP. Se sube al guardar, y se mostrará como referencia mientras construyes y revisas la matriz de lotes.",
     },
     {
-      title: "Continuar sin plano",
-      text: "La imagen no es obligatoria. Pulsa Continuar para abrir el tablero y crear secciones manualmente o importar los lotes desde Excel o CSV.",
+      title: "Guardar y continuar",
+      text: "La imagen no es obligatoria. Pulsa \"Guardar y continuar\" para crear tu fraccionamiento (con o sin plano) y abrir el tablero, donde agregas los lotes a mano o desde Excel/CSV.",
     },
     {
       title: "Cambiar de método",
@@ -161,20 +162,20 @@ function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot, onDeleteL
           {section.name}
           <span className="ml-1 font-normal opacity-55 text-[0.62rem]">{section.lots.length} lotes</span>
         </div>
-        <div className="h-px flex-1 bg-[#DCDAD2]" />
+        <div className="h-px flex-1 bg-[#E2E7E5]" />
         <button
           onClick={() => onAddLots(section.id, 1)}
           title="Añadir un lote a esta sección"
-          className="flex h-[22px] w-[22px] items-center justify-center rounded-[5px] border border-[#DCDAD2] bg-[#F1EEE6] text-[0.8rem] font-black text-[#355E3B]"
+          className="flex h-[22px] w-[22px] items-center justify-center rounded-[5px] border border-[#E2E7E5] bg-[#EEF1F1] text-[0.8rem] font-black text-[#355E3B]"
         >
           +
         </button>
         <button
           onClick={() => onRemoveSection(section.id)}
           title="Eliminar sección"
-          className="flex h-[22px] w-[22px] items-center justify-center rounded-[5px] border border-[#DCDAD2] bg-[#F1EEE6] text-[0.8rem] font-black text-[#C0392B]"
+          className="flex h-[22px] w-[22px] items-center justify-center rounded-[5px] border border-[#E2E7E5] bg-[#EEF1F1] text-[0.8rem] font-black text-[#C0392B]"
         >
-          ✕
+          <HiXMark />
         </button>
       </div>
       {/* Lot grid — 6 columnas */}
@@ -222,7 +223,7 @@ function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot, onDeleteL
           <button
             onClick={() => setPage((p) => Math.max(0, p - 1))}
             disabled={safePage === 0}
-            className="flex h-[26px] w-[26px] items-center justify-center rounded-[6px] border border-[#DCDAD2] bg-[#F1EEE6] text-[#355E3B] disabled:opacity-35"
+            className="flex h-[26px] w-[26px] items-center justify-center rounded-[6px] border border-[#E2E7E5] bg-[#EEF1F1] text-[#355E3B] disabled:opacity-35"
           >
             <HiChevronLeft />
           </button>
@@ -232,7 +233,7 @@ function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot, onDeleteL
           <button
             onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
             disabled={safePage >= totalPages - 1}
-            className="flex h-[26px] w-[26px] items-center justify-center rounded-[6px] border border-[#DCDAD2] bg-[#F1EEE6] text-[#355E3B] disabled:opacity-35"
+            className="flex h-[26px] w-[26px] items-center justify-center rounded-[6px] border border-[#E2E7E5] bg-[#EEF1F1] text-[#355E3B] disabled:opacity-35"
           >
             <HiChevronRight />
           </button>
@@ -245,26 +246,46 @@ function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot, onDeleteL
 function LotsPage() {
   const navigate = useNavigate();
   const { data: projects = [] } = useProjectsQuery();
-  const { draftProject, setDraftProject, saveFrac, saveEditedFrac, deleteFrac, setSelectedFracId, showToast, showError } = useAppContext();
-  const isEditing = !!draftProject._editingFracId;
+  const { draftProject, setDraftProject, createFracDraft, saveEditedFrac, deleteFrac, setSelectedFracId, showToast, showError } = useAppContext();
 
   useEffect(() => {
     setDraftProject({ mode: "selector", name: "Nuevo Fraccionamiento", mapUrl: "", sections: [], cadProcessing: false });
   }, []);
 
+  // Cargar a mano y cargar por archivo son dos caminos que se estorban: el
+  // formulario de secciones quedaba atenuado cuando ya se había importado, y
+  // ambos competían por la misma pantalla. Ahora se elige uno.
+  const [modoCarga, setModoCarga] = useState("manual");
+  // Contratos con cobranza viva que impidieron archivar. Se guardan del 409 para
+  // listarlos en el mismo diálogo: antes el error cerraba el modal y navegaba
+  // afuera, así que el usuario se quedaba sin saber cuáles cerrar.
+  const [blockingContracts, setBlockingContracts] = useState(null);
+  // Total real de bloqueantes: el backend sólo enumera los primeros diez.
+  const [blockingTotal, setBlockingTotal] = useState(0);
+  // Lotes ya vendidos del fraccionamiento en edición: no impiden archivarlo,
+  // pero conviene avisar antes de que desaparezcan del inventario.
+  const fracSoldLots = projects.find(
+    (p) => String(p.id) === String(draftProject._editingFracId)
+  )?.sold ?? 0;
+  // La migración carga la inmobiliaria entera —varios fraccionamientos, cartera
+  // y contratos—, así que vive fuera del editor, que trabaja sobre un proyecto.
+  const [migrando, setMigrando] = useState(false);
   const [sectionName, setSectionName] = useState("");
   // Se conserva como texto mientras el usuario escribe para permitir borrar
   // completamente el valor antes de capturar una nueva cantidad.
   const [sectionTotal, setSectionTotal] = useState("20");
   const [mapFileName, setMapFileName] = useState("");
+  const [creatingFrac, setCreatingFrac] = useState(false);
   const [lotEditDraft, setLotEditDraft] = useState(null);
   const [loadingEditId, setLoadingEditId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deletedLotIds, setDeletedLotIds] = useState(new Set());
+  const [deletingLot, setDeletingLot] = useState(false);
   const [showDeleteFracConfirm, setShowDeleteFracConfirm] = useState(false);
   const [deletingFrac, setDeletingFrac] = useState(false);
   const [showImportGuide, setShowImportGuide] = useState(false);
   const [showFormatGuide, setShowFormatGuide] = useState(false);
+  const [showImportResults, setShowImportResults] = useState(false);
   useEscapeKey(() => {
     if (showDeleteFracConfirm) setShowDeleteFracConfirm(false);
     else if (lotEditDraft) setLotEditDraft(null);
@@ -364,50 +385,20 @@ function LotsPage() {
 
     setImportLoading(true);
     setImportSummary(null);
-    let mapUploadError = null;
 
     try {
-      let fracId = draftProject._editingFracId;
-
-      // Para fraccionamiento nuevo: crear el inmueble primero y guardar los lotes manuales previos
-      if (!fracId) {
-        const inmueble = await inmuebleService.create({ name: draftProject.name || "Fraccionamiento" });
-        fracId = inmueble.id;
-
-        if (draftProject.mapUrl) {
-          try {
-            const mapFile = await mapFileFromUrl(draftProject.mapUrl);
-            await inmuebleService.uploadMap(inmueble.id, mapFile);
-          } catch (error) {
-            mapUploadError = error;
-          }
-        }
-
-        const manualLots = draftProject.sections.flatMap((s) =>
-          s.lots.map((lot) => ({
-            code: lot.code,
-            section: s.name,
-            area_m2: lot.area ? Number(lot.area) : null,
-            frente_ml: lot.frente ? Number(lot.frente) : null,
-            fondo_ml: lot.fondo ? Number(lot.fondo) : null,
-            price_contado: lot.price ? Number(lot.price) : null,
-            price_financiado: lot.priceFinanciado ? Number(lot.priceFinanciado) : null,
-            services: lot.servicios ? Object.fromEntries(Object.entries(lot.servicios).filter(([, v]) => v)) : {},
-          }))
-        );
-        if (manualLots.length > 0) {
-          await lotService.bulkCreate({ inmueble_id: fracId, lots: manualLots });
-        }
-      }
-
-      // Enviar archivo al backend para validación e importación
+      // Al llegar aquí el fraccionamiento YA EXISTE — se crea en un paso explícito
+      // anterior ("Guardar y continuar" en la pantalla de nombre+plano), antes de que
+      // el tablero sea siquiera alcanzable. Así que importar de una vez, directo al
+      // inmueble real, es correcto: no hay nada "prematuro" en guardarlo ahí.
+      const fracId = draftProject._editingFracId;
       const result = await lotService.importCsv(file, { fraccionamiento_id: fracId });
 
       // Nada fue importado y hay errores: mostrar sin actualizar la vista
       if (result.imported === 0 && result.failed > 0) {
         setImportSummary({ fileName: file.name, imported: 0, failed: result.failed, errors: result.errors, warnings: result.warnings });
-        setShowImportGuide(true);
-        showToast(result.errors[0]?.message || "No se importaron lotes: revisa los errores");
+        setShowImportResults(true);
+        showToast("No se importaron lotes: revisa los errores");
         return;
       }
 
@@ -456,17 +447,13 @@ function LotsPage() {
         warnings: result.warnings || [],
       });
 
-      if (mapUploadError) {
-        showError(mapUploadError, "Los lotes se importaron, pero el plano no pudo subirse");
-      } else {
-        showToast(`${result.imported} lotes importados${result.failed ? ` · ${result.failed} con errores` : ""}`);
-      }
-      if (result.failed > 0) setShowImportGuide(true);
+      showToast(`${result.imported} lotes importados${result.failed ? ` · ${result.failed} con errores` : ""}`);
+      if (result.failed > 0 || (result.warnings?.length ?? 0) > 0) setShowImportResults(true);
 
     } catch (err) {
       const msg = parseApiError(err, "Error al importar el archivo. Descarga la plantilla y verifica el formato.").message;
       setImportSummary({ fileName: file?.name ?? null, imported: 0, failed: 0, errors: [{ message: msg }], warnings: [] });
-      setShowImportGuide(true);
+      setShowImportResults(true);
       showError(err, "Error al importar el archivo. Descarga la plantilla y verifica el formato.");
     } finally {
       setImportLoading(false);
@@ -567,16 +554,29 @@ function LotsPage() {
     }));
   };
 
-  const deleteLotFromSection = (sectionId, lotId) => {
+  const deleteLotFromSection = async (sectionId, lotId) => {
     const sec = draftProject.sections.find((s) => s.id === sectionId);
     const lot = sec?.lots.find((l) => l.id === lotId);
-    if (lot?._backendId) setDeletedLotIds((prev) => new Set([...prev, lot._backendId]));
+    // El lote ya existe en el backend: se borra de una vez para no depender
+    // del botón "Guardar cambios" (ese sí navega fuera del tablero al terminar).
+    if (lot?._backendId) {
+      setDeletingLot(true);
+      try {
+        await lotService.delete(lot._backendId);
+      } catch (err) {
+        showError(err, "No se pudo eliminar el lote");
+        setDeletingLot(false);
+        return;
+      }
+      setDeletingLot(false);
+    }
     setDraftProject((previous) => ({
       ...previous,
       sections: previous.sections.map((s) =>
         s.id !== sectionId ? s : { ...s, lots: s.lots.filter((l) => l.id !== lotId) }
       ),
     }));
+    showToast("Lote eliminado");
   };
 
   const addLotsToSection = (sectionId, count) => {
@@ -602,6 +602,9 @@ function LotsPage() {
   // builder manual de secciones se deshabilita. Para agregar un lote olvidado se usa
   // el "+" de cada sección (que ahora agrega 1).
   const importedByFile = (importSummary?.imported ?? 0) > 0;
+  // Al volver a un borrador que vino de archivo, se abre en ese modo: es donde
+  // está el contexto de lo que se cargó.
+  useEffect(() => { if (importedByFile) setModoCarga("archivo"); }, [importedByFile]);
 
   const updateMap = async (file) => {
     if (!isSupportedMapImage(file)) {
@@ -631,6 +634,11 @@ function LotsPage() {
   };
 
   const totalDraftLots = draftProject.sections.reduce((sum, section) => sum + section.lots.length, 0);
+  // El fraccionamiento ya existe siempre en este punto (se crea explícitamente en
+  // "Guardar y continuar", antes de que el tablero sea alcanzable) — esto es solo para
+  // la ETIQUETA del botón: si todavía no hay ni un lote guardado, se siente más como
+  // "guardar lotes" que como "guardar cambios" a algo que ya tenía contenido.
+  const hasSavedLots = draftProject.sections.some((section) => section.lots.some((lot) => lot._backendId));
 
   // ── EDITOR: full-height split layout ──────────────────────────────
   if (draftProject.mode === "editor") {
@@ -641,35 +649,20 @@ function LotsPage() {
       >
         {/* Top bar */}
         <div className="lots-editor-topbar">
-          {isEditing ? (
-            <div className="flex items-center gap-2">
-              <button
-                className="lots-editor-btn"
-                onClick={() => { setDraftProject((p) => ({ ...p, _editingFracId: null })); navigate("/fraccionamientos"); }}
-              >
-                Cancelar
-              </button>
-              <span className="lots-editor-state">
-                <span className="lots-editor-dot warn" />
-                Editando: {draftProject.name}
-              </span>
-            </div>
-          ) : (
-            <>
-              <button
-                className="lots-editor-btn"
-                onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
-              >
-                Cambiar mapa
-              </button>
-              <div className="lots-editor-separator" />
-              {mapFileName && (
-                <div className="lots-editor-file"><span>MAP</span>{mapFileName}</div>
-              )}
-            </>
-          )}
+          <div className="flex items-center gap-2">
+            <button
+              className="lots-editor-btn"
+              onClick={() => { setDraftProject((p) => ({ ...p, _editingFracId: null })); navigate("/fraccionamientos"); }}
+            >
+              Cancelar
+            </button>
+            <span className="lots-editor-state">
+              <span className="lots-editor-dot warn" />
+              {hasSavedLots ? `Editando: ${draftProject.name}` : `Guardado: ${draftProject.name} — agrega tus lotes`}
+            </span>
+          </div>
           <div className="flex-1" />
-          <div className="lots-editor-legend">
+          <div className="lots-editor-legend" data-tour="frac-leyenda">
             <span>
               <span className="lots-legend-mark available" />
               Disponible
@@ -683,17 +676,16 @@ function LotsPage() {
               Apartado
             </span>
           </div>
-          {isEditing && (
-            <button
-              className="lots-editor-btn"
-              style={{ color: "#C0392B", borderColor: "#fca5a5" }}
-              onClick={() => setShowDeleteFracConfirm(true)}
-            >
-              Eliminar
-            </button>
-          )}
+          <button
+            className="lots-editor-btn"
+            style={{ color: "#C0392B", borderColor: "#fca5a5" }}
+            onClick={() => setShowDeleteFracConfirm(true)}
+          >
+            Eliminar
+          </button>
           <button
             className="lots-editor-btn lots-editor-primary"
+            data-tour="frac-guardar"
             onClick={async () => {
               if (saving) return;
               setSaving(true);
@@ -702,15 +694,14 @@ function LotsPage() {
                   await Promise.all([...deletedLotIds].map((id) => lotService.delete(id)));
                   setDeletedLotIds(new Set());
                 }
-                if (isEditing) await saveEditedFrac(draftProject);
-                else await saveFrac(draftProject);
+                await saveEditedFrac(draftProject);
               } finally {
                 setSaving(false);
               }
             }}
             disabled={!draftProject.name?.trim() || saving}
           >
-            {saving ? "Guardando..." : isEditing ? "Guardar cambios" : "Crear fraccionamiento"}
+            {saving ? "Guardando..." : hasSavedLots ? "Guardar cambios" : "Guardar lotes"}
           </button>
         </div>
 
@@ -767,7 +758,7 @@ function LotsPage() {
                   {totalDraftLots} lotes · {draftProject.sections.length} sec
                 </div>
               </div>
-              <div className="lots-section-form">
+              <div className="lots-section-form" data-tour="frac-nombre">
                 <div className="lots-section-name" style={{ flex: 1 }}>
                   <div className="lots-builder-label">Nombre del fraccionamiento</div>
                   <input
@@ -778,7 +769,32 @@ function LotsPage() {
                   />
                 </div>
               </div>
-              <div className="lots-section-form" style={importedByFile ? { opacity: 0.5 } : undefined}>
+              <div style={{ display: "flex", gap: 8, margin: "4px 0 14px" }}>
+                {[
+                  { id: "manual", titulo: "Cargar a mano", detalle: "Secciones y número de lotes" },
+                  { id: "archivo", titulo: "Importar archivo", detalle: "Excel o CSV" },
+                ].map(op => {
+                  const activo = modoCarga === op.id;
+                  return (
+                    <button key={op.id} type="button" onClick={() => setModoCarga(op.id)}
+                      style={{
+                        flex: 1, textAlign: "left", cursor: "pointer", borderRadius: 12,
+                        padding: "10px 13px", background: activo ? "rgba(53,94,59,.07)" : "transparent",
+                        border: `1.5px solid ${activo ? "var(--earth)" : "rgba(67,69,63,.14)"}`,
+                        fontFamily: "var(--font-body)",
+                      }}>
+                      <span style={{ display: "block", fontWeight: 700, fontSize: ".85rem",
+                                     color: activo ? "var(--earth)" : "var(--tx)" }}>{op.titulo}</span>
+                      <span style={{ display: "block", fontSize: ".72rem", color: "var(--mu)", marginTop: 1 }}>
+                        {op.detalle}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {modoCarga === "manual" && (
+              <div className="lots-section-form" data-tour="frac-secciones" style={importedByFile ? { opacity: 0.5 } : undefined}>
                 <div className="lots-section-name">
                   <div className="lots-builder-label">
                     Nombre de sección *
@@ -816,6 +832,7 @@ function LotsPage() {
                 </div>
                 <button
                   type="button"
+                  data-tour="frac-agregar"
                   onClick={addSection}
                   disabled={importedByFile}
                   className="lots-add-section"
@@ -824,12 +841,16 @@ function LotsPage() {
                   Agregar
                 </button>
               </div>
-              {importedByFile && (
+              )}
+
+              {modoCarga === "manual" && importedByFile && (
                 <div className="lots-import-hint">
                   Lotes importados por archivo. Para agregar uno olvidado, usa el <b>+</b> de la sección abajo.
                 </div>
               )}
-              <div className="lots-excel-row">
+
+              {modoCarga === "archivo" && (
+              <div className="lots-excel-row" data-tour="frac-excel">
                 <div>
                   <span className="lots-excel-title">Llenar con Excel o CSV</span>
                   <span className="lots-excel-sub">
@@ -865,6 +886,7 @@ function LotsPage() {
                   onChange={handleExcelFile}
                 />
               </div>
+              )}
             </div>
 
             {/* Matrix board */}
@@ -878,7 +900,7 @@ function LotsPage() {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-5">
+                <div className="space-y-5" data-tour="frac-matriz">
                   {draftProject.sections.map((section) => (
                     <SectionGrid
                       key={section.id}
@@ -934,10 +956,10 @@ function LotsPage() {
                     <img
                       src={draftProject.mapUrl}
                       alt="Plano"
-                      style={{ width: 90, height: 64, objectFit: "cover", borderRadius: 8, border: "1.5px solid #DCDAD2", flexShrink: 0 }}
+                      style={{ width: 90, height: 64, objectFit: "cover", borderRadius: 8, border: "1.5px solid #E2E7E5", flexShrink: 0 }}
                     />
                   ) : (
-                    <div style={{ width: 90, height: 64, borderRadius: 8, border: "1.5px dashed #DCDAD2", background: "#F1EEE6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <div style={{ width: 90, height: 64, borderRadius: 8, border: "1.5px dashed #E2E7E5", background: "#EEF1F1", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <span style={{ fontSize: "0.6rem", color: "#83867C", textAlign: "center", lineHeight: 1.3 }}>Sin imagen</span>
                     </div>
                   )}
@@ -1044,12 +1066,13 @@ function LotsPage() {
                 <button
                   className="lot-edit-ghost"
                   style={{ color: "#C0392B", borderColor: "#fca5a5", marginRight: "auto" }}
-                  onClick={() => {
-                    deleteLotFromSection(d.sectionId, d.id);
+                  disabled={deletingLot}
+                  onClick={async () => {
+                    await deleteLotFromSection(d.sectionId, d.id);
                     setLotEditDraft(null);
                   }}
                 >
-                  Eliminar lote
+                  {deletingLot ? "Eliminando..." : "Eliminar lote"}
                 </button>
                 <button className="lot-edit-primary" onClick={saveLotEdit}>Guardar</button>
                 <button className="lot-edit-ghost" onClick={() => setLotEditDraft(null)}>Cancelar</button>
@@ -1060,6 +1083,11 @@ function LotsPage() {
       })()}
 
       <LotImportFormatModal open={showFormatGuide} onClose={() => setShowFormatGuide(false)} />
+      <ImportResultsModal
+        open={showImportResults}
+        onClose={() => setShowImportResults(false)}
+        summary={importSummary}
+      />
       <GuideModal
         open={showImportGuide}
         onClose={() => setShowImportGuide(false)}
@@ -1069,22 +1097,50 @@ function LotsPage() {
       />
 
       {showDeleteFracConfirm && (
-        <div className="lot-edit-overlay" onClick={() => setShowDeleteFracConfirm(false)}>
+        <div className="lot-edit-overlay" onClick={() => { setShowDeleteFracConfirm(false); setBlockingContracts(null); }}>
           <div className="lot-edit-modal" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
             <div className="lot-edit-head">
               <div className="lot-edit-badge" style={{ background: "#fee2e2", color: "#991b1b", borderColor: "#fca5a5" }}>!</div>
               <div>
-                <div className="lot-edit-title">Eliminar fraccionamiento</div>
+                <div className="lot-edit-title">Archivar fraccionamiento</div>
                 <div className="lot-edit-sub">{draftProject.name}</div>
               </div>
-              <button className="lot-edit-close" onClick={() => setShowDeleteFracConfirm(false)}>×</button>
+              <button className="lot-edit-close" onClick={() => { setShowDeleteFracConfirm(false); setBlockingContracts(null); }}>×</button>
             </div>
             <div className="lot-edit-body" style={{ gap: 12 }}>
               <p style={{ fontSize: "0.84rem", color: "#43453F", lineHeight: 1.6 }}>
-                Esta acción eliminará el fraccionamiento <strong>{draftProject.name}</strong> y todos sus lotes de forma permanente. No se puede deshacer.
+                Se archivará el fraccionamiento <strong>{draftProject.name}</strong> y todos sus lotes: salen del inventario y dejan de contar para tu plan. El historial —contratos, pagos, recibos, documentos y la bitácora de cada lote— se conserva.
               </p>
+              {blockingContracts?.length > 0 && (
+                <div style={{ fontSize: "0.8rem", color: "#7f1d1d", background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 8, padding: "10px 12px", lineHeight: 1.5 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 6 }}>
+                    Hay cobranza en curso
+                  </div>
+                  <div style={{ marginBottom: 8 }}>
+                    Est{blockingContracts.length !== 1 ? "as ventas siguen" : "a venta sigue"} cobrándose. Si archivás igual, l{blockingContracts.length !== 1 ? "os lotes salen" : "el lote sale"} del inventario pero la cobranza sigue corriendo y podés seguirla desde Ventas y Pagos.
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: 18 }}>
+                    {blockingContracts.map((c) => (
+                      <li key={c.id} style={{ marginBottom: 2 }}>
+                        <strong>{c.contract_number}</strong>
+                        {c.lot ? ` · lote ${c.lot}` : ""} · {c.pending_payments} cuota{c.pending_payments !== 1 ? "s" : ""} por cobrar
+                      </li>
+                    ))}
+                  </ul>
+                  {blockingTotal > blockingContracts.length && (
+                    <div style={{ marginTop: 6, opacity: 0.8 }}>
+                      …y {blockingTotal - blockingContracts.length} más.
+                    </div>
+                  )}
+                </div>
+              )}
+              {fracSoldLots > 0 && !blockingContracts && (
+                <p style={{ fontSize: "0.8rem", color: "#92400e", background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: 8, padding: "8px 10px", lineHeight: 1.5 }}>
+                  Tiene <strong>{fracSoldLots}</strong> lote{fracSoldLots !== 1 ? "s" : ""} vendido{fracSoldLots !== 1 ? "s" : ""}. Se {fracSoldLots !== 1 ? "archivan" : "archiva"} junto con el fraccionamiento; los contratos, pagos y recibos de esas ventas se conservan.
+                </p>
+              )}
               <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8 }}>
-                <button className="lot-edit-ghost" onClick={() => setShowDeleteFracConfirm(false)}>Cancelar</button>
+                <button className="lot-edit-ghost" onClick={() => { setShowDeleteFracConfirm(false); setBlockingContracts(null); }}>Cancelar</button>
                 <button
                   className="lot-edit-primary"
                   style={{ background: "#C0392B", borderColor: "#991b1b" }}
@@ -1092,15 +1148,35 @@ function LotsPage() {
                   onClick={async () => {
                     setDeletingFrac(true);
                     try {
-                      await deleteFrac(draftProject._editingFracId);
+                      // Segundo intento: el usuario ya vio qué ventas eran.
+                      const forzar = blockingContracts !== null;
+                      const error = await deleteFrac(draftProject._editingFracId, {
+                        force: forzar,
+                        // El 409 por cobranza no es un fallo que anunciar por
+                        // toast: se muestra dentro del diálogo, que es donde el
+                        // usuario está mirando.
+                        silentCodes: ["OT-CON-3001"],
+                      });
+                      if (error) {
+                        if (error.code === "OT-CON-3001") {
+                          setBlockingContracts(error.details?.contracts ?? []);
+                          setBlockingTotal(error.details?.active_contracts ?? 0);
+                        }
+                        return;
+                      }
                       setShowDeleteFracConfirm(false);
+                      setBlockingContracts(null);
                       navigate("/fraccionamientos");
                     } finally {
                       setDeletingFrac(false);
                     }
                   }}
                 >
-                  {deletingFrac ? "Eliminando..." : "Sí, eliminar"}
+                  {deletingFrac
+                    ? "Archivando..."
+                    : blockingContracts
+                    ? "Archivar de todos modos"
+                    : "Sí, archivar"}
                 </button>
               </div>
             </div>
@@ -1114,43 +1190,35 @@ function LotsPage() {
   // ── SELECTOR / MAP-UPLOAD: página normal ──────────────────────────
   return (
     <div className="space-y-4">
-      <section className="rounded-[30px] border border-[#DCDAD2] bg-[linear-gradient(150deg,#1A3428,#101511)] p-5 text-[#E9E5DB] shadow-[0_28px_60px_rgba(13,15,12,.28)]">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className="text-[0.7rem] font-bold uppercase tracking-[0.24em] text-[#6FAF6B]">Inventario táctil</div>
-            <h1 className="mt-2 font-['Playfair_Display'] text-[1.9rem] leading-none">Lotes y proyectos</h1>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-white/8 px-3 py-2 text-right">
-            <div className="text-[0.64rem] uppercase tracking-[0.18em] text-white/45">Activos</div>
-            <div className="mt-1 text-sm font-bold">{projects.length}</div>
-          </div>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-[1.7rem] text-forest">Lotes y proyectos</h1>
+          <p className="mt-1 text-sm text-muted">Administra tus fraccionamientos y el inventario de lotes</p>
         </div>
-        <div className="mt-4 flex gap-3 overflow-x-auto pb-1 no-scrollbar">
-          {draftProject.mode === "selector" && (
-            <button
-              className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white transition-colors hover:border-white/30 hover:bg-white/20"
-              onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
-            >
-              Nuevo proyecto
-            </button>
-          )}
-        </div>
-      </section>
+        {draftProject.mode === "selector" && (
+          <button
+            className="btn-p"
+            onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
+          >
+            + Nuevo proyecto
+          </button>
+        )}
+      </div>
 
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-bold uppercase tracking-[0.22em] text-[#83867C]">Portafolio</h2>
-            <div className="mt-1 text-xs font-medium text-[#83867C]">
+            <h2 className="text-sm font-bold uppercase tracking-[0.22em] text-muted">Portafolio</h2>
+            <div className="mt-1 text-xs font-medium text-muted">
               {projects.length} fraccionamientos · usa las flechas o arrastra la lista
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="mr-1 text-sm font-semibold text-[#1E3D2B]">
+            <span className="mr-1 text-sm font-semibold text-forest">
               {projects.reduce((sum, item) => sum + item.totalLots, 0)} lotes
             </span>
             <button
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#DCDAD2] bg-white/90 text-[#1E3D2B] shadow-[0_8px_18px_rgba(24,18,14,.08)] transition hover:border-[#355E3B] hover:bg-[#FBFAF6]"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white/90 text-forest shadow-[0_8px_18px_rgba(24,18,14,.08)] transition hover:border-[#355E3B] hover:bg-[#FFFFFF]"
               type="button"
               onClick={() => scrollPortfolio(-1)}
               aria-label="Ver fraccionamientos anteriores"
@@ -1158,7 +1226,7 @@ function LotsPage() {
               <HiChevronLeft className="text-lg" />
             </button>
             <button
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#DCDAD2] bg-white/90 text-[#1E3D2B] shadow-[0_8px_18px_rgba(24,18,14,.08)] transition hover:border-[#355E3B] hover:bg-[#FBFAF6]"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white/90 text-forest shadow-[0_8px_18px_rgba(24,18,14,.08)] transition hover:border-[#355E3B] hover:bg-[#FFFFFF]"
               type="button"
               onClick={() => scrollPortfolio(1)}
               aria-label="Ver mas fraccionamientos"
@@ -1174,31 +1242,50 @@ function LotsPage() {
           {projects.map((project) => (
             <article
               key={project.id}
-              className="min-w-[min(86vw,340px)] snap-start rounded-[28px] border border-[#DCDAD2] bg-white/88 p-4 shadow-[0_18px_40px_rgba(24,18,14,.08)] sm:min-w-[330px]"
+              className="frac-card w-[min(86vw,340px)] snap-start rounded-[20px] border border-line bg-white/88 p-4 shadow-[0_18px_40px_rgba(24,18,14,.08)] sm:w-[330px]"
             >
               <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="font-['Playfair_Display'] text-xl text-[#1E3D2B]">{project.name}</div>
-                  <div className="mt-1 text-xs uppercase tracking-[0.18em] text-[#83867C]">
-                    {project.totalLots} propiedades
+                <div className="flex min-w-0 items-start gap-3">
+                  {project.mapImageUrl ? (
+                    <img
+                      src={project.mapImageUrl}
+                      alt=""
+                      className="frac-map-thumb"
+                      style={{ width: 52, height: 52, minWidth: 52, minHeight: 52, objectFit: "cover" }}
+                    />
+                  ) : (
+                    <div className="frac-map-thumb-empty" title="Sin plano">
+                      <HiMap className="text-lg" />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <div
+                      className="line-clamp-2 min-h-[55px] font-display text-xl leading-snug text-forest"
+                      title={project.name}
+                    >
+                      {project.name}
+                    </div>
+                    <div className="mt-1 text-xs uppercase tracking-[0.18em] text-muted">
+                      {project.totalLots} propiedades
+                    </div>
                   </div>
                 </div>
-                <div className="rounded-full bg-[#EDE3D3] px-3 py-1 text-[0.68rem] font-bold text-[#1E3D2B]">
+                <div className="flex-shrink-0 rounded-full bg-[#E3EDE3] px-3 py-1 text-[0.68rem] font-bold text-forest">
                   {project.available} libres
                 </div>
               </div>
               <div className="mt-4 grid grid-cols-3 gap-2">
-                <div className="rounded-2xl bg-[#FBFAF6] p-3">
-                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Vendido</div>
-                  <div className="mt-2 text-lg font-bold text-[#1E3D2B]">{project.sold}</div>
+                <div className="rounded-[13px] bg-[#FFFFFF] p-3">
+                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-muted">Vendido</div>
+                  <div className="mt-2 text-lg font-bold text-forest">{project.sold}</div>
                 </div>
-                <div className="rounded-2xl bg-[#FBFAF6] p-3">
-                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Reserva</div>
-                  <div className="mt-2 text-lg font-bold text-[#1E3D2B]">{project.reserved}</div>
+                <div className="rounded-[13px] bg-[#FFFFFF] p-3">
+                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-muted">Reserva</div>
+                  <div className="mt-2 text-lg font-bold text-forest">{project.reserved}</div>
                 </div>
-                <div className="rounded-2xl bg-[#FBFAF6] p-3">
-                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-[#83867C]">Disponible</div>
-                  <div className="mt-2 text-lg font-bold text-[#1E3D2B]">{project.available}</div>
+                <div className="rounded-[13px] bg-[#FFFFFF] p-3">
+                  <div className="text-[0.62rem] uppercase tracking-[0.14em] text-muted">Disponible</div>
+                  <div className="mt-2 text-lg font-bold text-forest">{project.available}</div>
                 </div>
               </div>
               <div className="mt-4 flex gap-2">
@@ -1212,11 +1299,17 @@ function LotsPage() {
                   Ver
                 </button>
                 <button
-                  className="flex-1 whitespace-nowrap rounded-[10px] border-[1.5px] border-[#355E3B] bg-[#355E3B] px-3 py-[7px] text-[0.76rem] font-bold text-white transition-colors hover:bg-[#21643F] disabled:opacity-60"
+                  className="btn-p flex-1 whitespace-nowrap !py-[7px] !text-[0.76rem] disabled:opacity-60"
                   onClick={() => openProjectEditor(project)}
                   disabled={loadingEditId === project.id}
                 >
-                  {loadingEditId === project.id ? "Cargando..." : "✏ Editar lotes"}
+                  {loadingEditId === project.id ? (
+                    "Cargando..."
+                  ) : (
+                    <span className="inline-flex items-center justify-center gap-1.5">
+                      <HiPencil className="h-[0.9em] w-[0.9em]" /> Editar lotes
+                    </span>
+                  )}
                 </button>
               </div>
             </article>
@@ -1224,24 +1317,27 @@ function LotsPage() {
         </div>
       </section>
 
-      {draftProject.mode === "selector" ? (
-        <section className="rounded-[28px] border border-[#DCDAD2] bg-white/88 p-8 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
+      {migrando ? (
+        <MigrationWizard onSalir={() => setMigrando(false)} />
+      ) : draftProject.mode === "selector" ? (
+        <section className="rounded-[28px] border border-[#E2E7E5] bg-white/88 p-8 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
           <div className="mx-auto max-w-[660px] text-center">
-            <h2 className="font-['Playfair_Display'] text-[1.65rem] text-[#1E3D2B]">Carga de Lotes</h2>
+            <h2 className="font-display text-[1.65rem] text-forest">Carga de Lotes</h2>
             <p className="mx-auto mt-2 max-w-[420px] text-[0.84rem] leading-relaxed text-[#83867C]">
               Elige el método que mejor se adapte a tu flujo de trabajo
             </p>
             <div className="mt-8 grid gap-5 sm:grid-cols-2">
               {/* ── Carga Manual ── */}
               <div
-                className="relative flex cursor-pointer flex-col overflow-hidden rounded-[16px] border-2 border-[#DCDAD2] bg-[#FBFAF6] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#355E3B] hover:shadow-[0_8px_24px_rgba(45,90,71,.15)]"
+                className="relative flex cursor-pointer flex-col overflow-hidden rounded-[16px] border-2 border-[#E2E7E5] bg-[#FFFFFF] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#355E3B] hover:shadow-[0_8px_24px_rgba(45,90,71,.15)]"
+                data-tour="frac-carga-manual"
                 onClick={() => setDraftProject((previous) => ({ ...previous, mode: "map-upload" }))}
               >
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#355E3B]" />
                 <div className="mx-auto mb-3 flex h-[62px] w-[62px] items-center justify-center rounded-[15px] bg-[#D4EAE0] text-[1.8rem]">
-                  🗺️
+                  <HiMap className="h-[1.8rem] w-[1.8rem] text-[#355E3B]" />
                 </div>
-                <div className="mb-2 font-['Playfair_Display'] text-[1.05rem] text-[#1E3D2B]">Carga Manual</div>
+                <div className="mb-2 font-display text-[1.05rem] text-forest">Carga Manual</div>
                 <div className="mb-5 text-[0.76rem] leading-relaxed text-[#83867C]">
                   Sube la imagen del plano y construye la matriz de lotes manualmente. Define secciones, columnas y estado de cada unidad.
                 </div>
@@ -1252,7 +1348,7 @@ function LotsPage() {
 
               {/* ── Carga CAD ── */}
               <div
-                className="relative flex cursor-pointer flex-col overflow-hidden rounded-[16px] border-2 border-[#DCDAD2] bg-[#FBFAF6] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#4A6FA5] hover:shadow-[0_8px_24px_rgba(74,111,165,.15)]"
+                className="relative flex cursor-pointer flex-col overflow-hidden rounded-[16px] border-2 border-[#E2E7E5] bg-[#FFFFFF] p-7 text-center transition-all duration-200 hover:-translate-y-[3px] hover:border-[#4A6FA5] hover:shadow-[0_8px_24px_rgba(74,111,165,.15)]"
                 role="button"
                 tabIndex={0}
                 aria-label="Importar CAD, próximamente"
@@ -1266,9 +1362,9 @@ function LotsPage() {
               >
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#4A6FA5]" />
                 <div className="mx-auto mb-3 flex h-[62px] w-[62px] items-center justify-center rounded-[15px] bg-[#E8EEF7] text-[1.8rem]">
-                  📐
+                  <HiCube className="h-[1.8rem] w-[1.8rem] text-[#4A6FA5]" />
                 </div>
-                <div className="mb-2 font-['Playfair_Display'] text-[1.05rem] text-[#1E3D2B]">Importar CAD</div>
+                <div className="mb-2 font-display text-[1.05rem] text-forest">Importar CAD</div>
                 <div className="mb-5 flex-1 text-[0.76rem] leading-relaxed text-[#83867C]">
                   Sube un archivo DWG o DXF del plano técnico y el sistema extrae automáticamente la estructura de lotes.
                 </div>
@@ -1278,11 +1374,29 @@ function LotsPage() {
               </div>
 
             </div>
+
+            {/* Traer una inmobiliaria que ya opera. Va aparte de los métodos de
+                arriba porque no carga un proyecto: carga la empresa entera. */}
+            <div className="mt-7 border-t border-[#E2E7E5] pt-6 text-left sm:flex sm:items-center sm:gap-5">
+              <div className="flex-1">
+                <div className="font-display text-[1rem] text-forest">¿Vienes de otro sistema?</div>
+                <p className="mt-1 text-[0.78rem] leading-relaxed text-[#83867C]">
+                  Trae un fraccionamiento que ya opera: sus lotes, los clientes que compraron
+                  y sus contratos con la cobranza al día. Tres pasos, una vez por proyecto.
+                </p>
+              </div>
+              <button
+                onClick={() => setMigrando(true)}
+                className="mt-4 shrink-0 rounded-[9px] border-2 border-[#355E3B] px-5 py-2.5 text-[0.8rem] font-bold text-[#355E3B] transition-colors hover:bg-[#355E3B] hover:text-white sm:mt-0"
+              >
+                Migrar fraccionamiento
+              </button>
+            </div>
           </div>
         </section>
       ) : (
         /* map-upload step */
-        <section className="lot-upload-shell">
+        <section className="lot-upload-shell" data-tour="frac-inicio">
           <div className="lot-upload-head">
             <div>
               <span className="lot-upload-kicker">Plano base</span>
@@ -1305,14 +1419,15 @@ function LotsPage() {
             <div style={{ marginBottom: 16 }}>
               <div className="mb-1 text-[0.62rem] font-bold uppercase tracking-[0.5px] text-[#83867C]" style={{ marginBottom: 6, fontSize: ".7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#83867C" }}>Nombre del fraccionamiento</div>
               <input
-                className="w-full rounded-[8px] border-[1.5px] border-[#DCDAD2] bg-white px-3 py-2 text-[0.84rem] text-[#1E3D2B] outline-none"
-                style={{ width: "100%", borderRadius: 8, border: "1.5px solid #DCDAD2", background: "white", padding: "8px 12px", fontSize: ".84rem", color: "#1E3D2B", outline: "none", fontFamily: "var(--font-body)" }}
+                className="w-full rounded-[8px] border-[1.5px] border-[#E2E7E5] bg-white px-3 py-2 text-[0.84rem] text-[#1E3D2B] outline-none"
+                style={{ width: "100%", borderRadius: 8, border: "1.5px solid #E2E7E5", background: "white", padding: "8px 12px", fontSize: ".84rem", color: "#1E3D2B", outline: "none", fontFamily: "var(--font-body)" }}
                 placeholder="Ej. Residencial Las Palmas"
+                data-tour="frac-nombre-inicial"
                 value={draftProject.name === "Nuevo Fraccionamiento" ? "" : draftProject.name}
                 onChange={(e) => setDraftProject((prev) => ({ ...prev, name: e.target.value || "Nuevo Fraccionamiento" }))}
               />
             </div>
-            <label className="lot-upload-drop">
+            <label className="lot-upload-drop" data-tour="frac-plano">
               <div className="lot-upload-code">IMG</div>
               <div>
                 <div className="lot-upload-drop-title">Seleccionar imagen del plano</div>
@@ -1330,23 +1445,50 @@ function LotsPage() {
                 className="hidden"
                 onChange={async (event) => {
                   const file = event.target.files?.[0];
-                  if (file && await updateMap(file)) {
-                    setDraftProject((previous) => ({ ...previous, mode: "editor" }));
-                  }
+                  // Solo se PREVISUALIZA (queda en draftProject.mapUrl como data URL) — el
+                  // clic en "Guardar y continuar" de abajo es lo único que crea algo de
+                  // verdad en el servidor.
+                  if (file) await updateMap(file);
                   event.target.value = "";
                 }}
               />
             </label>
+            {mapFileName && draftProject.mapUrl && (
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10 }}>
+                <img
+                  src={draftProject.mapUrl}
+                  alt="Vista previa del plano"
+                  style={{ width: 90, height: 64, objectFit: "cover", borderRadius: 8, border: "1.5px solid #E2E7E5", flexShrink: 0 }}
+                />
+                <div className="lots-editor-file">
+                  <span>MAP</span>{mapFileName} — listo, falta guardar
+                </div>
+              </div>
+            )}
             <div className="lot-upload-foot">
               <div>
-                <span>Sin plano</span>
-                <p>También puedes crear secciones y lotes manualmente.</p>
+                <span>{mapFileName ? "Nombre y plano listos" : "Sin plano"}</span>
+                <p>
+                  {mapFileName
+                    ? "Se guardan al pulsar el botón — después agregas los lotes."
+                    : "También puedes crear secciones y lotes manualmente, sin plano."}
+                </p>
               </div>
               <button
                 className="lot-upload-secondary"
-                onClick={() => setDraftProject((previous) => ({ ...previous, mode: "editor" }))}
+                data-tour="frac-guardar-inicial"
+                disabled={creatingFrac}
+                onClick={async () => {
+                  if (creatingFrac) return;
+                  setCreatingFrac(true);
+                  try {
+                    await createFracDraft({ name: draftProject.name, mapUrl: draftProject.mapUrl });
+                  } finally {
+                    setCreatingFrac(false);
+                  }
+                }}
               >
-                Continuar
+                {creatingFrac ? "Guardando..." : "Guardar y continuar"}
               </button>
             </div>
           </div>

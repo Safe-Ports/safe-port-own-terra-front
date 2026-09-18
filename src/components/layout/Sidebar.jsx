@@ -3,7 +3,8 @@ import {
   HiArrowLeftOnRectangle,
   HiBellAlert,
   HiCalculator,
-  HiCalendarDays,
+  HiChevronDoubleLeft,
+  HiChevronDoubleRight,
   HiChartBarSquare,
   HiCog6Tooth,
   HiDocumentDuplicate,
@@ -11,20 +12,22 @@ import {
   HiMap,
   HiOutlineSquares2X2,
   HiOutlineUserGroup,
+  HiPresentationChartLine,
   HiRectangleGroup,
-  HiSun,
   HiWallet,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 import useEscapeKey from "@/hooks/useEscapeKey";
 
+// Mi Día y Calendario no están acá a propósito: viven en la barra superior y en
+// el lanzador de servicios, que acompañan a todas las apps. Repetirlos en el
+// menú de Lands daba dos caminos al mismo lugar y ocupaba lugar de lo propio.
 const items = [
   { label: "Ecosistema", to: "/ecosistema", icon: HiRectangleGroup, section: "General" },
-  { label: "Mi Día", to: "/ecosistema/mi-dia", icon: HiSun, section: "General" },
-  { label: "Calendario", to: "/ecosistema/agenda", icon: HiCalendarDays, section: "General" },
   { label: "Dashboard", to: "/dashboard", icon: HiHome, section: "General" },
   { label: "Carga de Lotes", to: "/lotes", icon: HiOutlineSquares2X2, section: "Propiedades" },
   { label: "Fraccionamientos", to: "/fraccionamientos", icon: HiMap, section: "Propiedades" },
+  { label: "Track de Lotes", to: "/track-lotes", icon: HiPresentationChartLine, section: "Propiedades" },
   { label: "Clientes & CRM", to: "/clientes", icon: HiOutlineUserGroup, section: "Gestion" },
   { label: "Contratos", to: "/contratos", icon: HiWallet, section: "Gestion" },
   { label: "Pagos", to: "/pagos", icon: HiBellAlert, section: "Gestion" },
@@ -34,18 +37,24 @@ const items = [
   { label: "Configuracion", to: "/configuracion", icon: HiCog6Tooth, section: "Sistema" },
 ];
 
-function Logo() {
+function Logo({ onClick }) {
   return (
     <div className="sb-logo">
-      <div className="sb-logo-mark">
-        <img src="/ownterra_land.png" alt="" />
-      </div>
+      <NavLink
+        to="/ecosistema"
+        className="sb-logo-mark"
+        aria-label="Ir al Ecosistema OwnTerra"
+        title="Volver al Ecosistema"
+        onClick={onClick}
+      >
+        <img src="/icons/app-lands.png" alt="OwnTerra Lands" />
+      </NavLink>
     </div>
   );
 }
 
 function Sidebar() {
-  const { ui, closeSidebar, fracs, clients, payments, documents, notificationCount, logout, currentUser, canAccessApp, canUseFeature, resetFracsView, setDraftProject } = useAppContext();
+  const { ui, closeSidebar, fracs, clients, payments, documents, notificationCount, logout, currentUser, canAccessApp, canUseFeature, resetFracsView, setDraftProject, sidebarCollapsed, toggleSidebarCollapsed } = useAppContext();
   useEscapeKey(closeSidebar, ui.sidebarOpen);
 
   const handleLogout = () => {
@@ -57,8 +66,16 @@ function Sidebar() {
   return (
     <>
       <div className={`sidebar-backdrop ${ui.sidebarOpen ? "show" : ""}`} onClick={closeSidebar} />
-      <aside className={`sb app-sidebar ${ui.sidebarOpen ? "open" : ""}`}>
-        <Logo />
+      <aside className={`sb app-sidebar ${ui.sidebarOpen ? "open" : ""} ${sidebarCollapsed ? "collapsed" : ""}`}>
+        <button
+          className="sb-collapse"
+          onClick={toggleSidebarCollapsed}
+          title={sidebarCollapsed ? "Fijar la barra abierta" : "Colapsar la barra"}
+          aria-label={sidebarCollapsed ? "Fijar la barra abierta" : "Colapsar la barra"}
+        >
+          {sidebarCollapsed ? <HiChevronDoubleRight /> : <HiChevronDoubleLeft />}
+        </button>
+        <Logo onClick={closeSidebar} />
         <div className="sb-nav">
           {items.filter((item) => {
             if (item.to.startsWith("/ecosistema")) return true;
@@ -68,6 +85,10 @@ function Sidebar() {
             if (item.to === "/documentos") return canUseFeature("lands.documents");
             if (item.to === "/pagos") return canUseFeature("lands.payments");
             if (item.to === "/reportes") return canUseFeature("lands.reports");
+            // Mismo criterio que las rutas (ver AppRouter): son de administración,
+            // así que no basta con tener acceso a Lands. Sin esto el vendedor las
+            // veía en el menú y al entrar chocaba con "sin acceso".
+            if (item.to === "/lotes" || item.to === "/calculadora") return canUseFeature("lands.write");
             return canAccessApp("lands");
           }).map((item) => {
             const Icon = item.icon;
@@ -85,6 +106,9 @@ function Sidebar() {
                 {shouldRenderSection ? <div className="sb-sec">{item.section}</div> : null}
                 <NavLink
                   to={item.to}
+                  /* En modo riel el texto no se ve: el title es lo que dice qué
+                     es cada icono mientras el cursor no llega a expandir. */
+                  title={sidebarCollapsed ? item.label : undefined}
                   onClick={() => {
                     closeSidebar();
                     if (item.to === "/fraccionamientos") resetFracsView();
@@ -95,7 +119,7 @@ function Sidebar() {
                   <span className="sb-ico">
                     <Icon />
                   </span>
-                  <span>{item.label}</span>
+                  <span className="sb-txt">{item.label}</span>
                   {badge ? <span className={`sb-bdg ${item.to === "/pagos" ? "sb-bdg-red" : ""}`}>{badge}</span> : null}
                 </NavLink>
               </div>
@@ -104,12 +128,12 @@ function Sidebar() {
         </div>
         <div className="sb-foot">
           <NavLink to="/perfil" onClick={closeSidebar} className="sb-foot-item" style={{ textDecoration: "none" }}>
-            <span style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--forest)",
+            <span className="sb-foot-av" style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--forest)",
               color: "#fff", fontWeight: 800, fontSize: ".68rem",
               display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               {(currentUser?.name || "U").charAt(0).toUpperCase()}
             </span>
-            <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+            <div className="sb-foot-txt" style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
               <div style={{ fontSize: ".78rem", color: "rgba(255,255,255,.85)", fontWeight: 600,
                 overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {currentUser?.name || "Perfil"}
@@ -122,7 +146,7 @@ function Sidebar() {
             fontFamily: "var(--font-body)", cursor: "pointer", marginTop: 4,
           }}>
             <span className="sb-foot-ico"><HiArrowLeftOnRectangle /></span>
-            <span>Cerrar sesión</span>
+            <span className="sb-foot-txt">Cerrar sesión</span>
           </button>
         </div>
       </aside>

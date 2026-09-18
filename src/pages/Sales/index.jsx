@@ -1,11 +1,25 @@
 import { useState } from "react";
+import { HiArrowDownTray, HiDocumentText, HiFolder, HiPrinter } from "react-icons/hi2";
 import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
 import { currency, progress } from "@/services/formatters";
 import { contractService } from "@/services/contractService";
+import ReleasesTable from "./ReleasesTable";
 import Button from "@/components/Button";
 import GuideModal from "@/components/shared/GuideModal";
+import PendingApproval from "./PendingApproval";
+
+// El estado que guarda la base no es el que se lee. "pending_approval" es una
+// clave, no una frase.
+const ESTADO = {
+  pending_approval: { label: "Por aprobar", cls: "pending-approval" },
+  rejected: { label: "Rechazado", cls: "rejected" },
+  active: { label: "Vigente", cls: "paid" },
+  completed: { label: "Liquidado", cls: "paid" },
+  cancelled: { label: "Cancelado", cls: "pending" },
+  defaulted: { label: "En mora", cls: "pending" },
+};
 
 function SalesPage() {
   const { contracts, setEditingContract, openModal, openContractCreate, openDocumentUpload, openClientReport, showToast } = useAppContext();
@@ -30,10 +44,12 @@ function SalesPage() {
   };
 
   return (
+    <>
+    <PendingApproval />
     <div className="card">
       <div className="card-hd">
-        <div className="card-title">📄 Repositorio de Contratos</div>
-        <button className="btn-p" onClick={() => openContractCreate()}>+ Generar Contrato</button>
+        <div className="card-title"><HiDocumentText style={{ display: "inline", verticalAlign: "-2px" }} /> Repositorio de Contratos</div>
+        <button className="btn-p" data-tour="contrato-generar" onClick={() => openContractCreate()}>+ Generar Contrato</button>
       </div>
       <div className="card-body" style={{ padding: 0 }}>
         <table className="tbl">
@@ -54,7 +70,7 @@ function SalesPage() {
               <tr key={contract.id}>
                 <td>
                   <span className="contract-badge" onClick={() => { setEditingContract(contract); openModal("contractModal"); }}>
-                    📄 {contract.contract_number}
+                    <HiDocumentText style={{ display: "inline", verticalAlign: "-2px" }} /> {contract.contract_number}
                   </span>
                 </td>
                 <td>{contract.type}</td>
@@ -63,13 +79,20 @@ function SalesPage() {
                 <td>{currency(contract.amount)}</td>
                 <td>{progress(contract.payments_summary?.paid ?? 0, contract.payments_summary?.total ?? 0)}%</td>
                 <td>
-                  <span className={`pc-chip ${contract.type === "reserve" ? "pending" : "paid"}`}>{contract.status || contract.type}</span>
+                  <span className={`pc-chip ${ESTADO[contract.status]?.cls || (contract.type === "reserve" ? "pending" : "paid")}`}>
+                    {ESTADO[contract.status]?.label || contract.status || contract.type}
+                  </span>
+                  {/* El motivo va junto al estado: es lo que quien lo armó
+                      necesita para saber qué corregir. */}
+                  {contract.status === "rejected" && contract.rejection_reason && (
+                    <span className="pa-reason">{contract.rejection_reason}</span>
+                  )}
                 </td>
                 <td style={{ whiteSpace: "nowrap" }}>
                   <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => { setEditingContract(contract); openModal("contractModal"); }}>Editar</button>{" "}
-                  <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => openDocumentUpload({ linkType: "contract", linkedId: contract.id })}>📁</button>{" "}
-                  <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => openClientReport(contract.client?.id)}>🖨</button>{" "}
-                  <button className="btn-p" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => handleDownloadPdf(contract)}>⬇ PDF</button>
+                  <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => openDocumentUpload({ linkType: "contract", linkedId: contract.id })}><HiFolder /></button>{" "}
+                  <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => openClientReport(contract.client?.id)}><HiPrinter /></button>{" "}
+                  <button className="btn-p" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => handleDownloadPdf(contract)}><HiArrowDownTray /> PDF</button>
                 </td>
               </tr>
             )) : (
@@ -96,6 +119,8 @@ function SalesPage() {
         ]}
       />
     </div>
+    <ReleasesTable />
+    </>
   );
 }
 

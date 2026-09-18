@@ -26,7 +26,7 @@ function EmptyState({ icon, title, description, action, ctaLabel, onCta, ctaTo, 
   return (
     <div className="ot-card flex min-h-[240px] flex-col items-center justify-center gap-3 px-6 py-10 text-center">
       <div className={`text-5xl ${TONE[tone] || TONE.empty}`}>{icon}</div>
-      <div className="font-['Playfair_Display'] text-xl text-forest">{title}</div>
+      <div className="font-display text-xl text-forest">{title}</div>
       {description ? (
         <div className="max-w-[320px] text-sm leading-6 text-muted">{description}</div>
       ) : null}
