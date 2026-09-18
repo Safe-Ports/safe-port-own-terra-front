@@ -119,7 +119,6 @@ export default function LotImportFormatModal({ open, onClose }) {
     medidas: false,
     precios: false,
     estados: false,
-    servicios: false,
     especificaciones: false,
     ejemplo: false,
   });
@@ -263,32 +262,20 @@ export default function LotImportFormatModal({ open, onClose }) {
             </Note>
           </Section>
 
-          {/* ── 6. Servicios ────────────────────────────────────────────── */}
-          <Section id="servicios" title="Servicios disponibles" type="optional" open={sections.servicios} onToggle={toggle}>
-            <p style={{ fontSize: "0.8rem", color: "#43453F", marginBottom: 10 }}>
-              Agrega una columna por cada servicio. Para indicar que el lote <em>sí</em> tiene el servicio usa alguno de los valores válidos.
-            </p>
-            <MiniTable
-              headers={["Columna (encabezado)", "Valores → ✓ (sí tiene)", "Valores → ✕ (no tiene)"]}
-              rows={[
-                ["Agua Potable", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
-                ["Energía Eléctrica", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
-                ["Drenaje", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
-                ["Gas Natural", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
-                ["Internet/Fibra", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
-                ["Pavimento", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
-              ]}
-            />
-          </Section>
-
-          {/* ── 6b. Especificaciones ────────────────────────────────────── */}
+          {/* ── 6. Especificaciones ─────────────────────────────────────── */}
           <Section id="especificaciones" title="Especificaciones de lote" type="optional" open={sections.especificaciones} onToggle={toggle}>
             <p style={{ fontSize: "0.8rem", color: "#43453F", marginBottom: 10 }}>
-              Datos propios de un terreno (no de una construcción — recámaras/baños/alberca no aplican aquí).
+              Servicios disponibles y datos propios de un terreno (no de una construcción — recámaras/baños/alberca no aplican aquí). Agrega una columna por cada uno.
             </p>
             <MiniTable
               headers={["Columna (encabezado)", "Tipo", "Valores"]}
               rows={[
+                ["Agua Potable", "sí / no", "sí, si, 1, true, yes, x  →  no, 0, false, (vacío)"],
+                ["Energía Eléctrica", "sí / no", "sí, si, 1, true, yes, x  →  no, 0, false, (vacío)"],
+                ["Drenaje", "sí / no", "sí, si, 1, true, yes, x  →  no, 0, false, (vacío)"],
+                ["Gas Natural", "sí / no", "sí, si, 1, true, yes, x  →  no, 0, false, (vacío)"],
+                ["Internet/Fibra", "sí / no", "sí, si, 1, true, yes, x  →  no, 0, false, (vacío)"],
+                ["Pavimento", "sí / no", "sí, si, 1, true, yes, x  →  no, 0, false, (vacío)"],
                 ["Uso de Suelo", "texto libre", "Habitacional, Comercial, Mixto…"],
                 ["Orientación", "texto libre", "Norte, Sur, Oriente, Poniente…"],
                 ["Lote de Esquina", "sí / no", "sí, si, 1, true, yes, x  →  no, 0, false, (vacío)"],

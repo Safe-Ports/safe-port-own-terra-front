@@ -26,13 +26,17 @@ const LOT_COLORS = {
   sold: { label: "Vendido", className: "sold", color: "#C0392B" },
 };
 
-const SERVICES = [
+// Especificaciones booleanas de lote — incluye lo que antes era "servicios"
+// (agua, luz, …): ya no es un sistema aparte, es el mismo catálogo.
+const ESPECIFICACIONES_CHIPS = [
   { k: "agua", lbl: "Agua potable" },
   { k: "luz", lbl: "Energia electrica" },
   { k: "drenaje", lbl: "Drenaje" },
   { k: "gas", lbl: "Gas natural" },
   { k: "internet", lbl: "Internet/Fibra" },
   { k: "pavimento", lbl: "Pavimento" },
+  { k: "esquina", lbl: "Lote de esquina" },
+  { k: "bardeado", lbl: "Bardeado" },
 ];
 
 const LOT_CODE_COLLATOR = new Intl.Collator("es-MX", { numeric: true, sensitivity: "base" });
@@ -469,7 +473,7 @@ function FracsPage() {
           priceFinanciado: lot.price_financiado ?? "",
           frente: lot.frente_ml ?? "",
           fondo: lot.fondo_ml ?? "",
-          servicios: JSON.stringify(lot.services || {}),
+          especificaciones: JSON.stringify(lot.especificaciones || {}),
         },
         code: lot.code,
         status: lot.status || "available",
@@ -478,7 +482,7 @@ function FracsPage() {
         priceFinanciado: lot.price_financiado ?? "",
         frente: lot.frente_ml ?? "",
         fondo: lot.fondo_ml ?? "",
-        servicios: lot.services || {},
+        especificaciones: lot.especificaciones || {},
       });
     });
     setDraftProject({
@@ -1039,22 +1043,8 @@ function FracsPage() {
                 </div>
 
                 <div className="lotp-sec">
-                  <div className="lotp-sh"><b>Servicios</b></div>
-                  <div className="lotp-svc">
-                    {SERVICES.map((service) => {
-                      const on = !!(selectedLot.services?.[service.k]);
-                      return (
-                        <span key={service.k} className={`lotp-chip${on ? " on" : ""}`}>{service.lbl}</span>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {(selectedLot.especificaciones?.uso_suelo || selectedLot.especificaciones?.orientacion
-                  || selectedLot.especificaciones?.esquina === "true"
-                  || selectedLot.especificaciones?.bardeado === "true") ? (
-                  <div className="lotp-sec">
-                    <div className="lotp-sh"><b>Especificaciones</b></div>
+                  <div className="lotp-sh"><b>Especificaciones</b></div>
+                  {(selectedLot.especificaciones?.uso_suelo || selectedLot.especificaciones?.orientacion) ? (
                     <div className="lotp-specs">
                       {selectedLot.especificaciones?.uso_suelo ? (
                         <SpecRow label="Uso de suelo" value={selectedLot.especificaciones.uso_suelo} />
@@ -1063,18 +1053,16 @@ function FracsPage() {
                         <SpecRow label="Orientacion" value={selectedLot.especificaciones.orientacion} />
                       ) : null}
                     </div>
-                    {(selectedLot.especificaciones?.esquina === "true" || selectedLot.especificaciones?.bardeado === "true") ? (
-                      <div className="lotp-svc">
-                        {selectedLot.especificaciones?.esquina === "true" ? (
-                          <span className="lotp-chip on">Lote de esquina</span>
-                        ) : null}
-                        {selectedLot.especificaciones?.bardeado === "true" ? (
-                          <span className="lotp-chip on">Bardeado</span>
-                        ) : null}
-                      </div>
-                    ) : null}
+                  ) : null}
+                  <div className="lotp-svc">
+                    {ESPECIFICACIONES_CHIPS.map((esp) => {
+                      const on = selectedLot.especificaciones?.[esp.k] === "true";
+                      return (
+                        <span key={esp.k} className={`lotp-chip${on ? " on" : ""}`}>{esp.lbl}</span>
+                      );
+                    })}
                   </div>
-                ) : null}
+                </div>
 
                 {apptData.length ? (
                   <div className="lotp-sec">

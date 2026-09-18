@@ -18,11 +18,27 @@ const HEADERS = [
   "ID Lote", "Fraccionamiento", "Estado", "Precio Contado", "Precio Financiado",
   "Frente (ML)", "Fondo (ML)", "Superficie (m2)",
   "Agua Potable", "Energía Eléctrica", "Drenaje", "Gas Natural", "Internet/Fibra", "Pavimento",
+  "Uso de Suelo", "Orientación", "Lote de Esquina", "Bardeado",
   "Vendedor Asignado",
 ];
 
-/** Servicios en el mismo orden en que aparecen en la plantilla. */
-const SERVICE_KEYS = ["agua", "luz", "drenaje", "gas", "internet", "pavimento"];
+/**
+ * Especificaciones en el mismo orden en que aparecen en la plantilla — incluye
+ * lo que antes era "servicios" (agua...pavimento, booleanas) seguido de lo
+ * propio de un lote. Un solo catálogo del lado del backend, una sola lista acá.
+ */
+const ESPECIFICACION_KEYS = [
+  { k: "agua", tipo: "booleano" },
+  { k: "luz", tipo: "booleano" },
+  { k: "drenaje", tipo: "booleano" },
+  { k: "gas", tipo: "booleano" },
+  { k: "internet", tipo: "booleano" },
+  { k: "pavimento", tipo: "booleano" },
+  { k: "uso_suelo", tipo: "texto" },
+  { k: "orientacion", tipo: "texto" },
+  { k: "esquina", tipo: "booleano" },
+  { k: "bardeado", tipo: "booleano" },
+];
 
 /* Va aparte de HEADERS a propósito: HEADERS espeja la plantilla de importación
    y el archivo que se descarga lo genera el backend con esa misma lista. Esta
@@ -160,11 +176,18 @@ export default function MatrixSheet({ lots, fracId, fracName, loading, showError
                     <td className="mx-num">{fr ?? <span className="mx-miss">falta</span>}</td>
                     <td className="mx-num">{fo ?? <span className="mx-miss">falta</span>}</td>
                     <td className="mx-num">{sup ?? <span className="mx-miss">falta</span>}</td>
-                    {SERVICE_KEYS.map((k) => (
-                      <td key={k} className={lot.services?.[k] ? "mx-yes" : "mx-no"}>
-                        {lot.services?.[k] ? "Sí" : "No"}
-                      </td>
-                    ))}
+                    {ESPECIFICACION_KEYS.map(({ k, tipo }) => {
+                      if (tipo === "texto") {
+                        const v = lot.especificaciones?.[k];
+                        return <td key={k}>{v || <span className="mx-miss">falta</span>}</td>;
+                      }
+                      const on = lot.especificaciones?.[k] === "true";
+                      return (
+                        <td key={k} className={on ? "mx-yes" : "mx-no"}>
+                          {on ? "Sí" : "No"}
+                        </td>
+                      );
+                    })}
                     <td>{quienLoTiene(lot)}</td>
                     <td className="mx-extra">
                       <FilesDropdown archivos={archivosPorLote[lot.id]}

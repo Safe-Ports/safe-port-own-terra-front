@@ -331,7 +331,6 @@ function LotsPage() {
             priceFinanciado: lot.price_financiado ?? "",
             frente:          lot.frente_ml ?? "",
             fondo:           lot.fondo_ml ?? "",
-            servicios:       JSON.stringify(lot.services || {}),
             especificaciones: JSON.stringify(lot.especificaciones || {}),
           },
           code:            lot.code,
@@ -341,7 +340,6 @@ function LotsPage() {
           priceFinanciado: lot.price_financiado ?? "",
           frente:          lot.frente_ml ?? "",
           fondo:           lot.fondo_ml ?? "",
-          servicios:       lot.services || {},
           especificaciones: lot.especificaciones || {},
         });
       });
@@ -421,7 +419,6 @@ function LotsPage() {
             priceFinanciado: lot.price_financiado ?? "",
             frente:          lot.frente_ml ?? "",
             fondo:           lot.fondo_ml ?? "",
-            servicios:       JSON.stringify(lot.services || {}),
             especificaciones: JSON.stringify(lot.especificaciones || {}),
           },
           code:            lot.code,
@@ -431,7 +428,6 @@ function LotsPage() {
           priceFinanciado: lot.price_financiado ?? "",
           frente:          lot.frente_ml ?? "",
           fondo:           lot.fondo_ml ?? "",
-          servicios:       lot.services || {},
           especificaciones: lot.especificaciones || {},
         });
       });
@@ -475,8 +471,10 @@ function LotsPage() {
       fondo: lot.fondo ?? "",
       priceFinanciado: lot.priceFinanciado ?? "",
       vendedor: lot.vendedor ?? "",
-      servicios: lot.servicios ?? { agua: false, luz: false, drenaje: false, gas: false, internet: false, pavimento: false },
-      especificaciones: lot.especificaciones ?? { uso_suelo: "", orientacion: "", esquina: false, bardeado: false },
+      especificaciones: lot.especificaciones ?? {
+        agua: false, luz: false, drenaje: false, gas: false, internet: false, pavimento: false,
+        uso_suelo: "", orientacion: "", esquina: false, bardeado: false,
+      },
     });
   };
 
@@ -928,27 +926,25 @@ function LotsPage() {
       {lotEditDraft && (() => {
         const d = lotEditDraft;
         const setField = (key, val) => setLotEditDraft((prev) => ({ ...prev, [key]: val }));
-        const setService = (key, val) => setLotEditDraft((prev) => ({ ...prev, servicios: { ...prev.servicios, [key]: val } }));
         const setEspecificacion = (key, val) => setLotEditDraft((prev) => ({ ...prev, especificaciones: { ...prev.especificaciones, [key]: val } }));
-        const SERVICES = [
-          { key: "agua",      label: "Agua potable"      },
-          { key: "luz",       label: "Energia electrica" },
-          { key: "drenaje",   label: "Drenaje"           },
-          { key: "gas",       label: "Gas natural"       },
-          { key: "internet",  label: "Internet / Fibra"  },
-          { key: "pavimento", label: "Pavimento"         },
-        ];
         // Mismas claves que sembró la migración de especificaciones_catalogo en
         // lands-back — es un catalogo global (tambien tiene recamaras/banos/
         // alberca para casa/depa), pero el front no lo consulta por API, asi que
-        // se hardcodea solo el subset con aplica_a=['lot'], igual que SERVICES.
+        // se hardcodea solo el subset con aplica_a=['lot']. "Servicios" ya no es
+        // un sistema aparte: agua/luz/etc son especificaciones booleanas mas.
         const ESPECIFICACIONES_TEXT = [
           { key: "uso_suelo",   label: "Uso de suelo" },
           { key: "orientacion", label: "Orientacion"  },
         ];
         const ESPECIFICACIONES_BOOL = [
-          { key: "esquina",  label: "Lote de esquina"   },
-          { key: "bardeado", label: "Bardeado / cercado" },
+          { key: "agua",      label: "Agua potable"       },
+          { key: "luz",       label: "Energia electrica"  },
+          { key: "drenaje",   label: "Drenaje"            },
+          { key: "gas",       label: "Gas natural"        },
+          { key: "internet",  label: "Internet / Fibra"   },
+          { key: "pavimento", label: "Pavimento"          },
+          { key: "esquina",   label: "Lote de esquina"    },
+          { key: "bardeado",  label: "Bardeado / cercado" },
         ];
         return (
           <div className="lot-edit-overlay" onClick={() => setLotEditDraft(null)}>
@@ -1063,22 +1059,7 @@ function LotsPage() {
                   <input className="lot-edit-input" placeholder="Nombre del vendedor" value={d.vendedor} onChange={(e) => setField("vendedor", e.target.value)} />
                 </div>
 
-                {/* Servicios */}
-                <div className="lot-edit-sec">Servicios disponibles</div>
-                <div className="lot-edit-services">
-                  {SERVICES.map(({ key, label }) => {
-                    const on = !!d.servicios[key];
-                    return (
-                      <label key={key} className="lot-edit-service">
-                        <span>{label}</span>
-                        <input type="checkbox" checked={on} onChange={(e) => setService(key, e.target.checked)} />
-                        <span className={`lot-edit-toggle${on ? " on" : ""}`} />
-                      </label>
-                    );
-                  })}
-                </div>
-
-                {/* Especificaciones */}
+                {/* Especificaciones (incluye lo que antes era "servicios") */}
                 <div className="lot-edit-sec">Especificaciones</div>
                 <div className="lot-edit-row">
                   {ESPECIFICACIONES_TEXT.map(({ key, label }) => (
