@@ -120,6 +120,7 @@ export default function LotImportFormatModal({ open, onClose }) {
     precios: false,
     estados: false,
     servicios: false,
+    especificaciones: false,
     ejemplo: false,
   });
   useEscapeKey(onClose, open);
@@ -276,6 +277,22 @@ export default function LotImportFormatModal({ open, onClose }) {
                 ["Gas Natural", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
                 ["Internet/Fibra", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
                 ["Pavimento", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
+              ]}
+            />
+          </Section>
+
+          {/* ── 6b. Especificaciones ────────────────────────────────────── */}
+          <Section id="especificaciones" title="Especificaciones de lote" type="optional" open={sections.especificaciones} onToggle={toggle}>
+            <p style={{ fontSize: "0.8rem", color: "#43453F", marginBottom: 10 }}>
+              Datos propios de un terreno (no de una construcción — recámaras/baños/alberca no aplican aquí).
+            </p>
+            <MiniTable
+              headers={["Columna (encabezado)", "Tipo", "Valores"]}
+              rows={[
+                ["Uso de Suelo", "texto libre", "Habitacional, Comercial, Mixto…"],
+                ["Orientación", "texto libre", "Norte, Sur, Oriente, Poniente…"],
+                ["Lote de Esquina", "sí / no", "sí, si, 1, true, yes, x  →  no, 0, false, (vacío)"],
+                ["Bardeado", "sí / no", "sí, si, 1, true, yes, x  →  no, 0, false, (vacío)"],
               ]}
             />
           </Section>

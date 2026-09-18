@@ -859,6 +859,24 @@ export function AppProvider({ children }) {
     }
   };
 
+  // Convierte el borrador de especificaciones (mezcla de string venido del backend
+  // y boolean/string recién tecleado en el editor) al dict que espera la API:
+  // solo valores presentes, todos como string. Un booleano en false (checkbox
+  // destildado) se OMITE a propósito — igual que servicios, ausencia == no aplica,
+  // y así unit_especificaciones borra la fila al sincronizar.
+  const buildEspecificacionesPayload = (esp) => {
+    if (!esp) return {};
+    const out = {};
+    for (const [key, v] of Object.entries(esp)) {
+      if (typeof v === "boolean") {
+        if (v) out[key] = "true";
+      } else if (v !== "" && v != null) {
+        out[key] = String(v);
+      }
+    }
+    return out;
+  };
+
   const saveEditedFrac = async ({ name, sections, mapUrl, _editingFracId }) => {
     if (!_editingFracId) return;
     try {
@@ -893,6 +911,9 @@ export function AppProvider({ children }) {
             if (lot.servicios && JSON.stringify(lot.servicios) !== (orig.servicios ?? "{}")) {
               body.services = Object.fromEntries(Object.entries(lot.servicios).filter(([, v]) => v));
             }
+            if (lot.especificaciones && JSON.stringify(lot.especificaciones) !== (orig.especificaciones ?? "{}")) {
+              body.especificaciones = buildEspecificacionesPayload(lot.especificaciones);
+            }
             return Object.keys(body).length > 0 ? { id: lot._backendId, body } : null;
           })
           .filter(Boolean)
@@ -914,6 +935,7 @@ export function AppProvider({ children }) {
               services: lot.servicios
                 ? Object.fromEntries(Object.entries(lot.servicios).filter(([, value]) => value))
                 : {},
+              especificaciones: buildEspecificacionesPayload(lot.especificaciones),
             },
           }))
       );

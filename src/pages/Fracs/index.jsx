@@ -1050,6 +1050,32 @@ function FracsPage() {
                   </div>
                 </div>
 
+                {(selectedLot.especificaciones?.uso_suelo || selectedLot.especificaciones?.orientacion
+                  || selectedLot.especificaciones?.esquina === "true"
+                  || selectedLot.especificaciones?.bardeado === "true") ? (
+                  <div className="lotp-sec">
+                    <div className="lotp-sh"><b>Especificaciones</b></div>
+                    <div className="lotp-specs">
+                      {selectedLot.especificaciones?.uso_suelo ? (
+                        <SpecRow label="Uso de suelo" value={selectedLot.especificaciones.uso_suelo} />
+                      ) : null}
+                      {selectedLot.especificaciones?.orientacion ? (
+                        <SpecRow label="Orientacion" value={selectedLot.especificaciones.orientacion} />
+                      ) : null}
+                    </div>
+                    {(selectedLot.especificaciones?.esquina === "true" || selectedLot.especificaciones?.bardeado === "true") ? (
+                      <div className="lotp-svc">
+                        {selectedLot.especificaciones?.esquina === "true" ? (
+                          <span className="lotp-chip on">Lote de esquina</span>
+                        ) : null}
+                        {selectedLot.especificaciones?.bardeado === "true" ? (
+                          <span className="lotp-chip on">Bardeado</span>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+
                 {apptData.length ? (
                   <div className="lotp-sec">
                     <div className="lotp-sh"><b>Citas próximas</b></div>
