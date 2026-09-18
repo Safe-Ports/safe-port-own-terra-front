@@ -218,6 +218,7 @@ export default function LotImportFormatModal({ open, onClose }) {
                 ["Superficie (m2)", "m²", <><Check /> 120 / 120.5</>, <><Cross /> "120 m2"</>],
                 ["Frente (ML)", "metros lineales", <><Check /> 8 / 8.5</>, <><Cross /> "8ml"</>],
                 ["Fondo (ML)", "metros lineales", <><Check /> 15</>, <><Cross /> "quince"</>],
+                ["Orientación", "texto libre", <><Check /> Norte / Sur / Oriente / Poniente</>, "—"],
               ]}
             />
             <Note>Deja la celda vacía si no tienes el dato. No pongas cero (0) a menos que sea el valor real.</Note>
@@ -265,21 +266,19 @@ export default function LotImportFormatModal({ open, onClose }) {
           {/* ── 6. Especificaciones ─────────────────────────────────────── */}
           <Section id="especificaciones" title="Especificaciones de lote" type="optional" open={sections.especificaciones} onToggle={toggle}>
             <p style={{ fontSize: "0.8rem", color: "#43453F", marginBottom: 10 }}>
-              Servicios disponibles y datos propios de un terreno (no de una construcción — recámaras/baños/alberca no aplican aquí). Agrega una columna por cada uno.
+              Servicios disponibles y otros atributos sí/no de un terreno (no de una construcción — recámaras/baños/alberca no aplican aquí). Agrega una columna por cada uno.
             </p>
             <MiniTable
-              headers={["Columna (encabezado)", "Tipo", "Valores"]}
+              headers={["Columna (encabezado)", "Valores → ✓ (sí tiene)", "Valores → ✕ (no tiene)"]}
               rows={[
-                ["Agua Potable", "sí / no", "sí, si, 1, true, yes, x  →  no, 0, false, (vacío)"],
-                ["Energía Eléctrica", "sí / no", "sí, si, 1, true, yes, x  →  no, 0, false, (vacío)"],
-                ["Drenaje", "sí / no", "sí, si, 1, true, yes, x  →  no, 0, false, (vacío)"],
-                ["Gas Natural", "sí / no", "sí, si, 1, true, yes, x  →  no, 0, false, (vacío)"],
-                ["Internet/Fibra", "sí / no", "sí, si, 1, true, yes, x  →  no, 0, false, (vacío)"],
-                ["Pavimento", "sí / no", "sí, si, 1, true, yes, x  →  no, 0, false, (vacío)"],
-                ["Uso de Suelo", "texto libre", "Habitacional, Comercial, Mixto…"],
-                ["Orientación", "texto libre", "Norte, Sur, Oriente, Poniente…"],
-                ["Lote de Esquina", "sí / no", "sí, si, 1, true, yes, x  →  no, 0, false, (vacío)"],
-                ["Bardeado", "sí / no", "sí, si, 1, true, yes, x  →  no, 0, false, (vacío)"],
+                ["Agua Potable", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
+                ["Energía Eléctrica", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
+                ["Drenaje", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
+                ["Gas Natural", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
+                ["Internet/Fibra", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
+                ["Pavimento", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
+                ["Lote de Esquina", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
+                ["Bardeado", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
               ]}
             />
           </Section>

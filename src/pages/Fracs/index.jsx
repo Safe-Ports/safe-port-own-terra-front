@@ -118,16 +118,20 @@ function SpecRow({ label, value, unit, money }) {
 }
 
 /**
- * Misma fila que SpecRow, pero para una especificación de sí/no (agua, lote de
- * esquina, …) — mismo carril de tarjeta, un pill de estado en vez de cifra+unidad.
- * Existe para que todo lo describible de un lote comparta UNA tarjeta, en vez de
- * mezclar filas con borde y chips sueltos en la misma sección.
+ * Grilla de 2 columnas para especificaciones sí/no: mismo lenguaje visual que
+ * Ficha técnica (tarjeta con borde, fila con separador) pero en 2 columnas —
+ * la mitad de alto para la misma cantidad de datos, así un catálogo que crezca
+ * no empuja el resto de la ficha hacia abajo tan rápido.
  */
-function SpecRowBool({ label, on }) {
+function SpecGrid2Bool({ items }) {
   return (
-    <div className="lotp-spec">
-      <span className="lotp-spec-k">{label}</span>
-      <span className={`lotp-spec-bool${on ? " on" : ""}`}>{on ? "Sí" : "No"}</span>
+    <div className="lotp-grid2">
+      {items.map(({ key, label, on }) => (
+        <div className="lotp-grid2-cell" key={key}>
+          <span className="lotp-spec-k">{label}</span>
+          <span className={`lotp-spec-bool${on ? " on" : ""}`}>{on ? "Sí" : "No"}</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -488,6 +492,7 @@ function FracsPage() {
           priceFinanciado: lot.price_financiado ?? "",
           frente: lot.frente_ml ?? "",
           fondo: lot.fondo_ml ?? "",
+          orientacion: lot.orientacion ?? "",
           especificaciones: JSON.stringify(lot.especificaciones || {}),
         },
         code: lot.code,
@@ -497,6 +502,7 @@ function FracsPage() {
         priceFinanciado: lot.price_financiado ?? "",
         frente: lot.frente_ml ?? "",
         fondo: lot.fondo_ml ?? "",
+        orientacion: lot.orientacion ?? "",
         especificaciones: lot.especificaciones || {},
       });
     });
@@ -1048,6 +1054,9 @@ function FracsPage() {
                     <SpecRow label="Superficie" value={measure(selectedLot.area_m2)} unit="m²" />
                     <SpecRow label="Frente" value={measure(selectedLot.frente_ml)} unit="ml" />
                     <SpecRow label="Fondo" value={measure(selectedLot.fondo_ml)} unit="ml" />
+                    {selectedLot.orientacion ? (
+                      <SpecRow label="Orientacion" value={selectedLot.orientacion} />
+                    ) : null}
                     {selectedLot.price_contado ? (
                       <SpecRow label="Precio de contado" value={currency(selectedLot.price_contado)} money />
                     ) : null}
@@ -1059,21 +1068,13 @@ function FracsPage() {
 
                 <div className="lotp-sec">
                   <div className="lotp-sh"><b>Especificaciones</b></div>
-                  <div className="lotp-specs">
-                    {selectedLot.especificaciones?.uso_suelo ? (
-                      <SpecRow label="Uso de suelo" value={selectedLot.especificaciones.uso_suelo} />
-                    ) : null}
-                    {selectedLot.especificaciones?.orientacion ? (
-                      <SpecRow label="Orientacion" value={selectedLot.especificaciones.orientacion} />
-                    ) : null}
-                    {ESPECIFICACIONES_CHIPS.map((esp) => (
-                      <SpecRowBool
-                        key={esp.k}
-                        label={esp.lbl}
-                        on={selectedLot.especificaciones?.[esp.k] === "true"}
-                      />
-                    ))}
-                  </div>
+                  <SpecGrid2Bool
+                    items={ESPECIFICACIONES_CHIPS.map((esp) => ({
+                      key: esp.k,
+                      label: esp.lbl,
+                      on: selectedLot.especificaciones?.[esp.k] === "true",
+                    }))}
+                  />
                 </div>
 
                 {apptData.length ? (

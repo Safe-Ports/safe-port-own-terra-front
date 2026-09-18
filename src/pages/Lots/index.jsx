@@ -331,6 +331,7 @@ function LotsPage() {
             priceFinanciado: lot.price_financiado ?? "",
             frente:          lot.frente_ml ?? "",
             fondo:           lot.fondo_ml ?? "",
+            orientacion:     lot.orientacion ?? "",
             especificaciones: JSON.stringify(lot.especificaciones || {}),
           },
           code:            lot.code,
@@ -340,6 +341,7 @@ function LotsPage() {
           priceFinanciado: lot.price_financiado ?? "",
           frente:          lot.frente_ml ?? "",
           fondo:           lot.fondo_ml ?? "",
+          orientacion:     lot.orientacion ?? "",
           especificaciones: lot.especificaciones || {},
         });
       });
@@ -419,6 +421,7 @@ function LotsPage() {
             priceFinanciado: lot.price_financiado ?? "",
             frente:          lot.frente_ml ?? "",
             fondo:           lot.fondo_ml ?? "",
+            orientacion:     lot.orientacion ?? "",
             especificaciones: JSON.stringify(lot.especificaciones || {}),
           },
           code:            lot.code,
@@ -428,6 +431,7 @@ function LotsPage() {
           priceFinanciado: lot.price_financiado ?? "",
           frente:          lot.frente_ml ?? "",
           fondo:           lot.fondo_ml ?? "",
+          orientacion:     lot.orientacion ?? "",
           especificaciones: lot.especificaciones || {},
         });
       });
@@ -469,11 +473,12 @@ function LotsPage() {
       ...lot,
       frente: lot.frente ?? "",
       fondo: lot.fondo ?? "",
+      orientacion: lot.orientacion ?? "",
       priceFinanciado: lot.priceFinanciado ?? "",
       vendedor: lot.vendedor ?? "",
       especificaciones: lot.especificaciones ?? {
         agua: false, luz: false, drenaje: false, gas: false, internet: false, pavimento: false,
-        uso_suelo: "", orientacion: "", esquina: false, bardeado: false,
+        esquina: false, bardeado: false,
       },
     });
   };
@@ -932,10 +937,8 @@ function LotsPage() {
         // alberca para casa/depa), pero el front no lo consulta por API, asi que
         // se hardcodea solo el subset con aplica_a=['lot']. "Servicios" ya no es
         // un sistema aparte: agua/luz/etc son especificaciones booleanas mas.
-        const ESPECIFICACIONES_TEXT = [
-          { key: "uso_suelo",   label: "Uso de suelo" },
-          { key: "orientacion", label: "Orientacion"  },
-        ];
+        // Todas booleanas: uso_suelo se quitó y orientacion es dimensional (ver
+        // el campo en "Medidas" mas abajo, no vive en especificaciones).
         const ESPECIFICACIONES_BOOL = [
           { key: "agua",      label: "Agua potable"       },
           { key: "luz",       label: "Energia electrica"  },
@@ -1037,6 +1040,10 @@ function LotsPage() {
                       <input type="number" className="lot-edit-input" value={d[key]} onChange={(e) => setField(key, Number(e.target.value))} />
                     </div>
                   ))}
+                  <div className="lot-edit-field">
+                    <label className="lot-edit-lbl">Orientacion</label>
+                    <input type="text" className="lot-edit-input" value={d.orientacion ?? ""} onChange={(e) => setField("orientacion", e.target.value)} />
+                  </div>
                 </div>
 
                 {/* Financiero */}
@@ -1061,19 +1068,6 @@ function LotsPage() {
 
                 {/* Especificaciones (incluye lo que antes era "servicios") */}
                 <div className="lot-edit-sec">Especificaciones</div>
-                <div className="lot-edit-row">
-                  {ESPECIFICACIONES_TEXT.map(({ key, label }) => (
-                    <div className="lot-edit-field" key={key}>
-                      <label className="lot-edit-lbl">{label}</label>
-                      <input
-                        type="text"
-                        className="lot-edit-input"
-                        value={d.especificaciones?.[key] ?? ""}
-                        onChange={(e) => setEspecificacion(key, e.target.value)}
-                      />
-                    </div>
-                  ))}
-                </div>
                 <div className="lot-edit-services">
                   {ESPECIFICACIONES_BOOL.map(({ key, label }) => {
                     const on = d.especificaciones?.[key] === "true" || d.especificaciones?.[key] === true;
