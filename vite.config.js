@@ -125,15 +125,54 @@ export default defineConfig(({ mode }) => {
   server: {
     host: true,
     port: 5173,
-    // Proxy opcional para probar contra una API remota desde localhost.
-    ...(env.DEV_API_PROXY_TARGET ? {
-      proxy: {
+    proxy: {
+      // Backend partido en dos servicios (core-back + lands-back, ver el plan
+      // de separación de repos): en producción los une Caddy bajo un solo
+      // dominio ruteando por prefijo; acá el dev server de Vite hace lo mismo
+      // para no tener que levantar Caddy/Docker solo para probar el front
+      // contra los dos servicios en local.
+      //
+      // Activo SOLO si se define VITE_LANDS_API_URL — si no está, el
+      // comportamiento de siempre (un solo backend, sin proxy) no cambia para
+      // nadie. VITE_CORE_API_URL es el catch-all (todo lo que no matcheó
+      // arriba): con VITE_API_URL=/api/v1 (ruta relativa, no absoluta), las
+      // llamadas de `api.js` pasan por el origen del propio dev server de
+      // Vite y este proxy las reparte — sin eso, irían directo a core-back
+      // sin pasar por acá, dejando a lands-back sin forma de recibir nada.
+      //
+      // El orden importa: http-proxy-middleware matchea la PRIMERA clave cuyo
+      // prefijo calce, así que los prefijos de lands-back (más específicos)
+      // van primero y el catch-all de core-back al final — mismo criterio que
+      // el Caddyfile real de core-back.
+      ...(env.VITE_LANDS_API_URL ? {
+        "/api/v1/lots": { target: env.VITE_LANDS_API_URL, changeOrigin: true },
+        "/api/v1/contracts": { target: env.VITE_LANDS_API_URL, changeOrigin: true },
+        "/api/v1/payments": { target: env.VITE_LANDS_API_URL, changeOrigin: true },
+        "/api/v1/clients": { target: env.VITE_LANDS_API_URL, changeOrigin: true },
+        "/api/v1/dashboard": { target: env.VITE_LANDS_API_URL, changeOrigin: true },
+        "/api/v1/search": { target: env.VITE_LANDS_API_URL, changeOrigin: true },
+        "/api/v1/reports": { target: env.VITE_LANDS_API_URL, changeOrigin: true },
+        "/api/v1/export": { target: env.VITE_LANDS_API_URL, changeOrigin: true },
+        "/api/v1/appointments": { target: env.VITE_LANDS_API_URL, changeOrigin: true },
+        "/api/v1/calculators": { target: env.VITE_LANDS_API_URL, changeOrigin: true },
+        "/api/v1/tasks": { target: env.VITE_LANDS_API_URL, changeOrigin: true },
+        "/api/v1/expenses": { target: env.VITE_LANDS_API_URL, changeOrigin: true },
+        "/api/v1/incomes": { target: env.VITE_LANDS_API_URL, changeOrigin: true },
+        // Catch-all: todo lo demás bajo /api/v1 (auth, organización, usuarios,
+        // documentos, actividad, notificaciones, empleados, proveedores,
+        // billing, inmuebles, calendario, formularios — estos dos últimos se
+        // mudaron de lands-back a core-back el 2026-09-18) es de core-back.
+        "/api/v1": { target: env.VITE_CORE_API_URL || "http://127.0.0.1:8000", changeOrigin: true },
+      } : {}),
+      // Proxy opcional para probar contra una API remota desde localhost (uso
+      // preexistente, sin relación con el split de arriba).
+      ...(env.DEV_API_PROXY_TARGET ? {
         "/api": {
           target: env.DEV_API_PROXY_TARGET,
           changeOrigin: true,
         },
-      },
-    } : {}),
+      } : {}),
+    },
   }
   };
 });
