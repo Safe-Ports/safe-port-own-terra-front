@@ -117,6 +117,21 @@ function SpecRow({ label, value, unit, money }) {
   );
 }
 
+/**
+ * Misma fila que SpecRow, pero para una especificación de sí/no (agua, lote de
+ * esquina, …) — mismo carril de tarjeta, un pill de estado en vez de cifra+unidad.
+ * Existe para que todo lo describible de un lote comparta UNA tarjeta, en vez de
+ * mezclar filas con borde y chips sueltos en la misma sección.
+ */
+function SpecRowBool({ label, on }) {
+  return (
+    <div className="lotp-spec">
+      <span className="lotp-spec-k">{label}</span>
+      <span className={`lotp-spec-bool${on ? " on" : ""}`}>{on ? "Sí" : "No"}</span>
+    </div>
+  );
+}
+
 function StatusBadge({ status }) {
   const meta = LOT_COLORS[status] || LOT_COLORS.available;
   return (
@@ -1044,23 +1059,20 @@ function FracsPage() {
 
                 <div className="lotp-sec">
                   <div className="lotp-sh"><b>Especificaciones</b></div>
-                  {(selectedLot.especificaciones?.uso_suelo || selectedLot.especificaciones?.orientacion) ? (
-                    <div className="lotp-specs">
-                      {selectedLot.especificaciones?.uso_suelo ? (
-                        <SpecRow label="Uso de suelo" value={selectedLot.especificaciones.uso_suelo} />
-                      ) : null}
-                      {selectedLot.especificaciones?.orientacion ? (
-                        <SpecRow label="Orientacion" value={selectedLot.especificaciones.orientacion} />
-                      ) : null}
-                    </div>
-                  ) : null}
-                  <div className="lotp-svc">
-                    {ESPECIFICACIONES_CHIPS.map((esp) => {
-                      const on = selectedLot.especificaciones?.[esp.k] === "true";
-                      return (
-                        <span key={esp.k} className={`lotp-chip${on ? " on" : ""}`}>{esp.lbl}</span>
-                      );
-                    })}
+                  <div className="lotp-specs">
+                    {selectedLot.especificaciones?.uso_suelo ? (
+                      <SpecRow label="Uso de suelo" value={selectedLot.especificaciones.uso_suelo} />
+                    ) : null}
+                    {selectedLot.especificaciones?.orientacion ? (
+                      <SpecRow label="Orientacion" value={selectedLot.especificaciones.orientacion} />
+                    ) : null}
+                    {ESPECIFICACIONES_CHIPS.map((esp) => (
+                      <SpecRowBool
+                        key={esp.k}
+                        label={esp.lbl}
+                        on={selectedLot.especificaciones?.[esp.k] === "true"}
+                      />
+                    ))}
                   </div>
                 </div>
 
