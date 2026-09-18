@@ -27,7 +27,7 @@ function PropertyPathCard({ path, onOpen, preview, dimmed, onPreview }) {
 
 function PropertiesDashboard(){
   const navigate=useNavigate();
-  const {currentUser}=useAppContext();
+  const {currentUser,canUseFeature}=useAppContext();
   const {properties,units}=usePropertiesData();
   const [previewPath,setPreviewPath]=useState(null);
   const organizationName=currentUser?.organization?.name||currentUser?.organization||"Tu organización";
@@ -44,7 +44,7 @@ function PropertiesDashboard(){
   };
   return <EcoLayout active="properties" title="OwnTerra Properties" subtitle={`${organizationName} · Todo en su lugar`}>
     <main className="properties-dashboard">
-      <section className="properties-hero"><div><span className="properties-eyebrow"><HiHomeModern/> Resumen operativo</span><h1>Buen día, {firstName}.</h1><p>Revisa el estado del portafolio y entra al área que requiere tu atención.</p></div><div className="properties-pulse" aria-label="Resumen del portafolio"><div><strong>{activeProperties}</strong><span>Propiedades</span></div><div><strong>{occupancy}</strong><span>Ocupación</span></div><div><strong>{attentionUnits}</strong><span>Por atender</span></div></div></section>
+      <section className="properties-hero"><div><span className="properties-eyebrow"><HiHomeModern/> Resumen operativo</span><h1>Buen día, {firstName}.</h1><p>Revisa el estado del portafolio y entra al área que requiere tu atención.</p>{canUseFeature("properties.units.read")?<button className="properties-monitoring-cta" type="button" onClick={()=>navigate("/properties/monitoreo")}><HiHomeModern/> Monitoreo por unidad <HiArrowRight/></button>:null}</div><div className="properties-pulse" aria-label="Resumen del portafolio"><div><strong>{activeProperties}</strong><span>Propiedades</span></div><div><strong>{occupancy}</strong><span>Ocupación</span></div><div><strong>{attentionUnits}</strong><span>Por atender</span></div></div></section>
       <section className={`property-paths journey-${previewPath||"idle"}`} aria-labelledby="property-paths-title"><header><div><span>Áreas de trabajo</span><h2 id="property-paths-title">Selecciona una operación</h2></div><p>{previewPath?"Vista previa del flujo operativo.":"Comunidades, rentas, hospedaje y venta comparten el mismo portafolio."}</p></header><div className="property-paths-grid">{paths.map(path=><PropertyPathCard key={path.key} path={path} preview={previewPath===path.key} dimmed={Boolean(previewPath&&previewPath!==path.key)} onPreview={setPreviewPath} onOpen={()=>openPath(path.key)}/>)}</div></section>
       <footer className="properties-continuity properties-first-level-note"><HiOutlineSquares2X2/><p><strong>Contexto compartido.</strong> Propiedades, unidades y personas permanecen conectadas entre áreas.</p><span><HiUserGroup/> Equipo conectado</span></footer>
     </main>

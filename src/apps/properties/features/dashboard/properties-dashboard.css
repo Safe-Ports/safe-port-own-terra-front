@@ -25,6 +25,7 @@
 .properties-hero{padding:18px 6px 17px}
 .properties-hero h1{margin:8px 0 6px;font-size:clamp(27px,2.6vw,36px);font-weight:700;letter-spacing:-.035em;line-height:1.08}
 .properties-hero p{font-size:11px;line-height:1.55}
+.properties-monitoring-cta{display:inline-flex;align-items:center;gap:7px;margin-top:13px;padding:9px 12px;border:1px solid #c9d6df;border-radius:9px;background:#fff;color:#174d73;font-size:10px;font-weight:800;box-shadow:0 4px 12px rgba(8,44,73,.04);transition:border-color .16s ease,transform .16s ease}.properties-monitoring-cta:hover{border-color:#6f91aa;transform:translateY(-1px)}.properties-monitoring-cta svg:last-child{font-size:11px}
 .properties-pulse{border-radius:12px;box-shadow:none}
 .properties-pulse div{min-width:104px;padding:13px 16px}
 .properties-pulse strong{font-size:18px;font-weight:750}
@@ -54,4 +55,4 @@
 .properties-first-level-note{margin-top:1px;padding:13px 16px;border-radius:12px}
 .properties-operations-heading h1{font-size:clamp(28px,3vw,38px);font-weight:700;line-height:1.1}
 @media(max-width:920px){.property-paths-grid,.journey-communities .property-paths-grid,.journey-rentals .property-paths-grid,.journey-sales .property-paths-grid{grid-template-columns:1fr}.property-path-card{min-height:198px}}
-@media(max-width:650px){.properties-hero h1{font-size:28px}.property-paths>header h2{font-size:20px}.property-path-card{min-height:190px}.properties-operations-heading h1{font-size:29px}}
+@media(max-width:650px){.properties-hero h1{font-size:28px}.properties-monitoring-cta{width:100%;justify-content:center}.property-paths>header h2{font-size:20px}.property-path-card{min-height:190px}.properties-operations-heading h1{font-size:29px}}

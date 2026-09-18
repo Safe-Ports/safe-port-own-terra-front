@@ -13,3 +13,11 @@
 .condo-field-shortcuts>button>svg{color:#2a5c87;font-size:14px}
 @media(max-width:900px){.condo-field-shortcuts{grid-template-columns:1fr 1fr}.condo-field-shortcuts>header{grid-column:1/-1}}
 @media(max-width:600px){.condo-field-shortcuts{grid-template-columns:1fr}.condo-field-shortcuts>header{grid-column:auto}}
+
+.condo-charge-filters{display:flex;align-items:center;gap:7px;overflow-x:auto;padding:11px 20px;border-bottom:1px solid #e7e4db;background:#fff}
+.condo-charge-filters button{flex:0 0 auto;padding:7px 10px;border:1px solid #d9ddd8;border-radius:999px;background:#fff;color:#647068;font-size:8px;font-weight:850}
+.condo-charge-filters button.active{border-color:#0a3d62;background:#0a3d62;color:#fff}
+.condo-charge-filters .condo-contract-link{display:inline-flex;align-items:center;gap:5px;margin-left:auto;border-radius:9px;color:#0a3d62}
+.condo-penalty-note{display:block;padding:10px;border-radius:8px;background:#eceff2;color:#56636d;font-size:8px;line-height:1.5}
+.condo-charge-empty{margin:28px auto;color:#858b84;font-size:10px}
+@media(max-width:600px){.condo-charge-filters .condo-contract-link{margin-left:0}.condo-charge-filters{padding-inline:12px}}

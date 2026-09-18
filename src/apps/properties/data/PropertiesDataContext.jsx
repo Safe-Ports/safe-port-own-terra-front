@@ -89,6 +89,7 @@ export function PropertiesDataProvider({ children }) {
     archivePersonUnitRelation: (id) => setPersonUnitRelations((current) => current.map((relation) => relation.id === id ? { ...relation, status:"archived" } : relation)),
     addCondoCharge:(draft)=>setCondoCharges(current=>[createCondoCharge(draft),...current]),
     markCondoChargePaid:(id)=>setCondoCharges(current=>current.map(item=>item.id===id?{...item,status:"paid",paidAt:new Date().toISOString()}:item)),
+    reverseCondoChargePayment:(id)=>setCondoCharges(current=>current.map(item=>item.id===id?{...item,status:"pending",paidAt:"",paymentReversedAt:new Date().toISOString()}:item)),
     addAnnouncement:(draft)=>setAnnouncements(current=>[createAnnouncement(draft),...current]),
     addReservation:(draft)=>setReservations(current=>[createReservation(draft,current),...current]),
     addVote:(draft)=>setVotes(current=>[createVote(draft),...current]),

@@ -55,6 +55,7 @@ const HospitalityOperationsPage = lazyWithRetry(() => import("@/apps/properties/
 const ServiceNetworkPage = lazyWithRetry(() => import("@/apps/properties/features/service/ServiceNetworkPage"));
 const CommunityWorkspace = lazyWithRetry(() => import("@/apps/properties/features/community/CommunityWorkspace"));
 const CondoOperationsSuite = lazyWithRetry(() => import("@/apps/properties/features/condo/CondoOperationsSuite"));
+const UnitMonitoringPage = lazyWithRetry(() => import("@/apps/properties/features/monitoring/UnitMonitoringPage"));
 const ServicePartnerPortal = lazyWithRetry(() => import("@/apps/properties/external/ServicePartnerPortal"));
 const ServiceLogin = lazyWithRetry(() => import("@/apps/properties/external/ServiceAccessPages").then(module => ({ default: module.ServiceLogin })));
 const ServiceInvitation = lazyWithRetry(() => import("@/apps/properties/external/ServiceAccessPages").then(module => ({ default: module.ServiceInvitation })));
@@ -127,6 +128,7 @@ function AppRouter() {
             <Route path="propietarios" element={<RequireFeature feature="properties.owners.read"><OwnersPage /></RequireFeature>} />
             <Route path="inmuebles" element={<RequireFeature feature="properties.properties.read"><PropertiesPage /></RequireFeature>} />
             <Route path="unidades" element={<RequireFeature feature="properties.units.read"><UnitsPage /></RequireFeature>} />
+            <Route path="monitoreo" element={<RequireFeature feature="properties.units.read"><UnitMonitoringPage /></RequireFeature>} />
             <Route path="portafolio" element={<RequireFeature feature="properties.properties.read"><PortfolioWorkspace /></RequireFeature>} />
             {/* El tablero de estatus ahora es una vista dentro de Unidades (?view=board), no una página aparte. */}
             <Route path="estatus-unidades" element={<Navigate to="/properties/unidades?view=board" replace />} />
