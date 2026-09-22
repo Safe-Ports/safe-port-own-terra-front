@@ -11,6 +11,9 @@ const LegalPage = lazy(() => import("@/pages/Legal"));
 const TenantPortal = lazy(() => import("@/apps/properties/external/TenantPortal"));
 const PublicQuote = lazy(() => import("@/pages/PublicQuote"));
 const RentalCatalogPage = lazy(() => import("@/apps/properties/public/RentalCatalogPage"));
+const CommunityPortal = lazy(() => import("@/apps/properties/external/CommunityPortal"));
+const ServiceLogin = lazy(() => import("@/apps/properties/external/ServiceAccessPages").then(module => ({ default: module.ServiceLogin })));
+const ServiceInvitation = lazy(() => import("@/apps/properties/external/ServiceAccessPages").then(module => ({ default: module.ServiceInvitation })));
 
 function App() {
   const { currentUser } = useAppContext();
@@ -28,6 +31,9 @@ function App() {
   if (pathname === "/rentas" || pathname.startsWith("/rentas/")) return <Suspense fallback={null}><RentalCatalogPage /></Suspense>;
   // Portal del inquilino: vista pública de demostración, sin sesión propia.
   if (pathname === "/portal-inquilino") return <Suspense fallback={null}><TenantPortal /></Suspense>;
+  if (pathname === "/servicio/login") return <Suspense fallback={null}><ServiceLogin /></Suspense>;
+  if (pathname === "/servicio/invitacion") return <Suspense fallback={null}><ServiceInvitation /></Suspense>;
+  if (pathname === "/portal-comunidad") return <Suspense fallback={null}><CommunityPortal /></Suspense>;
   return currentUser ? <AppRouter /> : <LoginScreen />;
 }
 

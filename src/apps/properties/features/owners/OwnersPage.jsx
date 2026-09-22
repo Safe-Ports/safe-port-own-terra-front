@@ -56,7 +56,7 @@ function OwnersPage() {
     setErrors((current) => ({ ...current, [field]: undefined }));
   };
 
-  const saveOwner = (event) => {
+  const saveOwner = async (event) => {
     event.preventDefault();
     const nextErrors = validateOwner(draft);
     if (Object.keys(nextErrors).length) {
@@ -64,24 +64,19 @@ function OwnersPage() {
       return;
     }
 
-    if (editingId === "new") {
-      addOwner(draft);
-      showToast("Propietario agregado a esta sesión de frontend", "success");
-    } else {
-      updateOwner(editingId, draft);
-      showToast("Propietario actualizado", "success");
-    }
-    closeModal();
+    try { if (editingId === "new") { await addOwner(draft); showToast("Propietario guardado", "success"); }
+      else { await updateOwner(editingId, draft); showToast("Propietario actualizado", "success"); }
+      closeModal();
+    } catch(error) { showToast(error.response?.data?.error?.message||error.message,"warning"); }
   };
 
-  const archiveOwner = (owner) => {
+  const archiveOwner = async (owner) => {
     const activeProperties = properties.filter((property) => property.ownerId === owner.id && property.status === "active").length;
     if (activeProperties > 0) {
       showToast(`No puedes archivarlo: tiene ${activeProperties} ${activeProperties === 1 ? "propiedad activa" : "propiedades activas"}`, "warning");
       return;
     }
-    archiveOwnerRecord(owner.id);
-    showToast("Propietario archivado", "success");
+    try { await archiveOwnerRecord(owner.id); showToast("Propietario archivado", "success"); } catch(error) { showToast(error.response?.data?.error?.message||error.message,"warning"); }
   };
 
   return (
@@ -99,7 +94,7 @@ function OwnersPage() {
         </header>
 
         <aside className="owners-prototype-note">
-          Esta entrega valida el flujo frontend. Los registros creados viven únicamente durante esta sesión y no se envían al backend todavía.
+          Directorio persistido en OwnTerra Properties y aislado por organización.
         </aside>
 
         <section className="owners-toolbar" aria-label="Filtros de propietarios">

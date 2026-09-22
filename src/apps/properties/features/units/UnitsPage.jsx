@@ -73,18 +73,18 @@ function UnitsPage() {
   const closeModal = () => { setEditingId(null); setErrors({}); };
   const updateDraft = (field, value) => { setDraft((current) => ({ ...current, [field]: value })); setErrors((current) => ({ ...current, [field]: undefined })); };
 
-  const saveUnit = (event) => {
+  const saveUnit = async (event) => {
     event.preventDefault();
     const nextErrors = validateUnit(draft, units, editingId === "new" ? null : editingId);
     if (Object.keys(nextErrors).length) { setErrors(nextErrors); return; }
-    if (editingId === "new") { addUnit(draft); showToast("Unidad agregada a esta sesión de frontend", "success"); }
-    else { updateUnit(editingId, draft); showToast("Unidad actualizada", "success"); }
-    closeModal();
+    try { if (editingId === "new") { await addUnit(draft); showToast("Unidad guardada", "success"); }
+      else { await updateUnit(editingId, draft); showToast("Unidad actualizada", "success"); }
+      closeModal();
+    } catch(error) { showToast(error.response?.data?.error?.message||error.message,"warning"); }
   };
 
-  const handleArchive = (unit) => {
-    archiveUnit(unit.id);
-    showToast("Unidad archivada", "success");
+  const handleArchive = async (unit) => {
+    try { await archiveUnit(unit.id); showToast("Unidad archivada", "success"); } catch(error) { showToast(error.response?.data?.error?.message||error.message,"warning"); }
   };
 
   useEffect(() => {

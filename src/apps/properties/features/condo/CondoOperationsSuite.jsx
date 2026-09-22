@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { HiArrowLeft, HiBanknotes, HiBolt, HiBuildingStorefront, HiChartBar, HiCheckCircle, HiDocumentText, HiMegaphone, HiPlus, HiScale } from "react-icons/hi2";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import EcoLayout from "@/pages/Ecosystem/EcoLayout";
@@ -21,19 +21,20 @@ function CondoOperationsSuite(){
   const [draft,setDraft]=useState({});
   const [chargeFilter,setChargeFilter]=useState("all");
   const community=data.communities.find(item=>item.id===communityId);
+  useEffect(()=>{if(!communityId&&data.communities[0])setCommunityId(data.communities[0].id)},[communityId,data.communities]);
   const units=data.units.filter(item=>item.propertyId===community?.propertyId&&item.status!=="archived");
   const charges=data.condoCharges.filter(item=>item.communityId===communityId);const announcements=data.announcements.filter(item=>item.communityId===communityId);const amenities=data.amenities.filter(item=>item.communityId===communityId);const reservations=data.reservations.filter(item=>item.communityId===communityId);const votes=data.votes.filter(item=>item.communityId===communityId);
   const totals=useMemo(()=>({billed:charges.reduce((sum,item)=>sum+item.amount,0),paid:charges.filter(item=>item.status==="paid").reduce((sum,item)=>sum+item.amount,0),overdue:charges.filter(item=>item.status==="overdue").reduce((sum,item)=>sum+item.amount,0)}),[charges]);
   const today=new Date().toISOString().slice(0,10);
   const visibleCharges=charges.filter(item=>chargeFilter==="all"||item.status===chargeFilter||(chargeFilter==="due_soon"&&item.status==="pending"&&item.dueDate>=today));
   const select=key=>{setActive(key);setDraft({});setParams({module:key},{replace:true})};
-  const submit=event=>{event.preventDefault();try{
-    if(active==="charges")data.addCondoCharge({...draft,communityId});
-    if(active==="communications")data.addAnnouncement({...draft,communityId});
-    if(active==="amenities")data.addReservation({...draft,communityId});
-    if(active==="committee")data.addVote({...draft,communityId});
-    setDraft({});showToast("Registro guardado para esta sesión","success");
-  }catch(error){showToast(error.message,"warning")}};
+  const submit=async event=>{event.preventDefault();try{
+    if(active==="charges")await data.addCondoCharge({...draft,communityId});
+    if(active==="communications")await data.addAnnouncement({...draft,communityId});
+    if(active==="amenities")await data.addReservation({...draft,communityId});
+    if(active==="committee")await data.addVote({...draft,communityId});
+    setDraft({});showToast("Registro guardado","success");
+  }catch(error){showToast(error.response?.data?.error?.message||error.message,"warning")}};
   return <EcoLayout active="properties" title="Operación comunitaria" subtitle={`${community?.name||"Comunidad"} · Segundo nivel`}><main className="condo-suite">
     <button className="condo-back" type="button" onClick={()=>navigate("/properties/comunidades")}><HiArrowLeft/> Configuración de comunidad</button>
     <header className="condo-suite-heading"><div><span>Comunidades · Operación diaria</span><h1>Todo lo que mantiene vivo el espacio compartido.</h1></div><label><small>Comunidad activa</small><select value={communityId} onChange={event=>setCommunityId(event.target.value)}>{data.communities.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label></header>

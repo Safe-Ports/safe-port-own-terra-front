@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { createCommunity, createCommunityPerson, createPersonUnitRelation, validateCommunity, validateCommunityPerson } from "./communityModel";
 
 describe("Properties community model", () => {
-  it("requires a property, name and administrator to configure a community",()=>{
-    expect(validateCommunity({propertyId:"",name:"",administrator:""})).toEqual({propertyId:"Selecciona el inmueble que representa la comunidad.",name:"Ingresa el nombre de la comunidad.",administrator:"Ingresa el nombre de la administración responsable."});
+  it("requires a property and name to configure a community",()=>{
+    expect(validateCommunity({propertyId:"",name:"",administrator:""})).toEqual({propertyId:"Selecciona el inmueble que representa la comunidad.",name:"Ingresa el nombre de la comunidad."});
     expect(createCommunity({propertyId:"prop-1",name:" Privada Norte ",kind:"private_community",regime:" Asociación ",administrator:" Operadora Uno ",contactEmail:" ADMIN@NORTE.MX ",contactPhone:" 555 "})).toMatchObject({name:"Privada Norte",administrator:"Operadora Uno",contactEmail:"admin@norte.mx",status:"active"});
   });
   it("requires identity, contact and a community role", () => {

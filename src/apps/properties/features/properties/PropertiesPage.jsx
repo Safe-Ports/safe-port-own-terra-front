@@ -6,6 +6,7 @@ import Modal from "@/components/ui/Modal";
 import { useAppContext } from "@/context/AppContext";
 import EcoLayout from "@/pages/Ecosystem/EcoLayout";
 import { usePropertiesData } from "../../data/PropertiesDataContext";
+import propertiesService from "@/services/propertiesService";
 import { PROPERTY_ACTION_ICONS, PROPERTY_ENTITY_ICONS } from "../../components/propertiesIconCatalog";
 import { EMPTY_PROPERTY, PROPERTY_TYPE_LABEL, validateProperty } from "./propertyModel";
 import "./properties.css";
@@ -61,7 +62,7 @@ function PropertiesPage() {
     setErrors((current) => ({ ...current, [field]: undefined }));
   };
 
-  const saveProperty = (event) => {
+  const saveProperty = async (event) => {
     event.preventDefault();
     const nextErrors = validateProperty(draft);
     if (Object.keys(nextErrors).length) {
@@ -69,9 +70,9 @@ function PropertiesPage() {
       return;
     }
     if (editingId === "new") {
-      const property = addProperty(draft);
+      try { const property = await addProperty(draft);
       if (!draftIsContainer) {
-        addUnit({propertyId:property.id,ownerId:draft.ownerId,identifier:property.name,type:draft.type==="apartment"?"apartment":draft.type==="house"?"house":"other",floor:"",area:draft.area,bedrooms:draft.bedrooms,bathrooms:draft.bathrooms,suggestedRent:draft.suggestedRent,status:draft.unitStatus,description:draft.description});
+        await addUnit({propertyId:property.id,ownerId:draft.ownerId,identifier:property.name,type:draft.type==="apartment"?"apartment":draft.type==="house"?"house":"other",floor:"",area:draft.area,bedrooms:draft.bedrooms,bathrooms:draft.bathrooms,suggestedRent:draft.suggestedRent,status:draft.unitStatus,description:draft.description});
         showToast("Inmueble individual listo para operar", "success");
         closeModal();
         navigate("/properties/portafolio");
@@ -80,28 +81,28 @@ function PropertiesPage() {
       showToast("Inmueble creado. Ahora define sus unidades.", "success");
       closeModal();
       navigate(`/properties/unidades?propertyId=${property.id}&create=1`);
-      return;
+      return; } catch(error) { showToast(error.response?.data?.error?.message||error.message,"warning"); return; }
     } else {
-      updateProperty(editingId, draft);
+      try { await updateProperty(editingId, draft);
       if (!draftIsContainer) {
         const primaryUnit=units.find((unit)=>unit.propertyId===editingId&&unit.status!=="archived");
         const unitDraft={propertyId:editingId,ownerId:draft.ownerId,identifier:draft.name,type:draft.type==="apartment"?"apartment":draft.type==="house"?"house":"other",floor:"",area:draft.area,bedrooms:draft.bedrooms,bathrooms:draft.bathrooms,suggestedRent:draft.suggestedRent,status:draft.unitStatus,description:draft.description};
-        if(primaryUnit) updateUnit(primaryUnit.id,unitDraft); else addUnit(unitDraft);
+        if(primaryUnit) await updateUnit(primaryUnit.id,unitDraft); else await addUnit(unitDraft);
       }
-      showToast("Inmueble actualizado", "success");
+      showToast("Inmueble actualizado", "success"); } catch(error) { showToast(error.response?.data?.error?.message||error.message,"warning"); return; }
     }
     closeModal();
   };
 
-  const handleArchive = (property) => {
+  const handleArchive = async (property) => {
     const activeUnits = units.filter((unit) => unit.propertyId === property.id && unit.status !== "archived").length;
     if (activeUnits > 0) {
       showToast(`No puedes archivarla: tiene ${activeUnits} ${activeUnits === 1 ? "unidad activa" : "unidades activas"}`, "warning");
       return;
     }
-    archiveProperty(property.id);
-    showToast("Inmueble archivado", "success");
+    try { await archiveProperty(property.id); showToast("Inmueble archivado", "success"); } catch(error) { showToast(error.response?.data?.error?.message||error.message,"warning"); }
   };
+  const uploadMedia=async(property,file)=>{if(!file)return;try{await propertiesService.media.upload("inmueble",property.inmuebleId,file);showToast("Archivo agregado al expediente","success")}catch(error){showToast(error.response?.data?.error?.message||error.message,"warning")}};
 
   return (
     <EcoLayout active="properties" title="Propiedades" subtitle="OwnTerra Properties · Portafolio administrado">
@@ -113,7 +114,7 @@ function PropertiesPage() {
           <button className="property-primary" type="button" onClick={openCreate} disabled={!canWrite}><HiPlus /> Nueva propiedad</button>
         </header>
 
-        <aside className="property-prototype-note">Los inmuebles y propietarios permanecen disponibles mientras navegas en Properties, pero todavía no se guardan en el backend.</aside>
+        <aside className="property-prototype-note">Portafolio, unidades y archivos persistidos en OwnTerra Properties.</aside>
 
         <section className="property-toolbar" aria-label="Filtros de propiedades">
           <label className="property-search"><HiMagnifyingGlass /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar inmueble, ubicación o propietario" /></label>
@@ -136,7 +137,7 @@ function PropertiesPage() {
                   <div className="property-card-title"><div><h2>{property.name}</h2><p><HiMapPin /> {property.address}, {property.city}, {property.state}</p></div><span className={`property-status ${property.status}`}>{property.status === "active" ? "Activa" : "Archivada"}</span></div>
                   <div className="property-owner"><span>Propietario</span><strong>{ownerById[property.ownerId]?.name || "Sin propietario asignado"}</strong></div>
                   <div className="property-metrics"><div><strong>{propertyUnits.length}</strong><span>Unidades</span></div><div><strong>{occupiedUnits}</strong><span>Ocupadas</span></div><div><strong>{occupancy === null ? "—" : `${occupancy}%`}</strong><span>Ocupación</span></div></div>
-                  {canWrite && property.status === "active" ? <div className="property-actions"><button type="button" onClick={() => openEdit(property)}><HiPencilSquare /> Editar</button><button type="button" onClick={() => handleArchive(property)}><HiArchiveBox /> Archivar</button></div> : null}
+                  {canWrite && property.status === "active" ? <div className="property-actions"><label>Archivo<input hidden type="file" accept="image/*,.pdf" onChange={event=>uploadMedia(property,event.target.files?.[0])}/></label><button type="button" onClick={() => openEdit(property)}><HiPencilSquare /> Editar</button><button type="button" onClick={() => handleArchive(property)}><HiArchiveBox /> Archivar</button></div> : null}
                 </div>
               </article>
                 );

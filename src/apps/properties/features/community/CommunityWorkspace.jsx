@@ -41,8 +41,9 @@ function CommunityWorkspace(){
   const activeRelations=personUnitRelations.filter(item=>item.communityId===selectedCommunity?.id&&item.status!=="archived");
 
   useEffect(()=>{
+    if(!communityId&&communities[0])setCommunityId(communities[0].id);
     if(selectedCommunity)setCommunityDraft({...selectedCommunity});
-  },[selectedCommunity?.id]);
+  },[communityId,communities,selectedCommunity?.id]);
 
   const relatedPersonIds=useMemo(()=>new Set(activeRelations.map(item=>item.personId)),[activeRelations]);
   const people=useMemo(()=>communityPeople.filter(person=>person.status!=="archived"&&(person.communityIds?.includes(selectedCommunity?.id)||relatedPersonIds.has(person.id))&&(!query.trim()||[person.name,person.email,person.phone,...person.roles.map(role=>COMMUNITY_PERSON_ROLE_LABEL[role])].join(" ").toLowerCase().includes(query.trim().toLowerCase()))),[communityPeople,query,relatedPersonIds,selectedCommunity?.id]);
@@ -53,25 +54,25 @@ function CommunityWorkspace(){
 
   useEffect(()=>setDirectoryPage(1),[query,directoryGroup,selectedCommunity?.id]);
 
-  const saveCommunity=(event)=>{
+  const saveCommunity=async(event)=>{
     event.preventDefault();
     const errors=validateCommunity(communityDraft);setCommunityErrors(errors);
     if(Object.keys(errors).length)return;
-    if(creatingCommunity){const created=addCommunity(communityDraft);setCommunityId(created.id);setCreatingCommunity(false);showToast("Comunidad configurada para esta sesión","success");}
-    else{updateCommunity(selectedCommunity.id,communityDraft);showToast("Configuración actualizada","success");}
+    try{if(creatingCommunity){const created=await addCommunity(communityDraft);setCommunityId(created.id);setCreatingCommunity(false);showToast("Comunidad guardada","success");}
+    else{await updateCommunity(selectedCommunity.id,communityDraft);showToast("Configuración actualizada","success");}}catch(error){showToast(error.response?.data?.error?.message||error.message,"warning")}
   };
   const openNewCommunity=()=>{setCreatingCommunity(true);setCommunityDraft(EMPTY_COMMUNITY);setCommunityErrors({});};
   const openPerson=(person=null)=>{setPersonModal(person?.id||"new");setPersonDraft(person?{...EMPTY_COMMUNITY_PERSON,...person,communityIds:[...new Set([...(person.communityIds||[]),selectedCommunity.id])],roles:[...person.roles]}:{...EMPTY_COMMUNITY_PERSON,communityIds:[selectedCommunity.id]});setPersonErrors({});};
-  const savePerson=(event)=>{event.preventDefault();const errors=validateCommunityPerson(personDraft);setPersonErrors(errors);if(Object.keys(errors).length)return;const scopedDraft={...personDraft,communityIds:[...new Set([...(personDraft.communityIds||[]),selectedCommunity.id])]};if(personModal==="new")addCommunityPerson(scopedDraft);else updateCommunityPerson(personModal,scopedDraft);setPersonModal(null);showToast(personModal==="new"?"Persona agregada al directorio":"Persona actualizada","success");};
+  const savePerson=async(event)=>{event.preventDefault();const errors=validateCommunityPerson(personDraft);setPersonErrors(errors);if(Object.keys(errors).length)return;const scopedDraft={...personDraft,communityIds:[...new Set([...(personDraft.communityIds||[]),selectedCommunity.id])]};try{if(personModal==="new")await addCommunityPerson(scopedDraft);else await updateCommunityPerson(personModal,scopedDraft);setPersonModal(null);showToast(personModal==="new"?"Persona agregada al directorio":"Persona actualizada","success")}catch(error){showToast(error.response?.data?.error?.message||error.message,"warning")}};
   const toggleRole=(role)=>setPersonDraft(current=>({...current,roles:current.roles.includes(role)?current.roles.filter(item=>item!==role):[...current.roles,role]}));
-  const saveRelation=(event)=>{event.preventDefault();try{addPersonUnitRelation({...relationDraft,communityId:selectedCommunity.id});setRelationOpen(false);showToast("Relación vinculada a la unidad","success");}catch(error){showToast(error.message,"warning");}};
+  const saveRelation=async(event)=>{event.preventDefault();try{await addPersonUnitRelation({...relationDraft,communityId:selectedCommunity.id});setRelationOpen(false);showToast("Relación vinculada a la unidad","success");}catch(error){showToast(error.response?.data?.error?.message||error.message,"warning");}};
   const copyContact=async(person)=>{const text=[person.name,person.email,person.phone].filter(Boolean).join(" · ");try{await navigator.clipboard.writeText(text);showToast("Contacto copiado","success");}catch{showToast("No se pudo copiar el contacto","warning");}};
 
   return <EcoLayout active="properties" title="Comunidades" subtitle="OwnTerra Properties · Espacios compartidos">
     <main className="community-page">
       <button className="community-back" type="button" onClick={()=>navigate("/properties")}><HiArrowLeft/> Volver a Properties</button>
       <header className="community-heading"><div><span>Comunidades y complejos</span><h1>La comunidad, conectada.</h1><p>Configura condominios, privadas, plazas, complejos de cabañas u hoteles y conecta sus espacios con la operación compartida.</p></div><button type="button" onClick={openNewCommunity} disabled={!canWrite}><HiPlus/> Nueva comunidad</button></header>
-      <aside className="community-prototype-note">Vista frontend para validar el flujo del manager. Los cambios permanecen únicamente durante esta sesión.</aside>
+      <aside className="community-prototype-note">Configuración, directorio y relaciones persistidos en OwnTerra Properties.</aside>
 
       <section className="community-context"><label><span>Comunidad activa</span><select value={selectedCommunity?.id||""} onChange={event=>setCommunityId(event.target.value)}>{communities.map(item=><option value={item.id} key={item.id}>{item.name}</option>)}</select></label><div><small>Inmueble</small><strong>{selectedProperty?.name||"Sin inmueble"}</strong></div><div><small>Unidades</small><strong>{communityUnits.length}</strong></div><div><small>Personas vinculadas</small><strong>{new Set(activeRelations.map(item=>item.personId)).size}</strong></div></section>
 

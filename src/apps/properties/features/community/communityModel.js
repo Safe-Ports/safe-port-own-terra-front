@@ -32,6 +32,9 @@ export const EMPTY_COMMUNITY = {
   name:"",
   kind:"condominium",
   regime:"",
+  cuotaBase:"",
+  billingDay:"",
+  reglamentoUrl:"",
   administrator:"",
   contactEmail:"",
   contactPhone:"",
@@ -44,7 +47,6 @@ export function validateCommunity(community) {
   const errors={};
   if(!community.propertyId) errors.propertyId="Selecciona el inmueble que representa la comunidad.";
   if(!community.name?.trim()) errors.name="Ingresa el nombre de la comunidad.";
-  if(!community.administrator?.trim()) errors.administrator="Ingresa el nombre de la administración responsable.";
   return errors;
 }
 
