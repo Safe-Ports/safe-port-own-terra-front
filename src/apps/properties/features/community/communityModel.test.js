@@ -1,11 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { createCommunity, createCommunityPerson, createPersonUnitRelation, validateCommunity, validateCommunityPerson } from "./communityModel";
+import { communityKindFromRegimen, createCommunity, createCommunityPerson, createPersonUnitRelation, regimenFromCommunityKind, validateCommunity, validateCommunityPerson } from "./communityModel";
 
 describe("Properties community model", () => {
   it("requires a property and name to configure a community",()=>{
-    expect(validateCommunity({propertyId:"",name:"",administrator:""})).toEqual({propertyId:"Selecciona el inmueble que representa la comunidad.",name:"Ingresa el nombre de la comunidad."});
-    expect(createCommunity({propertyId:"prop-1",name:" Privada Norte ",kind:"private_community",regime:" Asociación ",administrator:" Operadora Uno ",contactEmail:" ADMIN@NORTE.MX ",contactPhone:" 555 "})).toMatchObject({name:"Privada Norte",administrator:"Operadora Uno",contactEmail:"admin@norte.mx",status:"active"});
+    expect(validateCommunity({propertyId:"",name:""})).toEqual({propertyId:"Selecciona el inmueble que representa la comunidad.",name:"Ingresa el nombre de la comunidad."});
+    expect(createCommunity({propertyId:"prop-1",name:" Privada Norte ",kind:"private_community",cuotaBase:"1500",billingDay:"5",reglamentoUrl:" https://reglamento.mx "})).toMatchObject({name:"Privada Norte",kind:"private_community",regime:"fraccionamiento",cuotaBase:1500,billingDay:5,reglamentoUrl:"https://reglamento.mx",status:"active"});
   });
+
+  it("only accepts a billing day the backend can store",()=>{
+    expect(validateCommunity({propertyId:"prop-1",name:"Norte",billingDay:"31"}).billingDay).toBe("El día de cobro debe estar entre 1 y 28.");
+    expect(validateCommunity({propertyId:"prop-1",name:"Norte",cuotaBase:"-1"}).cuotaBase).toBe("La cuota base no puede ser negativa.");
+    expect(validateCommunity({propertyId:"prop-1",name:"Norte",billingDay:"28",cuotaBase:"0"})).toEqual({});
+  });
+
+  it("keeps the community type and the backend regimen in sync both ways",()=>{
+    for(const kind of ["condominium","horizontal_condominium","private_community","mixed_community"]){
+      expect(communityKindFromRegimen(regimenFromCommunityKind(kind))).toBe(kind);
+    }
+    // `condominio` es un valor heredado del backend que la UI muestra como vertical.
+    expect(communityKindFromRegimen("condominio")).toBe("condominium");
+  });
+
   it("requires identity, contact and a community role", () => {
     expect(validateCommunityPerson({ name:"", email:"bad", roles:[] })).toEqual({
       name:"Ingresa el nombre de la persona.",

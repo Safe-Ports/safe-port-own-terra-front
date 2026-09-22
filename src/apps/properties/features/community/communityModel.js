@@ -14,6 +14,41 @@ export const PERSON_UNIT_ROLE_LABEL = {
   payment_responsible: "Responsable de pago",
 };
 
+// El backend solo acepta estos cinco regímenes (Regimen en
+// app/features/communities/schemas.py). El tipo que elige el usuario y el
+// régimen que guarda properties-back son el mismo dato, así que se mapean 1:1
+// en ambas direcciones: un fraccionamiento debe volver a leerse como
+// fraccionamiento, no como condominio.
+export const COMMUNITY_KIND_LABEL = {
+  condominium: "Condominio vertical",
+  horizontal_condominium: "Condominio horizontal",
+  private_community: "Fraccionamiento o privada",
+  mixed_community: "Comunidad mixta",
+};
+
+export const COMMUNITY_KIND_TO_REGIMEN = {
+  condominium: "vertical",
+  horizontal_condominium: "horizontal",
+  private_community: "fraccionamiento",
+  mixed_community: "mixto",
+};
+
+export const REGIMEN_TO_COMMUNITY_KIND = {
+  vertical: "condominium",
+  condominio: "condominium",
+  horizontal: "horizontal_condominium",
+  fraccionamiento: "private_community",
+  mixto: "mixed_community",
+};
+
+export function communityKindFromRegimen(regimen) {
+  return REGIMEN_TO_COMMUNITY_KIND[regimen] || "condominium";
+}
+
+export function regimenFromCommunityKind(kind) {
+  return COMMUNITY_KIND_TO_REGIMEN[kind] || "condominio";
+}
+
 export const EMPTY_COMMUNITY_PERSON = {
   communityIds: [],
   personType: "individual",
@@ -27,26 +62,28 @@ export const EMPTY_COMMUNITY_PERSON = {
   notes: "",
 };
 
+// Solo los campos que properties-back persiste en `communities`. Pedir
+// administración, teléfono, zona horaria o moneda prometía una configuración
+// que el backend descartaba en silencio.
 export const EMPTY_COMMUNITY = {
   propertyId:"",
   name:"",
   kind:"condominium",
-  regime:"",
   cuotaBase:"",
   billingDay:"",
   reglamentoUrl:"",
-  administrator:"",
-  contactEmail:"",
-  contactPhone:"",
-  operationFrequency:"monthly",
-  timezone:"America/Mexico_City",
-  currency:"MXN",
 };
 
 export function validateCommunity(community) {
   const errors={};
   if(!community.propertyId) errors.propertyId="Selecciona el inmueble que representa la comunidad.";
   if(!community.name?.trim()) errors.name="Ingresa el nombre de la comunidad.";
+  if(community.cuotaBase!==""&&community.cuotaBase!==undefined&&community.cuotaBase!==null&&Number(community.cuotaBase)<0) errors.cuotaBase="La cuota base no puede ser negativa.";
+  // El backend acepta billing_day entre 1 y 28 para que exista en todos los meses.
+  if(community.billingDay!==""&&community.billingDay!==undefined&&community.billingDay!==null){
+    const day=Number(community.billingDay);
+    if(!Number.isInteger(day)||day<1||day>28) errors.billingDay="El día de cobro debe estar entre 1 y 28.";
+  }
   return errors;
 }
 
@@ -56,13 +93,10 @@ export function createCommunity(draft) {
     propertyId:draft.propertyId,
     name:draft.name.trim(),
     kind:draft.kind,
-    regime:draft.regime?.trim()||"",
-    administrator:draft.administrator.trim(),
-    contactEmail:draft.contactEmail?.trim().toLowerCase()||"",
-    contactPhone:draft.contactPhone?.trim()||"",
-    operationFrequency:draft.operationFrequency||"monthly",
-    timezone:draft.timezone||"America/Mexico_City",
-    currency:draft.currency||"MXN",
+    regime:regimenFromCommunityKind(draft.kind),
+    cuotaBase:draft.cuotaBase===""||draft.cuotaBase===undefined?"":Number(draft.cuotaBase),
+    billingDay:draft.billingDay===""||draft.billingDay===undefined?"":Number(draft.billingDay),
+    reglamentoUrl:draft.reglamentoUrl?.trim()||"",
     status:"active",
   };
 }
