@@ -7,6 +7,7 @@ import { useAppContext } from "@/context/AppContext";
 import EcoLayout from "@/pages/Ecosystem/EcoLayout";
 import { usePropertiesData } from "../../data/PropertiesDataContext";
 import { COMMUNITY_PERSON_ROLE_LABEL, EMPTY_COMMUNITY, EMPTY_COMMUNITY_PERSON, PERSON_UNIT_ROLE_LABEL, validateCommunity, validateCommunityPerson } from "./communityModel";
+import CommunityOnboarding from "./CommunityOnboarding";
 import "./community-workspace.css";
 
 const tabs=[
@@ -21,7 +22,7 @@ function CommunityWorkspace(){
   const navigate=useNavigate();
   const {canUseFeature,showToast}=useAppContext();
   const canWrite=canUseFeature("properties.write");
-  const {properties,units,communities,communityPeople,personUnitRelations,addCommunity,updateCommunity,addCommunityPerson,updateCommunityPerson,archiveCommunityPerson,addPersonUnitRelation,archivePersonUnitRelation}=usePropertiesData();
+  const {properties,units,communities,communityPeople,personUnitRelations,propertiesLoading,propertiesError,retryProperties,addCommunity,updateCommunity,addCommunityPerson,updateCommunityPerson,archiveCommunityPerson,addPersonUnitRelation,archivePersonUnitRelation}=usePropertiesData();
   const [activeTab,setActiveTab]=useState("configuration");
   const [communityId,setCommunityId]=useState(communities[0]?.id||"");
   const [communityDraft,setCommunityDraft]=useState(EMPTY_COMMUNITY);
@@ -67,6 +68,10 @@ function CommunityWorkspace(){
   const toggleRole=(role)=>setPersonDraft(current=>({...current,roles:current.roles.includes(role)?current.roles.filter(item=>item!==role):[...current.roles,role]}));
   const saveRelation=async(event)=>{event.preventDefault();try{await addPersonUnitRelation({...relationDraft,communityId:selectedCommunity.id});setRelationOpen(false);showToast("Relación vinculada a la unidad","success");}catch(error){showToast(error.response?.data?.error?.message||error.message,"warning");}};
   const copyContact=async(person)=>{const text=[person.name,person.email,person.phone].filter(Boolean).join(" · ");try{await navigator.clipboard.writeText(text);showToast("Contacto copiado","success");}catch{showToast("No se pudo copiar el contacto","warning");}};
+
+  if(propertiesLoading&&!communities.length)return <EcoLayout active="properties" title="Comunidades" subtitle="Preparando tu espacio"><main className="community-page"><section className="community-onboarding-status"><span className="community-loading-dot"/><h1>Cargando tu organización…</h1><p>Estamos revisando inmuebles, unidades y comunidades.</p></section></main></EcoLayout>;
+  if(propertiesError&&!communities.length)return <EcoLayout active="properties" title="Comunidades" subtitle="No pudimos cargar la información"><main className="community-page"><section className="community-onboarding-status"><h1>No pudimos abrir Comunidades</h1><p>{propertiesError.response?.data?.error?.message||propertiesError.message}</p><button type="button" onClick={retryProperties}>Reintentar</button></section></main></EcoLayout>;
+  if(!communities.length)return <EcoLayout active="properties" title="Comunidades" subtitle="Configuración inicial"><main className="community-page"><button className="community-back" type="button" onClick={()=>navigate("/properties")}><HiArrowLeft/> Volver a Properties</button><CommunityOnboarding/></main></EcoLayout>;
 
   return <EcoLayout active="properties" title="Comunidades" subtitle="OwnTerra Properties · Espacios compartidos">
     <main className="community-page">
