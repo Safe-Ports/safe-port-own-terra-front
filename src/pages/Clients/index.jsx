@@ -1,4 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  HiChatBubbleLeftRight,
+  HiCheck,
+  HiDocumentText,
+  HiEnvelope,
+  HiExclamationTriangle,
+  HiGlobeAlt,
+  HiLink,
+  HiLockClosed,
+  HiMagnifyingGlass,
+  HiPhone,
+  HiPrinter,
+  HiTrash,
+  HiUser,
+  HiUserGroup,
+} from "react-icons/hi2";
 import GuideModal from "@/components/shared/GuideModal";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -7,6 +23,7 @@ import { useLandsGuide } from "@/context/LandsGuideContext";
 import Modal from "@/components/ui/Modal";
 import InlineDocumentsPanel from "@/components/shared/InlineDocumentsPanel";
 import FieldError from "@/components/shared/FieldError";
+import ClientForm, { CLIENT_FIELD_MAP, useClientForm } from "@/components/shared/ClientForm";
 import PhoneInput from "@/components/shared/PhoneInput";
 import { useFieldErrors } from "@/hooks/useFieldErrors";
 import Button from "@/components/Button";
@@ -24,31 +41,26 @@ const CONTRACT_STATUS_LABEL = { active: "Activo", completed: "Completado", cance
 const LOT_STATUS_LABEL = { available: "Disponible", sold: "Vendido", reserved: "Apartado" };
 const LOT_STATUS_COLOR = { available: "#355E3B", sold: "#C0392B", reserved: "#9D6B18" };
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const CLIENT_RULES = {
-  name: (v) => (!v || v.trim().length < 2 ? "Escribe el nombre (mínimo 2 caracteres)." : ""),
-  email: (v) => (v && !EMAIL_RE.test(v.trim()) ? "El correo no tiene un formato válido." : ""),
-};
-const CLIENT_FIELD_MAP = { name: "name", email: "email", phone: "phone" };
-
-function ClientModal() {
-  const { ui, closeModal, saveClient, editingClient, deleteClient, clients, showError } = useAppContext();
+/**
+ * Alta/edición de cliente. Los campos y las validaciones viven en ClientForm,
+ * compartido con el alta rápida del ClientPicker: así el formulario es
+ * literalmente el mismo se abra desde donde se abra.
+ *
+ * La `key` del padre lo remonta al cambiar de cliente, que es lo que reinicia
+ * el estado del hook sin necesidad de un efecto de sincronización.
+ */
+function ClientModalInner() {
+  const { closeModal, saveClient, editingClient, deleteClient, clients, showError, canUseFeature } = useAppContext();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", phone: "", email: "", type: "buyer", notes: "" });
   const [saving, setSaving] = useState(false);
-  const fe = useFieldErrors();
-
-  const setField = (key) => (e) => {
-    const value = e.target.value;
-    setForm((p) => ({ ...p, [key]: value }));
-    fe.clear(key);
-  };
+  const ctl = useClientForm(editingClient, clients);
+  const { fe, dupe } = ctl;
 
   const submit = async () => {
-    if (!fe.validate(form, CLIENT_RULES)) return;
+    if (!ctl.validate()) return;
     setSaving(true);
     try {
-      await saveClient({ ...(editingClient || {}), ...form });
+      await saveClient(ctl.payload());
     } catch (err) {
       // 422 con detalle por campo → marcar campos; si no, error de catálogo (toast OT-…).
       if (!fe.fromServer(err, CLIENT_FIELD_MAP)) showError(err, "Error al guardar el cliente");
@@ -57,106 +69,47 @@ function ClientModal() {
     }
   };
 
-  // Detección de identidad ya existente en el core (vincular en vez de duplicar)
-  const fullName = `${form.nombre} ${form.apellidos}`.trim();
-  const dupe = !editingClient && form.email
-    ? clients.find((c) => c.email && c.email.toLowerCase() === form.email.trim().toLowerCase())
-    : null;
-
-  const splitName = (name = "") => {
-    const parts = name.trim().split(" ");
-    return { nombre: parts[0] || "", apellidos: parts.slice(1).join(" ") };
-  };
-
-  useEffect(() => {
-    if (editingClient) {
-      const { nombre, apellidos } = splitName(editingClient.name);
-      setForm({ nombre, apellidos, phone: editingClient.phone || "", email: editingClient.email || "", type: editingClient.type || "buyer", notes: editingClient.notes || "" });
-    } else {
-      setForm({ nombre: "", apellidos: "", phone: "", email: "", type: "buyer", notes: "" });
-    }
-  }, [editingClient, ui.clientModal]);
-
   return (
     <Modal
-      open={ui.clientModal}
-      icon="👤"
-      title={editingClient ? "Editar cliente" : "Vincular o crear cliente"}
+      open
+      icon={<HiUser />}
+      title={editingClient ? "Editar cliente" : "Agregar cliente"}
       subtitle={editingClient ? "Identidad del ecosistema" : "Identidad única del ecosistema"}
       onClose={() => closeModal("clientModal")}
       footer={
         <>
           <Button variant="secondary" onClick={() => closeModal("clientModal")}>Cancelar</Button>
-          {editingClient && <Button variant="danger" onClick={() => deleteClient(editingClient.id)}>🗑 Eliminar</Button>}
-          <Button
-            variant="primary"
-            onClick={() => saveClient({
-              ...(editingClient || {}),
-              ...form,
-              name: fullName,
-              linkClientId: dupe?.id,
-            })}
-          >
-            {dupe ? "🔗 Vincular a Lands" : "✓ Guardar"}
+          {/* Dar de baja saca a alguien del sistema: es de administración, no del
+              trabajo diario con la cartera (el backend ahora pide "lands.write"). */}
+          {editingClient && canUseFeature("lands.write") && (
+            <Button variant="danger" onClick={() => deleteClient(editingClient.id)}><HiTrash /> Eliminar</Button>
+          )}
+          <Button variant="primary" onClick={submit} disabled={saving}>
+            {saving ? "Guardando..." : dupe ? <><HiLink /> Vincular a Lands</> : <><HiCheck /> Guardar</>}
           </Button>
         </>
       }
     >
-      {!editingClient && (
-        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", background: "rgba(111,175,107,.1)", border: "1px solid rgba(111,175,107,.3)", borderRadius: 12, padding: "10px 12px", marginBottom: 14, fontSize: ".76rem", color: "#2F6A38", lineHeight: 1.5 }}>
-          <span>🌐</span>
-          <span>Se registra en el <b>ecosistema</b> como identidad única y se le da acceso a Lands. Si el correo o teléfono ya existe en el core, se <b>vincula</b> en lugar de duplicar.</span>
-        </div>
-      )}
-
-      {dupe && (
-        <div style={{ display: "flex", gap: 8, alignItems: "center", background: "rgba(201,168,76,.14)", border: "1px solid rgba(201,168,76,.4)", borderRadius: 12, padding: "10px 12px", marginBottom: 14, fontSize: ".76rem", color: "#8A6D1E", lineHeight: 1.5 }}>
-          <span>⚠️</span>
-          <span>Ya existe en el core: <b>{dupe.name}</b>. Al guardar se <b>vinculará</b> a Lands en vez de crear un duplicado.</span>
-        </div>
-      )}
-
       {editingClient && (
         <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", background: "var(--sf2)", border: "1px solid var(--bd)", borderRadius: 12, padding: "9px 12px", marginBottom: 14, fontSize: ".74rem", color: "var(--mu)" }}>
-          <span>🌐 La identidad se sincroniza con el ecosistema.</span>
+          <span><HiGlobeAlt /> La identidad se sincroniza con el ecosistema.</span>
           <button type="button" onClick={() => { closeModal("clientModal"); navigate("/ecosistema/clientes"); }} style={{ color: "var(--forest)", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
             Editar en el core →
           </button>
         </div>
       )}
-      <div className="fr-row">
-        <div className="fg" style={{ flex: 1 }}>
-          <label className="fl">Nombre</label>
-          <input className="fi" value={form.nombre} onChange={(e) => setForm((p) => ({ ...p, nombre: e.target.value }))} />
-        </div>
-        <div className="fg" style={{ flex: 1 }}>
-          <label className="fl">Apellidos</label>
-          <input className="fi" value={form.apellidos} onChange={(e) => setForm((p) => ({ ...p, apellidos: e.target.value }))} />
-        </div>
-      </div>
-      <div className="fg">
-        <label className="fl">Teléfono</label>
-        <PhoneInput inputClassName="fi" value={form.phone} onChange={(v) => setForm((p) => ({ ...p, phone: v }))} />
-      </div>
-      <div className="fg">
-        <label className="fl">Correo electrónico</label>
-        <input {...fe.fieldProps("email")} type="email" value={form.email} onChange={setField("email")} />
-        <FieldError msg={fe.errors.email} />
-      </div>
-      <div className="fg">
-        <label className="fl">Tipo de cliente</label>
-        <select className="fi" value={form.type} onChange={(e) => setForm((p) => ({ ...p, type: e.target.value }))}>
-          <option value="buyer">Comprador</option>
-          <option value="tenant">Arrendatario</option>
-          <option value="lead">Prospecto</option>
-        </select>
-      </div>
-      <div className="fg">
-        <label className="fl">Notas</label>
-        <textarea className="fi" rows="2" value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} />
-      </div>
+
+      <ClientForm ctl={ctl} isEditing={!!editingClient} />
     </Modal>
   );
+}
+
+function ClientModal() {
+  const { ui, editingClient } = useAppContext();
+  if (!ui.clientModal) return null;
+  // La key remonta el formulario al cambiar de cliente (o al pasar de editar a
+  // crear), que es lo que lo deja limpio sin un efecto de sincronización.
+  return <ClientModalInner key={editingClient?.id || "new"} />;
 }
 
 function ClientsPage() {
@@ -165,7 +118,7 @@ function ClientsPage() {
     selectedClientId, setSelectedClientId,
     openModal, setEditingClient,
     openClientReport, sendClientMessage, openContractCreate,
-    showError,
+    showError, currentUser,
   } = useAppContext();
   const [showGuide, setShowGuide] = useState(false);
   useLandsGuide(() => setShowGuide(true));
@@ -225,6 +178,11 @@ function ClientsPage() {
   );
 
   const selected = landsClients.find((c) => c.id === selectedClientId) || filtered[0] || null;
+  // Un administrador puede con todos; un colaborador, sólo con los que tiene
+  // asignados (mismo criterio que aplica el backend en ClientService).
+  const puedeEditar = Boolean(
+    selected && (currentUser?.role === "admin" || selected.seller?.id === currentUser?.id)
+  );
   const withApps = (client) => client ? { ...client, apps: clientAppsById.get(String(client.id)) ?? [] } : null;
   const eco = selected ? getClientEcosystem(withApps(selected)) : null;
 
@@ -238,23 +196,41 @@ function ClientsPage() {
   const sellerName = selected?.seller?.name || selected?.seller || "";
   const sellerInitials = selected?.seller?.initials || sellerName.slice(0, 2).toUpperCase();
 
-  // Client's contracts + payment progress
+  // Los contratos y las cuotas del cliente seleccionado, pedidos al servidor.
+  //
+  // Antes salían de filtrar los arreglos globales del contexto, que llegan
+  // recortados (contratos 100, cuotas 200 como mucho). A un cliente cuyos
+  // contratos quedaban fuera de ese corte se le mostraba la ficha vacía o con
+  // menos contratos de los que tiene, y el avance de pago —"3 de 12 cuotas"—
+  // salía mal porque le faltaban filas. Estos endpoints devuelven lo del cliente
+  // COMPLETO, sin paginar.
+  const { data: clientContractsData } = useQuery({
+    queryKey: ["client-contracts", selected?.id],
+    queryFn: () => clientService.contracts(selected.id),
+    enabled: !!selected?.id,
+  });
+  const { data: clientPaymentsData } = useQuery({
+    queryKey: ["client-payments", selected?.id],
+    queryFn: () => clientService.payments(selected.id),
+    enabled: !!selected?.id,
+  });
+
   const clientContracts = useMemo(
-    () => contracts.filter((c) => String(c.client?.id) === String(selected?.id)),
-    [contracts, selected?.id]
+    () => clientContractsData?.items || [],
+    [clientContractsData]
   );
 
   const paidCountByContract = useMemo(() => {
     const map = {};
-    payments.forEach((p) => {
-      if (!p.contract?.id) return;
-      const key = String(p.contract.id);
+    (clientPaymentsData?.items || []).forEach((p) => {
+      const key = String(p.contract_id ?? p.contract?.id ?? "");
+      if (!key) return;
       if (!map[key]) map[key] = { paid: 0, total: 0 };
       map[key].total += 1;
       if (p.status === "paid") map[key].paid += 1;
     });
     return map;
-  }, [payments]);
+  }, [clientPaymentsData]);
 
   return (
     <>
@@ -262,17 +238,25 @@ function ClientsPage() {
         {/* ── LEFT: client list ── */}
         <div className="cl-list-card">
           <div className="cl-hd">
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+              {/* min-width:0 para que el subtítulo ceda ancho y el botón no se
+                  parta en dos líneas. */}
+              <div style={{ minWidth: 0 }}>
                 <div style={{ fontWeight: 700, fontSize: ".87rem" }}>Clientes</div>
                 <div style={{ fontSize: ".58rem", color: "var(--mu)", fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", marginTop: 1 }}>Del ecosistema · con acceso a Lands</div>
               </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <Button variant="primary" style={{ padding: "5px 12px", fontSize: ".74rem" }} onClick={() => openModal("clientModal")}>+ Vincular</Button>
+              <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                <Button
+                  variant="primary"
+                  style={{ padding: "6px 12px", fontSize: ".74rem", whiteSpace: "nowrap" }}
+                  onClick={() => openModal("clientModal")}
+                >
+                  + Agregar cliente
+                </Button>
               </div>
             </div>
             <div className="cl-src">
-              <span style={{ color: "var(--mu)" }}>🔍</span>
+              <span style={{ color: "var(--mu)" }}><HiMagnifyingGlass /></span>
               <input type="text" placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
           </div>
@@ -286,7 +270,7 @@ function ClientsPage() {
               <SkeletonRows rows={6} />
             ) : clients.length === 0 ? (
               <EmptyState
-                icon="👥"
+                icon={<HiUserGroup />}
                 title="Aún no tienes clientes"
                 description="Da de alta tu primer cliente para gestionar sus contratos, pagos y documentos."
                 ctaLabel="Nuevo cliente"
@@ -359,12 +343,21 @@ function ClientsPage() {
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                  <a href={`tel:${selected.phone}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DCDAD2", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}>📞</a>
-                  <a href={`mailto:${selected.email}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DCDAD2", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}>✉️</a>
-                  <a href={`https://wa.me/${(selected.phone || "").replace(/\D/g,"")}`} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #DCDAD2", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}>💬</a>
-                  <Button variant="secondary" style={{ padding: "6px 14px", fontSize: ".76rem" }} onClick={() => { setEditingClient(selected); openModal("clientModal"); }}>
-                    Editar
-                  </Button>
+                  <a href={`tel:${selected.phone}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #E2E7E5", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiPhone /></a>
+                  <a href={`mailto:${selected.email}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #E2E7E5", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiEnvelope /></a>
+                  <a href={`https://wa.me/${(selected.phone || "").replace(/\D/g,"")}`} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #E2E7E5", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiChatBubbleLeftRight /></a>
+                  {/* Toda la cartera se ve, pero cada quien edita la suya. Un
+                      botón que sólo sirve para chocar con un 403 no ayuda: en su
+                      lugar se dice de quién es el cliente. */}
+                  {puedeEditar ? (
+                    <Button variant="secondary" style={{ padding: "6px 14px", fontSize: ".76rem" }} onClick={() => { setEditingClient(selected); openModal("clientModal"); }}>
+                      Editar
+                    </Button>
+                  ) : (
+                    <span className="cl-ajeno" title="Solo quien lo tiene asignado puede editarlo">
+                      {selected.seller?.name ? `Atiende ${selected.seller.name}` : "Sin vendedor asignado"}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -373,7 +366,7 @@ function ClientsPage() {
                 {eco && (
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", background: "rgba(111,175,107,.09)", border: "1px solid rgba(111,175,107,.28)", borderRadius: 12, padding: "9px 13px", marginBottom: 14 }}>
                     <span style={{ fontSize: ".72rem", fontWeight: 800, color: "#2F6A38", display: "flex", alignItems: "center", gap: 6 }}>
-                      🌐 Identidad del ecosistema
+                      <HiGlobeAlt /> Identidad del ecosistema
                     </span>
                     <span style={{ fontFamily: "var(--font-body)", fontSize: ".64rem", color: "var(--mu)" }}>{eco.coreId}</span>
                     {eco.multiApp && (
@@ -446,7 +439,7 @@ function ClientsPage() {
                     <div style={{ overflowX: "auto" }}>
                       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".78rem" }}>
                         <thead>
-                          <tr style={{ borderBottom: "1.5px solid #E7E4DB" }}>
+                          <tr style={{ borderBottom: "1.5px solid #EBEFED" }}>
                             {["ID Lote", "Proyecto", "Estado", "Medidas", "Progreso", ""].map((h) => (
                               <th key={h} style={{ textAlign: "left", padding: "5px 8px", fontSize: ".6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#83867C", whiteSpace: "nowrap" }}>{h}</th>
                             ))}
@@ -498,16 +491,16 @@ function ClientsPage() {
                 {/* Actions */}
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
                   <Button variant="primary" style={{ padding: "8px 15px", fontSize: ".78rem" }} onClick={() => openContractCreate({ clientId: selected.id })}>
-                    📄 Nuevo Contrato
+                    <HiDocumentText /> Nuevo Contrato
                   </Button>
                   {selected.type === "lead" && (
                     <Button variant="primary" style={{ padding: "8px 15px", fontSize: ".78rem" }} onClick={() => openContractCreate({ clientId: selected.id, type: "reserve" })}>
-                      🔒 Registrar Apartado
+                      <HiLockClosed /> Registrar Apartado
                     </Button>
                   )}
                   {selected.type !== "lead" && (
                     <Button variant="primary" style={{ padding: "8px 15px", fontSize: ".78rem" }} onClick={() => openClientReport(selected.id)}>
-                      🖨 Estado de Cuenta
+                      <HiPrinter /> Estado de Cuenta
                     </Button>
                   )}
                 </div>
@@ -517,7 +510,7 @@ function ClientsPage() {
             </>
           ) : (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", flexDirection: "column", gap: 12, color: "var(--mu)", padding: 40, textAlign: "center" }}>
-              <div style={{ fontSize: "2.8rem", opacity: 0.18 }}>👤</div>
+              <div style={{ fontSize: "2.8rem", opacity: 0.18 }}><HiUser /></div>
               <div style={{ fontFamily: "var(--font-title)", fontSize: "1rem", color: "var(--tx)", opacity: 0.35 }}>Selecciona un cliente</div>
               <div style={{ fontSize: ".78rem", maxWidth: 190, lineHeight: 1.5 }}>Elige un cliente de la lista para ver su expediente completo</div>
             </div>
@@ -553,7 +546,7 @@ function ClientsPage() {
                   value={cancelForm.reason}
                   onChange={(e) => setCancelForm((p) => ({ ...p, reason: e.target.value }))}
                   placeholder="Ej: Solicitud del cliente, incumplimiento de pago..."
-                  style={{ width: "100%", borderRadius: 8, border: "1.5px solid #DCDAD2", padding: "8px 10px", fontSize: ".82rem", color: "#1E3D2B", outline: "none", fontFamily: "var(--font-body)", resize: "none", boxSizing: "border-box" }}
+                  style={{ width: "100%", borderRadius: 8, border: "1.5px solid #E2E7E5", padding: "8px 10px", fontSize: ".82rem", color: "#1E3D2B", outline: "none", fontFamily: "var(--font-body)", resize: "none", boxSizing: "border-box" }}
                 />
               </div>
               <div>
@@ -564,14 +557,14 @@ function ClientsPage() {
                   value={cancelForm.refund_amount}
                   onChange={(e) => setCancelForm((p) => ({ ...p, refund_amount: e.target.value }))}
                   placeholder="0"
-                  style={{ width: "100%", borderRadius: 8, border: "1.5px solid #DCDAD2", padding: "8px 10px", fontSize: ".82rem", color: "#1E3D2B", outline: "none", fontFamily: "var(--font-body)", boxSizing: "border-box" }}
+                  style={{ width: "100%", borderRadius: 8, border: "1.5px solid #E2E7E5", padding: "8px 10px", fontSize: ".82rem", color: "#1E3D2B", outline: "none", fontFamily: "var(--font-body)", boxSizing: "border-box" }}
                 />
               </div>
             </div>
             {/* Footer */}
             <div style={{ display: "flex", gap: 8, padding: "14px 20px", borderTop: "1px solid #EDEAE1", justifyContent: "flex-end" }}>
               <button onClick={() => setCancelDraft(null)} disabled={cancelling}
-                style={{ borderRadius: 8, border: "1.5px solid #DCDAD2", background: "#F1EEE6", color: "#43453F", padding: "7px 16px", fontSize: ".78rem", fontWeight: 700, cursor: "pointer" }}>
+                style={{ borderRadius: 8, border: "1.5px solid #E2E7E5", background: "#EEF1F1", color: "#43453F", padding: "7px 16px", fontSize: ".78rem", fontWeight: 700, cursor: "pointer" }}>
                 Cerrar
               </button>
               <button onClick={submitCancel} disabled={cancelling || !cancelForm.reason.trim()}
@@ -592,7 +585,7 @@ function ClientsPage() {
         steps={[
           { title: "Seleccionar un cliente", text: "Haz clic en cualquier cliente de la lista izquierda para ver su detalle completo: contratos, pagos, saldo y documentos vinculados." },
           { title: "Buscar y filtrar", text: "Usa la barra de búsqueda para encontrar clientes por nombre o correo. El filtro de pestañas separa compradores activos de prospectos." },
-          { title: "Vincular nuevo cliente", text: "El botón '+ Vincular' abre el formulario para registrar un nuevo cliente y asignarle acceso a OwnTerra Lands." },
+          { title: "Agregar un cliente", text: "El botón '+ Agregar cliente' abre el formulario para registrarlo y darle acceso a OwnTerra Lands. Si el correo ya existe en el ecosistema, se vincula esa identidad en vez de duplicarla." },
           { title: "Editar cliente", text: "En el detalle del cliente, el botón 'Editar' permite modificar nombre, correo, teléfono y datos del contrato." },
           { title: "Estado de cuenta", text: "Desde el detalle puedes ver el historial de pagos, descargarlo en PDF o enviarlo por correo directamente al cliente." },
           { title: "Contacto rápido", text: "Los íconos de teléfono, correo y WhatsApp en el encabezado del cliente abren directamente la app de contacto correspondiente." },

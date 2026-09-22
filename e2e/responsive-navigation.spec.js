@@ -56,6 +56,6 @@ test.describe("Navegación compartida en iPad", () => {
 
     await page.getByRole("button", { name: "Abrir menú" }).click();
     await expect.poll(async () => Math.round((await sidebar.boundingBox())?.x || 0)).toBe(0);
-    await expect(sidebar.getByText("Núcleo central")).toBeVisible();
+    await expect(sidebar.getByRole("button", { name: "Hub de aplicaciones" })).toBeVisible();
   });
 });

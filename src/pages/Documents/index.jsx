@@ -2,10 +2,12 @@ import { useMemo, useState, useRef, useEffect } from "react";
 import GuideModal from "@/components/shared/GuideModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  HiDocumentArrowUp, HiOutlineFolder, HiFolderOpen, HiOutlineFolderPlus,
+  HiDocumentArrowUp, HiOutlineFolder, HiFolder, HiFolderOpen, HiOutlineFolderPlus,
   HiOutlineTrash, HiOutlineArrowDownTray, HiOutlineEye, HiOutlinePencil,
   HiOutlineChevronRight, HiOutlineChevronDown, HiOutlineEllipsisVertical,
   HiOutlineArrowRight, HiOutlineMagnifyingGlass,
+  HiDocumentText, HiTableCells, HiPhoto, HiFilm, HiArchiveBox, HiGlobeAlt,
+  HiCube, HiDocument, HiRectangleStack, HiClipboard, HiCheck,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 import EmptyState from "@/components/ui/EmptyState";
@@ -22,12 +24,12 @@ const CAT_LABEL = {
   escritura:"Escritura", plano:"Plano", otro:"Otro",
 };
 const EXT_ICON = {
-  pdf:"📕", doc:"📝", docx:"📝", xls:"📗", xlsx:"📗",
-  png:"🖼", jpg:"🖼", jpeg:"🖼", gif:"🖼", webp:"🖼", svg:"🖼",
-  mp4:"🎬", mov:"🎬", zip:"📦", rar:"📦", html:"🌐", htm:"🌐",
-  txt:"📃", csv:"📊", dwg:"📐", dxf:"📐",
+  pdf:HiDocumentText, doc:HiDocumentText, docx:HiDocumentText, xls:HiTableCells, xlsx:HiTableCells,
+  png:HiPhoto, jpg:HiPhoto, jpeg:HiPhoto, gif:HiPhoto, webp:HiPhoto, svg:HiPhoto,
+  mp4:HiFilm, mov:HiFilm, zip:HiArchiveBox, rar:HiArchiveBox, html:HiGlobeAlt, htm:HiGlobeAlt,
+  txt:HiDocumentText, csv:HiTableCells, dwg:HiCube, dxf:HiCube,
 };
-const fileIcon = (n="") => EXT_ICON[n.split(".").pop()?.toLowerCase()] || "📄";
+const fileIcon = (n="") => EXT_ICON[n.split(".").pop()?.toLowerCase()] || HiDocument;
 const fmtSize  = (b) => !b?"—": b<1048576?`${Math.round(b/1024)} KB`:`${(b/1048576).toFixed(1)} MB`;
 const fmtDate  = (iso) => !iso?"—": new Date(iso).toLocaleDateString("es-MX",{day:"2-digit",month:"short",year:"numeric"});
 
@@ -70,7 +72,7 @@ function FolderNode({ node, folders, activeId, onSelect, onAddChild, onRename, o
           {kids.length ? (open ? "▾" : "▸") : null}
         </span>
         <span className="doc-folder-icon">
-          {open && kids.length ? "📂" : "📁"}
+          {open && kids.length ? <HiFolderOpen /> : <HiFolder />}
         </span>
 
         {editing ? (
@@ -160,7 +162,7 @@ function MoveModal({ folders, doc, onMove, onClose }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box" style={{maxWidth:340}} onClick={e => e.stopPropagation()}>
-        <div className="modal-title">📁 Mover archivo</div>
+        <div className="modal-title"><HiFolder /> Mover archivo</div>
         <div style={{fontSize:".8rem", color:"var(--mu)", marginBottom:12, fontWeight:500}}>{doc.name}</div>
         <div style={{maxHeight:300, overflowY:"auto", margin:"0 -18px", padding:"0 18px"}}>
           <div
@@ -290,7 +292,7 @@ export default function DocumentsPage() {
           border-bottom:1px solid rgba(67,69,63,.08); transition:background .14s;
           font-family: var(--font-body);
         }
-        .doc-sidebar-item:hover { background:#F1EEE6; }
+        .doc-sidebar-item:hover { background:#EEF1F1; }
         .doc-sidebar-item.active { background:rgba(111,175,107,.08); color:#1E3D2B; font-weight:600; border-left-color:#6FAF6B; }
         .doc-sidebar-item .count {
           margin-left:auto; font-size:.7rem; font-weight:500; font-family: var(--font-body);
@@ -306,7 +308,7 @@ export default function DocumentsPage() {
           border-bottom:1px solid rgba(67,69,63,.08); transition:background .14s;
           font-family: var(--font-body);
         }
-        .doc-folder-row:hover { background:#F1EEE6; }
+        .doc-folder-row:hover { background:#EEF1F1; }
         .doc-folder-row.active { background:rgba(111,175,107,.08); color:#1E3D2B; font-weight:600; border-left-color:#6FAF6B; }
         .doc-folder-chevron { width:13px; font-size:.58rem; color:#83867C; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
         .doc-folder-icon { width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:rgba(111,175,107,.12); font-size:.95rem; flex-shrink:0; }
@@ -331,7 +333,7 @@ export default function DocumentsPage() {
           padding:8px 11px; background:none; border:none; cursor:pointer; border-radius:8px;
           font-size:.78rem; color:#43453F; text-align:left; font-family: var(--font-body);
         }
-        .doc-folder-menu button:hover { background:#F1EEE6; }
+        .doc-folder-menu button:hover { background:#EEF1F1; }
         .doc-folder-menu button.danger { color:#C0392B; }
         .doc-folder-rename {
           flex:1; font-size:.8rem; padding:4px 8px; border-radius:8px;
@@ -385,7 +387,7 @@ export default function DocumentsPage() {
           display:flex; align-items:center; gap:8px; padding:8px 12px;
           border-radius:8px; cursor:pointer; font-size:.83rem; color:#43453F;
         }
-        .move-tree-row:hover { background:#F1EEE6; }
+        .move-tree-row:hover { background:#EEF1F1; }
         .move-tree-row.current { background:rgba(111,175,107,.1); font-weight:600; }
         .move-current-badge {
           font-size:.65rem; background:var(--forest); color:#fff;
@@ -395,7 +397,7 @@ export default function DocumentsPage() {
 
         /* confirm modal */
         .modal-overlay { position:fixed; inset:0; background:rgba(20,30,22,.45); backdrop-filter:blur(6px); z-index:9000; display:flex; align-items:center; justify-content:center; }
-        .modal-box { background:#FBFAF6; border:1px solid var(--bd); border-radius:22px; padding:24px; width:100%; box-shadow:0 24px 60px rgba(0,0,0,.22); }
+        .modal-box { background:#FFFFFF; border:1px solid var(--bd); border-radius:22px; padding:24px; width:100%; box-shadow:0 24px 60px rgba(0,0,0,.22); }
         .modal-title { font-family: var(--font-title); font-weight:600; font-size:1.15rem; margin-bottom:8px; color:#1E3D2B; }
 
         /* header chip + buscador pill + tarjetas de documento (idéntico a usr-row del Vault) */
@@ -415,12 +417,12 @@ export default function DocumentsPage() {
       <div className="doc-layout">
 
         {/* ══ SIDEBAR ══════════════════════════════════════════════════ */}
-        <aside className="doc-sidebar">
+        <aside className="doc-sidebar" data-tour="docs-sidebar">
           <div className="doc-sidebar-label">Archivos</div>
 
           {[
-            { id:"all",     label:"Todos",        icon:"🗂", count: countAll },
-            { id:"unfiled", label:"Sin carpeta",  icon:"📋", count: countUnfiled },
+            { id:"all",     label:"Todos",        icon:HiRectangleStack, count: countAll },
+            { id:"unfiled", label:"Sin carpeta",  icon:HiClipboard, count: countUnfiled },
           ].map(item => (
             <button
               key={item.id}
@@ -428,7 +430,7 @@ export default function DocumentsPage() {
               onClick={() => setActiveId(item.id)}
               title={item.label}
             >
-              <span className="doc-folder-icon">{item.icon}</span>
+              <span className="doc-folder-icon"><item.icon /></span>
               <span style={{flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{item.label}</span>
               <span className="count">{item.count}</span>
             </button>
@@ -456,7 +458,7 @@ export default function DocumentsPage() {
                 onKeyDown={e => { if(e.key==="Enter") handleCreate(newIn); if(e.key==="Escape") setNewIn(null); }}
                 style={{fontSize:".78rem", padding:"6px 10px"}}
               />
-              <button className="btn-p" style={{padding:"6px 12px",fontSize:".72rem"}} onClick={() => handleCreate(newIn)}>✓</button>
+              <button className="btn-p" style={{padding:"6px 12px",fontSize:".72rem"}} onClick={() => handleCreate(newIn)}><HiCheck /></button>
             </div>
           )}
 
@@ -471,7 +473,7 @@ export default function DocumentsPage() {
           {/* header */}
           <div className="doc-main-head">
             <div style={{display:"flex",alignItems:"center",gap:12,minWidth:0}}>
-              <span className="doc-dhead-ico">{activeId==="all"?"🗂":activeId==="unfiled"?"📋":"📁"}</span>
+              <span className="doc-dhead-ico">{activeId==="all"?<HiRectangleStack/>:activeId==="unfiled"?<HiClipboard/>:<HiFolder/>}</span>
               <div style={{minWidth:0}}>
                 {breadcrumb.length > 0 && (
                   <div className="doc-breadcrumb">
@@ -498,7 +500,7 @@ export default function DocumentsPage() {
                 <option value="name">Nombre A-Z</option>
                 <option value="size">Tamaño</option>
               </select>
-              <button className="btn-p" style={{padding:"8px 14px",fontSize:".82rem",gap:6}}
+              <button className="btn-p" data-tour="docs-subir" style={{padding:"8px 14px",fontSize:".82rem",gap:6}}
                 onClick={() => openDocumentUpload({
                   folderId: activeId !== "all" && activeId !== "unfiled" ? activeId : undefined
                 })}>
@@ -510,7 +512,7 @@ export default function DocumentsPage() {
           <div className="doc-main-body">
 
           {/* buscador */}
-          <label className="doc-search">
+          <label className="doc-search" data-tour="docs-buscar">
             <HiOutlineMagnifyingGlass />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar documento…" />
           </label>
@@ -520,7 +522,7 @@ export default function DocumentsPage() {
             <SkeletonRows rows={6} />
           ) : documents.length === 0 ? (
             <EmptyState
-              icon="📁"
+              icon={<HiFolder />}
               title="Aún no hay documentos"
               description="Sube contratos, comprobantes o identificaciones y organízalos en carpetas."
               ctaLabel="Subir documento"
@@ -542,9 +544,11 @@ export default function DocumentsPage() {
             </div>
           ) : (
             <div className="doc-rows">
-              {filtered.map(doc => (
+              {filtered.map(doc => {
+                const FileIco = fileIcon(doc.name);
+                return (
                 <div key={doc.id} className="doc-card-row">
-                  <span className="doc-card-ico">{fileIcon(doc.name)}</span>
+                  <span className="doc-card-ico"><FileIco /></span>
                   <div className="doc-card-info">
                     <div className="doc-card-name" title={doc.name}>{doc.name}</div>
                     <div className="doc-card-meta">
@@ -566,7 +570,8 @@ export default function DocumentsPage() {
                     </button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
 

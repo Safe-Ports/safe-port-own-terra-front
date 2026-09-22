@@ -1,0 +1,277 @@
+{
+  "_": [
+    "CORPUS ESPEJO — mantener IDÉNTICO en los dos repos.",
+    "backend:  tests/casos_formula.json",
+    "frontend: src/services/casos_formula.json",
+    "",
+    "Los dos motores de fórmula (app/shared/formula_engine.py y",
+    "src/services/formulaEngine.js) tienen que dar el mismo resultado: el front",
+    "muestra la mensualidad en el modal de venta y el back recalcula y guarda la",
+    "que queda en el contrato. Si difieren, el vendedor ve un número y el cliente",
+    "firma otro.",
+    "",
+    "El campo 'esperado' lo produce el BACKEND, que es el autoritativo. Al agregar un caso,",
+    "calculalo con app.shared.formula_engine.evaluate y copiá el JSON a ambos repos."
+  ],
+  "casos": [
+    {
+      "f": "precio * 0.05",
+      "v": {
+        "precio": 600000
+      },
+      "esperado": "30000.00"
+    },
+    {
+      "f": "(precio - enganche) / meses",
+      "v": {
+        "precio": 600000,
+        "enganche": 60000,
+        "meses": 96
+      },
+      "esperado": "5625.00"
+    },
+    {
+      "f": "precio * tasa / 12",
+      "v": {
+        "precio": 600000,
+        "tasa": 0.12
+      },
+      "esperado": "6000.00"
+    },
+    {
+      "f": "-2^2",
+      "v": {},
+      "esperado": "-4.00"
+    },
+    {
+      "f": "-precio^2",
+      "v": {
+        "precio": 2
+      },
+      "esperado": "-4.00"
+    },
+    {
+      "f": "-precio^2 * 3",
+      "v": {
+        "precio": 2
+      },
+      "esperado": "-12.00"
+    },
+    {
+      "f": "2^-1",
+      "v": {},
+      "esperado": "0.50"
+    },
+    {
+      "f": "2^3^2",
+      "v": {},
+      "esperado": "512.00"
+    },
+    {
+      "f": "-2*3",
+      "v": {},
+      "esperado": "-6.00"
+    },
+    {
+      "f": "- (2 + 3)",
+      "v": {},
+      "esperado": "-5.00"
+    },
+    {
+      "f": "-7 % 3",
+      "v": {},
+      "esperado": "2.00"
+    },
+    {
+      "f": "7 % -3",
+      "v": {},
+      "esperado": "-2.00"
+    },
+    {
+      "f": "7 % 3",
+      "v": {},
+      "esperado": "1.00"
+    },
+    {
+      "f": "10 // 3",
+      "v": {},
+      "esperado": "3.00"
+    },
+    {
+      "f": "-7 // 2",
+      "v": {},
+      "esperado": "-4.00"
+    },
+    {
+      "f": "1e3 * 2",
+      "v": {},
+      "esperado": "2000.00"
+    },
+    {
+      "f": "1.5e-2 * 100",
+      "v": {},
+      "esperado": "1.50"
+    },
+    {
+      "f": "min(precio, 1000)",
+      "v": {
+        "precio": 600
+      },
+      "esperado": "600.00"
+    },
+    {
+      "f": "max(precio, 1000)",
+      "v": {
+        "precio": 600
+      },
+      "esperado": "1000.00"
+    },
+    {
+      "f": "abs(0 - precio)",
+      "v": {
+        "precio": 55.5
+      },
+      "esperado": "55.50"
+    },
+    {
+      "f": "round(precio, 2)",
+      "v": {
+        "precio": 1378.125
+      },
+      "esperado": "1378.12"
+    },
+    {
+      "f": "round(precio)",
+      "v": {
+        "precio": 2.5
+      },
+      "esperado": "2.00"
+    },
+    {
+      "f": "round(precio)",
+      "v": {
+        "precio": 3.5
+      },
+      "esperado": "4.00"
+    },
+    {
+      "f": "floor(precio)",
+      "v": {
+        "precio": 7.9
+      },
+      "esperado": "7.00"
+    },
+    {
+      "f": "ceil(precio)",
+      "v": {
+        "precio": 7.1
+      },
+      "esperado": "8.00"
+    },
+    {
+      "f": "floor(0 - precio)",
+      "v": {
+        "precio": 7.1
+      },
+      "esperado": "-8.00"
+    },
+    {
+      "f": "sqrt(precio)",
+      "v": {
+        "precio": 144
+      },
+      "esperado": "12.00"
+    },
+    {
+      "f": "pow(precio, 2)",
+      "v": {
+        "precio": 12
+      },
+      "esperado": "144.00"
+    },
+    {
+      "f": "pi * precio",
+      "v": {
+        "precio": 2
+      },
+      "esperado": "6.28"
+    },
+    {
+      "f": "e * precio",
+      "v": {
+        "precio": 2
+      },
+      "esperado": "5.44"
+    },
+    {
+      "f": "precio ** 2",
+      "v": {
+        "precio": 3
+      },
+      "esperado": "9.00"
+    },
+    {
+      "f": "(a + b) * (c - d)",
+      "v": {
+        "a": 1.5,
+        "b": 2.5,
+        "c": 10,
+        "d": 4
+      },
+      "esperado": "24.00"
+    },
+    {
+      "f": "a / b / c",
+      "v": {
+        "a": 100,
+        "b": 5,
+        "c": 2
+      },
+      "esperado": "10.00"
+    },
+    {
+      "f": "a - b - c",
+      "v": {
+        "a": 100,
+        "b": 5,
+        "c": 2
+      },
+      "esperado": "93.00"
+    },
+    {
+      "f": "-a + b",
+      "v": {
+        "a": 5,
+        "b": 3
+      },
+      "esperado": "-2.00"
+    },
+    {
+      "f": "max(min(a, b), c)",
+      "v": {
+        "a": 10,
+        "b": 20,
+        "c": 15
+      },
+      "esperado": "15.00"
+    },
+    {
+      "f": "precio * (1 + tasa)^meses",
+      "v": {
+        "precio": 1000,
+        "tasa": 0.01,
+        "meses": 12
+      },
+      "esperado": "1126.83"
+    },
+    {
+      "f": "round(precio * tasa / (1 - (1 + tasa)^(0 - meses)), 2)",
+      "v": {
+        "precio": 540000,
+        "tasa": 0.01,
+        "meses": 96
+      },
+      "esperado": "8776.53"
+    }
+  ]
+}

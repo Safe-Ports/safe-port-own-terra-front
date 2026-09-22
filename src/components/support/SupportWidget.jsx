@@ -1,10 +1,21 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAppContext } from '@/context/AppContext'
+import { useLocation } from 'react-router-dom'
 import './support.css'
 
 const BOT_URL = import.meta.env.VITE_BOT_API_URL || 'http://localhost:8001'
 const TICKET_KEY = 'sp_support_ticket_id'
+const POSITION_KEY = 'sp_support_widget_position'
+const BUTTON_SIZE = 46
+const VIEWPORT_GAP = 12
 const POLL_MS = 10_000
+// Revisión de fondo del punto rojo, con el panel cerrado — antes era una sola vez
+// (2s tras montar o cerrar el panel), así que si soporte respondía mientras el
+// usuario seguía navegando la app sin volver a tocar el widget, nunca se enteraba.
+// 5s: se siente prácticamente instantáneo sin convertir el widget en una fuente de
+// tráfico constante — la corre CADA usuario con sesión abierta, en cualquier
+// pantalla, todo el tiempo, la mayoría sin tocar soporte nunca.
+const UNREAD_POLL_MS = 5_000
 
 const STATUS_LABELS = {
   open: 'Abierto',
@@ -20,6 +31,29 @@ function formatTime(iso) {
 function formatDate(iso) {
   if (!iso) return ''
   return new Date(iso).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })
+}
+
+function clampWidgetPosition(position) {
+  if (typeof window === 'undefined') return { x: 0, y: 0 }
+  return {
+    x: Math.min(Math.max(VIEWPORT_GAP, position.x), Math.max(VIEWPORT_GAP, window.innerWidth - BUTTON_SIZE - VIEWPORT_GAP)),
+    y: Math.min(Math.max(VIEWPORT_GAP, position.y), Math.max(VIEWPORT_GAP, window.innerHeight - BUTTON_SIZE - VIEWPORT_GAP)),
+  }
+}
+
+function initialWidgetPosition() {
+  if (typeof window === 'undefined') return { x: 0, y: 0 }
+  try {
+    const stored = JSON.parse(localStorage.getItem(POSITION_KEY))
+    if (Number.isFinite(stored?.x) && Number.isFinite(stored?.y)) return clampWidgetPosition(stored)
+  } catch { /* usa la posición inicial */ }
+  return clampWidgetPosition({ x: window.innerWidth - BUTTON_SIZE - 28, y: window.innerHeight - BUTTON_SIZE - 28 })
+}
+
+function getSupportTheme(pathname) {
+  if (pathname.startsWith('/properties')) return 'properties'
+  if (pathname.startsWith('/construction') || pathname.startsWith('/construccion')) return 'construction'
+  return 'lands'
 }
 
 function StatusBadge({ status }) {
@@ -71,7 +105,7 @@ const IconImage = () => (
 
 // ── Views ──────────────────────────────────────────────────────────────────
 
-function MenuView({ onSelect }) {
+function MenuView({ onSelect, unreadCount }) {
   return (
     <div className="sp-body">
       <div className="sp-menu-welcome">
@@ -98,8 +132,15 @@ function MenuView({ onSelect }) {
       <button className="sp-menu-item" onClick={() => onSelect('list')}>
         <span className="sp-menu-item-ico"><IconList /></span>
         <span>
-          <span className="sp-menu-item-label">Mis tickets</span>
-          <span className="sp-menu-item-sub">Ver estado de tus solicitudes</span>
+          <span className="sp-menu-item-label">
+            Mis tickets
+            {unreadCount > 0 && <span className="sp-unread-dot" style={{ marginLeft: 6 }} />}
+          </span>
+          <span className="sp-menu-item-sub">
+            {unreadCount > 0
+              ? `${unreadCount} respuesta${unreadCount === 1 ? '' : 's'} nueva${unreadCount === 1 ? '' : 's'} de soporte`
+              : 'Ver estado de tus solicitudes'}
+          </span>
         </span>
         <span className="sp-menu-arrow">›</span>
       </button>
@@ -314,7 +355,12 @@ function ThreadView({ ticketId, botFetch }) {
     }
     load()
     const timer = setInterval(load, POLL_MS)
-    return () => { active = false; clearInterval(timer) }
+    // El bot manda un mensaje de bienvenida ~5s después de crear el ticket
+    // (ver ticket_service.send_welcome_message en el backend). Sin este refresco
+    // extra, un ticket recién creado no lo vería hasta el próximo ciclo de
+    // POLL_MS (10s) — con esto aparece prácticamente a tiempo.
+    const welcomeCheck = setTimeout(load, 5_500)
+    return () => { active = false; clearInterval(timer); clearTimeout(welcomeCheck) }
   }, [ticketId, botFetch])
 
   useEffect(() => {
@@ -454,10 +500,20 @@ function ThreadView({ ticketId, botFetch }) {
 
 export default function SupportWidget() {
   const { currentUser } = useAppContext()
+  const { pathname } = useLocation()
+  const supportTheme = getSupportTheme(pathname)
   const [isOpen, setIsOpen] = useState(false)
   const [view, setView] = useState('menu')  // menu | create | connecting | list | thread
   const [activeTicketId, setActiveTicketId] = useState(() => localStorage.getItem(TICKET_KEY))
-  const [unreadDot, setUnreadDot] = useState(false)
+  // Los tickets con unread_count > 0 detectados por la revisión de fondo — no solo
+  // un booleano: al abrir el widget, esto es lo que permite llevar al usuario
+  // directo al ticket (o a la lista) en vez de a un menú genérico que no dice nada
+  // de si hay algo nuevo.
+  const [unreadTickets, setUnreadTickets] = useState([])
+  const [widgetPosition, setWidgetPosition] = useState(initialWidgetPosition)
+  const [isDragging, setIsDragging] = useState(false)
+  const dragRef = useRef(null)
+  const suppressClickRef = useRef(false)
 
   const botFetch = useCallback(async (path, options = {}) => {
     const isFormData = options.body instanceof FormData
@@ -476,16 +532,78 @@ export default function SupportWidget() {
     return res.json()
   }, [currentUser?.token])
 
-  // Punto rojo cuando el panel está cerrado
+  // Punto rojo cuando el panel está cerrado — revisión continua (no solo una vez),
+  // para que se vea aunque el usuario siga navegando la app sin volver a tocar el
+  // widget en el momento exacto en que soporte responde.
   useEffect(() => {
     if (isOpen || !currentUser) return
-    const timer = setTimeout(() => {
+    const check = () => {
       botFetch('/support/tickets/mine')
-        .then(tickets => setUnreadDot(tickets.some(t => t.unread_count > 0)))
+        .then(tickets => setUnreadTickets(tickets.filter(t => t.unread_count > 0)))
         .catch(() => {})
-    }, 2000)
-    return () => clearTimeout(timer)
+    }
+    const initial = setTimeout(check, 2000)
+    const interval = setInterval(check, UNREAD_POLL_MS)
+    return () => { clearTimeout(initial); clearInterval(interval) }
   }, [isOpen, currentUser, botFetch])
+
+  useEffect(() => {
+    const keepInsideViewport = () => setWidgetPosition(current => clampWidgetPosition(current))
+    window.addEventListener('resize', keepInsideViewport)
+    return () => window.removeEventListener('resize', keepInsideViewport)
+  }, [])
+
+  function beginDrag(event) {
+    if (event.button !== undefined && event.button !== 0) return
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: widgetPosition.x,
+      originY: widgetPosition.y,
+      moved: false,
+    }
+    event.currentTarget.setPointerCapture?.(event.pointerId)
+  }
+
+  function moveWidget(event) {
+    const drag = dragRef.current
+    if (!drag || (drag.pointerId !== undefined && event.pointerId !== drag.pointerId)) return
+    const deltaX = event.clientX - drag.startX
+    const deltaY = event.clientY - drag.startY
+    if (!drag.moved && Math.hypot(deltaX, deltaY) < 5) return
+    drag.moved = true
+    suppressClickRef.current = true
+    setIsDragging(true)
+    setWidgetPosition(clampWidgetPosition({ x: drag.originX + deltaX, y: drag.originY + deltaY }))
+  }
+
+  function finishDrag(event) {
+    const drag = dragRef.current
+    if (!drag || (drag.pointerId !== undefined && event.pointerId !== drag.pointerId)) return
+    event.currentTarget.releasePointerCapture?.(event.pointerId)
+    dragRef.current = null
+    setIsDragging(false)
+    if (drag.moved) {
+      const clientX = Number.isFinite(event.clientX) ? event.clientX : drag.startX
+      const clientY = Number.isFinite(event.clientY) ? event.clientY : drag.startY
+      const finalPosition = clampWidgetPosition({
+        x: drag.originX + clientX - drag.startX,
+        y: drag.originY + clientY - drag.startY,
+      })
+      setWidgetPosition(finalPosition)
+      localStorage.setItem(POSITION_KEY, JSON.stringify(finalPosition))
+      setTimeout(() => { suppressClickRef.current = false }, 0)
+    }
+  }
+
+  function handleWidgetClick() {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false
+      return
+    }
+    handleToggle()
+  }
 
   function handleMenuSelect(action) {
     if (action === 'create-ticket') setView('create')
@@ -509,6 +627,26 @@ export default function SupportWidget() {
     setView('menu')
   }
 
+  // Al abrir el widget con algo sin leer, lleva directo a eso — no al menú genérico.
+  // Antes, ver el punto rojo y luego un menú de opciones sin ninguna pista dejaba al
+  // usuario sin saber si era de un ticket o de otra cosa.
+  function handleToggle() {
+    setIsOpen(prevOpen => {
+      const next = !prevOpen
+      if (next && unreadTickets.length > 0) {
+        if (unreadTickets.length === 1) {
+          const t = unreadTickets[0]
+          setActiveTicketId(t.id)
+          localStorage.setItem(TICKET_KEY, t.id)
+          setView('thread')
+        } else {
+          setView('list')
+        }
+      }
+      return next
+    })
+  }
+
   const HEAD = {
     menu:         { title: 'Soporte OwnTerra', sub: null },
     create:       { title: 'Crear ticket', sub: null },
@@ -518,19 +656,47 @@ export default function SupportWidget() {
   }
   const { title, sub } = HEAD[view] ?? HEAD.menu
 
+  const viewportWidth = typeof window === 'undefined' ? 1024 : window.innerWidth
+  const viewportHeight = typeof window === 'undefined' ? 768 : window.innerHeight
+  const panelWidth = Math.min(355, viewportWidth - VIEWPORT_GAP * 2)
+  const spaceAbove = widgetPosition.y - VIEWPORT_GAP
+  const spaceBelow = viewportHeight - widgetPosition.y - BUTTON_SIZE - VIEWPORT_GAP
+  const panelAbove = spaceAbove >= spaceBelow
+  const panelLeft = Math.min(
+    Math.max(VIEWPORT_GAP, widgetPosition.x + BUTTON_SIZE / 2 < viewportWidth / 2 ? widgetPosition.x : widgetPosition.x + BUTTON_SIZE - panelWidth),
+    viewportWidth - panelWidth - VIEWPORT_GAP,
+  )
+  const panelStyle = {
+    left: panelLeft,
+    right: 'auto',
+    top: panelAbove ? 'auto' : widgetPosition.y + BUTTON_SIZE + 10,
+    bottom: panelAbove ? viewportHeight - widgetPosition.y + 10 : 'auto',
+    maxHeight: Math.min(560, Math.max(220, panelAbove ? spaceAbove - 10 : spaceBelow - 10)),
+  }
+
   if (!currentUser) return null
 
   return (
     <>
       {/* Botón flotante — toggle */}
-      <button className="sp-btn" onClick={() => setIsOpen(o => !o)} aria-label="Soporte">
+      <button
+        className={`sp-btn sp-btn--${supportTheme}${isDragging ? ' is-dragging' : ''}`}
+        style={{ left: widgetPosition.x, top: widgetPosition.y, right: 'auto', bottom: 'auto' }}
+        onPointerDown={beginDrag}
+        onPointerMove={moveWidget}
+        onPointerUp={finishDrag}
+        onPointerCancel={finishDrag}
+        onClick={handleWidgetClick}
+        aria-label="Soporte"
+        title="Haz clic para abrir o arrastra para mover"
+      >
         <IconChat />
-        {unreadDot && !isOpen && <span className="sp-btn-dot" />}
+        {unreadTickets.length > 0 && !isOpen && <span className="sp-btn-dot" />}
       </button>
 
       {/* Panel */}
       {isOpen && (
-        <div className="sp-panel">
+        <div className="sp-panel" style={panelStyle}>
           <div className="sp-head">
             {view !== 'menu' && (
               <button className="sp-head-back" onClick={goBack} aria-label="Volver">
@@ -546,7 +712,7 @@ export default function SupportWidget() {
             </button>
           </div>
 
-          {view === 'menu'       && <MenuView onSelect={handleMenuSelect} />}
+          {view === 'menu'       && <MenuView onSelect={handleMenuSelect} unreadCount={unreadTickets.length} />}
           {view === 'create'     && <CreateView botFetch={botFetch} onCreated={handleCreated} />}
           {view === 'agent-chat' && <AgentChatView botFetch={botFetch} onCreated={handleCreated} />}
           {view === 'list'       && <ListView botFetch={botFetch} onSelectTicket={handleSelectTicket} />}

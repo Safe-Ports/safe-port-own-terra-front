@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -6,29 +6,35 @@
 
 :root {
   color-scheme: light;
-  /* ── OwnTerra · Aurora palette — verde bosque + crema cálida ── */
+  /* ── OwnTerra · paleta Vidrio — verde bosque sobre gris frío ──────────────
+     El verde de la marca no cambia; cambia el suelo (antes crema cálida, ahora
+     un gris apenas frío) y cómo se aplica: veladuras de verde en vez de bloques
+     sólidos. Las superficies dejan pasar el fondo, de ahí el nombre.
+
+     Los verdes SEMÁNTICOS —lo que está bien, lo vencido, lo pendiente— no viven
+     acá y no siguen a la paleta: comunican estado, no marca. */
   --deep:     #1E3D2B;   /* verde bosque profundo */
   --mid:      #355E3B;   /* verde medio */
   --leaf:     #6FAF6B;   /* verde hoja brillante */
   --light:    #A7CBA1;   /* verde claro */
-  --bg:       #F4F1EA;   /* crema — fondo de página */
-  --bg2:      #EDE9DF;
-  --card:     rgba(251, 250, 246, 0.92);
-  --line:     #DCDAD2;
-  --line-soft:#E7E4DB;
+  --bg:       #F4F6F6;   /* gris apenas frío — fondo de página */
+  --bg2:      #E9EDEC;
+  --card:     rgba(255, 255, 255, 0.78);   /* traslúcida: deja ver el fondo */
+  --line:     rgba(30, 61, 43, 0.09);      /* el borde es verde velado, no gris */
+  --line-soft:rgba(30, 61, 43, 0.06);
   --text:     #1E3D2B;
   --muted:    #83867C;
   --forest:   #355E3B;   /* verde medio — PRIMARIO */
   --forest-hi:#6FAF6B;   /* verde hoja — accent / hover */
   --earth:    #355E3B;   /* secondary (alineado a la paleta verde) */
-  --cream:    #FBFAF6;
+  --cream:    #FFFFFF;
   --danger:   #C0392B;
-  --sf:       #FBFAF6;   /* surface */
-  --sf2:      #F1EEE6;   /* surface muted */
-  --bd:       #DCDAD2;
+  --sf:       #FFFFFF;   /* surface */
+  --sf2:      #EEF1F1;   /* surface muted */
+  --bd:       rgba(30, 61, 43, 0.11);
   --tan:      #355E3B;
   --tan-dk:   #1E3D2B;
-  --tan-lt:   #DCEBD6;   /* verde claro suave (activos) */
+  --tan-lt:   rgba(111, 175, 107, 0.16);   /* verde hoja velado (activos) */
   --navy:     #1E3D2B;   /* verde profundo sidebar */
   --tx:       #1E3D2B;
   --tx2:      #43453F;
@@ -54,7 +60,7 @@ body,
 }
 
 html {
-  background: #EDE9DF;
+  background: #E9EDEC;
 }
 
 body {
@@ -97,7 +103,7 @@ a {
 
 .portfolio-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(53, 94, 59, 0.42) rgba(220, 218, 210, 0.5);
+  scrollbar-color: rgba(53, 94, 59, 0.42) rgba(226, 231, 229, 0.5);
   scroll-padding-inline: 4px;
 }
 
@@ -106,7 +112,7 @@ a {
 }
 
 .portfolio-scroll::-webkit-scrollbar-track {
-  background: rgba(220, 218, 210, 0.5);
+  background: rgba(226, 231, 229, 0.5);
   border-radius: 999px;
 }
 
@@ -117,6 +123,38 @@ a {
 
 .portfolio-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(53, 94, 59, 0.62);
+}
+
+/* Card de fraccionamiento en el portafolio de Lotes — mismo criterio de hover
+   con color-mix() que .kpi/.app-card, en vez de quedar estática. */
+.frac-card {
+  --tone: var(--forest-hi);
+  transition: transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s cubic-bezier(.2,.8,.2,1), border-color .35s cubic-bezier(.2,.8,.2,1);
+}
+.frac-card:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--tone) 45%, var(--line));
+  box-shadow: 0 16px 32px color-mix(in srgb, var(--tone) 16%, transparent);
+}
+.frac-map-thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+}
+.frac-map-thumb-empty {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  border: 1px dashed var(--line);
+  background: var(--sf2);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .app-shell {
@@ -163,7 +201,7 @@ a {
 .sb-logo-mark {
   width: min(100%, 206px);
   height: 76px;
-  background: rgba(251, 250, 246, 0.98);
+  background: rgba(255, 255, 255, 0.98);
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -172,6 +210,24 @@ a {
   box-shadow: 0 6px 16px rgba(111, 175, 107, 0.35);
   overflow: hidden;
   padding: 8px 10px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.sb-logo-mark:hover {
+  transform: translateY(-2px);
+  border-color: rgba(167, 203, 161, 0.65);
+  box-shadow: 0 10px 24px rgba(111, 175, 107, 0.42);
+}
+
+.sb-logo-mark:focus-visible {
+  outline: 3px solid rgba(167, 203, 161, 0.78);
+  outline-offset: 4px;
+}
+
+.sb-logo-mark:active {
+  transform: translateY(0);
 }
 
 .sb-logo-mark img {
@@ -182,7 +238,7 @@ a {
 
 .sb-logo-nm {
   font-family: var(--font-title);
-  font-size: 1.18rem;
+  font-size: clamp(1.05rem, 1.3vw, 1.28rem);
   color: #fff;
   line-height: 1.05;
 }
@@ -232,7 +288,7 @@ a {
   padding: 9px 12px;
   border-radius: 11px;
   cursor: pointer;
-  transition: all 0.18s;
+  transition: background .3s cubic-bezier(.2,.8,.2,1), border-color .3s cubic-bezier(.2,.8,.2,1), color .3s cubic-bezier(.2,.8,.2,1);
   color: rgba(233, 229, 219, 0.72);
   font-size: 0.8rem;
   font-weight: 500;
@@ -267,11 +323,16 @@ a {
   justify-content: center;
   flex-shrink: 0;
   background: rgba(255, 255, 255, 0.05);
+  transition: transform .35s cubic-bezier(.2,.8,.2,1), background .3s cubic-bezier(.2,.8,.2,1);
 }
 
 .sb-ico svg {
   width: 15px;
   height: 15px;
+}
+
+.sb-btn:hover .sb-ico {
+  transform: scale(1.08) rotate(-3deg);
 }
 
 .sb-btn.active .sb-ico {
@@ -314,7 +375,7 @@ a {
   cursor: pointer;
   color: rgba(255, 255, 255, 0.3);
   font-size: 0.76rem;
-  transition: all 0.14s;
+  transition: background .28s cubic-bezier(.2,.8,.2,1), color .28s cubic-bezier(.2,.8,.2,1);
 }
 
 .sb-foot-item:hover {
@@ -362,7 +423,7 @@ a {
 
 .topbar {
   height: 66px;
-  background: rgba(251, 250, 246, 0.74);
+  background: rgba(255, 255, 255, 0.74);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid rgba(67, 69, 63, 0.1);
   display: flex;
@@ -385,7 +446,7 @@ a {
 
 .topbar-title {
   font-family: var(--font-title);
-  font-size: 1.25rem;
+  font-size: clamp(1.19rem, 1.6vw, 1.5rem);
   color: var(--tx);
   letter-spacing: -0.01em;
   line-height: 1.1;
@@ -401,8 +462,12 @@ a {
 .topbar-r {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
   min-width: 0;
+  /* Toma el ancho que sobra después del título para que el buscador tenga de
+     dónde crecer; las acciones quedan pegadas a la derecha igual que antes. */
+  flex: 1;
 }
 
 .core-topbar-actions {
@@ -422,19 +487,19 @@ a {
   padding: 8px 13px;
   border-radius: 11px;
   border: 1px solid rgba(67, 69, 63, 0.18);
-  background: var(--surface, var(--sf, #fbfaf6));
+  background: var(--surface, var(--sf, #FFFFFF));
   color: var(--text2, var(--tx2, #43453f));
   cursor: pointer;
   font-family: var(--font-body);
   font-size: 0.78rem;
   font-weight: 600;
   line-height: 1;
-  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s;
+  transition: background .3s cubic-bezier(.2,.8,.2,1), border-color .3s cubic-bezier(.2,.8,.2,1), color .3s cubic-bezier(.2,.8,.2,1), transform .3s cubic-bezier(.2,.8,.2,1);
 }
 
 .core-topbar-action:hover,
 .core-topbar-action.is-active {
-  background: var(--surface2, var(--sf2, #f1eee6));
+  background: var(--surface2, var(--sf2, #EEF1F1));
   border-color: rgba(111, 175, 107, 0.4);
   color: var(--deep, #1e3d2b);
 }
@@ -516,7 +581,7 @@ a {
   cursor: pointer;
   font-size: 0.76rem;
   font-weight: 600;
-  transition: all 0.15s;
+  transition: background .28s cubic-bezier(.2,.8,.2,1), border-color .28s cubic-bezier(.2,.8,.2,1), color .28s cubic-bezier(.2,.8,.2,1);
 }
 
 .topbar-logout:hover {
@@ -544,7 +609,7 @@ a {
   cursor: pointer;
   font-size: 0.76rem;
   font-weight: 700;
-  transition: all 0.15s;
+  transition: background .28s cubic-bezier(.2,.8,.2,1), border-color .28s cubic-bezier(.2,.8,.2,1);
   white-space: nowrap;
 }
 
@@ -586,8 +651,13 @@ a {
   border: 1px solid rgba(67, 69, 63, 0.18);
   border-radius: 11px;
   padding: 8px 12px;
-  width: 280px;
-  transition: all 0.15s;
+  /* Se estira con la pantalla en vez de quedarse en un ancho fijo: el tope
+     evita que en monitores anchos se vuelva una barra desproporcionada, y el
+     mínimo que se aplaste hasta no poder leer el texto. */
+  flex: 1 1 auto;
+  min-width: 230px;
+  max-width: 560px;
+  transition: background .28s cubic-bezier(.2,.8,.2,1), border-color .28s cubic-bezier(.2,.8,.2,1);
   color: var(--tx2);
   font-size: 0.78rem;
   cursor: pointer;
@@ -719,7 +789,7 @@ a {
 }
 
 .card {
-  border: 1px solid #DCDAD2;
+  border: 1px solid #E2E7E5;
   background: rgba(255, 255, 255, 0.88);
   border-radius: 28px;
   overflow: hidden;
@@ -733,8 +803,8 @@ a {
   justify-content: space-between;
   gap: 12px;
   padding: 16px 18px;
-  border-bottom: 1px solid #E7E4DB;
-  background: #F1EEE6;
+  border-bottom: 1px solid #EBEFED;
+  background: color-mix(in srgb, var(--forest) 6%, #fff);
 }
 
 .card-title {
@@ -742,7 +812,7 @@ a {
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #83867C;
+  color: color-mix(in srgb, var(--forest) 55%, #8a8d84);
 }
 
 .card-body {
@@ -762,13 +832,13 @@ a {
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
-  border: 1px solid #DCDAD2;
+  border: 1px solid #E2E7E5;
   border-radius: 16px;
-  background: #FBFAF6;
+  background: #FFFFFF;
   color: var(--deep);
   cursor: pointer;
   text-align: left;
-  transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+  transition: border-color .32s cubic-bezier(.2,.8,.2,1), background .32s cubic-bezier(.2,.8,.2,1), box-shadow .32s cubic-bezier(.2,.8,.2,1), transform .32s cubic-bezier(.2,.8,.2,1);
 }
 
 .reports-tabs button:hover {
@@ -785,7 +855,7 @@ a {
 
 .reports-tabs button.is-active {
   border-color: rgba(53, 94, 59, 0.58);
-  background: linear-gradient(135deg, rgba(220, 235, 214, 0.9), rgba(251, 250, 246, 0.96));
+  background: linear-gradient(135deg, rgba(220, 235, 214, 0.9), rgba(255, 255, 255, 0.96));
   box-shadow: inset 0 0 0 1px rgba(53, 94, 59, 0.14), 0 12px 26px rgba(30, 61, 43, 0.09);
 }
 
@@ -824,9 +894,9 @@ a {
   align-items: center;
   gap: 6px;
   padding: 5px;
-  border: 1px solid #DCDAD2;
+  border: 1px solid #E2E7E5;
   border-radius: 14px;
-  background: #F1EEE6;
+  background: #EEF1F1;
 }
 
 .reports-segmented button {
@@ -840,7 +910,7 @@ a {
   color: var(--deep);
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+  transition: background .3s cubic-bezier(.2,.8,.2,1), border-color .3s cubic-bezier(.2,.8,.2,1), box-shadow .3s cubic-bezier(.2,.8,.2,1);
 }
 
 .reports-segmented button:hover {
@@ -849,7 +919,7 @@ a {
 
 .reports-segmented button.is-active {
   border-color: rgba(53, 94, 59, 0.3);
-  background: #FBFAF6;
+  background: #FFFFFF;
   box-shadow: 0 4px 12px rgba(30, 61, 43, 0.08);
 }
 
@@ -887,7 +957,7 @@ a {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #83867C;
-  border-bottom: 1px solid #E7E4DB;
+  border-bottom: 1px solid #EBEFED;
 }
 
 .tbl td {
@@ -962,7 +1032,7 @@ textarea.is-invalid {
   font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all .28s cubic-bezier(.2,.8,.2,1);
 }
 
 .tb-s {
@@ -982,7 +1052,7 @@ textarea.is-invalid {
 }
 
 .kpi {
-  border: 1px solid #DCDAD2;
+  border: 1px solid #E2E7E5;
   background: rgba(255, 255, 255, 0.88);
   border-radius: 24px;
   padding: 16px;
@@ -1126,9 +1196,11 @@ textarea.is-invalid {
 
 .pc-v {
   margin-top: 8px;
-  font-family: var(--font-title);
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
   font-size: 1.2rem;
-  color: #1E3D2B;
+  color: var(--forest);
 }
 
 .pc-v.r {
@@ -1153,12 +1225,12 @@ textarea.is-invalid {
 .amort-table th,
 .amort-table td {
   padding: 11px 12px;
-  border-bottom: 1px solid #E7E4DB;
+  border-bottom: 1px solid #EBEFED;
 }
 
 .calc-box-ui {
   border: 1px solid #D9D7CF;
-  background: #F1EEE6;
+  background: #EEF1F1;
   border-radius: 22px;
   padding: 15px;
 }
@@ -1178,6 +1250,22 @@ textarea.is-invalid {
   box-shadow: var(--sh);
   position: relative;
   overflow: hidden;
+  transition: transform .4s cubic-bezier(.2,.8,.2,1), box-shadow .4s cubic-bezier(.2,.8,.2,1), border-color .4s cubic-bezier(.2,.8,.2,1);
+}
+
+/* Color por categoría: cada variante k1-k4 declara un único --tone (mismo
+   valor que ya pintaba su barra superior); el hover deriva de ahí el brillo,
+   la sombra y el borde con color-mix() — mismo criterio que Ecosistema y
+   Properties, en vez de un box-shadow gris genérico para las cuatro. */
+.kpi.k1 { --tone: #4E9A30; }
+.kpi.k2 { --tone: #6B4E2A; }
+.kpi.k3 { --tone: #43453F; }
+.kpi.k4 { --tone: var(--danger); }
+
+.kpi:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--tone, var(--forest)) 40%, var(--bd));
+  box-shadow: 0 16px 32px color-mix(in srgb, var(--tone, var(--forest)) 18%, transparent);
 }
 
 .kpi::before {
@@ -1422,7 +1510,7 @@ textarea.is-invalid {
   color: var(--tx2);
   background: var(--sf);
   white-space: nowrap;
-  transition: all 0.15s;
+  transition: border-color .25s cubic-bezier(.2,.8,.2,1);
   font-family: var(--font-body);
 }
 
@@ -1441,6 +1529,21 @@ textarea.is-invalid {
   max-height: 520px;
 }
 
+/* Etiqueta en lugar del botón Editar cuando el cliente es de otro integrante:
+   toda la cartera se ve, pero cada quien opera la suya. */
+.cl-ajeno {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px dashed var(--bd);
+  background: var(--sf2);
+  color: var(--mu);
+  font-size: .74rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .cl-item {
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr) auto;
@@ -1450,7 +1553,7 @@ textarea.is-invalid {
   border-bottom: 1px solid rgba(67, 69, 63, 0.08);
   border-left: 3px solid transparent;
   cursor: pointer;
-  transition: background 0.14s;
+  transition: background .25s cubic-bezier(.2,.8,.2,1);
 }
 
 .cl-item:hover {
@@ -1570,7 +1673,7 @@ textarea.is-invalid {
 
 .cl-det-nm {
   font-family: var(--font-title);
-  font-size: 1.25rem;
+  font-size: clamp(1.05rem, 1.6vw, 1.25rem);
   color: var(--deep);
   line-height: 1.1;
 }
@@ -1689,7 +1792,7 @@ textarea.is-invalid {
   color: var(--tan-dk);
   border: 1px solid var(--tan);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background .3s cubic-bezier(.2,.8,.2,1), color .3s cubic-bezier(.2,.8,.2,1);
   white-space: nowrap;
 }
 
@@ -1705,7 +1808,7 @@ textarea.is-invalid {
 
 @layer components {
   .mobile-input {
-    @apply w-full rounded-[11px] border border-[#DCDAD2] bg-[#FBFAF6] px-3.5 py-3 text-sm text-[#1E3D2B] outline-none transition placeholder:text-[#9A9C90] focus:border-[#6FAF6B] focus:bg-white focus:ring-4 focus:ring-[#6FAF6B]/10;
+    @apply w-full rounded-[11px] border border-[#E2E7E5] bg-[#FFFFFF] px-3.5 py-3 text-sm text-[#1E3D2B] outline-none transition placeholder:text-[#9A9C90] focus:border-[#6FAF6B] focus:bg-white focus:ring-4 focus:ring-[#6FAF6B]/10;
   }
 
   .mobile-primary-button {
@@ -1713,7 +1816,7 @@ textarea.is-invalid {
   }
 
   .mobile-chip {
-    @apply shrink-0 rounded-[9px] border border-[#D9D7CF] bg-[#FBFAF6] px-3 py-2 text-[0.72rem] font-semibold text-[#43453F] transition;
+    @apply shrink-0 rounded-[9px] border border-[#D9D7CF] bg-[#FFFFFF] px-3 py-2 text-[0.72rem] font-semibold text-[#43453F] transition;
   }
 
   .mobile-chip.is-active {
@@ -1733,7 +1836,7 @@ textarea.is-invalid {
     font-weight: 600;
     border: none;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: filter .3s cubic-bezier(.2,.8,.2,1);
     box-shadow: 0 6px 16px rgba(30, 61, 43, 0.22);
   }
 
@@ -1754,7 +1857,7 @@ textarea.is-invalid {
     font-weight: 600;
     border: 1px solid #D9D7CF;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: background .3s cubic-bezier(.2,.8,.2,1), border-color .3s cubic-bezier(.2,.8,.2,1);
   }
 
   .btn-s:hover {
@@ -1775,7 +1878,7 @@ textarea.is-invalid {
     font-weight: 600;
     border: 1px solid rgba(111, 175, 107, 0.30);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: background .3s cubic-bezier(.2,.8,.2,1), border-color .3s cubic-bezier(.2,.8,.2,1);
     font-family: var(--font-body);
   }
 
@@ -1801,7 +1904,7 @@ textarea.is-invalid {
   }
 
   .mobile-auth-field {
-    @apply flex items-center gap-3 rounded-[22px] border border-[#DCDAD2] bg-[#F1EEE6] px-4 py-3.5 text-[#1E3D2B] focus-within:border-[#1E3D2B] focus-within:ring-4 focus-within:ring-[#1E3D2B]/10;
+    @apply flex items-center gap-3 rounded-[22px] border border-[#E2E7E5] bg-[#EEF1F1] px-4 py-3.5 text-[#1E3D2B] focus-within:border-[#1E3D2B] focus-within:ring-4 focus-within:ring-[#1E3D2B]/10;
   }
 
   .mobile-auth-field span {
@@ -1861,7 +1964,7 @@ textarea.is-invalid {
   color: #83867C;
   font-size: 0.68rem;
   font-weight: 700;
-  transition: all 0.18s ease;
+  transition: all .32s cubic-bezier(.2,.8,.2,1);
 }
 
 .mobile-bottom-nav__item.is-active {
@@ -1941,7 +2044,7 @@ textarea.is-invalid {
 
 .modal-title {
   font-family: var(--font-title);
-  font-size: 1.22rem;
+  font-size: clamp(1.05rem, 1.6vw, 1.22rem);
   line-height: 1.1;
   color: var(--deep);
 }
@@ -1965,7 +2068,7 @@ textarea.is-invalid {
   color: var(--tx2);
   font-size: 0.8rem;
   font-weight: 800;
-  transition: all 0.15s;
+  transition: background .28s cubic-bezier(.2,.8,.2,1), border-color .28s cubic-bezier(.2,.8,.2,1), color .28s cubic-bezier(.2,.8,.2,1);
 }
 
 .modal-close:hover {
@@ -1993,12 +2096,19 @@ textarea.is-invalid {
 
 /* ── Página de planes a pantalla completa (upsell dedicado) ──────────────── */
 .pricing-page {
+  /* Paleta teal del ecosistema (misma prueba que el Hub), local a esta pantalla:
+     no toca --deep/--forest/--forest-hi globales, que siguen en verde para Lands. */
+  --deep: #07393C;
+  --forest: #2C666E;
+  --forest-hi: #48A9A6;
+  --tan-lt: #D8EFEC;
+
   position: fixed;
   inset: 0;
   z-index: 200;
   overflow-y: auto;
   background:
-    radial-gradient(1200px 600px at 50% -10%, #EAF3E6 0%, rgba(234,243,230,0) 60%),
+    radial-gradient(1200px 600px at 50% -10%, #E1F1EF 0%, rgba(225,241,239,0) 60%),
     linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
 }
 .pricing-topbar {
@@ -2012,21 +2122,21 @@ textarea.is-invalid {
   border: 1px solid var(--bd); background: var(--cream);
   width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
   font-size: 1rem; color: var(--tx2); box-shadow: var(--sh);
-  transition: background 0.15s ease, transform 0.15s ease;
+  transition: background .28s cubic-bezier(.2,.8,.2,1), transform .28s cubic-bezier(.2,.8,.2,1);
 }
 .pricing-close:hover { background: var(--sf2); transform: scale(1.05); }
 .pricing-body { max-width: 1080px; margin: 0 auto; padding: 12px 24px 64px; }
 .pricing-empty { text-align: center; color: var(--mu); margin-top: 20px; }
 
 /* En la página completa, agranda el encabezado de los planes */
-.pricing-body .pp-title { font-size: 2.1rem; }
+.pricing-body .pp-title { font-size: clamp(1.7rem, 3.2vw, 2.1rem); }
 .pricing-body .pp-sub { font-size: 1rem; }
 
 /* ── Planes / Pricing (estilo SaaS elegante, paleta OwnTerra) ─────────────── */
 .pp { padding: 8px 0 4px; }
 .pp-head { text-align: center; margin-bottom: 26px; }
 .pp-title {
-  font-size: 1.5rem; font-weight: 800; color: var(--deep);
+  font-size: clamp(1.3rem, 2vw, 1.5rem); font-weight: 800; color: var(--deep);
   letter-spacing: -0.01em; margin: 0 0 6px;
 }
 .pp-sub { color: var(--mu); font-size: 0.92rem; margin: 0 0 16px; }
@@ -2052,12 +2162,12 @@ textarea.is-invalid {
   position: relative; display: flex; flex-direction: column;
   background: var(--cream); border: 1px solid var(--bd); border-radius: 18px;
   padding: 26px 24px; box-shadow: var(--sh);
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  transition: transform .38s cubic-bezier(.2,.8,.2,1), box-shadow .38s cubic-bezier(.2,.8,.2,1);
 }
 .pp-card:hover { transform: translateY(-3px); box-shadow: var(--sh2); }
 .pp-card--rec {
   border: 1.5px solid var(--forest-hi);
-  background: linear-gradient(180deg, #F3F8F0 0%, var(--cream) 60%);
+  background: linear-gradient(180deg, #EAF5F4 0%, var(--cream) 60%);
   box-shadow: var(--sh2);
 }
 .pp-ribbon {
@@ -2077,7 +2187,7 @@ textarea.is-invalid {
 .pp-cta {
   border: none; border-radius: 12px; padding: 12px 18px;
   font-weight: 800; font-size: 0.9rem; cursor: pointer; width: 100%;
-  background: var(--forest); color: #fff; transition: background 0.15s ease, opacity 0.15s ease;
+  background: var(--forest); color: #fff; transition: background .3s cubic-bezier(.2,.8,.2,1), opacity .3s cubic-bezier(.2,.8,.2,1);
 }
 .pp-cta:hover:not(:disabled) { background: var(--deep); }
 .pp-cta:disabled { opacity: 0.55; cursor: default; }
@@ -2148,8 +2258,8 @@ textarea.is-invalid {
   color: var(--deep); font-weight: 800; font-size: 0.92rem;
   background: var(--sf2); vertical-align: bottom;
 }
-.pp-matrix thead th.is-rec { background: #EAF3E6; }
-.pp-matrix td.is-rec { background: rgba(234, 243, 230, 0.45); }
+.pp-matrix thead th.is-rec { background: #E1F1EF; }
+.pp-matrix td.is-rec { background: rgba(72, 169, 166, 0.12); }
 .pp-matrix tbody tr:last-child th, .pp-matrix tbody tr:last-child td { border-bottom: none; }
 .pp-mx-feature {
   text-align: left !important; color: var(--tx2); font-weight: 700;
@@ -2193,26 +2303,36 @@ textarea.is-invalid {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  padding: 10px 18px;
+  padding: 12px 22px;
+  font-family: var(--font-body);
   font-size: 0.86rem;
   font-weight: 600;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  color: var(--deep);
+  border-bottom: 1px solid var(--line-soft);
 }
-.sub-banner--warn { background: #fef3c7; color: #92400e; }
-.sub-banner--error { background: #fee2e2; color: #991b1b; }
+.sub-banner--warn  { background: linear-gradient(90deg, #FAF1DD, #F5E9D2); }
+.sub-banner--error { background: linear-gradient(90deg, #FBEAE6, #F6DCD7); }
+.sub-banner__icon { width: 18px; height: 18px; flex-shrink: 0; }
+.sub-banner--warn  .sub-banner__icon { color: #B8791A; }
+.sub-banner--error .sub-banner__icon { color: var(--danger); }
 .sub-banner__msg { flex: 1; min-width: 200px; }
-.sub-banner__hint { font-weight: 500; opacity: 0.85; }
+.sub-banner__hint { font-weight: 500; color: var(--muted); }
 .sub-banner__btn {
   border: none;
   border-radius: 999px;
-  padding: 6px 16px;
+  padding: 7px 18px;
+  font-family: var(--font-body);
   font-weight: 700;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  background: rgba(0, 0, 0, 0.82);
-  color: #fff;
+  color: var(--cream);
+  box-shadow: 0 4px 12px rgba(30, 61, 43, 0.22);
+  transition: transform .3s cubic-bezier(.2,.8,.2,1), filter .3s cubic-bezier(.2,.8,.2,1);
 }
-.sub-banner__btn:hover { background: #000; }
+.sub-banner__btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.sub-banner--warn  .sub-banner__btn { background: linear-gradient(140deg, var(--mid), var(--deep)); }
+.sub-banner--error .sub-banner__btn { background: linear-gradient(140deg, #C0392B, #96281F); box-shadow: 0 4px 12px rgba(150, 40, 31, 0.28); }
 
 /* Skeleton de carga (placeholder animado) */
 .skeleton-line {
@@ -2461,6 +2581,15 @@ textarea.is-invalid {
   }
 }
 
+/* En pantallas de laptop la fila de acciones se come todo el ancho y el
+   buscador no tiene de dónde crecer. "Cerrar sesión" es la que menos pierde al
+   quedarse en ícono: se usa poco y conserva su tooltip. */
+@media (max-width: 1500px) {
+  .core-logout-label {
+    display: none;
+  }
+}
+
 @media (max-width: 1024px) {
   .sidebar-backdrop {
     position: fixed;
@@ -2509,9 +2638,12 @@ textarea.is-invalid {
     gap: 7px;
   }
 
+  /* Acá el buscador vuelve a ser sólo el ícono, así que se apaga el crecer. */
   .tb-src {
+    flex: none;
     width: 36px;
     min-width: 36px;
+    max-width: 36px;
     height: 36px;
     justify-content: center;
     padding: 0;
@@ -2596,6 +2728,11 @@ textarea.is-invalid {
 
 /* Left branding panel */
 .ll-panel {
+  /* Paleta teal del ecosistema (misma prueba que el Hub y .pricing-page), local a
+     este panel: no toca --deep/--mid globales, que siguen en verde para Lands. */
+  --deep: #07393C;
+  --mid: #2C666E;
+
   width: 52%;
   background: linear-gradient(155deg, var(--mid), var(--deep));
   display: flex;
@@ -2612,9 +2749,9 @@ textarea.is-invalid {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(620px 420px at 92% -8%, rgba(111,175,107,.18), transparent 60%),
-    radial-gradient(520px 420px at -6% 12%, rgba(167,203,161,.12), transparent 55%),
-    radial-gradient(700px 500px at 50% 120%, rgba(167,203,161,.14), transparent 60%);
+    radial-gradient(620px 420px at 92% -8%, rgba(72,169,166,.18), transparent 60%),
+    radial-gradient(520px 420px at -6% 12%, rgba(127,196,193,.12), transparent 55%),
+    radial-gradient(700px 500px at 50% 120%, rgba(127,196,193,.14), transparent 60%);
   pointer-events: none;
 }
 
@@ -2626,7 +2763,7 @@ textarea.is-invalid {
   width: 420px;
   height: 420px;
   border-radius: 50%;
-  background: rgba(111, 175, 107, 0.14);
+  background: rgba(72, 169, 166, 0.14);
   pointer-events: none;
 }
 
@@ -2666,14 +2803,14 @@ textarea.is-invalid {
 
 .ll-tagline {
   font-family: var(--font-title);
-  font-size: 2.6rem;
+  font-size: clamp(2rem, 3vw, 2.6rem);
   color: #fff;
   line-height: 1.2;
   margin-bottom: 18px;
 }
 
 .ll-tagline em {
-  color: #6FAF6B;
+  color: #7FC4C1;
   font-style: italic;
 }
 
@@ -2706,6 +2843,15 @@ textarea.is-invalid {
 }
 
 .lf-wrap {
+  /* Paleta teal del ecosistema (ver .ll-panel arriba), local a esta tarjeta: no toca
+     los tokens globales, que siguen en verde para el resto de Lands. */
+  --tx: #07393C;
+  --forest: #2C666E;
+  --mid: #2C666E;
+  --deep: #07393C;
+  --tan: #2C666E;
+  --tan-dk: #07393C;
+
   position: relative;
   z-index: 1;
   width: 100%;
@@ -2713,8 +2859,8 @@ textarea.is-invalid {
   padding: 28px;
   border: 1px solid var(--bd);
   border-radius: 22px;
-  background: rgba(251, 250, 246, 0.88);
-  box-shadow: 0 18px 40px rgba(30, 61, 43, 0.08);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 18px 40px rgba(7, 57, 60, 0.08);
   animation: lf-slideup 0.4s ease both;
 }
 
@@ -2725,7 +2871,7 @@ textarea.is-invalid {
 
 .lf-title {
   font-family: var(--font-title);
-  font-size: 1.85rem;
+  font-size: clamp(1.5rem, 2.4vw, 1.85rem);
   color: var(--tx);
   margin-bottom: 6px;
 }
@@ -3056,7 +3202,7 @@ textarea.is-invalid {
   font-size: 0.92rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.18s;
+  transition: all .35s cubic-bezier(.2,.8,.2,1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3067,7 +3213,7 @@ textarea.is-invalid {
 .lf-btn:hover:not(:disabled) {
   filter: brightness(1.08);
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(30, 61, 43, 0.22);
+  box-shadow: 0 6px 16px rgba(7, 57, 60, 0.22);
 }
 
 .lf-btn:active {
@@ -3076,6 +3222,36 @@ textarea.is-invalid {
 
 .lf-btn.loading {
   opacity: 0.7;
+}
+
+.lf-public-catalog {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 10px;
+  padding: 11px 14px;
+  border: 1px solid rgba(44, 102, 110, 0.28);
+  border-radius: 11px;
+  background: rgba(44, 102, 110, 0.06);
+  color: var(--deep);
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  transition: all .25s ease;
+}
+
+.lf-public-catalog:hover {
+  border-color: rgba(44, 102, 110, 0.55);
+  background: rgba(44, 102, 110, 0.1);
+  transform: translateY(-1px);
+}
+
+.lf-public-catalog:focus-visible {
+  outline: 3px solid rgba(44, 102, 110, 0.22);
+  outline-offset: 2px;
 }
 
 .btn-spinner {
@@ -3122,7 +3298,7 @@ textarea.is-invalid {
   overflow: hidden;
   border: 1px solid rgba(111, 175, 107, 0.22);
   border-radius: 22px;
-  background: #FBFAF6;
+  background: #FFFFFF;
   box-shadow: 0 18px 48px rgba(30, 61, 43, 0.1);
 }
 
@@ -3144,19 +3320,19 @@ textarea.is-invalid {
   gap: 8px;
   border: 1px solid rgba(111, 175, 107, 0.18);
   border-radius: 11px;
-  background: #FBFAF6;
+  background: #FFFFFF;
   color: #1E3D2B;
   padding: 0 13px;
   font-size: 0.74rem;
   font-weight: 800;
   cursor: pointer;
-  transition: transform 0.16s, border-color 0.16s, background 0.16s, box-shadow 0.16s;
+  transition: transform .35s cubic-bezier(.2,.8,.2,1), border-color .35s cubic-bezier(.2,.8,.2,1), background .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s cubic-bezier(.2,.8,.2,1);
 }
 
 .lots-editor-btn:hover:not(:disabled) {
   transform: translateY(-1px);
   border-color: rgba(111, 175, 107, 0.34);
-  background: #F1EEE6;
+  background: #EEF1F1;
   box-shadow: 0 8px 18px rgba(30, 61, 43, 0.08);
 }
 
@@ -3217,7 +3393,7 @@ textarea.is-invalid {
 .lots-editor-file span {
   color: #83867C;
   border: 1px solid rgba(111, 175, 107, 0.1);
-  background: #FBFAF6;
+  background: #FFFFFF;
   border-radius: 7px;
   padding: 3px 6px;
 }
@@ -3280,7 +3456,7 @@ textarea.is-invalid {
   overflow: hidden;
   background:
     radial-gradient(circle at 22% 18%, rgba(111, 175, 107, 0.15), transparent 30%),
-    linear-gradient(145deg, #f4f1ea 0%, #ede9df 52%, #e9e5db 100%);
+    linear-gradient(145deg, #F4F6F6 0%, #E9EDEC 52%, #e9e5db 100%);
 }
 
 .lots-map-pane::before {
@@ -3327,7 +3503,7 @@ textarea.is-invalid {
 
 .lots-map-empty-code {
   border: 1px solid rgba(111, 175, 107, 0.22);
-  background: #EDE9DF;
+  background: #E9EDEC;
   color: #355E3B;
 }
 
@@ -3356,7 +3532,7 @@ textarea.is-invalid {
 
 .lots-map-action {
   border: 1px solid rgba(111, 175, 107, 0.18);
-  background: #FBFAF6;
+  background: #FFFFFF;
   color: #1E3D2B;
   border-radius: 11px;
   padding: 8px 13px;
@@ -3378,14 +3554,14 @@ textarea.is-invalid {
   flex-shrink: 0;
   flex-direction: column;
   overflow: hidden;
-  background: #FBFAF6;
+  background: #FFFFFF;
 }
 
 .lots-builder-head {
   flex-shrink: 0;
   padding: 16px;
   border-bottom: 1px solid rgba(111, 175, 107, 0.1);
-  background: #F1EEE6;
+  background: #EEF1F1;
 }
 
 .lots-builder-title-row {
@@ -3433,7 +3609,7 @@ textarea.is-invalid {
   min-height: 36px;
   border: 1px solid rgba(111, 175, 107, 0.18);
   border-radius: 11px;
-  background: #FBFAF6;
+  background: #FFFFFF;
   color: #1E3D2B;
   outline: none;
   padding: 8px 11px;
@@ -3461,7 +3637,7 @@ textarea.is-invalid {
   font-size: 0.74rem;
   font-weight: 800;
   cursor: pointer;
-  transition: transform 0.16s, filter 0.16s, box-shadow 0.16s;
+  transition: transform .35s cubic-bezier(.2,.8,.2,1), filter .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s cubic-bezier(.2,.8,.2,1);
 }
 
 .lots-add-section:hover,
@@ -3587,7 +3763,7 @@ textarea.is-invalid {
   margin: 0;
   color: var(--deep);
   font-family: var(--font-title);
-  font-size: 1.45rem;
+  font-size: clamp(1.2rem, 2vw, 1.45rem);
   line-height: 1.1;
 }
 
@@ -3618,10 +3794,10 @@ textarea.is-invalid {
   border: 1px dashed rgba(53, 94, 59, 0.36);
   border-radius: 16px;
   background:
-    linear-gradient(135deg, rgba(111, 175, 107, 0.08), rgba(251, 250, 246, 0.96));
+    linear-gradient(135deg, rgba(111, 175, 107, 0.08), rgba(255, 255, 255, 0.96));
   padding: 20px;
   cursor: pointer;
-  transition: border-color 0.16s, background 0.16s, box-shadow 0.16s, transform 0.16s;
+  transition: border-color .38s cubic-bezier(.2,.8,.2,1), background .38s cubic-bezier(.2,.8,.2,1), box-shadow .38s cubic-bezier(.2,.8,.2,1), transform .38s cubic-bezier(.2,.8,.2,1);
 }
 
 .lot-upload-drop:hover {
@@ -3697,7 +3873,7 @@ textarea.is-invalid {
   background: var(--sf);
   color: var(--deep);
   cursor: pointer;
-  transition: background 0.16s, border-color 0.16s, transform 0.16s;
+  transition: background .3s cubic-bezier(.2,.8,.2,1), border-color .3s cubic-bezier(.2,.8,.2,1), transform .3s cubic-bezier(.2,.8,.2,1);
 }
 
 .lot-upload-secondary:hover {
@@ -4114,3 +4290,378 @@ textarea.is-invalid {
 }
 .lot-edit-ghost:hover { background: var(--sf2); }
 .guide-ok:hover { opacity: .88; }
+
+/* ════════════════════════════════════════════════════════════════════
+   Barra lateral en modo riel (colapsada) con expansión al pasar el cursor
+   ──────────────────────────────────────────────────────────────────
+   Colapsada mide 68px y muestra solo iconos, así la pantalla de trabajo
+   gana ~190px. Al pasar el cursor se expande FLOTANDO sobre el contenido
+   (position:absolute) en vez de empujarlo: si empujara, todo el layout se
+   recalcularía al rozar la barra sin querer.
+   Solo escritorio — abajo de 1024px la barra ya es un cajón con backdrop.
+   ════════════════════════════════════════════════════════════════════ */
+@media (min-width: 1025px) {
+  .sb.collapsed {
+    width: 68px;
+    transition: width .22s cubic-bezier(.2, .8, .2, 1);
+  }
+
+  /* El riel deja su hueco de 68px y la versión expandida se dibuja encima. */
+  .sb.collapsed:hover {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 256px;
+    z-index: 90;
+    box-shadow: 8px 0 32px rgba(15, 25, 18, .28);
+  }
+  .app-shell:has(.sb.collapsed) { position: relative; }
+  .app-shell:has(.sb.collapsed:hover)::before {
+    content: "";
+    width: 68px;
+    flex-shrink: 0;
+  }
+
+  /* Lo que se esconde en el riel: textos, rótulos de sección y contadores.
+     display:none y no width:0 — el contador tiene padding y min-width propios,
+     así que encogerlo no bastaba, y un hijo flex de ancho cero SIGUE generando
+     su `gap`. Las dos cosas juntas corrían el icono a la izquierda, y de forma
+     distinta según el item tuviera contador o no: de ahí que se vieran
+     desalineados entre sí. */
+  .sb.collapsed .sb-txt,
+  .sb.collapsed .sb-bdg,
+  .sb.collapsed .sb-logo-nm,
+  .sb.collapsed .sb-foot-txt {
+    display: none;
+  }
+  .sb.collapsed:hover .sb-txt,
+  .sb.collapsed:hover .sb-logo-nm,
+  .sb.collapsed:hover .sb-foot-txt {
+    display: block;
+  }
+  .sb.collapsed:hover .sb-bdg { display: inline-flex; }
+
+  /* Sin hijos que separar, el gap sólo descentraría el icono. */
+  .sb.collapsed .sb-btn,
+  .sb.collapsed .sb-foot-item { gap: 0; }
+  .sb.collapsed:hover .sb-btn { gap: 11px; }
+  .sb.collapsed:hover .sb-foot-item { gap: 9px; }
+
+  /* Los rótulos de sección dejan una línea fina: sin ellos los iconos
+     quedan como una tira uniforme y se pierde la agrupación. */
+  .sb.collapsed .sb-sec {
+    height: 1px;
+    padding: 0;
+    margin: 11px 14px 8px;
+    background: rgba(233, 229, 219, .12);
+    /* Sin esto el texto del rótulo desborda la línea de 1px y se lee cortado. */
+    overflow: hidden;
+    text-indent: -999px;
+  }
+  .sb.collapsed:hover .sb-sec {
+    height: auto;
+    padding: 14px 12px 7px;
+    margin: 0;
+    background: none;
+    overflow: visible;
+    text-indent: 0;
+  }
+
+  .sb.collapsed .sb-nav { padding: 4px 12px; }
+  .sb.collapsed:hover .sb-nav { padding: 4px 18px; }
+  .sb.collapsed .sb-btn { justify-content: center; padding: 9px; }
+  .sb.collapsed:hover .sb-btn { justify-content: flex-start; padding: 9px 12px; }
+  .sb.collapsed .sb-logo { padding: 18px 10px 16px; }
+  .sb.collapsed:hover .sb-logo { padding: 22px 18px 20px; }
+  .sb.collapsed .sb-logo-mark { width: 44px; height: 44px; }
+  .sb.collapsed .sb-foot { padding: 10px; }
+  .sb.collapsed:hover .sb-foot { padding: 14px 18px; }
+  .sb.collapsed .sb-foot-item { justify-content: center; padding: 9px; }
+  .sb.collapsed:hover .sb-foot-item { justify-content: flex-start; padding: 9px 12px; }
+}
+
+/* Botón para fijar el estado: el hover es para asomarse, esto lo deja fijo. */
+.sb-collapse {
+  position: absolute;
+  top: 14px;
+  right: 10px;
+  z-index: 3;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  border: 1px solid rgba(233, 229, 219, .14);
+  background: rgba(20, 30, 22, .55);
+  color: rgba(233, 229, 219, .55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity .2s, color .2s, border-color .2s;
+}
+.sb:hover .sb-collapse { opacity: 1; }
+.sb-collapse:hover { color: #fff; border-color: rgba(111, 175, 107, .45); }
+
+/* En móvil no aplica: ahí la barra se abre y cierra con el botón del topbar. */
+@media (max-width: 1024px) {
+  .sb-collapse { display: none; }
+  .sb.collapsed { width: 256px; }
+}
+
+/* Avisos del formulario de cliente (compartido entre el modal de Clientes y el
+   alta rápida del selector, así que vive en el CSS global y no en fracs.css). */
+.cf-notice {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  background: rgba(111, 175, 107, .1);
+  border: 1px solid rgba(111, 175, 107, .3);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: .74rem;
+  color: #2F6A38;
+  line-height: 1.5;
+}
+.cf-notice.dupe {
+  background: rgba(201, 168, 76, .14);
+  border-color: rgba(201, 168, 76, .4);
+  color: #8A6D1E;
+}
+.cf-notice svg { flex-shrink: 0; margin-top: 2px; }
+
+/* ════════════════════════════════════════════════════════════════════
+   Lanzador de aplicaciones del ecosistema (barra superior)
+   Permite saltar de una vertical a otra sin volver al Hub.
+   ════════════════════════════════════════════════════════════════════ */
+/* Paleta teal del Hub del ecosistema (misma que .eco-root y .pricing-page),
+   local al lanzador: es el acceso al ecosistema, no a la vertical actual, así
+   que se identifica con el color del Core y no con el verde de Lands. */
+.app-launcher-btn,
+.app-launcher-pop {
+  --alp-deep: #07393C;
+  --alp-mid: #2C666E;
+  --alp-leaf: #48A9A6;
+  --alp-tint: #D8EFEC;
+}
+
+.app-launcher-btn {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--alp-leaf) 40%, var(--bd));
+  background: color-mix(in srgb, var(--alp-leaf) 10%, var(--sf));
+  color: var(--alp-mid);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 17px;
+  transition: background .18s cubic-bezier(.2,.8,.2,1), border-color .18s, color .18s;
+}
+.app-launcher-btn:hover,
+.app-launcher-btn.is-open {
+  background: var(--alp-tint);
+  border-color: var(--alp-leaf);
+  color: var(--alp-deep);
+}
+
+.app-launcher-pop {
+  position: fixed;
+  z-index: 1300;
+  width: 214px;
+  padding: 14px;
+  background: var(--sf);
+  border: 1px solid var(--bd);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(7, 57, 60, .20);
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
+  animation: alp-in .16s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes alp-in {
+  from { opacity: 0; transform: translateY(-6px) }
+  to { opacity: 1; transform: none }
+}
+
+.alp-title {
+  font-size: 9.5px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 750;
+  margin-bottom: 10px;
+}
+
+.alp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
+
+.alp-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: background .16s, border-color .16s;
+}
+.alp-item:hover {
+  background: color-mix(in srgb, var(--alp-leaf) 9%, var(--sf2));
+  border-color: color-mix(in srgb, var(--alp-leaf) 30%, var(--bd));
+}
+.alp-item:focus-visible { outline: 2px solid var(--alp-mid); outline-offset: -2px; }
+
+.alp-ico {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(150deg, #ffffff, #eef2ea);
+  border: 1px solid var(--bd);
+  overflow: hidden;
+  /* Los símbolos del sprite se dibujan con `currentColor`, así que el color
+     tiene que venir del contenedor (igual que .ic-neutral en el Hub). */
+  color: var(--alp-deep);
+}
+.alp-ico svg { width: 22px; height: 22px; color: inherit; }
+.alp-sep { height: 1px; background: var(--line); margin: 13px 0 12px; }
+
+/* Sin acceso, o vertical que todavía no existe: se ve, pero apagada. */
+.alp-item.is-off { opacity: .45; }
+.alp-item.is-off:hover { background: none; border-color: transparent; }
+.alp-soon {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--sf2);
+  border: 1px solid var(--bd);
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.alp-lbl {
+  font-size: 11.5px;
+  font-weight: 650;
+  color: var(--tx2);
+  text-align: center;
+  line-height: 1.25;
+}
+
+@media (max-width: 560px) {
+  .app-launcher-pop { width: min(292px, calc(100vw - 24px)); }
+}
+
+
+/* ── Selector de carpeta al subir un documento ─────────────────────── */
+.doc-folder-row { display: flex; gap: 7px; align-items: stretch; }
+.doc-folder-row .mobile-input { flex: 1; min-width: 0; }
+.doc-folder-new-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--leaf);
+  background: var(--sf);
+  color: var(--forest);
+  font-size: 12.5px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s;
+}
+.doc-folder-new-btn:hover { background: var(--tan-lt); }
+.doc-folder-new-btn svg { font-size: 15px; }
+
+.doc-folder-new {
+  border: 1px dashed var(--leaf);
+  border-radius: 14px;
+  padding: 11px;
+  background: var(--tan-lt);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.doc-folder-new-actions { display: flex; gap: 7px; }
+.doc-folder-new-actions button { flex: 1; }
+
+/* ── FilesDropdown ─────────────────────────────────────────────────────────
+   Lo usan la matriz de lotes y la tabla de liberaciones, que viven en páginas
+   distintas: por eso los estilos son globales y no de una hoja de página. */
+.mx-files-empty { color: var(--muted); }
+
+/* La celda siempre ocupa un renglón: el detalle va en el desplegable, así que
+   un lote con diez archivos no estira su fila. */
+.mx-files-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--sf2);
+  border: 1px solid var(--bd);
+  color: var(--tx2);
+  font-size: 10.5px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+.mx-files-btn:hover { border-color: var(--forest); color: var(--forest); }
+.mx-files-caret { transition: transform .12s; }
+.mx-files-caret.abierto { transform: rotate(180deg); }
+
+/* Se dibuja sobre el body (portal), fuera del contenedor con scroll que lo
+   recortaría. De ahí la posición fija y el z-index alto. */
+.mx-files-pop {
+  position: fixed;
+  z-index: 60;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 6px;
+  border-radius: 12px;
+  background: var(--sf);
+  border: 1px solid var(--bd);
+  box-shadow: 0 10px 28px rgba(31, 33, 28, .16);
+}
+.mx-files-pop-h {
+  padding: 4px 8px 6px;
+  font-size: 9.5px;
+  font-weight: 750;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.mx-files-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  color: var(--tx2);
+  font-size: 11.5px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.mx-files-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mx-files-item:hover { background: var(--sf2); color: var(--forest); }
+

@@ -6,8 +6,8 @@
 
 export const CORE_APPS = [
   { key: "lands", name: "OwnTerra Lands", short: "Lands", color: "#6FAF6B" },
-  { key: "neighb", name: "OwnTerra Properties", short: "Properties", color: "#355E3B" },
-  { key: "homes", name: "OwnTerra Homes", short: "Homes", color: "#A7CBA1" },
+  { key: "properties", name: "OwnTerra Properties", short: "Properties", color: "#0A3D62" },
+  { key: "homes", name: "OwnTerra Construction", short: "Construction", color: "#A7CBA1" },
 ];
 
 const getAssignedAppKeys = (client) => {

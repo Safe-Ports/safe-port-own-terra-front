@@ -60,14 +60,20 @@ function FieldError({ msg }) {
 
 const errorBorder = "1.8px solid var(--danger, #c0392b)";
 
-function SectionLabel({ children }) {
+function SectionLabel({ children, ...rest }) {
+  // ...rest reenvía props arbitrarios (p. ej. data-tour, usado por el tour guiado
+  // de contratos) al div real. Sin esto, cualquier prop que no sea `children` se
+  // descarta en silencio — nunca llega al DOM.
   return (
-    <div style={{
-      fontSize: ".62rem", fontWeight: 800, letterSpacing: ".14em",
-      textTransform: "uppercase", color: "var(--mu)",
-      borderBottom: "1px solid var(--line-soft)",
-      paddingBottom: 6, marginBottom: 12, marginTop: 4,
-    }}>
+    <div
+      {...rest}
+      style={{
+        fontSize: ".62rem", fontWeight: 800, letterSpacing: ".14em",
+        textTransform: "uppercase", color: "var(--mu)",
+        borderBottom: "1px solid var(--line-soft)",
+        paddingBottom: 6, marginBottom: 12, marginTop: 4,
+      }}
+    >
       {children}
     </div>
   );
@@ -222,6 +228,18 @@ function SearchSelect({ id, value, onChange, onBlur, options, placeholder, disab
   );
 }
 
+/**
+ * Nombres de variables de la calculadora sin un valor numérico válido en calcVars.
+ * Antes esto no existía: una variable vacía/inválida se mandaba como 0 en silencio
+ * (`Number(x) || 0`) al guardar el contrato, y el botón nunca revisaba nada — se
+ * podía congelar una mensualidad mal calculada sin ningún aviso.
+ */
+export function missingCalcVars(variables, calcVars) {
+  return (variables || []).filter(
+    (v) => calcVars[v] === "" || calcVars[v] == null || Number.isNaN(Number(calcVars[v]))
+  );
+}
+
 /* ── Reglas de validación ───────────────────────────────────── */
 function validate(form, isEditing) {
   const errs = {};
@@ -307,9 +325,10 @@ async function fetchAvailableLotsForFrac(inmuebleId) {
 function ContractModal() {
   const {
     ui, closeModal, clients, fracs, selectedFracId, editingContract, contractDraft,
-    saveContract, deleteContract, resetContractDraft, showToast, showError,
+    saveContract, deleteContract, resetContractDraft, showToast, showError, canUseFeature,
   } = useAppContext();
   const navigate = useNavigate();
+  const canEditCalculator = canUseFeature("lands.write");
 
   const goToCalculator = () => {
     resetContractDraft();
@@ -520,12 +539,30 @@ function ContractModal() {
     }
 
     // Si hay calculadora activa para una venta, adjunta id + variables para que el
-    // backend congele el snapshot de la fórmula usada.
+    // backend congele el snapshot de la fórmula usada. calcResult.error se queda
+    // vacío mientras falta una variable (a propósito, para no regañar mientras el
+    // usuario todavía está llenando el formulario), así que aquí se revisa aparte,
+    // justo antes de guardar.
+    if (useCalculator && activeCalc) {
+      const missing = missingCalcVars(activeCalc.variables, calcVars);
+      if (missing.length > 0) {
+        showToast(
+          `Falta el valor de ${missing.length === 1 ? "la variable" : "las variables"} "${missing.join('", "')}" de la calculadora`,
+          "warning"
+        );
+        return;
+      }
+      if (calcResult.error) {
+        showToast(calcResult.error, "warning");
+        return;
+      }
+    }
+
     const calcPayload = (useCalculator && activeCalc)
       ? {
           calculator_id: activeCalc.id,
           calculator_vars: Object.fromEntries(
-            (activeCalc.variables || []).map((v) => [v, Number(calcVars[v]) || 0])
+            (activeCalc.variables || []).map((v) => [v, Number(calcVars[v])])
           ),
         }
       : {};
@@ -570,7 +607,7 @@ function ContractModal() {
   return (
     <Modal
       open={ui.contractModal}
-      icon="📄"
+      icon={<HiOutlineDocument />}
       title={editingContract ? "Editar Contrato" : contractDraft?.type === "reserve" ? "Registrar Apartado" : "Generar Contrato"}
       subtitle={contractDraft?.type === "reserve" ? "Registra la reserva del lote con el cliente" : "Vincula lote y cliente"}
       onClose={() => { resetContractDraft(); closeModal("contractModal"); setErrors({}); }}
@@ -584,7 +621,7 @@ function ContractModal() {
               🗑 Eliminar
             </button>
           )}
-          <button className="btn-p" onClick={handleSave} disabled={saving}>
+          <button className="btn-p" data-tour="contrato-guardar" onClick={handleSave} disabled={saving}>
             {saving ? "Guardando…" : editingContract ? "✓ Guardar cambios" : "✓ Registrar"}
           </button>
         </>
@@ -611,7 +648,7 @@ function ContractModal() {
         <FieldError msg={errors.number} />
       </div>
 
-      <div className="fr-row">
+      <div className="fr-row" data-tour="contrato-frac-lote">
         <div className="fg" style={{ flex: 1 }}>
           <label className="fl">
             Fraccionamiento
@@ -733,7 +770,7 @@ function ContractModal() {
         </div>
       </div>
 
-      <div className="fr-row">
+      <div className="fr-row" data-tour="contrato-cliente">
         <div className="fg" style={{ flex: 1 }}>
           <label className="fl">
             Cliente
@@ -752,7 +789,7 @@ function ContractModal() {
         </div>
       </div>
 
-      <div className="fr-row">
+      <div className="fr-row" data-tour="contrato-tipo">
         <div className="fg" style={{ flex: 1 }}>
           <label className="fl">Tipo de Contrato</label>
           <select className="fi" value={form.type} onChange={set("type")}>
@@ -793,7 +830,7 @@ function ContractModal() {
         </div>
       )}
 
-      <div className="fg">
+      <div className="fg" data-tour="contrato-vendedor">
         <label className="fl">Vendedor asignado</label>
         <SearchSelect
           value={form.seller_id}
@@ -812,7 +849,7 @@ function ContractModal() {
       {/* ── 2. Condiciones financieras ── */}
       <SectionLabel>Condiciones financieras</SectionLabel>
 
-      <div className="fr-row">
+      <div className="fr-row" data-tour="contrato-financiero">
         <div className="fg" style={{ flex: 1 }}>
           <label className="fl">
             Monto total ($)
@@ -877,7 +914,7 @@ function ContractModal() {
 
       {/* ── Sin calculadora activa: obligatoria para registrar la venta ── */}
       {noCalculator && (
-        <div style={{
+        <div data-tour="contrato-mensualidad" style={{
           border: "1px solid rgba(192,57,43,.45)", borderRadius: 16,
           padding: 14, marginBottom: 4, background: "rgba(192,57,43,.05)",
           boxShadow: "0 8px 18px rgba(192,57,43,.06)",
@@ -885,19 +922,25 @@ function ContractModal() {
           <div style={{ fontWeight: 700, fontSize: ".82rem", color: "var(--danger)", marginBottom: 4 }}>
             ⚠ No hay una calculadora de financiamiento activa
           </div>
-          <div style={{ fontSize: ".76rem", color: "var(--tx)", marginBottom: 10, lineHeight: 1.5 }}>
-            Para registrar una venta primero debes crear y activar una calculadora con la
-            fórmula de la mensualidad. La venta guardará una copia de esa fórmula.
+          {/* Quien no puede definir fórmulas no tiene nada que hacer en la
+              calculadora: mandarlo ahí sería mandarlo a un "sin acceso". Se le dice
+              a quién pedírselo, que es lo único accionable de su lado. */}
+          <div style={{ fontSize: ".76rem", color: "var(--tx)", marginBottom: canEditCalculator ? 10 : 0, lineHeight: 1.5 }}>
+            {canEditCalculator
+              ? "Para registrar una venta primero debes crear y activar una calculadora con la fórmula de la mensualidad. La venta guardará una copia de esa fórmula."
+              : "Para registrar una venta hace falta una calculadora activa con la fórmula de la mensualidad. Pídele a un administrador que la configure."}
           </div>
-          <button type="button" className="btn-p" style={{ padding: "6px 12px", fontSize: ".75rem" }} onClick={goToCalculator}>
-            Crear calculadora →
-          </button>
+          {canEditCalculator && (
+            <button type="button" className="btn-p" style={{ padding: "6px 12px", fontSize: ".75rem" }} onClick={goToCalculator}>
+              Crear calculadora →
+            </button>
+          )}
         </div>
       )}
 
       {/* ── Calculadora de financiamiento activa ── */}
       {useCalculator && activeCalc && (
-        <div style={{
+        <div data-tour="contrato-mensualidad" style={{
           border: "1px solid rgba(53,94,59,.45)", borderRadius: 16,
           padding: 14, marginBottom: 4,
           background: "linear-gradient(135deg, var(--tan-lt), var(--sf))",
@@ -959,7 +1002,7 @@ function ContractModal() {
       </div>
 
       {/* ── 3. Documentos ── */}
-      <SectionLabel>Documentos</SectionLabel>
+      <SectionLabel data-tour="contrato-documentos">Documentos</SectionLabel>
 
       {editingContract && (
         <div style={{ marginBottom: 12 }}>

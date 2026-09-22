@@ -2,7 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePersistentState } from "@/hooks/usePersistentState";
-import api from "@/services/api";
+import { useSessionState } from "@/hooks/useSessionState";
+import api, { startSession } from "@/services/api";
 import { clientService } from "@/services/clientService";
 import { inmuebleService } from "@/services/inmuebleService";
 import { mapFileFromUrl } from "@/utils/mapImage";
@@ -24,7 +25,7 @@ const AppContext = createContext(null);
 export function AppProvider({ children }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [currentUser, setCurrentUser] = usePersistentState("lm_session", null);
+  const [currentUser, setCurrentUser] = useSessionState(null);
 
   // ── Rehidratación de sesión (fuente de verdad = backend) ────────────────────
   // La sesión persiste en localStorage, pero role/permissions/apps pueden quedar
@@ -59,8 +60,11 @@ export function AppProvider({ children }) {
                 initials: data.user.initials || data.user.name.slice(0, 2).toUpperCase(),
                 email: data.user.email,
                 role: data.user.role,
+                color: data.user.color,
+                avatar_url: data.user.avatar_url,
                 apps: data.user.apps || data.user.user_apps || [],
                 permissions: data.user.permissions || [],
+                tours_seen: data.user.tours_seen || [],
                 organization: data.organization,
               }
             : prev
@@ -76,40 +80,78 @@ export function AppProvider({ children }) {
   }, []);
 
   // ── Data queries ──────────────────────────────────────────────────────────
+  // OJO con estos topes. Son colecciones globales SIN paginar, y varias pantallas
+  // calculan totales filtrando y reduciendo estos arreglos. Cuando la organización
+  // tiene más filas que el tope, lo que sobra no llega y esos cálculos quedan mal
+  // por abajo sin que nada lo delate: la pantalla se ve completa igual. El caso
+  // grave es `payments` — un contrato a 96 meses son 96 cuotas, así que con 200
+  // no entran ni tres contratos— y el tope no se puede subir desde acá: el
+  // backend topa `limit` en 200 (le=200 en el router de pagos).
+  //
+  // El arreglo de fondo es que las pantallas pidan agregados al servidor (que ya
+  // los expone: /payments/kpis, /payments/stats, /dashboard) y paginen los
+  // listados, en vez de recalcular sobre una muestra. Mientras tanto, acá se
+  // guarda cuánto se cargó de cuánto hay, para que la UI pueda avisarlo en vez
+  // de mostrar un número incompleto como si fuera el bueno.
+  // `total` ausente => se asume completo: mejor no avisar que avisar de más.
+  const conCobertura = (r) => ({
+    items: r.items || [],
+    total: typeof r.total === "number" ? r.total : (r.items || []).length,
+  });
+
   const { data: clientsData, isLoading: clientsLoading } = useQuery({
     queryKey: ["clients"],
-    queryFn: () => clientService.list({ limit: 100 }).then((r) => r.items),
+    queryFn: () => clientService.list({ limit: 100 }).then((r) => conCobertura(r)),
     enabled: !!currentUser && !authHydrating,
   });
-  const clients = clientsData || [];
+  const clients = clientsData?.items || [];
 
   const { data: fracsData, isLoading: fracsLoading } = useQuery({
     queryKey: ["inmuebles"],
-    queryFn: () => inmuebleService.list({ limit: 50 }).then((r) => r.items),
+    queryFn: () => inmuebleService.list({ limit: 50 }).then((r) => conCobertura(r)),
     enabled: !!currentUser && !authHydrating,
   });
-  const fracs = fracsData || [];
+  const fracs = fracsData?.items || [];
 
   const { data: contractsData, isLoading: contractsLoading } = useQuery({
     queryKey: ["contracts"],
-    queryFn: () => contractService.list({ limit: 100 }).then((r) => r.items),
+    queryFn: () => contractService.list({ limit: 100 }).then((r) => conCobertura(r)),
     enabled: !!currentUser && !authHydrating,
   });
-  const contracts = contractsData || [];
+  const contracts = contractsData?.items || [];
 
   const { data: paymentsData, isLoading: paymentsLoading } = useQuery({
     queryKey: ["payments"],
-    queryFn: () => paymentService.list({ limit: 200 }).then((r) => r.items),
+    queryFn: () => paymentService.list({ limit: 200 }).then((r) => conCobertura(r)),
     enabled: !!currentUser && !authHydrating,
   });
-  const payments = paymentsData || [];
+  const payments = paymentsData?.items || [];
 
   const { data: documentsData, isLoading: documentsLoading } = useQuery({
     queryKey: ["documents"],
-    queryFn: () => documentService.list({ limit: 100 }).then((r) => r.items),
+    queryFn: () => documentService.list({ limit: 100 }).then((r) => conCobertura(r)),
     enabled: !!currentUser && !authHydrating,
   });
-  const documents = documentsData || [];
+  const documents = documentsData?.items || [];
+
+  /**
+   * Qué colecciones llegaron incompletas, para que la pantalla pueda decirlo.
+   *
+   * `{ payments: { cargados: 200, total: 4800 } }` — solo aparecen las que están
+   * recortadas; si una entró entera, no figura.
+   */
+  const datosIncompletos = (() => {
+    const fuera = {};
+    for (const [clave, d] of Object.entries({
+      clients: clientsData, fracs: fracsData, contracts: contractsData,
+      payments: paymentsData, documents: documentsData,
+    })) {
+      if (d && d.total > d.items.length) {
+        fuera[clave] = { cargados: d.items.length, total: d.total };
+      }
+    }
+    return Object.keys(fuera).length ? fuera : null;
+  })();
 
   const { data: notificationCount = 0, refetch: refetchNotifications } = useQuery({
     queryKey: ["notifications-unread"],
@@ -178,6 +220,10 @@ export function AppProvider({ children }) {
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [draftProject, setDraftProject] = usePersistentState("lm_draft_project", createEmptyDraftProject());
+  // Barra lateral en modo riel (solo iconos). Persiste porque es una preferencia
+  // de espacio de trabajo: quien la colapsa no quiere volver a hacerlo cada vez.
+  // Solo aplica en escritorio; en móvil la barra ya es un cajón con backdrop.
+  const [sidebarCollapsed, setSidebarCollapsed] = usePersistentState("lm_sidebar_collapsed", false);
   const [ui, setUi] = useState({
     sidebarOpen: false,
     clientModal: false,
@@ -228,11 +274,16 @@ export function AppProvider({ children }) {
   const closeModal = (modal) => setUi((p) => ({ ...p, [modal]: false }));
   const toggleSidebar = () => setUi((p) => ({ ...p, sidebarOpen: !p.sidebarOpen }));
   const closeSidebar = () => setUi((p) => ({ ...p, sidebarOpen: false }));
-  const showToast = (message, kind = "success") => {
+  // Memoizadas: un consumidor que las ponga en las dependencias de un useEffect
+  // —para mostrar el error de una consulta, por ejemplo— entraba en bucle. El
+  // toast re-renderiza el provider, eso cambiaba la identidad de la función, y
+  // el efecto volvía a dispararse sin fin.
+  const toastTimer = useRef(null);
+  const showToast = useCallback((message, kind = "success") => {
     setToast(typeof message === "object" ? message : { kind, message });
-    window.clearTimeout(showToast._timer);
-    showToast._timer = window.setTimeout(() => setToast(null), 2600);
-  };
+    window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 2600);
+  }, []);
   // keep a stable ref so effects without showToast in deps can still call it
   showToastRef.current = showToast;
 
@@ -270,13 +321,38 @@ export function AppProvider({ children }) {
 
   // Muestra un error homologado (código + Ref + copiar). El reporte a Sentry lo hace el
   // interceptor de api.js, así que aquí solo presentamos. Dura más para dar tiempo a copiar.
-  const showError = (error, fallbackMessage) => {
+  // Marca un tutorial guiado como visto. La verdad vive en el servidor para que no
+  // reaparezca al cambiar de navegador; aquí actualizamos la sesión local de
+  // inmediato para que el tour no pueda relanzarse mientras vuelve la respuesta.
+  const markTourSeen = async (key) => {
+    setCurrentUser((prev) =>
+      prev && !(prev.tours_seen || []).includes(key)
+        ? { ...prev, tours_seen: [...(prev.tours_seen || []), key] }
+        : prev
+    );
+    try {
+      await api.post(`/auth/me/tours/${key}`);
+    } catch {
+      // Si falla, el usuario ya no verá el tour en esta sesión y volverá a verlo en
+      // la siguiente: preferible a interrumpirlo con un error por algo secundario.
+    }
+  };
+
+  // Aplica cambios locales al usuario en sesión (ej. tras subir un avatar) sin
+  // esperar a que vuelva /auth/me — mismo patrón que markTourSeen.
+  const updateCurrentUser = (partial) => {
+    setCurrentUser((prev) => (prev ? { ...prev, ...partial } : prev));
+  };
+
+  const showError = useCallback((error, fallbackMessage) => {
     const parsed = parseApiError(error, fallbackMessage);
     setToast({ kind: "error", ...parsed });
-    window.clearTimeout(showToast._timer);
-    showToast._timer = window.setTimeout(() => setToast(null), 9000);
+    // El temporizador vive en un ref, no colgado de la función: antes se perdía
+    // en cada render y el toast anterior nunca se cancelaba.
+    window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 9000);
     return parsed;
-  };
+  }, []);
 
   // Aviso global de tope de plan (OT-SUB-4001): el interceptor de api.js emite este
   // evento en cualquier escritura bloqueada por cuota; aquí lo presentamos con el
@@ -285,8 +361,8 @@ export function AppProvider({ children }) {
     const onQuota = (e) => {
       const parsed = parseApiError({ response: { data: e.detail } });
       setToast({ kind: "error", ...parsed });
-      window.clearTimeout(showToast._timer);
-      showToast._timer = window.setTimeout(() => setToast(null), 9000);
+      window.clearTimeout(toastTimer.current);
+      toastTimer.current = window.setTimeout(() => setToast(null), 9000);
     };
     window.addEventListener("ownterra:quota-exceeded", onQuota);
     return () => window.removeEventListener("ownterra:quota-exceeded", onQuota);
@@ -294,6 +370,11 @@ export function AppProvider({ children }) {
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   const applyAuthSession = (data, remember = true) => {
+    // Los tokens primero y por su dueño (`api.js`): el escritor de la sesión
+    // relee de ahí los vigentes al persistir el perfil, así que si el par nuevo
+    // no estuviera guardado todavía, el perfil se escribiría sobre el par de la
+    // sesión anterior y el inicio de sesión no serviría de nada.
+    startSession(data);
     setCurrentUser({
       token: data.access_token,
       refresh_token: data.refresh_token,
@@ -302,8 +383,11 @@ export function AppProvider({ children }) {
       initials: data.user.initials || data.user.name.slice(0, 2).toUpperCase(),
       email: data.user.email,
       role: data.user.role,
+      color: data.user.color,
+      avatar_url: data.user.avatar_url,
       apps: data.user.apps || data.user.user_apps || [],
       permissions: data.user.permissions || [],
+      tours_seen: data.user.tours_seen || [],
       organization: data.organization,
       remember,
     });
@@ -516,7 +600,14 @@ export function AppProvider({ children }) {
       await queryClient.invalidateQueries({ queryKey: ["document-folders"] });
     }
 
-    showToast(`Contrato ${payload.id ? "actualizado" : "registrado"}${docs.length > 0 ? ` · ${docs.length} doc${docs.length > 1 ? "s" : ""} subido${docs.length > 1 ? "s" : ""}` : ""}`);
+    const conDocs = docs.length > 0 ? ` · ${docs.length} doc${docs.length > 1 ? "s" : ""} subido${docs.length > 1 ? "s" : ""}` : "";
+    // Un colaborador tiene que enterarse de que su contrato todavía no está
+    // vigente: decirle sólo "registrado" lo dejaría creyendo que la venta cerró.
+    if (savedContract?.status === "pending_approval") {
+      showToast(`Contrato enviado a aprobación${conDocs}. El lote queda apartado hasta que un administrador lo autorice.`);
+    } else {
+      showToast(`Contrato ${payload.id ? "actualizado" : "registrado"}${conDocs}`);
+    }
     setEditingContract(null);
     setContractDraft(null);
     closeModal("contractModal");
@@ -582,19 +673,53 @@ export function AppProvider({ children }) {
     }
   };
 
-  const quickPay = async (paymentId, amount) => {
+  const quickPay = async (paymentId, amount, file, paidDate) => {
     try {
       await paymentService.markPaid(paymentId, {
-        paid_date: new Date().toISOString().split("T")[0],
+        paid_date: paidDate || new Date().toISOString().split("T")[0],
         payment_method: "transfer",
         amount_paid: amount,
       });
+      // El comprobante va aparte y no bloquea: si falla la subida, el cobro ya
+      // quedó registrado y el papel se puede adjuntar después.
+      if (file) {
+        try {
+          await paymentService.uploadReceipt(paymentId, file);
+        } catch {
+          showToast("Cobro registrado, pero no se pudo subir el comprobante");
+        }
+      }
       await queryClient.invalidateQueries({ queryKey: ["payments"] });
       await queryClient.invalidateQueries({ queryKey: ["contracts"] });
       showToast("Pago registrado correctamente");
       return true;
     } catch (err) {
       showError(err, "Error al registrar el pago");
+    }
+  };
+
+  const collectOnContract = async (contractId, { amount, paymentIds, file, paidDate } = {}) => {
+    try {
+      const data = await paymentService.collect(contractId, {
+        amount,
+        paid_date: paidDate || new Date().toISOString().split("T")[0],
+        payment_method: "transfer",
+        ...(paymentIds?.length ? { payment_ids: paymentIds } : {}),
+      });
+      await queryClient.invalidateQueries({ queryKey: ["payments"] });
+      await queryClient.invalidateQueries({ queryKey: ["contracts"] });
+      if (file && data?.receipt_id) {
+        try {
+          await paymentService.uploadCollectReceipt(data.receipt_id, file);
+        } catch {
+          showToast("Cobro registrado, pero no se pudo subir el comprobante");
+        }
+      }
+      const n = data.installments?.length || 0;
+      showToast(n > 1 ? `Cobro registrado en ${n} cuotas` : "Pago registrado correctamente");
+      return data;
+    } catch (err) {
+      showError(err, "Error al registrar el cobro");
     }
   };
 
@@ -689,17 +814,25 @@ export function AppProvider({ children }) {
     closeModal("documentPreview");
   };
 
-  const getLinkedDocuments = (entityType, entityId) => {
-    const backendType = toBackendEntityType(entityType);
-    return documents.filter(
-      (doc) => doc.entity_type === backendType && String(doc.entity_id) === String(entityId)
-    );
-  };
+  /* Ya no existe un getLinkedDocuments: filtraba `documents`, que son los 100
+     más recientes de toda la organización, y el expediente de una entidad vieja
+     salía vacío aunque sus archivos existieran. Cada panel pide los suyos con
+     documentService.forEntity. */
 
   // ── Fraccionamientos ──────────────────────────────────────────────────────
-  const saveFrac = async ({ name, sections, mapUrl }) => {
+  // Primer paso del asistente ("Guardar y continuar" en la pantalla de nombre+plano):
+  // crea el inmueble DE VERDAD, de inmediato — a propósito, para que sea una acción
+  // explícita del usuario y no un efecto secundario de elegir un archivo (ese fue
+  // justo el bug reportado antes). Es una sola llamada atómica: si falla (p. ej. tope
+  // de fraccionamientos del plan), no se crea nada y no hay nada que revertir.
+  //
+  // A partir de aquí el fraccionamiento YA EXISTE, así que agregar lotes (a mano o por
+  // Excel) es una operación aparte y también atómica — sigue el mismo camino que editar
+  // un fraccionamiento ya existente (saveEditedFrac): si el tope de lotes la rechaza,
+  // el fraccionamiento (nombre + plano) se queda intacto, sin necesitar revertir nada.
+  const createFracDraft = async ({ name, mapUrl }) => {
     try {
-      const inmueble = await inmuebleService.create({ name: name || "Fraccionamiento" });
+      const inmueble = await inmuebleService.create({ name: name?.trim() || "Fraccionamiento" });
       let mapUploadError = null;
       if (mapUrl) {
         try {
@@ -709,53 +842,20 @@ export function AppProvider({ children }) {
           mapUploadError = error;
         }
       }
-
-      const draftLots = sections.flatMap((section) =>
-        section.lots.map((lot) => ({
-          _draftStatus: lot.status || "available",
-          payload: {
-            inmueble_id: inmueble.id,
-            code: lot.code,
-            area_m2: lot.area ? Number(lot.area) : null,
-            frente_ml: lot.frente ? Number(lot.frente) : null,
-            fondo_ml: lot.fondo ? Number(lot.fondo) : null,
-            price_contado: lot.price ? Number(lot.price) : null,
-            price_financiado: lot.priceFinanciado ? Number(lot.priceFinanciado) : null,
-            services: lot.servicios
-              ? Object.fromEntries(Object.entries(lot.servicios).filter(([, v]) => v))
-              : {},
-          }
-        }))
-      );
-
-      if (draftLots.length > 0) {
-        const result = await lotService.bulkCreate({
-          inmueble_id: inmueble.id,
-          lots: draftLots.map((d) => d.payload),
-        });
-
-        // Set "reserved" status for lots that were marked reserved in the builder
-        // ("sold" requires a contract in the backend — skip those)
-        const reservedUpdates = (result.lot_ids || [])
-          .map((id, i) => ({ id, status: draftLots[i]?._draftStatus }))
-          .filter(({ status }) => status === "reserved");
-
-        await Promise.all(
-          reservedUpdates.map(({ id, status }) => lotService.update(id, { status }))
-        );
-      }
-
       await queryClient.invalidateQueries({ queryKey: ["inmuebles"] });
-      setSelectedFracId(String(inmueble.id));
-      setDraftProject(createEmptyDraftProject());
-      navigate("/fraccionamientos");
+      setDraftProject((previous) => ({
+        ...previous,
+        name: name?.trim() || "Fraccionamiento",
+        _editingFracId: inmueble.id,
+        mode: "editor",
+      }));
       if (mapUploadError) {
-        showError(mapUploadError, "No se pudo subir el plano");
+        showError(mapUploadError, "El fraccionamiento se guardó, pero el plano no pudo subirse — puedes intentarlo de nuevo desde el tablero.");
       } else {
-        showToast(`Fraccionamiento "${name || "Fraccionamiento"}" creado${draftLots.length > 0 ? ` con ${draftLots.length} lote${draftLots.length !== 1 ? "s" : ""}` : ""}`);
+        showToast(`Fraccionamiento "${name?.trim() || "Fraccionamiento"}" guardado — ahora agrega tus lotes`);
       }
     } catch (err) {
-      showError(err, "Error al crear el fraccionamiento");
+      showError(err, "Error al guardar el fraccionamiento");
     }
   };
 
@@ -847,13 +947,29 @@ export function AppProvider({ children }) {
     }
   };
 
-  const deleteFrac = async (id) => {
+  const deleteFrac = async (id, { force = false, silentCodes = [] } = {}) => {
     try {
-      await inmuebleService.delete(id);
-      await queryClient.invalidateQueries({ queryKey: ["inmuebles"] });
+      await inmuebleService.delete(id, { force });
+      // Archivar el inmueble cascadea a sus lotes en el backend, así que no
+      // alcanza con invalidar ["inmuebles"]: el mapa, el track y los KPIs
+      // seguirían mostrando lotes que ya no existen hasta recargar la página.
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["inmuebles"] }),
+        queryClient.invalidateQueries({ queryKey: ["lots"] }),
+        queryClient.invalidateQueries({ queryKey: ["lot-track"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] }),
+      ]);
       showToast("Fraccionamiento eliminado");
+      return null;
     } catch (err) {
-      showError(err, "Error al eliminar el fraccionamiento");
+      // Se devuelve el error ya parseado: si el archivado se bloqueó por
+      // contratos con cobranza viva, la pantalla necesita el detalle para
+      // decir cuáles son en vez de cerrar el diálogo con un toast genérico.
+      const parsed = parseApiError(err, "Error al archivar el fraccionamiento");
+      // Los códigos que la pantalla ya presenta a la vista no van también por
+      // toast: repetido abajo era ruido que tapaba el propio diálogo.
+      if (!silentCodes.includes(parsed.code)) showError(err, "Error al archivar el fraccionamiento");
+      return parsed;
     }
   };
 
@@ -921,6 +1037,7 @@ export function AppProvider({ children }) {
     payments,
     documents,
     // Flags de carga (primer fetch) para mostrar skeletons en las páginas.
+    datosIncompletos,
     clientsLoading,
     fracsLoading,
     contractsLoading,
@@ -958,6 +1075,8 @@ export function AppProvider({ children }) {
     closeModal,
     toggleSidebar,
     closeSidebar,
+    sidebarCollapsed,
+    toggleSidebarCollapsed: () => setSidebarCollapsed((v) => !v),
     showToast,
     showError,
     canAccessApp: (appKey) => canAccessApp(currentUser, appKey),
@@ -968,6 +1087,8 @@ export function AppProvider({ children }) {
     resendVerification,
     forgotPassword,
     resetPassword,
+    markTourSeen,
+    updateCurrentUser,
     logout,
     saveClient,
     deleteClient,
@@ -976,6 +1097,7 @@ export function AppProvider({ children }) {
     openContractCreate,
     resetContractDraft,
     quickPay,
+    collectOnContract,
     savePayment,
     exportAppData,
     sendReminder,
@@ -986,11 +1108,10 @@ export function AppProvider({ children }) {
     openDocumentPreview,
     closeDocumentPreview,
     downloadDocument,
-    getLinkedDocuments,
     openClientReport,
     closeClientReport,
     sendClientMessage,
-    saveFrac,
+    createFracDraft,
     saveEditedFrac,
     deleteFrac,
     startNewProject,

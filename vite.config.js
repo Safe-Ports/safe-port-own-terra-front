@@ -14,6 +14,9 @@ export default defineConfig(({ mode }) => {
   if (mode === "production" && !env.VITE_API_URL?.trim()) {
     throw new Error("VITE_API_URL es obligatoria para generar el build de producción");
   }
+  if (mode === "production" && !env.VITE_PROPERTIES_API_URL?.trim()) {
+    throw new Error("VITE_PROPERTIES_API_URL es obligatoria para generar el build de producción");
+  }
 
   return {
   // Versión desplegada, congelada en el build. La pasan los scripts de deploy:
@@ -124,7 +127,13 @@ export default defineConfig(({ mode }) => {
   },
   server: {
     host: true,
-    port: 5173
+    port: 5173,
+    proxy: {
+      "/api": {
+        target: "http://127.0.0.1:8000",
+        changeOrigin: true,
+      },
+    },
   }
   };
 });

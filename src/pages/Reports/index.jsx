@@ -59,7 +59,7 @@ function Avatar({ name = "?", size = 32 }) {
 
 function ClientList({ clients, selectedId, onSelect, search, onSearch, loading }) {
   return (
-    <aside style={{
+    <aside data-tour="rp-clientes" style={{
       width: 280, flexShrink: 0, background: "var(--sf)",
       border: "1px solid var(--bd)", borderRadius: 20,
       boxShadow: "var(--sh)", overflow: "hidden",
@@ -375,7 +375,7 @@ function ClientReport({ clientId }) {
   return (
     <div style={{ flex: 1, minWidth: 0 }}>
       {/* botón flotante de imprimir */}
-      <div className="no-print" style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+      <div className="no-print" data-tour="rp-acciones" style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
         <button className="btn-s" onClick={sendPdf} disabled={sendingEmail || !client.email}>
           <HiOutlineEnvelope style={{ fontSize: "1rem" }}/> {sendingEmail ? "Enviando..." : "Enviar por correo"}
         </button>
@@ -473,7 +473,7 @@ function ClientReport({ clientId }) {
           </div>
 
           {/* Comportamiento de pago */}
-          <div style={{ background: "var(--sf)", border: "1px solid var(--bd)",
+          <div data-tour="rp-comportamiento" style={{ background: "var(--sf)", border: "1px solid var(--bd)",
             borderRadius: 12, padding: "14px 16px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center",
               borderBottom: "1.5px solid var(--tan-lt)", paddingBottom: 6, marginBottom: 10 }}>
@@ -499,7 +499,7 @@ function ClientReport({ clientId }) {
         </div>
 
         {/* ─── FILA 2: Cumplimiento + Contratos ─── */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 14, marginBottom: 14 }}>
+        <div data-tour="rp-resumen" style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 14, marginBottom: 14 }}>
 
           {/* Cumplimiento - 3 badges */}
           <div style={{ background: "var(--sf)", border: "1px solid var(--bd)",

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "@/components/layout/Sidebar";
+import EcoSprite from "@/pages/Ecosystem/EcoSprite";
 import Topbar from "@/components/layout/Topbar";
 import { LandsGuideContext } from "@/context/LandsGuideContext";
 import GlobalSearchModal from "@/components/ui/GlobalSearchModal";
@@ -17,6 +18,9 @@ function AppShell() {
   return (
     <LandsGuideContext.Provider value={setGuideAction}>
       <div className="app-shell">
+        {/* Sprite de iconos del ecosistema: lo usa el lanzador de apps de la
+            barra superior, que también vive en las verticales. */}
+        <EcoSprite />
         <Sidebar />
         <div className="main">
           <Topbar pathname={location.pathname} onGuide={guideAction} />

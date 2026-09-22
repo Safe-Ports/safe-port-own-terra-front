@@ -1,3 +1,4 @@
+import { HiExclamationTriangle } from "react-icons/hi2";
 import Modal from "@/components/ui/Modal";
 
 /**
@@ -20,7 +21,7 @@ function ConfirmDialog({
   open,
   title,
   subtitle,
-  icon = "⚠️",
+  icon = <HiExclamationTriangle />,
   children,
   confirmLabel = "Aceptar",
   cancelLabel = "Cancelar",

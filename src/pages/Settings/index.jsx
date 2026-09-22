@@ -1,4 +1,8 @@
 import { useEffect, useState } from "react";
+import {
+  HiArrowsRightLeft, HiBuildingOffice2, HiCheck, HiCreditCard,
+  HiExclamationTriangle, HiKey, HiTrash, HiUserGroup,
+} from "react-icons/hi2";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
@@ -268,28 +272,19 @@ function SettingsPage() {
       {/* Organización */}
       <div className="card">
         <div className="card-hd">
-          <div className="card-title">🏢 Organización</div>
+          <div className="card-title"><HiBuildingOffice2 /> Organización</div>
         </div>
         <div className="card-body">
           {orgLoading ? (
             <div className="text-sm text-[#83867C]">Cargando...</div>
           ) : org ? (
             <div>
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4" style={{ marginBottom: 16 }}>
-                {[
-                  ["Usuarios", org.stats.total_users],
-                  ["Lotes", org.stats.total_lots],
-                  ["Clientes", org.stats.total_clients],
-                  ["Contratos", org.stats.total_contracts],
-                ].map(([label, value]) => (
-                  <div key={label} className="price-c">
-                    <div className="pc-l">{label}</div>
-                    <div className="pc-v">{value}</div>
-                  </div>
-                ))}
-              </div>
+              {/* Solo datos de la organización en sí — nada de negocio de una
+                  vertical (lotes, clientes, contratos son de Lands y ya se ven
+                  en su propio Dashboard; aquí no aportan, solo confunden). */}
               <div className="grid gap-3 md:grid-cols-2">
                 {[
+                  ["Usuarios", org.stats.total_users],
                   ["Nombre", org.name],
                   ["Plan", org.plan],
                   ["Estado suscripción", org.subscription_status],
@@ -315,10 +310,11 @@ function SettingsPage() {
         </div>
       </div>
 
+
       {/* Suscripción y facturación */}
       <div className="card">
         <div className="card-hd">
-          <div className="card-title">💳 Suscripción y facturación</div>
+          <div className="card-title"><HiCreditCard /> Suscripción y facturación</div>
           {subscription && (
             <span className={`pc-chip ${SUB_STATUS_CHIP[subscription.status] || "pending"}`}>
               {SUB_STATUS_LABELS[subscription.status] || subscription.status}
@@ -357,12 +353,12 @@ function SettingsPage() {
 
               {subscription.cancel_at_period_end && (
                 <div className="text-sm" style={{ color: "var(--warn, #b45309)", marginBottom: 12 }}>
-                  ⚠️ La suscripción se cancelará el {fmtDate(subscription.current_period_end)} y no se renovará.
+                  <HiExclamationTriangle /> La suscripción se cancelará el {fmtDate(subscription.current_period_end)} y no se renovará.
                 </div>
               )}
               {subscription.status === "past_due" && (
                 <div className="text-sm" style={{ color: "var(--warn, #b45309)", marginBottom: 12 }}>
-                  ⚠️ Tu último pago falló. Actualiza tu método de pago para no perder el acceso.
+                  <HiExclamationTriangle /> Tu último pago falló. Actualiza tu método de pago para no perder el acceso.
                 </div>
               )}
 
@@ -397,7 +393,7 @@ function SettingsPage() {
       {/* Usuarios */}
       <div className="card">
         <div className="card-hd">
-          <div className="card-title">👥 Usuarios del equipo</div>
+          <div className="card-title"><HiUserGroup /> Usuarios del equipo</div>
           {isAdmin && (
             <button className="btn-p" onClick={() => setShowForm((v) => !v)}>
               {showForm ? "Cancelar" : "+ Nuevo usuario"}
@@ -425,13 +421,13 @@ function SettingsPage() {
               <div className="fg" style={{ minWidth: 120 }}>
                 <label className="fl">Rol</label>
                 <select className="fi" value={newUser.role} onChange={(e) => setNewUser((p) => ({ ...p, role: e.target.value }))}>
-                  <option value="vendor">Vendedor</option>
+                  <option value="vendor">Colaborador</option>
                   <option value="admin">Administrador</option>
                 </select>
               </div>
               <div style={{ display: "flex", alignItems: "flex-end" }}>
                 <button className="btn-p" onClick={handleCreateUser} disabled={creating}>
-                  {creating ? "Creando..." : "✓ Crear"}
+                  {creating ? "Creando..." : <><HiCheck /> Crear</>}
                 </button>
               </div>
             </div>
@@ -474,11 +470,11 @@ function SettingsPage() {
                         {user.id !== currentUser?.id && (
                           <>
                             <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} aria-label={`Restablecer contraseña de ${user.name}`} onClick={() => handleResetPassword(user.id, user.name)}>
-                              🔑 Reset
+                              <HiKey /> Reset
                             </button>{" "}
-                            {/* El botón es solo un emoji: sin aria-label no tiene nombre accesible. */}
+                            {/* El botón es solo un ícono: sin aria-label no tiene nombre accesible. */}
                             <button className="btn-dan" style={{ padding: "4px 10px", fontSize: ".7rem" }} aria-label={`Eliminar ${user.name}`} onClick={() => setUserToDelete({ id: user.id, name: user.name })}>
-                              🗑
+                              <HiTrash />
                             </button>
                           </>
                         )}
@@ -509,7 +505,7 @@ function SettingsPage() {
         onCancel={closeDeleteDialog}
         onConfirm={confirmDeleteUser}
       >
-        <p className="text-sm text-[#5A4E41]">
+        <p className="text-sm text-[#3F4644]">
           Perderá el acceso de inmediato y dejará de aparecer en esta lista. No se borra
           nada: queda desactivado y su actividad se conserva para auditoría.
         </p>
@@ -524,14 +520,14 @@ function SettingsPage() {
         open={!!userToDelete && !!pendingData}
         title={`Traspasar la cartera de ${userToDelete?.name || ""}`}
         subtitle="Antes de darlo de baja"
-        icon="↹"
+        icon={<HiArrowsRightLeft />}
         confirmLabel="Traspasar y eliminar"
         busy={deleting}
         confirmDisabled={!transferTo || transferCandidates.length === 0}
         onCancel={closeDeleteDialog}
         onConfirm={confirmTransferAndDelete}
       >
-        <p className="text-sm text-[#5A4E41]">
+        <p className="text-sm text-[#3F4644]">
           Todavía tiene registros a su nombre. Se reasignarán a la persona que elijas y
           después se completará la baja.
         </p>
@@ -547,7 +543,7 @@ function SettingsPage() {
             </div>
           ))}
         </div>
-        <label className="mt-4 block text-sm font-semibold text-[#5A4E41]">
+        <label className="mt-4 block text-sm font-semibold text-[#3F4644]">
           Traspasar a
           {transferCandidates.length === 0 ? (
             <p className="mt-1 text-sm font-normal text-[#83867C]">
@@ -564,7 +560,7 @@ function SettingsPage() {
               <option value="">Selecciona un usuario...</option>
               {transferCandidates.map((u) => (
                 <option key={u.id} value={u.id}>
-                  {u.name} · {u.role === "admin" ? "Administrador" : "Vendedor"}
+                  {u.name} · {u.role === "admin" ? "Administrador" : "Colaborador"}
                 </option>
               ))}
             </select>
@@ -578,8 +574,8 @@ function SettingsPage() {
         subtitle="Administración de la organización y usuarios del equipo."
         steps={[
           { title: "Información de la organización", text: "Aquí puedes ver el nombre y detalles de tu organización. Solo administradores pueden editar esta información." },
-          { title: "Usuarios del equipo", text: "Lista de todos los usuarios activos con su rol (Admin o Vendedor). Puedes crear nuevos usuarios con el botón '+ Nuevo usuario'." },
-          { title: "Roles disponibles", text: "Admin: acceso completo a todas las funciones incluyendo configuración y eliminación de usuarios. Vendor: acceso a operaciones comerciales sin configuración." },
+          { title: "Usuarios del equipo", text: "Lista de todos los usuarios activos con su rol (Administrador o Colaborador). Puedes crear nuevos usuarios con el botón '+ Nuevo usuario'." },
+          { title: "Roles disponibles", text: "Administrador: maneja la organización, el equipo, los accesos y la operación completa. Colaborador: opera su cartera de clientes, aparta lotes y agenda citas, sin tocar configuración ni el inventario." },
           { title: "Restablecer contraseña", text: "Como administrador puedes generar una nueva contraseña temporal para cualquier usuario del equipo." },
           { title: "Eliminar usuario", text: "Solo los administradores pueden eliminar usuarios. Esta acción es irreversible y elimina el acceso del usuario al sistema." },
         ]}
