@@ -129,8 +129,12 @@ export default defineConfig(({ mode }) => {
     host: true,
     port: 5173,
     proxy: {
+      // Core-back, que reemplazó al monolito: el :8000 de antes ya no existe
+      // (ver docker-compose.yml de safe-ports-own-terra-core-back, que publica
+      // 127.0.0.1:8011). Properties NO pasa por acá: tiene su propia base
+      // absoluta en VITE_PROPERTIES_API_URL porque vive en otro servicio.
       "/api": {
-        target: "http://127.0.0.1:8000",
+        target: "http://127.0.0.1:8011",
         changeOrigin: true,
       },
     },
