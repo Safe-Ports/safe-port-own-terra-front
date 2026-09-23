@@ -739,7 +739,9 @@ a {
   overflow: hidden;
   min-height: 0;
   position: relative;
-  z-index: 1;
+  /* Sin z-index a propósito: darle uno abre un contexto de apilamiento y todo
+     overlay de adentro (modales incluidos) queda por debajo de .topbar, aunque
+     pida z-index 60 o 9999. Ver la regla de z-index en AGENTS.md. */
 }
 
 .view {
@@ -1989,10 +1991,12 @@ textarea.is-invalid {
   box-shadow: 0 22px 40px rgba(30, 61, 43, 0.28);
 }
 
+/* Escala de z-index (AGENTS.md): contenido 0-10 · header sticky 20-30 ·
+   backdrop 40 · modales 50+ · toasts y tooltips 60+. */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: 50;
   display: flex;
   align-items: center;
   justify-content: center;
