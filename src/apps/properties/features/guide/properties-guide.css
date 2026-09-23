@@ -1,0 +1,63 @@
+.guide-page{display:grid;gap:20px;padding:6px 0 48px}
+.guide-back{display:inline-flex;align-items:center;gap:7px;align-self:start;width:max-content;color:#2A4366;cursor:pointer;font-size:11px;font-weight:750}
+
+.guide-hero{display:grid;grid-template-columns:1fr 210px;align-items:center;gap:26px;padding:26px 28px;border:1px solid #dcdad2;border-radius:20px;background:#fff}
+.guide-hero>div>span{color:#2A4366;font-size:9px;font-weight:850;letter-spacing:.14em;text-transform:uppercase}
+.guide-hero h1{margin:8px 0 8px;color:#082C49;font-family:var(--font-title);font-size:clamp(26px,3.2vw,38px);line-height:1.08}
+.guide-hero p{margin:0;max-width:62ch;color:#6f7770;font-size:13px}
+.guide-next{display:inline-flex;align-items:center;gap:8px;margin-top:16px;padding:11px 16px;border-radius:11px;background:#0A3D62;color:#fff;cursor:pointer;font-size:11px;font-weight:800}
+.guide-complete{display:flex;align-items:center;gap:8px;margin-top:16px !important;color:#1f6b45 !important;font-weight:750}
+
+.guide-progress{display:grid;justify-items:center;gap:4px;padding:18px;border-radius:16px;background:#f4f7f3}
+.guide-progress strong{color:#1f6b45;font-family:var(--font-title);font-size:38px;line-height:1;font-variant-numeric:tabular-nums}
+.guide-progress strong span{color:#9aa79d;font-size:19px}
+.guide-progress small{color:#7c857e;font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.guide-bar{width:100%;height:6px;margin-top:8px;border-radius:99px;background:#e0e6de;overflow:hidden}
+.guide-bar i{display:block;height:100%;border-radius:99px;background:#1f6b45;transition:width .4s ease}
+
+.guide-stage{overflow:hidden;border:1px solid #dcdad2;border-radius:18px;background:#fff}
+.guide-stage>header{display:flex;align-items:center;gap:13px;padding:16px 20px;border-bottom:1px solid #eceadf;background:#fbfaf6}
+.guide-stage-ico{display:grid;place-items:center;flex:none;width:38px;height:38px;border-radius:12px;background:#e7f0e9;color:#1f6b45;font-size:19px}
+.guide-stage h2{margin:0;color:#25432f;font-family:var(--font-title);font-size:20px}
+.guide-stage header p{margin:2px 0 0;color:#838a82;font-size:11px}
+.guide-stage ol{list-style:none;margin:0;padding:0}
+.guide-stage>ol>li{border-top:1px solid #f0ece3}
+.guide-stage>ol>li:first-child{border-top:0}
+
+.guide-step-head{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:14px;width:100%;padding:15px 20px;text-align:left;cursor:pointer}
+.guide-step-head:hover{background:#fbfaf6}
+.guide-mark{display:grid;place-items:center;flex:none;width:24px;height:24px;border:2px solid #ded9cc;border-radius:50%;color:#1f6b45;font-size:16px}
+li.done .guide-mark{border-color:#1f6b45;background:#eaf6ee}
+.guide-step-name{min-width:0}
+.guide-step-name strong{display:block;color:#28432f;font-size:13px}
+.guide-step-name small{display:block;margin-top:2px;color:#858b84;font-size:11px}
+.guide-step-meta{display:grid;justify-items:end;gap:4px;flex:none}
+.guide-tag{padding:3px 8px;border-radius:99px;font-size:8px;font-style:normal;font-weight:850;letter-spacing:.05em;text-transform:uppercase}
+.tag-live{background:#e7f0e9;color:#1f6b45}
+.tag-backend{background:#fdf0d8;color:#8a6a1c}
+.tag-demo{background:#f1efe9;color:#7e7669}
+.guide-step-meta b{color:#8b9189;font-size:10px;font-weight:700;font-variant-numeric:tabular-nums}
+
+.guide-step-body{display:grid;gap:13px;padding:0 20px 18px 58px}
+.guide-how{display:grid;gap:7px;counter-reset:g}
+.guide-how li{position:relative;padding-left:24px;color:#5d665f;font-size:12px;counter-increment:g}
+.guide-how li::before{content:counter(g);position:absolute;left:0;top:1px;display:grid;place-items:center;width:17px;height:17px;border-radius:5px;background:#eef2ec;color:#5b7a64;font-size:9px;font-weight:800}
+.guide-go{display:inline-flex;align-items:center;gap:7px;width:max-content;padding:9px 14px;border:1px solid #cfd9cd;border-radius:10px;background:#fff;color:#2c4a36;cursor:pointer;font-size:10px;font-weight:800}
+.guide-go:hover{border-color:#1f6b45;background:#f3f8f4}
+li.state-demo .guide-step-name strong{color:#6d7469}
+
+.guide-map{padding:20px;border:1px solid #dcdad2;border-radius:18px;background:#fff}
+.guide-map h2{margin:0 0 14px;color:#25432f;font-family:var(--font-title);font-size:19px}
+.guide-map-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:9px}
+.guide-map-grid button{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:11px;padding:13px 15px;border:1px solid #e3e0d6;border-radius:12px;background:#fbfaf6;color:#3d4d42;cursor:pointer;font-size:11px;font-weight:700;text-align:left}
+.guide-map-grid button:hover{border-color:#1f6b45;background:#f3f8f4}
+.guide-map-grid button>svg:first-child{color:#1f6b45;font-size:17px}
+.guide-map-grid button>svg:last-child{color:#a8b1a9;font-size:13px}
+
+@media(max-width:860px){
+  .guide-hero{grid-template-columns:1fr}
+  .guide-progress{justify-items:start}
+  .guide-step-head{grid-template-columns:auto 1fr;row-gap:8px}
+  .guide-step-meta{grid-column:1/-1;justify-items:start;grid-auto-flow:column;gap:8px;align-items:center}
+  .guide-step-body{padding-left:20px}
+}

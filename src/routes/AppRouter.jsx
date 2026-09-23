@@ -41,6 +41,7 @@ const ReportsPage = lazyWithRetry(() => import("@/pages/Reports"));
 const PricingPage = lazyWithRetry(() => import("@/pages/Pricing"));
 const AccessDenied = lazyWithRetry(() => import("@/pages/AccessDenied"));
 const PropertiesDashboard = lazyWithRetry(() => import("@/apps/properties/features/dashboard/PropertiesDashboard"));
+const PropertiesGuidePage = lazyWithRetry(() => import("@/apps/properties/features/guide/PropertiesGuidePage"));
 const PropertiesOperationsHub = lazyWithRetry(() => import("@/apps/properties/features/dashboard/PropertiesOperationsHub"));
 const OwnersPage = lazyWithRetry(() => import("@/apps/properties/features/owners/OwnersPage"));
 const PropertiesPage = lazyWithRetry(() => import("@/apps/properties/features/properties/PropertiesPage"));
@@ -124,6 +125,7 @@ function AppRouter() {
           <Route path="/ecosistema/perfil" element={<EcosystemPerfil />} />
           <Route path="/properties" element={<RequireFeature app="properties"><PropertiesModule /></RequireFeature>}>
             <Route index element={<PropertiesDashboard />} />
+            <Route path="guia" element={<PropertiesGuidePage />} />
             <Route path="operacion" element={<PropertiesOperationsHub />} />
             <Route path="propietarios" element={<RequireFeature feature="properties.owners.read"><OwnersPage /></RequireFeature>} />
             <Route path="inmuebles" element={<RequireFeature feature="properties.properties.read"><PropertiesPage /></RequireFeature>} />
