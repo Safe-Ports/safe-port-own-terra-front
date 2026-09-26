@@ -1,4 +1,6 @@
-const OPEN_CHARGE_STATES = new Set(["pending", "overdue"]);
+// `partial` también es saldo abierto: el ledger de properties-back lo calcula
+// así cuando un cargo tiene pagos aplicados pero no completos.
+const OPEN_CHARGE_STATES = new Set(["pending", "partial", "overdue"]);
 const OPEN_UTILITY_STATES = new Set(["pending_evidence", "due_soon", "overdue", "incident", "suspended"]);
 
 export function buildUnitMonitorRows({ units = [], people = [], relations = [], charges = [], utilityServices = [], tickets = [] }) {
@@ -24,7 +26,7 @@ export function buildUnitMonitorRows({ units = [], people = [], relations = [], 
       charges: unitCharges,
       services,
       tickets: unitTickets,
-      openChargeAmount: openCharges.reduce((sum, item) => sum + Number(item.amount || 0), 0),
+      openChargeAmount: openCharges.reduce((sum, item) => sum + Number(item.amount || 0) - Number(item.paidAmount || 0), 0),
       openServiceAmount: openServices.reduce((sum, item) => sum + Number(item.amount || 0), 0),
       openTickets: unitTickets.filter((item) => !["resolved", "closed", "cancelled"].includes(item.status)).length,
       movements,

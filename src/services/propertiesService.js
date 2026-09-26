@@ -10,6 +10,7 @@ export const propertiesService = {
     update: (id, body) => data(propertiesApi.patch(`/personas/${id}`, body)),
     archive: (id) => data(propertiesApi.delete(`/personas/${id}`)),
     assignRole: (id, roleId) => data(propertiesApi.post(`/personas/${id}/roles`, { role_id: roleId })),
+    removeRole: (id, roleId) => data(propertiesApi.delete(`/personas/${id}/roles/${roleId}`)),
     statement: (id) => data(propertiesApi.get(`/personas/${id}/statement`)),
   },
   properties: {

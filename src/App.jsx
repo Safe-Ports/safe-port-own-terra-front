@@ -5,6 +5,7 @@ import LoginScreen from "@/components/forms/LoginScreen";
 import VerifyEmail from "@/components/forms/VerifyEmail";
 import ResetPassword from "@/components/forms/ResetPassword";
 import AppRouter from "@/routes/AppRouter";
+import { PROPERTIES_MVP_SCOPE } from "@/apps/properties/mvpScope";
 
 const FormPublico = lazy(() => import("@/pages/FormPublico"));
 const LegalPage = lazy(() => import("@/pages/Legal"));
@@ -28,9 +29,9 @@ function App() {
   if (pathname.startsWith("/f/")) return <Suspense fallback={null}><FormPublico /></Suspense>;
   if (pathname.startsWith("/cotizacion/")) return <Suspense fallback={null}><PublicQuote /></Suspense>;
   // Marketplace público de inmuebles en renta; no requiere cuenta de OwnTerra.
-  if (pathname === "/rentas" || pathname.startsWith("/rentas/")) return <Suspense fallback={null}><RentalCatalogPage /></Suspense>;
+  if (PROPERTIES_MVP_SCOPE.rentals && (pathname === "/rentas" || pathname.startsWith("/rentas/"))) return <Suspense fallback={null}><RentalCatalogPage /></Suspense>;
   // Portal del inquilino: vista pública de demostración, sin sesión propia.
-  if (pathname === "/portal-inquilino") return <Suspense fallback={null}><TenantPortal /></Suspense>;
+  if (PROPERTIES_MVP_SCOPE.rentals && pathname === "/portal-inquilino") return <Suspense fallback={null}><TenantPortal /></Suspense>;
   if (pathname === "/servicio/login") return <Suspense fallback={null}><ServiceLogin /></Suspense>;
   if (pathname === "/servicio/invitacion") return <Suspense fallback={null}><ServiceInvitation /></Suspense>;
   if (pathname === "/portal-comunidad") return <Suspense fallback={null}><CommunityPortal /></Suspense>;

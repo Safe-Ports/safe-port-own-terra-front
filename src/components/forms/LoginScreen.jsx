@@ -3,6 +3,7 @@ import { useAppContext } from "@/context/AppContext";
 import InlineError from "@/components/shared/InlineError";
 import FieldError from "@/components/shared/FieldError";
 import { useFieldErrors } from "@/hooks/useFieldErrors";
+import { PROPERTIES_MVP_SCOPE } from "@/apps/properties/mvpScope";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const REGISTER_RULES = {
@@ -43,7 +44,7 @@ export function LeftPanel() {
   return (
     <div className="ll-panel">
       <div className="ll-logo">
-        <img src="/ownterra ecosistem.png" alt="OwnTerra Ecosistem" />
+        <img src="/brand/ownterra-logo-light.svg" alt="OwnTerra" />
       </div>
       {MAP_SVG}
       <div className="ll-hero">
@@ -161,11 +162,13 @@ function LoginView({ onForgot, onRegister }) {
         {loading ? "Ingresando..." : "Iniciar sesión"}
       </button>
 
-      <a className="lf-public-catalog" href="/rentas">
-        <span aria-hidden="true">⌂</span>
-        Explorar inmuebles en renta
-        <span aria-hidden="true">→</span>
-      </a>
+      {PROPERTIES_MVP_SCOPE.rentals ? (
+        <a className="lf-public-catalog" href="/rentas">
+          <span aria-hidden="true">⌂</span>
+          Explorar inmuebles en renta
+          <span aria-hidden="true">→</span>
+        </a>
+      ) : null}
 
       <div style={{ textAlign: "center", marginTop: 16, fontSize: ".82rem", color: "#83867C" }}>
         ¿No tienes cuenta?{" "}

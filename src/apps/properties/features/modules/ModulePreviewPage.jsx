@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { HiArrowLeft, HiMagnifyingGlass, HiPlus } from "react-icons/hi2";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import EcoLayout from "@/pages/Ecosystem/EcoLayout";
+import { isPathInScope } from "../../mvpScope";
 import "./module-preview.css";
 
 const moduleData = {
@@ -23,7 +24,8 @@ const moduleData = {
 function ModulePreviewPage(){
   const {moduleKey}=useParams(); const navigate=useNavigate(); const [query,setQuery]=useState(""); const data=moduleData[moduleKey];
   const rows=useMemo(()=>data?.rows.filter(row=>row.join(" ").toLowerCase().includes(query.toLowerCase()))||[],[data,query]);
-  if(!data)return <Navigate to="/properties" replace/>;
+  // Un módulo fuera del MVP tampoco se abre escribiendo su URL.
+  if(!data||!isPathInScope(`/properties/modulos/${moduleKey}`))return <Navigate to="/properties" replace/>;
   return <EcoLayout active="properties" title="OwnTerra Properties" subtitle={`${data.group} · Mismo contexto`}><main className="unicell-page">
     <header className="unicell-heading"><button type="button" className="unicell-back" onClick={()=>navigate("/properties")}><HiArrowLeft/> Properties</button><div><span>{data.group}</span><h1>{data.title} <em className="unicell-soon">Próximamente</em></h1><p>{data.statement}</p></div><button type="button" className="unicell-action" disabled title="Todavía no está conectado — vista previa del diseño"><HiPlus/>{data.action}</button></header>
     <section className="unicell-context"><div><small>Contexto activo</small><strong>Todo el portafolio</strong></div><i/><div><small>Pulso</small><strong>{data.metric}</strong></div><p>Vista previa de diseño con datos de ejemplo. Aún no está conectada a información real.</p></section>

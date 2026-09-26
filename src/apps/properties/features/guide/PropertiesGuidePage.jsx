@@ -3,6 +3,7 @@ import { HiArrowLeft, HiArrowRight, HiBanknotes, HiBuildingOffice2, HiCheckCircl
 import { useNavigate } from "react-router-dom";
 import EcoLayout from "@/pages/Ecosystem/EcoLayout";
 import { usePropertiesData } from "../../data/PropertiesDataContext";
+import { PROPERTIES_MVP_SCOPE } from "../../mvpScope";
 import "./properties-guide.css";
 
 // Cada paso se marca solo con los datos reales de la organización: `done` lee
@@ -23,14 +24,10 @@ function buildStages(d){
        done:activeUnits.length>0, count:`${activeUnits.length} unidad${activeUnits.length===1?"":"es"}`,
        what:"Departamentos, casas, locales o bodegas. Todo lo que se cobra, se reserva o se habita cuelga de una unidad.",
        how:["Botón Nueva unidad.","Elige la propiedad a la que pertenece y ponle identificador (Depto 301, Local A).","Si vas a cobrar por indiviso, captura el porcentaje en los atributos."]},
-      {id:"people", label:"Da de alta a las personas", state:"live", to:"/properties/comunidades", cta:"Abrir directorio",
-       done:people.length>0, count:`${people.length} persona${people.length===1?"":"s"}`,
-       what:"Propietarios, residentes, inquilinos y comité. Las personas son de la organización, no de una sola comunidad.",
-       how:["Comunidades, pestaña Directorio, botón Agregar persona.","Marca sus roles generales: propietario, residente, comité.","Aparecerá como Sin unidad hasta que la vincules en el paso siguiente."]},
-      {id:"relations", label:"Vincula personas con unidades", state:"live", to:"/properties/comunidades", cta:"Abrir relaciones",
+      {id:"relations", label:"Asigna personas a cada unidad", state:"live", to:"/properties/comunidades?tab=units", cta:"Abrir Unidades",
        done:relations.length>0, count:`${relations.length} vínculo${relations.length===1?"":"s"}`,
-       what:"Este es el paso que desbloquea todo lo demás. Cuotas, votaciones, amenidades y portal dependen de él.",
-       how:["Comunidades, pestaña Personas y unidades, botón Vincular persona.","Elige persona, unidad y el rol que tiene en ella.","Marca por separado: responsable de pago, derecho de voto, acceso a amenidades y autorizar accesos.","Son permisos independientes: un inquilino puede pagar sin votar."]},
+       what:"Este es el paso que desbloquea todo lo demás. Cuotas, votaciones, amenidades y portal dependen de quién está en cada unidad.",
+       how:["Comunidades, pestaña Unidades. Elige la unidad y usa Agregar persona.","Escribe a la persona nueva o elígela del directorio, en el mismo formulario.","Elige si es propietario, residente o inquilino: los permisos se sugieren solos.","Ajusta lo que haga falta: un inquilino puede pagar sin votar. Solo puede haber un responsable de pago por unidad."]},
     ]},
     {id:"dinero", title:"Cobrar", caption:"Cuotas recurrentes, cargos, pagos y cartera vencida.", icon:HiBanknotes, steps:[
       {id:"charges", label:"Emite cargos y registra pagos", state:"live", to:"/properties/comunidades/operacion", cta:"Abrir Cuotas y adeudos",
@@ -67,10 +64,10 @@ function buildStages(d){
        how:["Comunidades, pestaña Directorio. En la ficha de la persona, el botón de la llave.","Crea la invitación con su correo. Como todavía no hay envío de correo, copia el enlace y pásaselo tú.","Dale acceso a sus unidades: solo aparecen aquellas donde ya tiene relación.","Sin acceso otorgado entra al portal pero no ve nada.","Suspender corta su sesión de inmediato."]},
     ]},
     {id:"prototipo", title:"Todavía prototipo", caption:"Se ven completas, pero no hay backend detrás: los datos no se guardan.", icon:HiTicket, steps:[
-      {id:"rentals", label:"Rentas, publicaciones y hospedaje", state:"demo", to:"/properties/rentas", cta:"Ver Rentas",
+      ...(PROPERTIES_MVP_SCOPE.rentals?[{id:"rentals", label:"Rentas, publicaciones y hospedaje", state:"demo", to:"/properties/rentas", cta:"Ver Rentas",
        done:false, count:"Datos demo",
        what:"Contratos, prospectos, publicaciones y reservas de hospedaje. Cero endpoints en el backend.",
-       how:["Úsalo para enseñar la idea, nunca para operar.","Lo que captures aquí se pierde al recargar.","No lo presentes a un cliente como funcionalidad lista."]},
+       how:["Úsalo para enseñar la idea, nunca para operar.","Lo que captures aquí se pierde al recargar.","No lo presentes a un cliente como funcionalidad lista."]}]:[]),
       {id:"tickets", label:"Tickets y servicios", state:"demo", to:"/properties/tickets", cta:"Ver Tickets",
        done:false, count:"Datos demo",
        what:"Incidencias, mantenimiento y medidores de servicios. Tampoco tienen contrato de backend.",
@@ -141,8 +138,8 @@ function PropertiesGuidePage(){
             ["Propietarios",HiUserGroup,"/properties/propietarios"],
             ["Comunidades: configuración, directorio y vínculos",HiLink,"/properties/comunidades"],
             ["Operación diaria: cuotas, avisos, amenidades, comité",HiSquares2X2,"/properties/comunidades/operacion"],
-            ["Accesos y recepción",HiKey,"/properties/accesos"],
-            ["Monitoreo por unidad",HiScale,"/properties/monitoreo"]].map(([label,Icon,to])=>
+            [PROPERTIES_MVP_SCOPE.later?"Accesos y recepción":"Recepción y paquetería",HiKey,"/properties/accesos"],
+            ["Unidades y residentes",HiScale,"/properties/comunidades?tab=units"]].map(([label,Icon,to])=>
             <button type="button" key={to} onClick={()=>navigate(to)}><Icon/><span>{label}</span><HiArrowRight/></button>)}
         </div>
       </section>

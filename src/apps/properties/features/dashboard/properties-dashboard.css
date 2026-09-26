@@ -60,3 +60,6 @@
 .properties-guide-cta{display:inline-flex;align-items:center;gap:8px;margin-left:9px;padding:10px 15px;border:1px solid #cfd9cd;border-radius:11px;background:#fff;color:#2c4a36;cursor:pointer;font-size:11px;font-weight:800}
 .properties-guide-cta:hover{border-color:#1f6b45;background:#f3f8f4}
 @media(max-width:650px){.properties-guide-cta{width:100%;justify-content:center;margin:9px 0 0}}
+.property-path-icon img{display:block;width:30px;height:30px;object-fit:contain}
+/* Con Rentas y Venta fuera del MVP queda una sola área: ocupa todo el ancho. */
+.property-paths-grid.is-single{grid-template-columns:minmax(0,1fr)!important}

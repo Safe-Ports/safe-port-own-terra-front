@@ -1,18 +1,67 @@
+// Roles generales de la persona, sin unidad de por medio. Dueño, residente e
+// inquilino ya NO se piden aquí: se definen una sola vez, en el vínculo con la
+// unidad. Pedirlos en dos lugares hacía que no coincidieran, y cuotas y
+// votaciones leen el del vínculo. `board_member` es la clave del backend.
 export const COMMUNITY_PERSON_ROLE_LABEL = {
-  owner: "Propietario",
-  resident: "Residente",
-  tenant: "Inquilino",
   committee: "Comité",
-  emergency_contact: "Contacto de emergencia",
-  payment_responsible: "Responsable de pago",
+  board_member: "Comité",
 };
 
+// Relación de una persona con una unidad: coincide 1:1 con el catálogo `roles`
+// de properties-back. "Responsable de pago" no es un rol sino una bandera del
+// vínculo (`is_payment_responsible`); como rol, el backend lo rechazaba.
 export const PERSON_UNIT_ROLE_LABEL = {
   owner: "Propietario",
   resident: "Residente",
   tenant: "Inquilino",
-  payment_responsible: "Responsable de pago",
 };
+
+export const PERSON_UNIT_ROLE_HINT = {
+  owner: "Es dueño de la unidad, viva o no en ella.",
+  resident: "Vive en la unidad sin ser dueño ni inquilino.",
+  tenant: "Renta la unidad.",
+};
+
+// Permisos sugeridos por rol; el administrador los puede cambiar antes de guardar.
+export const DEFAULT_UNIT_MEMBER_FLAGS = {
+  owner: { isPaymentResponsible: true, canVote: true, amenityAccess: true },
+  resident: { isPaymentResponsible: false, canVote: false, amenityAccess: true },
+  tenant: { isPaymentResponsible: false, canVote: false, amenityAccess: true },
+};
+
+export const EMPTY_UNIT_MEMBER = {
+  mode: "new",
+  personId: "",
+  name: "",
+  email: "",
+  phone: "",
+  role: "owner",
+  isPrimary: true,
+  accessPermission: true,
+  startsAt: "",
+  endsAt: "",
+  ...DEFAULT_UNIT_MEMBER_FLAGS.owner,
+};
+
+// Alta de una persona en una unidad: crea (o elige) a la persona y su vínculo
+// en un solo paso.
+export function validateUnitMember(draft) {
+  const errors = {};
+  if (draft.mode === "existing") {
+    if (!draft.personId) errors.personId = "Elige a la persona del directorio.";
+  } else {
+    if (!draft.name?.trim()) errors.name = "Ingresa el nombre de la persona.";
+    if (draft.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email.trim())) errors.email = "Ingresa un correo válido.";
+  }
+  if (!PERSON_UNIT_ROLE_LABEL[draft.role]) errors.role = "Elige la relación con la unidad.";
+  if (draft.startsAt && draft.endsAt && draft.endsAt < draft.startsAt) errors.endsAt = "La fecha de fin no puede ser anterior al inicio.";
+  return errors;
+}
+
+// Grupos del directorio a partir de los vínculos activos, no de roles sueltos.
+export function personUnitRoles(personId, relations = []) {
+  return [...new Set(relations.filter((relation) => relation.personId === personId && relation.status !== "archived").map((relation) => relation.role))];
+}
 
 // El backend solo acepta estos cinco regímenes (Regimen en
 // app/features/communities/schemas.py). El tipo que elige el usuario y el
@@ -55,7 +104,7 @@ export const EMPTY_COMMUNITY_PERSON = {
   name: "",
   email: "",
   phone: "",
-  roles: ["resident"],
+  roles: [],
   emergencyContactName: "",
   emergencyContactPhone: "",
   communicationPreference: "email",
@@ -104,9 +153,9 @@ export function createCommunity(draft) {
 export function validateCommunityPerson(person) {
   const errors = {};
   if (!person.name?.trim()) errors.name = "Ingresa el nombre de la persona.";
-  if (!person.email?.trim()) errors.email = "Ingresa un correo electrónico.";
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(person.email.trim())) errors.email = "Ingresa un correo válido.";
-  if (!person.roles?.length) errors.roles = "Selecciona al menos un rol.";
+  // El correo es opcional (no todos lo dan al registrarse), pero si viene debe
+  // ser válido: es a donde llega la invitación al portal.
+  if (person.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(person.email.trim())) errors.email = "Ingresa un correo válido.";
   return errors;
 }
 
@@ -116,9 +165,9 @@ export function createCommunityPerson(draft) {
     communityIds: [...new Set(draft.communityIds || [])],
     personType: draft.personType || "individual",
     name: draft.name.trim(),
-    email: draft.email.trim().toLowerCase(),
+    email: draft.email?.trim().toLowerCase() || "",
     phone: draft.phone?.trim() || "",
-    roles: [...new Set(draft.roles)],
+    roles: [...new Set(draft.roles || [])],
     emergencyContactName: draft.emergencyContactName?.trim() || "",
     emergencyContactPhone: draft.emergencyContactPhone?.trim() || "",
     communicationPreference: draft.communicationPreference || "email",
@@ -154,4 +203,31 @@ export function createPersonUnitRelation(draft, existing = []) {
     endsAt: draft.endsAt || "",
     status: "active",
   };
+}
+
+// Lo que una comunidad tiene pendiente de atender, para las alertas de su
+// tarjeta. Sólo usa datos que persisten en properties-back (cargos, paquetes,
+// reservas, votaciones, unidades y relaciones): tickets y servicios siguen en
+// datos demo y no deben presentarse como alertas reales.
+// `module` indica a dónde lleva cada alerta en Operación diaria; `setup` se
+// resuelve en la misma pantalla de Comunidades.
+export function communityAlerts({ community, units = [], relations = [], charges = [], packages = [], reservations = [], votes = [] }) {
+  if (!community) return [];
+  const own = (items) => items.filter((item) => item.communityId === community.id);
+  const activeUnits = units.filter((unit) => unit.propertyId === community.propertyId && unit.status !== "archived");
+  const activeRelations = own(relations).filter((relation) => relation.status !== "archived");
+  const overdue = own(charges).filter((charge) => charge.status === "overdue");
+  const waitingPackages = own(packages).filter((item) => item.status === "pending");
+  const requested = own(reservations).filter((item) => item.status === "requested");
+  const openVotes = own(votes).filter((item) => item.status === "open");
+  const overdueAmount = overdue.reduce((sum, charge) => sum + (charge.amount - (charge.paidAmount || 0)), 0);
+  const alerts = [];
+  if (!activeUnits.length || !activeRelations.length) {
+    alerts.push({ key: "setup", tone: "warning", count: null, label: !activeUnits.length ? "Faltan unidades por registrar" : "Faltan personas vinculadas a unidades", module: "setup" });
+  }
+  if (overdue.length) alerts.push({ key: "charges", tone: "danger", count: overdue.length, amount: overdueAmount, label: `${overdue.length} cargo${overdue.length > 1 ? "s" : ""} vencido${overdue.length > 1 ? "s" : ""}`, module: "charges" });
+  if (requested.length) alerts.push({ key: "reservations", tone: "warning", count: requested.length, label: `${requested.length} reserva${requested.length > 1 ? "s" : ""} por aprobar`, module: "amenities" });
+  if (waitingPackages.length) alerts.push({ key: "packages", tone: "warning", count: waitingPackages.length, label: `${waitingPackages.length} paquete${waitingPackages.length > 1 ? "s" : ""} en recepción`, module: "packages" });
+  if (openVotes.length) alerts.push({ key: "votes", tone: "info", count: openVotes.length, label: `${openVotes.length} ${openVotes.length > 1 ? "votaciones abiertas" : "votación abierta"}`, module: "committee" });
+  return alerts;
 }

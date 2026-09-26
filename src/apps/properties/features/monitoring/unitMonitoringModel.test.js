@@ -15,4 +15,12 @@ describe("unit monitoring model", () => {
     expect(rows[0].occupants[0].name).toBe("María");
     expect(rows[0].movements.map((item) => item.type)).toEqual(["Incidencia", "Servicio", "Cargo"]);
   });
+
+  it("cuenta sólo el saldo pendiente, incluyendo cargos con pago parcial", () => {
+    const rows = buildUnitMonitorRows({
+      units:[{ id:"u1", status:"rented" }],
+      charges:[{ id:"c1", unitId:"u1", amount:1200, paidAmount:200, status:"partial" }, { id:"c2", unitId:"u1", amount:900, paidAmount:900, status:"paid" }],
+    });
+    expect(rows[0].openChargeAmount).toBe(1000);
+  });
 });

@@ -21,3 +21,4 @@
 .condo-penalty-note{display:block;padding:10px;border-radius:8px;background:#eceff2;color:#56636d;font-size:8px;line-height:1.5}
 .condo-charge-empty{margin:28px auto;color:#858b84;font-size:10px}
 @media(max-width:600px){.condo-charge-filters .condo-contract-link{margin-left:0}.condo-charge-filters{padding-inline:12px}}
+.condo-unit-link{padding:0;border:0;background:none;color:#2a5c87;font:inherit;font-weight:800;text-decoration:underline;text-underline-offset:2px;cursor:pointer}

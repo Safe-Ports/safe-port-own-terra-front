@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { HiArrowLeft, HiBars3, HiBuildingOffice2, HiCalendarDays, HiHomeModern, HiTicket } from "react-icons/hi2";
+import { useNavigate } from "react-router-dom";
+import { HiBars3 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 import EcoSprite from "./EcoSprite";
 import "@/styles/ecosystem.css";
@@ -8,13 +8,12 @@ import CoreTopbarActions from "@/components/layout/CoreTopbarActions";
 import Toast from "@/components/shared/Toast";
 import SubscriptionBanner from "@/components/shared/SubscriptionBanner";
 import useEscapeKey from "@/hooks/useEscapeKey";
-import PropertiesLogo from "@/apps/properties/components/PropertiesLogo";
+import PropertiesQuickNav from "@/apps/properties/components/PropertiesQuickNav";
 
 /* Layout compartido del hub Aurora: sidebar + topbar + área de scroll.
    `active` marca el item activo del menú. */
 function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
   const navigate = useNavigate();
-  const location = useLocation();
   const { currentUser, canUseFeature, showToast } = useAppContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   useEscapeKey(() => setSidebarOpen(false), sidebarOpen);
@@ -62,18 +61,7 @@ function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <div className="sidebar-inner">
           {active === "properties" ? (
-            <nav className="properties-focus-rail" aria-label="Navegación de Properties">
-              <button className="focus-brand" type="button" onClick={() => goTo("/properties")} aria-label="Inicio de Properties"><PropertiesLogo compact /><span><strong>Properties</strong><small>Centro de operación</small></span></button>
-              <div className="focus-rail-nav">
-                <small className="focus-rail-group">TRABAJO</small>
-                <button type="button" aria-label="Inicio" className={location.pathname === "/properties" ? "active" : ""} onClick={() => goTo("/properties")}><HiHomeModern /><span>Inicio</span></button>
-                <button type="button" aria-label="Mi Día" onClick={() => goTo("/ecosistema/mi-dia")}><HiCalendarDays /><span>Mi Día</span></button>
-                <small className="focus-rail-group">CONTROL</small>
-                <button type="button" aria-label="Portafolio" className={location.pathname.startsWith("/properties/portafolio") ? "active" : ""} onClick={() => goTo("/properties/portafolio")}><HiBuildingOffice2 /><span>Portafolio</span></button>
-                <button type="button" aria-label="Pendientes" className={location.pathname.startsWith("/properties/tickets") ? "active" : ""} onClick={() => goTo("/properties/tickets")}><HiTicket /><span>Pendientes</span><i>3</i></button>
-              </div>
-              <button type="button" className="focus-exit" aria-label="Volver al ecosistema" onClick={() => goTo("/ecosistema")}><HiArrowLeft /><span>Ecosistema</span></button>
-            </nav>
+            <PropertiesQuickNav goTo={goTo} />
           ) : null}
           <div className="brand">
             <button
@@ -83,7 +71,7 @@ function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
               aria-label="Ir al Ecosistema OwnTerra"
               title="Volver al Ecosistema"
             >
-              <img src="/ownterra_land.png" alt="OwnTerra Lands" />
+              <img src="/brand/ownterra-logo-light.svg" alt="OwnTerra" />
             </button>
           </div>
 

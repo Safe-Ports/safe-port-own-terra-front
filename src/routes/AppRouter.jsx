@@ -7,6 +7,7 @@ import { getDeniedMessage } from "@/services/permissions";
 import SupportWidget from "@/components/support/SupportWidget";
 import GuidedTour from "@/components/tour/GuidedTour";
 import { lazyWithRetry } from "@/routes/lazyWithRetry";
+import { PROPERTIES_MVP_SCOPE } from "@/apps/properties/mvpScope";
 
 const EcosystemHub = lazyWithRetry(() => import("@/pages/Ecosystem"));
 const EcosystemClientes = lazyWithRetry(() => import("@/pages/Ecosystem/Clientes"));
@@ -56,7 +57,6 @@ const HospitalityOperationsPage = lazyWithRetry(() => import("@/apps/properties/
 const ServiceNetworkPage = lazyWithRetry(() => import("@/apps/properties/features/service/ServiceNetworkPage"));
 const CommunityWorkspace = lazyWithRetry(() => import("@/apps/properties/features/community/CommunityWorkspace"));
 const CondoOperationsSuite = lazyWithRetry(() => import("@/apps/properties/features/condo/CondoOperationsSuite"));
-const UnitMonitoringPage = lazyWithRetry(() => import("@/apps/properties/features/monitoring/UnitMonitoringPage"));
 const ServicePartnerPortal = lazyWithRetry(() => import("@/apps/properties/external/ServicePartnerPortal"));
 const ServiceLogin = lazyWithRetry(() => import("@/apps/properties/external/ServiceAccessPages").then(module => ({ default: module.ServiceLogin })));
 const ServiceInvitation = lazyWithRetry(() => import("@/apps/properties/external/ServiceAccessPages").then(module => ({ default: module.ServiceInvitation })));
@@ -102,7 +102,7 @@ function AppRouter() {
           <Route path="/servicio/login" element={<ServiceLogin />} />
           <Route path="/servicio/invitacion" element={<ServiceInvitation />} />
           <Route path="/servicio/registro" element={<ServiceRegistration />} />
-          <Route path="/portal-inquilino" element={<TenantPortal />} />
+          <Route path="/portal-inquilino" element={PROPERTIES_MVP_SCOPE.rentals ? <TenantPortal /> : <Navigate to="/ecosistema" replace />} />
           <Route path="/portal-comunidad" element={<RequireFeature app="properties"><CommunityPortal /></RequireFeature>} />
           <Route path="/ecosistema/clientes" element={<RequireFeature feature="core.clients"><EcosystemClientes /></RequireFeature>} />
           <Route path="/ecosistema/documentos" element={<RequireFeature feature="core.vault"><EcosystemVault /></RequireFeature>} />
@@ -130,16 +130,17 @@ function AppRouter() {
             <Route path="propietarios" element={<RequireFeature feature="properties.owners.read"><OwnersPage /></RequireFeature>} />
             <Route path="inmuebles" element={<RequireFeature feature="properties.properties.read"><PropertiesPage /></RequireFeature>} />
             <Route path="unidades" element={<RequireFeature feature="properties.units.read"><UnitsPage /></RequireFeature>} />
-            <Route path="monitoreo" element={<RequireFeature feature="properties.units.read"><UnitMonitoringPage /></RequireFeature>} />
+            {/* El monitoreo vive ahora como pestaña de Comunidades; la ruta vieja lleva ahí. */}
+            <Route path="monitoreo" element={<Navigate to="/properties/comunidades?tab=monitoring" replace />} />
             <Route path="portafolio" element={<RequireFeature feature="properties.properties.read"><PortfolioWorkspace /></RequireFeature>} />
             {/* El tablero de estatus ahora es una vista dentro de Unidades (?view=board), no una página aparte. */}
             <Route path="estatus-unidades" element={<Navigate to="/properties/unidades?view=board" replace />} />
             <Route path="tickets" element={<RequireFeature feature="properties.units.read"><TicketsPage /></RequireFeature>} />
             <Route path="accesos" element={<RequireFeature feature="properties.units.read"><AccessControlPage /></RequireFeature>} />
-            <Route path="rentas" element={<RequireFeature feature="properties.rent.read"><RentOperationsPage /></RequireFeature>} />
-            <Route path="publicaciones" element={<RequireFeature feature="properties.rent.read"><RentalListingsPage /></RequireFeature>} />
-            <Route path="rentas/hospedaje" element={<RequireFeature feature="properties.rent.read"><HospitalityOperationsPage /></RequireFeature>} />
-            <Route path="responsables" element={<RequireFeature feature="properties.units.read"><ServiceNetworkPage /></RequireFeature>} />
+            <Route path="rentas" element={PROPERTIES_MVP_SCOPE.rentals ? <RequireFeature feature="properties.rent.read"><RentOperationsPage /></RequireFeature> : <Navigate to="/properties" replace />} />
+            <Route path="publicaciones" element={PROPERTIES_MVP_SCOPE.rentals ? <RequireFeature feature="properties.rent.read"><RentalListingsPage /></RequireFeature> : <Navigate to="/properties" replace />} />
+            <Route path="rentas/hospedaje" element={PROPERTIES_MVP_SCOPE.rentals ? <RequireFeature feature="properties.rent.read"><HospitalityOperationsPage /></RequireFeature> : <Navigate to="/properties" replace />} />
+            <Route path="responsables" element={PROPERTIES_MVP_SCOPE.later ? <RequireFeature feature="properties.units.read"><ServiceNetworkPage /></RequireFeature> : <Navigate to="/properties" replace />} />
             <Route path="comunidades" element={<RequireFeature feature="properties.properties.read"><CommunityWorkspace /></RequireFeature>} />
             <Route path="comunidades/operacion" element={<RequireFeature feature="properties.properties.read"><CondoOperationsSuite /></RequireFeature>} />
             <Route path="condominios" element={<Navigate to="/properties/comunidades" replace />} />

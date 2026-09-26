@@ -1525,3 +1525,7 @@
   font-family: var(--font-body);
   font-weight: 800;
 }
+/* Contadores del menú de Properties: rojo para lo vencido; admite "9+". */
+.focus-rail-nav button>i{width:auto;min-width:15px;padding:0 4px}.focus-rail-nav button>i.danger{background:#E4745F;color:#fff}.focus-rail-nav button.active>i{background:#0A3D62;color:#fff}
+/* Con más accesos, en pantallas bajas la lista hace scroll en vez de recortarse. */
+.properties-focus-rail .focus-rail-nav{min-height:0;overflow-x:hidden;overflow-y:auto;scrollbar-width:none;align-content:start;margin:16px 0}.properties-focus-rail .focus-rail-nav::-webkit-scrollbar{display:none}

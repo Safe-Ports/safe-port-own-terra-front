@@ -3,12 +3,13 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
 import EcoLayout from "@/pages/Ecosystem/EcoLayout";
 import { PROPERTY_ACTION_ICONS, PROPERTY_ENTITY_ICONS } from "../../components/propertiesIconCatalog";
+import { PROPERTIES_MVP_SCOPE, isPathInScope } from "../../mvpScope";
 import "./properties-dashboard.css";
 
 const { back: HiArrowLeft, open: HiArrowRight } = PROPERTY_ACTION_ICONS;
 const { portfolio: HiBuildingOffice2, operations: HiWrenchScrewdriver, commercial: HiMegaphone, relationships: HiChatBubbleLeftRight } = PROPERTY_ENTITY_ICONS;
 
-const areas = [
+const allAreas = [
   {
     key: "portfolio",
     label: "Portafolio",
@@ -25,7 +26,7 @@ const areas = [
     label: "Operación",
     caption: "Lo que sucede hoy",
     icon: HiWrenchScrewdriver,
-    summary: "Rentas, contratos y atención cotidiana en un solo flujo.",
+    summary: "Comunidades, cuotas y atención cotidiana en un solo flujo.",
     items: [
       ["Comunidades", "Condominios, privadas, plazas, complejos de cabañas y hoteles", "/properties/comunidades", "properties.properties.read"],
       ["Cuotas y adeudos", "Cargos, pagos y saldos por unidad", "/properties/comunidades/operacion?module=charges", "properties.properties.read"],
@@ -35,7 +36,7 @@ const areas = [
       ["Comité y votaciones", "Acuerdos, aprobaciones y participación", "/properties/comunidades/operacion?module=committee", "properties.properties.read"],
       ["Reportes de comunidad", "Cobranza, actividad y gobernanza", "/properties/comunidades/operacion?module=reports", "properties.properties.read"],
       ["Estatus de unidades", "Disponibilidad de casas, departamentos y espacios", "/properties/unidades?view=board", "properties.units.read"],
-      ["Monitoreo por unidad", "Habitantes, adeudos, servicios y movimientos en una matriz", "/properties/monitoreo", "properties.units.read"],
+      ["Unidades y residentes", "Quién vive, quién paga y saldo de cada unidad", "/properties/comunidades?tab=units", "properties.units.read"],
       ["Contratos", "Vigencias, renovaciones e historial", "/properties/modulos/contratos"],
       ["Rentas", "Prospectos, contratos, cobranza, renovaciones e inspecciones", "/properties/rentas", "properties.rent.read"],
       ["Hospedaje", "Reservaciones, huéspedes, check-in, limpieza, tarifas y cobros", "/properties/rentas/hospedaje", "properties.rent.read"],
@@ -63,16 +64,26 @@ const areas = [
     icon: HiChatBubbleLeftRight,
     summary: "Cada conversación y experiencia, sin perder contexto.",
     items: [
-      ["Accesos, visitas y paquetería", "Pases, entradas, salidas y entregas para caseta", "/properties/accesos"],
+      ...(PROPERTIES_MVP_SCOPE.later
+        ? [["Accesos, visitas y paquetería", "Pases, entradas, salidas y entregas para caseta", "/properties/accesos"]]
+        : [["Recepción y paquetería", "Paquetes recibidos y entregas a residentes", "/properties/accesos"]]),
       ["Red de servicio", "Equipo, proveedores y carga operativa", "/properties/responsables"],
       ["Mensajes", "Conversaciones de toda la operación", "/properties/modulos/mensajes"],
       ["Notificaciones", "Alertas que requieren atención", "/properties/modulos/notificaciones"],
       ["Portal del inquilino", "Pagos, solicitudes y documentos", "/portal-inquilino"],
-      ["Portal comunidad", "Cuotas, avisos, amenidades, visitas y votaciones", "/portal-comunidad", "properties.read"],
+      // El administrador no entra al portal (pide la cuenta del residente): desde
+      // aquí invita residentes y decide qué unidades ven, en el directorio.
+      ["Invitaciones al portal", "Invita residentes y define qué unidades ven", "/properties/comunidades?tab=directory", "properties.read"],
       ["Portal del propietario", "Rendimiento, contratos y reportes", "/properties/modulos/portal-propietario"],
     ],
   },
 ];
+
+// Las áreas fuera del MVP (ver mvpScope) se quitan del menú; un área que se
+// queda sin accesos, como Comercial, desaparece completa.
+const areas = allAreas
+  .map((area) => ({ ...area, items: area.items.filter(([, , to]) => isPathInScope(to)) }))
+  .filter((area) => area.items.length);
 
 const areaKeys = new Set(areas.map((area) => area.key));
 
