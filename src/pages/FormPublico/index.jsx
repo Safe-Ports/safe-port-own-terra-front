@@ -65,7 +65,7 @@ function FormPublico() {
         ) : (
           <img
             className="fp-logo"
-            src="/ownterra ecosistem.png"
+            src="/brand/ownterra-mark-color.svg"
             alt="OwnTerra"
             onError={(e) => { e.currentTarget.style.display = "none"; }}
           />

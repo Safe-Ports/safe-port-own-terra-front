@@ -20,16 +20,19 @@ const TYPE_LABEL   = { sale: "Compraventa", rent: "Arrendamiento", reserve: "Res
 const STATUS_LABEL = { active: "Activo", paid: "Pagado", cancelled: "Cancelado", default: "Mora" };
 
 /* ── Logotipo oficial de OwnTerra Lands ──────────────────────── */
+/* El logo es vertical: `width` sigue siendo el ancho del hueco que le dan
+   los reportes, pero se dimensiona por alto para no crecer hacia abajo. */
 function OwnTerraLogo({ width = 142, className = "" }) {
   return (
     <img
-      src="/ownterra_land.png"
+      src="/brand/lands-logo-color.svg"
       alt="OwnTerra Lands"
       className={className}
       style={{
         display: "block",
-        width,
-        height: "auto",
+        width: "auto",
+        height: Math.round(width * 0.62),
+        maxWidth: width,
         objectFit: "contain",
         mixBlendMode: "multiply",
         flexShrink: 0,

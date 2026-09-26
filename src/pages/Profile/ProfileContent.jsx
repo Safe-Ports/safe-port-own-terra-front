@@ -34,9 +34,9 @@ const LISTED_APPS = APP_CATALOG.filter((a) => a.vertical);
 // Los logos van como <img> y no por el sprite (#eco-g-…): el sprite lo monta
 // EcoLayout, así que en la shell de Lands no existiría y el hueco quedaría vacío.
 const APP_LOGO = {
-  lands: "/icons/app-lands.png",
-  homes: "/icons/app-construction.png",
-  neighb: "/icons/app-properties.png",
+  lands: "/brand/lands-mark-color.svg",
+  homes: "/brand/construction-mark-color.svg",
+  neighb: "/brand/properties-mark-color.svg",
   finanzas: "/icons/app-finanzas.png",
 };
 

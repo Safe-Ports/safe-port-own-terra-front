@@ -47,7 +47,7 @@ function Logo({ onClick }) {
         title="Volver al Ecosistema"
         onClick={onClick}
       >
-        <img src="/icons/app-lands.png" alt="OwnTerra Lands" />
+        <img src="/brand/lands-mark-color.svg" alt="OwnTerra Lands" />
       </NavLink>
     </div>
   );

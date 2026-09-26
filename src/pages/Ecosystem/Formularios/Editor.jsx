@@ -76,7 +76,7 @@ function Preview({ name, description, fields, logoUrl }) {
       {logoUrl ? (
         <img src={logoUrl} alt="Logo" style={{ height: 44, maxWidth: 160, objectFit: "contain", marginBottom: 16, borderRadius: 8 }} />
       ) : (
-        <img src="/ownterra ecosistem.png" alt="OwnTerra" style={{ height: 36, maxWidth: 140, objectFit: "contain", marginBottom: 16, opacity: .55 }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
+        <img src="/brand/ownterra-mark-color.svg" alt="OwnTerra" style={{ height: 36, maxWidth: 140, objectFit: "contain", marginBottom: 16, opacity: .55 }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
       )}
       <div className="fom-prev-name">
         {name || <span style={{ color: "var(--text3)", fontStyle: "italic" }}>Nombre del formulario</span>}

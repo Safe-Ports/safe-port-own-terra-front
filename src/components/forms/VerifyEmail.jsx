@@ -33,7 +33,7 @@ function VerifyEmail() {
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#EEF1F1", fontFamily: "var(--font-body)" }}>
       <div style={{ background: "#fff", borderRadius: 18, padding: "40px 44px", maxWidth: 420, textAlign: "center", boxShadow: "0 8px 30px rgba(30,61,43,0.08)" }}>
-        <img src="/ownterra ecosistem.png" alt="OwnTerra Ecosistem" style={{ width: 180, maxWidth: "100%", height: "auto", margin: "0 auto 28px", display: "block", borderRadius: 10 }} />
+        <img src="/brand/ownterra-logo-color.svg" alt="OwnTerra" style={{ width: 120, maxWidth: "100%", height: "auto", margin: "0 auto 28px", display: "block" }} />
 
         {state === "verifying" ? (
           <>
