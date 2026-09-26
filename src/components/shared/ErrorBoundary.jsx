@@ -58,6 +58,12 @@ class ErrorBoundary extends Component {
           <div style={styles.title}>⚠ Algo se rompió en la pantalla</div>
           <p style={styles.msg}>{meta.message}</p>
           <p style={styles.action}>{meta.action}</p>
+          {/* Sólo en local: el detalle técnico ahorra abrir la consola para diagnosticar. */}
+          {import.meta.env.DEV && this.state.error ? (
+            <pre style={styles.detail}>
+              {String(this.state.error?.stack || this.state.error?.message || this.state.error)}
+            </pre>
+          ) : null}
           <div style={styles.meta}>
             <code style={styles.code}>
               {meta.code}{this.state.requestId ? ` · ${this.state.requestId}` : ""}
@@ -104,6 +110,18 @@ const styles = {
     gap: 10,
     paddingTop: 12,
     borderTop: "1px solid rgba(233,229,219,0.12)",
+  },
+  detail: {
+    maxHeight: 180,
+    overflow: "auto",
+    margin: "0 0 14px",
+    padding: 10,
+    borderRadius: 8,
+    background: "rgba(0,0,0,0.35)",
+    color: "#F0B8A8",
+    fontSize: "0.7rem",
+    whiteSpace: "pre-wrap",
+    wordBreak: "break-word",
   },
   code: { fontSize: "0.74rem", fontFamily: "var(--font-body)", color: "#B7AE9E" },
   copy: {
