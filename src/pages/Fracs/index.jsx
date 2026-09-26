@@ -26,13 +26,17 @@ const LOT_COLORS = {
   sold: { label: "Vendido", className: "sold", color: "#C0392B" },
 };
 
-const SERVICES = [
+// Especificaciones booleanas de lote — incluye lo que antes era "servicios"
+// (agua, luz, …): ya no es un sistema aparte, es el mismo catálogo.
+const ESPECIFICACIONES_CHIPS = [
   { k: "agua", lbl: "Agua potable" },
   { k: "luz", lbl: "Energia electrica" },
   { k: "drenaje", lbl: "Drenaje" },
   { k: "gas", lbl: "Gas natural" },
   { k: "internet", lbl: "Internet/Fibra" },
   { k: "pavimento", lbl: "Pavimento" },
+  { k: "esquina", lbl: "Lote de esquina" },
+  { k: "bardeado", lbl: "Bardeado" },
 ];
 
 const LOT_CODE_COLLATOR = new Intl.Collator("es-MX", { numeric: true, sensitivity: "base" });
@@ -109,6 +113,25 @@ function SpecRow({ label, value, unit, money }) {
         <span className={`lotp-spec-v${money ? " money" : ""}`}>{value}</span>
         <span className="lotp-spec-u">{unit || ""}</span>
       </span>
+    </div>
+  );
+}
+
+/**
+ * Grilla de 2 columnas para especificaciones sí/no: mismo lenguaje visual que
+ * Ficha técnica (tarjeta con borde, fila con separador) pero en 2 columnas —
+ * la mitad de alto para la misma cantidad de datos, así un catálogo que crezca
+ * no empuja el resto de la ficha hacia abajo tan rápido.
+ */
+function SpecGrid2Bool({ items }) {
+  return (
+    <div className="lotp-grid2">
+      {items.map(({ key, label, on }) => (
+        <div className="lotp-grid2-cell" key={key}>
+          <span className="lotp-spec-k">{label}</span>
+          <span className={`lotp-spec-bool${on ? " on" : ""}`}>{on ? "Sí" : "No"}</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -469,7 +492,8 @@ function FracsPage() {
           priceFinanciado: lot.price_financiado ?? "",
           frente: lot.frente_ml ?? "",
           fondo: lot.fondo_ml ?? "",
-          servicios: JSON.stringify(lot.services || {}),
+          orientacion: lot.orientacion ?? "",
+          especificaciones: JSON.stringify(lot.especificaciones || {}),
         },
         code: lot.code,
         status: lot.status || "available",
@@ -478,7 +502,8 @@ function FracsPage() {
         priceFinanciado: lot.price_financiado ?? "",
         frente: lot.frente_ml ?? "",
         fondo: lot.fondo_ml ?? "",
-        servicios: lot.services || {},
+        orientacion: lot.orientacion ?? "",
+        especificaciones: lot.especificaciones || {},
       });
     });
     setDraftProject({
@@ -1029,6 +1054,9 @@ function FracsPage() {
                     <SpecRow label="Superficie" value={measure(selectedLot.area_m2)} unit="m²" />
                     <SpecRow label="Frente" value={measure(selectedLot.frente_ml)} unit="ml" />
                     <SpecRow label="Fondo" value={measure(selectedLot.fondo_ml)} unit="ml" />
+                    {selectedLot.orientacion ? (
+                      <SpecRow label="Orientacion" value={selectedLot.orientacion} />
+                    ) : null}
                     {selectedLot.price_contado ? (
                       <SpecRow label="Precio de contado" value={currency(selectedLot.price_contado)} money />
                     ) : null}
@@ -1039,15 +1067,14 @@ function FracsPage() {
                 </div>
 
                 <div className="lotp-sec">
-                  <div className="lotp-sh"><b>Servicios</b></div>
-                  <div className="lotp-svc">
-                    {SERVICES.map((service) => {
-                      const on = !!(selectedLot.services?.[service.k]);
-                      return (
-                        <span key={service.k} className={`lotp-chip${on ? " on" : ""}`}>{service.lbl}</span>
-                      );
-                    })}
-                  </div>
+                  <div className="lotp-sh"><b>Especificaciones</b></div>
+                  <SpecGrid2Bool
+                    items={ESPECIFICACIONES_CHIPS.map((esp) => ({
+                      key: esp.k,
+                      label: esp.lbl,
+                      on: selectedLot.especificaciones?.[esp.k] === "true",
+                    }))}
+                  />
                 </div>
 
                 {apptData.length ? (

@@ -197,12 +197,11 @@
   background:linear-gradient(160deg,rgba(255,255,255,.28),transparent 55%)}
 /* Los logos son marca a todo color (no line-art blanco): el tile pasa a
    neutro claro para que se lean con su propio color en vez de competir con un
-   fondo de gradiente. */
+   fondo de gradiente verde. */
 .eco-root .ic-lands     {background:linear-gradient(150deg,#ffffff,#eef2ea);--shadow:rgba(78,123,67,.25);}
-.eco-root .ic-neighb    {background:linear-gradient(150deg,#ffffff,#eef2ea);--shadow:rgba(30,61,43,.25);}
+.eco-root .ic-neighb    {background:linear-gradient(150deg,#ffffff,#eef2ea);--shadow:rgba(7,57,60,.25);}
 .eco-root .ic-properties{background:linear-gradient(150deg,#ffffff,#eef2ea);--shadow:rgba(10,61,98,.25);}
 .eco-root .ic-homes     {background:linear-gradient(150deg,#ffffff,#eef2ea);--shadow:rgba(72,169,166,.25);}
-.eco-root .ic-finanzas  {background:linear-gradient(150deg,#ffffff,#eaf0f7);--shadow:rgba(64,105,153,.25);}
 
 .properties-logo{display:inline-flex;align-items:center;gap:9px;color:inherit}.properties-logo img{width:42px;height:42px;flex:none;object-fit:contain}.properties-logo>span{display:grid;line-height:1}.properties-logo strong{font-size:17px;letter-spacing:.04em}.properties-logo strong span{font-weight:400}.properties-logo small{margin-top:5px;font-size:7px;font-weight:800;letter-spacing:.28em}.properties-logo.is-compact{display:grid}
 
@@ -1529,3 +1528,56 @@
 .focus-rail-nav button>i{width:auto;min-width:15px;padding:0 4px}.focus-rail-nav button>i.danger{background:#E4745F;color:#fff}.focus-rail-nav button.active>i{background:#0A3D62;color:#fff}
 /* Con más accesos, en pantallas bajas la lista hace scroll en vez de recortarse. */
 .properties-focus-rail .focus-rail-nav{min-height:0;overflow-x:hidden;overflow-y:auto;scrollbar-width:none;align-content:start;margin:16px 0}.properties-focus-rail .focus-rail-nav::-webkit-scrollbar{display:none}
+
+/* ── Foto de fondo por aplicación ─────────────────────────────────────────
+   Cada card del lanzador Core trae su `--foto` desde el JSX, igual que ya traía
+   su `--tone`. La foto ocupa la franja de arriba y se corta antes del texto:
+   las tres imágenes tienen detalle fuerte abajo —la obra sobre todo— y dejar
+   ahí el nombre y la descripción los volvía ilegibles.
+
+   El velo oscuro va SOLO en la parte alta, donde se apoyan el badge de estado y
+   el icono. Un primer intento lo repartió por toda la franja y dejó las fotos
+   lavadas, pareciendo una mancha en vez de una imagen; y el badge "Activo",
+   que es verde sobre verde, desaparecía contra el follaje.
+   Va en ::before porque ::after ya lo usa el halo del hover.
+   ──────────────────────────────────────────────────────────────────────── */
+.eco-root .app-launcher:not(.vertical-launcher) .app-card{ padding-top:0 }
+.eco-root .app-launcher:not(.vertical-launcher) .app-card::before{
+  content:''; position:absolute; top:0; left:0; right:0; height:188px;
+  background-image:
+    linear-gradient(to bottom,
+      rgba(8,24,18,.55) 0%,
+      rgba(8,24,18,.16) 30%,
+      rgba(8,24,18,0)   52%,
+      color-mix(in srgb, var(--surface) 55%, transparent) 80%,
+      var(--surface) 100%),
+    var(--foto, none);
+  background-size: cover, cover;
+  background-position: center, center 42%;
+  pointer-events:none;
+}
+.eco-root .app-launcher:not(.vertical-launcher) .app-card > *{ position:relative; z-index:1 }
+.eco-root .app-launcher:not(.vertical-launcher) .app-top{ padding:20px 24px 0 }
+.eco-root .app-launcher:not(.vertical-launcher) .app-name,
+.eco-root .app-launcher:not(.vertical-launcher) .app-handle,
+.eco-root .app-launcher:not(.vertical-launcher) .app-desc,
+.eco-root .app-launcher:not(.vertical-launcher) .app-tags,
+.eco-root .app-launcher:not(.vertical-launcher) .app-cta{ padding-left:24px; padding-right:24px }
+.eco-root .app-launcher:not(.vertical-launcher) .app-cta{ padding-bottom:24px }
+
+/* El badge se apoya sobre la foto: necesita fondo propio, no un tinte translúcido
+   que dependa de lo que haya detrás. */
+.eco-root .app-launcher:not(.vertical-launcher) .app-status{
+  backdrop-filter:blur(6px); border-color:transparent; color:#fff;
+  text-shadow:0 1px 2px rgba(0,0,0,.35);
+}
+.eco-root .app-launcher:not(.vertical-launcher) .st-active{ background:rgba(21,92,66,.82) }
+.eco-root .app-launcher:not(.vertical-launcher) .st-soon{ background:rgba(24,36,30,.62) }
+
+/* El icono se recorta contra la imagen con su propia sombra. */
+.eco-root .app-launcher:not(.vertical-launcher) .app-icon{
+  box-shadow:0 12px 30px rgba(6,28,20,.34);
+}
+/* Deshabilitada: la foto acompaña el estado en vez de pelearse con él. */
+.eco-root .app-card.is-disabled::before{ filter:saturate(.7); opacity:.85 }
+@media (prefers-reduced-motion: reduce){ .eco-root .app-card{ animation:none } }

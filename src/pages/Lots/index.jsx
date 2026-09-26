@@ -331,7 +331,8 @@ function LotsPage() {
             priceFinanciado: lot.price_financiado ?? "",
             frente:          lot.frente_ml ?? "",
             fondo:           lot.fondo_ml ?? "",
-            servicios:       JSON.stringify(lot.services || {}),
+            orientacion:     lot.orientacion ?? "",
+            especificaciones: JSON.stringify(lot.especificaciones || {}),
           },
           code:            lot.code,
           status:          lot.status || "available",
@@ -340,7 +341,8 @@ function LotsPage() {
           priceFinanciado: lot.price_financiado ?? "",
           frente:          lot.frente_ml ?? "",
           fondo:           lot.fondo_ml ?? "",
-          servicios:       lot.services || {},
+          orientacion:     lot.orientacion ?? "",
+          especificaciones: lot.especificaciones || {},
         });
       });
       setDraftProject({
@@ -419,7 +421,8 @@ function LotsPage() {
             priceFinanciado: lot.price_financiado ?? "",
             frente:          lot.frente_ml ?? "",
             fondo:           lot.fondo_ml ?? "",
-            servicios:       JSON.stringify(lot.services || {}),
+            orientacion:     lot.orientacion ?? "",
+            especificaciones: JSON.stringify(lot.especificaciones || {}),
           },
           code:            lot.code,
           status:          lot.status || "available",
@@ -428,7 +431,8 @@ function LotsPage() {
           priceFinanciado: lot.price_financiado ?? "",
           frente:          lot.frente_ml ?? "",
           fondo:           lot.fondo_ml ?? "",
-          servicios:       lot.services || {},
+          orientacion:     lot.orientacion ?? "",
+          especificaciones: lot.especificaciones || {},
         });
       });
 
@@ -469,9 +473,13 @@ function LotsPage() {
       ...lot,
       frente: lot.frente ?? "",
       fondo: lot.fondo ?? "",
+      orientacion: lot.orientacion ?? "",
       priceFinanciado: lot.priceFinanciado ?? "",
       vendedor: lot.vendedor ?? "",
-      servicios: lot.servicios ?? { agua: false, luz: false, drenaje: false, gas: false, internet: false, pavimento: false }
+      especificaciones: lot.especificaciones ?? {
+        agua: false, luz: false, drenaje: false, gas: false, internet: false, pavimento: false,
+        esquina: false, bardeado: false,
+      },
     });
   };
 
@@ -923,14 +931,23 @@ function LotsPage() {
       {lotEditDraft && (() => {
         const d = lotEditDraft;
         const setField = (key, val) => setLotEditDraft((prev) => ({ ...prev, [key]: val }));
-        const setService = (key, val) => setLotEditDraft((prev) => ({ ...prev, servicios: { ...prev.servicios, [key]: val } }));
-        const SERVICES = [
-          { key: "agua",      label: "Agua potable"      },
-          { key: "luz",       label: "Energia electrica" },
-          { key: "drenaje",   label: "Drenaje"           },
-          { key: "gas",       label: "Gas natural"       },
-          { key: "internet",  label: "Internet / Fibra"  },
-          { key: "pavimento", label: "Pavimento"         },
+        const setEspecificacion = (key, val) => setLotEditDraft((prev) => ({ ...prev, especificaciones: { ...prev.especificaciones, [key]: val } }));
+        // Mismas claves que sembró la migración de especificaciones_catalogo en
+        // lands-back — es un catalogo global (tambien tiene recamaras/banos/
+        // alberca para casa/depa), pero el front no lo consulta por API, asi que
+        // se hardcodea solo el subset con aplica_a=['lot']. "Servicios" ya no es
+        // un sistema aparte: agua/luz/etc son especificaciones booleanas mas.
+        // Todas booleanas: uso_suelo se quitó y orientacion es dimensional (ver
+        // el campo en "Medidas" mas abajo, no vive en especificaciones).
+        const ESPECIFICACIONES_BOOL = [
+          { key: "agua",      label: "Agua potable"       },
+          { key: "luz",       label: "Energia electrica"  },
+          { key: "drenaje",   label: "Drenaje"            },
+          { key: "gas",       label: "Gas natural"        },
+          { key: "internet",  label: "Internet / Fibra"   },
+          { key: "pavimento", label: "Pavimento"          },
+          { key: "esquina",   label: "Lote de esquina"    },
+          { key: "bardeado",  label: "Bardeado / cercado" },
         ];
         return (
           <div className="lot-edit-overlay" onClick={() => setLotEditDraft(null)}>
@@ -1023,6 +1040,10 @@ function LotsPage() {
                       <input type="number" className="lot-edit-input" value={d[key]} onChange={(e) => setField(key, Number(e.target.value))} />
                     </div>
                   ))}
+                  <div className="lot-edit-field">
+                    <label className="lot-edit-lbl">Orientacion</label>
+                    <input type="text" className="lot-edit-input" value={d.orientacion ?? ""} onChange={(e) => setField("orientacion", e.target.value)} />
+                  </div>
                 </div>
 
                 {/* Financiero */}
@@ -1045,15 +1066,15 @@ function LotsPage() {
                   <input className="lot-edit-input" placeholder="Nombre del vendedor" value={d.vendedor} onChange={(e) => setField("vendedor", e.target.value)} />
                 </div>
 
-                {/* Servicios */}
-                <div className="lot-edit-sec">Servicios disponibles</div>
+                {/* Especificaciones (incluye lo que antes era "servicios") */}
+                <div className="lot-edit-sec">Especificaciones</div>
                 <div className="lot-edit-services">
-                  {SERVICES.map(({ key, label }) => {
-                    const on = !!d.servicios[key];
+                  {ESPECIFICACIONES_BOOL.map(({ key, label }) => {
+                    const on = d.especificaciones?.[key] === "true" || d.especificaciones?.[key] === true;
                     return (
                       <label key={key} className="lot-edit-service">
                         <span>{label}</span>
-                        <input type="checkbox" checked={on} onChange={(e) => setService(key, e.target.checked)} />
+                        <input type="checkbox" checked={on} onChange={(e) => setEspecificacion(key, e.target.checked)} />
                         <span className={`lot-edit-toggle${on ? " on" : ""}`} />
                       </label>
                     );

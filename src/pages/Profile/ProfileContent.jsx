@@ -37,7 +37,6 @@ const APP_LOGO = {
   lands: "/brand/lands-mark-color.svg",
   homes: "/brand/construction-mark-color.svg",
   neighb: "/brand/properties-mark-color.svg",
-  finanzas: "/icons/app-finanzas.png",
 };
 
 // Paleta para el color personal. Es el que identifica al usuario en la agenda y

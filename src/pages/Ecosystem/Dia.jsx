@@ -14,7 +14,7 @@ import { useLandsOverdue, LandsAlertStrip } from "./verticals/LandsMiDia";
 const TOUR_STEPS = [
   {
     title: "Bienvenido al Ecosistema OwnTerra",
-    text: "Este es tu hub central. Desde aquí controlas todas las aplicaciones, tu agenda, documentos y finanzas en un solo lugar. El menú lateral izquierdo es tu punto de partida para navegar.",
+    text: "Este es tu hub central. Desde aquí controlas todas las aplicaciones, tu agenda y tus documentos en un solo lugar. El menú lateral izquierdo es tu punto de partida para navegar.",
   },
   {
     title: "☀️ Mi Día",
@@ -30,7 +30,7 @@ const TOUR_STEPS = [
   },
   {
     title: "📊 Apps",
-    text: "El lanzador de aplicaciones del ecosistema — OwnTerra Lands, Finanzas y las que se vayan sumando.",
+    text: "El lanzador de aplicaciones del ecosistema — OwnTerra Lands y las que se vayan sumando.",
   },
   {
     title: "🔒 OwnTerra Vault",
@@ -43,10 +43,6 @@ const TOUR_STEPS = [
   {
     title: "🛡️ Equipo",
     text: "Gestiona los usuarios de tu organización: roles, permisos y acceso por aplicación. Solo los administradores pueden modificar esta sección.",
-  },
-  {
-    title: "💹 Estados Financieros",
-    text: "Resumen de ingresos, gastos y flujo de caja de tu operación. Registra egresos y consulta el estado económico en tiempo real.",
   },
   {
     title: "🏡 OwnTerra Lands",

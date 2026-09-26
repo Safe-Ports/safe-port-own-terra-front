@@ -1,6 +1,6 @@
 function cleanMessage(value) {
   if (typeof value !== "string") return "";
-  return value.trim();
+  return value.trim().replace(/^Value error,\s*/i, "");
 }
 
 function firstString(...values) {
@@ -21,13 +21,13 @@ export function getFieldErrors(error, fieldMap = {}) {
   // que NO son errores de campo — tratarlos como tales pintaba campos con un UUID
   // y ocultaba el mensaje real. Fuera de 422 devolvemos null para que el caller
   // muestre el mensaje del backend con showError.
-  const status = error?.response?.status ?? error?.status ?? null;
+  const status = error?.response?.status ?? error?.status ?? error?.httpStatus ?? null;
   if (status !== 422) return null;
 
   const data = getApiErrorData(error);
   // El backend homologado manda los errores de campo en data.error.details (envelope OT-).
   // Se mantiene data.detail y data.errors como fallback para respuestas sin envelope.
-  const candidates = [data?.error?.details, data?.detail, data?.errors].filter(Boolean);
+  const candidates = [data?.error?.details, data?.detail, data?.errors, error?.details].filter(Boolean);
   const fieldErrors = {};
 
   candidates.forEach((candidate) => {

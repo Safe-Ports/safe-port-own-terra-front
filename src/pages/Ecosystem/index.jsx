@@ -17,10 +17,6 @@ function EcosystemHub() {
     ? navigate("/properties")
     : showToast("Tu usuario no tiene acceso a OwnTerra Properties", "warning");
 
-  const openFinanzas = () => canAccessApp("finanzas")
-    ? navigate("/finanzas")
-    : showToast("Tu usuario no tiene acceso a Finanzas", "warning");
-
   const openVault = () => canUseFeature("core.vault")
     ? navigate("/ecosistema/documentos")
     : showToast("Tu usuario no tiene acceso a OwnTerra Vault", "warning");
@@ -43,7 +39,7 @@ function EcosystemHub() {
       <p className="gallery-section-sub">Los productos principales del ecosistema</p>
       <div className="app-launcher" data-tour="apps">
 
-        <div className={`app-card ${!canAccessApp("lands") ? "is-disabled" : ""}`} style={{ "--tone": "#6FAF6B" }} onClick={openLands} role="button" tabIndex={0}
+        <div className={`app-card ${!canAccessApp("lands") ? "is-disabled" : ""}`} style={{ "--tone": "#6FAF6B", "--foto": "url(/apps/lands.jpg)" }} onClick={openLands} role="button" tabIndex={0}
           onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && openLands()}>
           <div className="app-top">
             <div className="app-icon ic-lands"><svg><use href="#eco-g-lands" /></svg></div>
@@ -59,7 +55,7 @@ function EcosystemHub() {
           </div>
         </div>
 
-        <div className={`app-card ${!canAccessApp("properties") ? "is-disabled" : ""}`} style={{ "--tone": "#355E3B", "--glow": "rgba(84,124,145,.14)" }} onClick={openProperties} role="button" tabIndex={0}
+        <div className={`app-card ${!canAccessApp("properties") ? "is-disabled" : ""}`} style={{ "--tone": "#355E3B", "--foto": "url(/apps/properties.jpg)" }} onClick={openProperties} role="button" tabIndex={0}
           onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && openProperties()}>
           <div className="app-top">
             <div className="app-icon ic-properties"><svg><use href="#eco-g-neighb" /></svg></div>
@@ -75,7 +71,7 @@ function EcosystemHub() {
           </div>
         </div>
 
-        <div className="app-card is-disabled" style={{ "--tone": "#A7CBA1", userSelect: "none" }} aria-disabled="true" tabIndex={-1}>
+        <div className="app-card is-disabled" style={{ "--tone": "#A7CBA1", "--foto": "url(/apps/construction.jpg)", userSelect: "none" }} aria-disabled="true" tabIndex={-1}>
           <div className="app-top">
             <div className="app-icon ic-homes"><svg><use href="#eco-g-homes" /></svg></div>
             <span className="app-status st-soon">Próximamente</span>
@@ -98,20 +94,6 @@ function EcosystemHub() {
       </div>
       <p className="gallery-section-sub">Servicios compartidos por Lands, Properties y Construction</p>
       <div className="app-launcher vertical-launcher" data-tour="apps-verticales">
-
-        <div className={`app-card ${!canAccessApp("finanzas") ? "is-disabled" : ""}`} data-tour="app-finanzas" onClick={openFinanzas} role="button" tabIndex={0}
-          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && openFinanzas()}>
-          <div className="app-top">
-            <div className="app-icon ic-finanzas"><svg><use href="#eco-g-finanzas" /></svg></div>
-            <span className="app-status st-active">Activo</span>
-          </div>
-          <div className="app-name">Finanzas</div>
-          <div className="app-desc">Ingresos, egresos, cobranza y utilidad neta consolidados para todo el ecosistema.</div>
-          <div className="app-cta">
-            <span className={`app-open ${!canAccessApp("finanzas") ? "disabled" : ""}`}>{canAccessApp("finanzas") ? "Abrir" : "Sin acceso"}</span>
-            <span className={`app-arrow ${!canAccessApp("finanzas") ? "disabled" : ""}`}>→</span>
-          </div>
-        </div>
 
         <div className="app-card" data-tour="app-agenda" onClick={() => navigate("/ecosistema/agenda")} role="button" tabIndex={0}
           onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && navigate("/ecosistema/agenda")}>
@@ -191,10 +173,11 @@ function EcosystemHub() {
         title="Hub de aplicaciones"
         subtitle="Todas las apps del ecosistema, en un solo lugar."
         steps={[
-          { title: "Aplicaciones Core", text: "Los tres productos principales del ecosistema son OwnTerra Lands, Properties y Construction." },
+          { title: "Aplicaciones Core", text: "Los tres productos principales del ecosistema. OwnTerra Lands y Properties están activos; Construction está en desarrollo (próximamente)." },
           { title: "Ingresar a Lands", text: "Haz clic en la tarjeta de OwnTerra Lands para acceder al módulo de gestión de lotes, clientes y cobranza de fraccionamientos." },
-          { title: "Ingresar a Properties", text: "Haz clic en OwnTerra Properties para elegir entre condominios, rentas y venta de inmuebles desde un mismo portafolio." },
-          { title: "Herramientas compartidas", text: "Finanzas, Calendario, Mi Día, Formularios, Proveedores y OwnTerra Vault sirven transversalmente a las tres aplicaciones." },
+          { title: "Ingresar a Properties", text: "Haz clic en OwnTerra Properties para administrar tus comunidades: unidades, residentes, cuotas, avisos y amenidades." },
+          { title: "Herramientas compartidas", text: "Calendario, Mi Día, Formularios, Proveedores y OwnTerra Vault sirven a todas las aplicaciones." },
+          { title: "Ingresar a una app", text: "Haz clic en cualquier tarjeta activa para entrar. Las que aún no tienes asignadas se marcan como \"Sin acceso\" — pídele a un administrador que te las habilite en Equipo." },
         ]}
       />
     </EcoLayout>

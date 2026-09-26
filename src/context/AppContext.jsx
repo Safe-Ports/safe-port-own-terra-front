@@ -859,6 +859,26 @@ export function AppProvider({ children }) {
     }
   };
 
+  // Convierte el borrador de especificaciones (mezcla de string venido del backend
+  // y boolean/string recién tecleado en el editor) al dict que espera la API:
+  // solo valores presentes, todos como string. Incluye lo que antes era
+  // "servicios" (agua, luz, …): ya no es un campo aparte, son especificaciones
+  // booleanas más. Un booleano en false (checkbox destildado) se OMITE a
+  // propósito — ausencia == no aplica, y así unit_especificaciones borra la
+  // fila al sincronizar.
+  const buildEspecificacionesPayload = (esp) => {
+    if (!esp) return {};
+    const out = {};
+    for (const [key, v] of Object.entries(esp)) {
+      if (typeof v === "boolean") {
+        if (v) out[key] = "true";
+      } else if (v !== "" && v != null) {
+        out[key] = String(v);
+      }
+    }
+    return out;
+  };
+
   const saveEditedFrac = async ({ name, sections, mapUrl, _editingFracId }) => {
     if (!_editingFracId) return;
     try {
@@ -888,10 +908,11 @@ export function AppProvider({ children }) {
             if (String(lot.area ?? "")            !== String(orig.area ?? "")            && lot.area          != null && lot.area          !== "") body.area_m2          = Number(lot.area);
             if (String(lot.frente ?? "")           !== String(orig.frente ?? "")          && lot.frente        != null && lot.frente        !== "") body.frente_ml        = Number(lot.frente);
             if (String(lot.fondo ?? "")            !== String(orig.fondo ?? "")           && lot.fondo         != null && lot.fondo         !== "") body.fondo_ml         = Number(lot.fondo);
+            if (String(lot.orientacion ?? "")      !== String(orig.orientacion ?? "")      && lot.orientacion   != null && lot.orientacion   !== "") body.orientacion      = lot.orientacion;
             if (String(lot.price ?? "")            !== String(orig.price ?? "")           && lot.price         != null && lot.price         !== "") body.price_contado    = Number(lot.price);
             if (String(lot.priceFinanciado ?? "")  !== String(orig.priceFinanciado ?? "") && lot.priceFinanciado != null && lot.priceFinanciado !== "") body.price_financiado = Number(lot.priceFinanciado);
-            if (lot.servicios && JSON.stringify(lot.servicios) !== (orig.servicios ?? "{}")) {
-              body.services = Object.fromEntries(Object.entries(lot.servicios).filter(([, v]) => v));
+            if (lot.especificaciones && JSON.stringify(lot.especificaciones) !== (orig.especificaciones ?? "{}")) {
+              body.especificaciones = buildEspecificacionesPayload(lot.especificaciones);
             }
             return Object.keys(body).length > 0 ? { id: lot._backendId, body } : null;
           })
@@ -909,11 +930,10 @@ export function AppProvider({ children }) {
               area_m2: lot.area !== "" && lot.area != null ? Number(lot.area) : null,
               frente_ml: lot.frente !== "" && lot.frente != null ? Number(lot.frente) : null,
               fondo_ml: lot.fondo !== "" && lot.fondo != null ? Number(lot.fondo) : null,
+              orientacion: lot.orientacion || null,
               price_contado: lot.price !== "" && lot.price != null ? Number(lot.price) : null,
               price_financiado: lot.priceFinanciado !== "" && lot.priceFinanciado != null ? Number(lot.priceFinanciado) : null,
-              services: lot.servicios
-                ? Object.fromEntries(Object.entries(lot.servicios).filter(([, value]) => value))
-                : {},
+              especificaciones: buildEspecificacionesPayload(lot.especificaciones),
             },
           }))
       );

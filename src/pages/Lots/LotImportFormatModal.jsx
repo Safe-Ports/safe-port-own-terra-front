@@ -119,7 +119,7 @@ export default function LotImportFormatModal({ open, onClose }) {
     medidas: false,
     precios: false,
     estados: false,
-    servicios: false,
+    especificaciones: false,
     ejemplo: false,
   });
   useEscapeKey(onClose, open);
@@ -218,6 +218,7 @@ export default function LotImportFormatModal({ open, onClose }) {
                 ["Superficie (m2)", "m²", <><Check /> 120 / 120.5</>, <><Cross /> "120 m2"</>],
                 ["Frente (ML)", "metros lineales", <><Check /> 8 / 8.5</>, <><Cross /> "8ml"</>],
                 ["Fondo (ML)", "metros lineales", <><Check /> 15</>, <><Cross /> "quince"</>],
+                ["Orientación", "texto libre", <><Check /> Norte / Sur / Oriente / Poniente</>, "—"],
               ]}
             />
             <Note>Deja la celda vacía si no tienes el dato. No pongas cero (0) a menos que sea el valor real.</Note>
@@ -262,10 +263,10 @@ export default function LotImportFormatModal({ open, onClose }) {
             </Note>
           </Section>
 
-          {/* ── 6. Servicios ────────────────────────────────────────────── */}
-          <Section id="servicios" title="Servicios disponibles" type="optional" open={sections.servicios} onToggle={toggle}>
+          {/* ── 6. Especificaciones ─────────────────────────────────────── */}
+          <Section id="especificaciones" title="Especificaciones de lote" type="optional" open={sections.especificaciones} onToggle={toggle}>
             <p style={{ fontSize: "0.8rem", color: "#43453F", marginBottom: 10 }}>
-              Agrega una columna por cada servicio. Para indicar que el lote <em>sí</em> tiene el servicio usa alguno de los valores válidos.
+              Servicios disponibles y otros atributos sí/no de un terreno (no de una construcción — recámaras/baños/alberca no aplican aquí). Agrega una columna por cada uno.
             </p>
             <MiniTable
               headers={["Columna (encabezado)", "Valores → ✓ (sí tiene)", "Valores → ✕ (no tiene)"]}
@@ -276,6 +277,8 @@ export default function LotImportFormatModal({ open, onClose }) {
                 ["Gas Natural", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
                 ["Internet/Fibra", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
                 ["Pavimento", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
+                ["Lote de Esquina", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
+                ["Bardeado", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
               ]}
             />
           </Section>

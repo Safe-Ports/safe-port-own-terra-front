@@ -16,13 +16,18 @@ import { measure } from "@/services/formatters";
  */
 const HEADERS = [
   "ID Lote", "Fraccionamiento", "Estado", "Precio Contado", "Precio Financiado",
-  "Frente (ML)", "Fondo (ML)", "Superficie (m2)",
+  "Frente (ML)", "Fondo (ML)", "Superficie (m2)", "Orientación",
   "Agua Potable", "Energía Eléctrica", "Drenaje", "Gas Natural", "Internet/Fibra", "Pavimento",
+  "Lote de Esquina", "Bardeado",
   "Vendedor Asignado",
 ];
 
-/** Servicios en el mismo orden en que aparecen en la plantilla. */
-const SERVICE_KEYS = ["agua", "luz", "drenaje", "gas", "internet", "pavimento"];
+/**
+ * Especificaciones en el mismo orden en que aparecen en la plantilla — incluye
+ * lo que antes era "servicios" (agua...pavimento) seguido de esquina/bardeado.
+ * Todas booleanas: orientación es dimensional, vive en `lot.orientacion`, no acá.
+ */
+const ESPECIFICACION_KEYS = ["agua", "luz", "drenaje", "gas", "internet", "pavimento", "esquina", "bardeado"];
 
 /* Va aparte de HEADERS a propósito: HEADERS espeja la plantilla de importación
    y el archivo que se descarga lo genera el backend con esa misma lista. Esta
@@ -160,11 +165,15 @@ export default function MatrixSheet({ lots, fracId, fracName, loading, showError
                     <td className="mx-num">{fr ?? <span className="mx-miss">falta</span>}</td>
                     <td className="mx-num">{fo ?? <span className="mx-miss">falta</span>}</td>
                     <td className="mx-num">{sup ?? <span className="mx-miss">falta</span>}</td>
-                    {SERVICE_KEYS.map((k) => (
-                      <td key={k} className={lot.services?.[k] ? "mx-yes" : "mx-no"}>
-                        {lot.services?.[k] ? "Sí" : "No"}
-                      </td>
-                    ))}
+                    <td>{lot.orientacion || <span className="mx-miss">falta</span>}</td>
+                    {ESPECIFICACION_KEYS.map((k) => {
+                      const on = lot.especificaciones?.[k] === "true";
+                      return (
+                        <td key={k} className={on ? "mx-yes" : "mx-no"}>
+                          {on ? "Sí" : "No"}
+                        </td>
+                      );
+                    })}
                     <td>{quienLoTiene(lot)}</td>
                     <td className="mx-extra">
                       <FilesDropdown archivos={archivosPorLote[lot.id]}
