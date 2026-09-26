@@ -11,18 +11,25 @@ import { PROPERTIES_MVP_SCOPE } from "../../mvpScope";
 import CommunityOnboarding from "./CommunityOnboarding";
 import CommunityCards from "./CommunityCards";
 import UnitMonitorPanel from "../monitoring/UnitMonitorPanel";
+import MediaGallery from "../media/MediaGallery";
+import { UNIT_STATUS_LABEL, UNIT_TYPE_LABEL, validateUnit } from "../units/unitModel";
+import CommunityDetail from "./CommunityDetail";
+import { useQueryClient } from "@tanstack/react-query";
+import propertiesService from "@/services/propertiesService";
+import { BUILDING_AMENITIES, BUILDING_DIMENSIONS, UNIT_SPEC_FEATURES, buildingSpecDraft, buildingSpecPayload, unitSpecDraft } from "../specs/specModel";
+import { buildingSpecKey, useBuildingSpec } from "../specs/useBuildingSpec";
 import PortalAccessModal from "../portal/PortalAccessModal";
 import "./community-workspace.css";
 
 // Unidades es la pestaña central: ahí se asigna a cada persona a su unidad
-// (el vínculo del que dependen cuotas, votos, amenidades y portal).
+// (el vínculo del que dependen cuotas, votos, amenidades y portal). Los datos de
+// la comunidad ya no son pestaña: se despliegan al elegir su tarjeta.
 const tabs=[
-  ["configuration","Configuración",HiBuildingOffice2,"Datos de la comunidad"],
   ["units","Unidades",HiHomeModern,"Quién vive, quién paga"],
   ["directory","Directorio",HiUserGroup,"Contactos y portal"],
 ];
 // Pestañas anteriores que siguen llegando por enlaces guardados o del menú.
-const TAB_ALIAS={monitoring:"units",relations:"units"};
+const TAB_ALIAS={monitoring:"units",relations:"units",configuration:"units"};
 const resolveTab=(key)=>{const tab=TAB_ALIAS[key]||key;return tabs.some(([value])=>value===tab)?tab:null;};
 const isCommittee=(roles=[])=>roles.includes("committee")||roles.includes("board_member");
 
@@ -30,16 +37,23 @@ function CommunityWorkspace(){
   const navigate=useNavigate();
   const {canUseFeature,showToast}=useAppContext();
   const canWrite=canUseFeature("properties.write");
-  const {properties,units,communities,communityPeople,personUnitRelations,condoCharges,packages,reservations,votes,propertiesLoading,propertiesError,retryProperties,addCommunity,updateCommunity,addCommunityPerson,updateCommunityPerson,archiveCommunityPerson,addUnitMember,archivePersonUnitRelation}=usePropertiesData();
+  const {properties,units,communities,communityPeople,personUnitRelations,condoCharges,packages,reservations,votes,propertiesLoading,propertiesError,retryProperties,addCommunity,updateCommunity,updateUnit,changeUnitStatus,addCommunityPerson,updateCommunityPerson,archiveCommunityPerson,addUnitMember,archivePersonUnitRelation}=usePropertiesData();
   // `?tab=directory` llega desde "Invitaciones al portal" en el Centro de operación.
   // `?unit=` y `?community=` llegan de los enlaces "ver unidad" (cuotas, menú).
   const [params]=useSearchParams();
-  const [activeTab,setActiveTab]=useState(resolveTab(params.get("tab"))||"configuration");
+  const [activeTab,setActiveTab]=useState(resolveTab(params.get("tab"))||"units");
   const [monitorUnitId,setMonitorUnitId]=useState(params.get("unit")||"");
   const [communityId,setCommunityId]=useState(params.get("community")||communities[0]?.id||"");
   const [communityDraft,setCommunityDraft]=useState(EMPTY_COMMUNITY);
   const [communityErrors,setCommunityErrors]=useState({});
   const [creatingCommunity,setCreatingCommunity]=useState(false);
+  const [editingCommunity,setEditingCommunity]=useState(false);
+  const [detailOpen,setDetailOpen]=useState(false);
+  const [unitEditId,setUnitEditId]=useState(null);
+  const [unitDraft,setUnitDraft]=useState(null);
+  const [unitErrors,setUnitErrors]=useState({});
+  const [buildingDraft,setBuildingDraft]=useState(null);
+  const queryClient=useQueryClient();
   const [query,setQuery]=useState("");
   const [directoryGroup,setDirectoryGroup]=useState("all");
   const [directoryPage,setDirectoryPage]=useState(1);
@@ -53,6 +67,7 @@ function CommunityWorkspace(){
   const [savingMember,setSavingMember]=useState(false);
   const selectedCommunity=communities.find(item=>item.id===communityId)||communities[0];
   const selectedProperty=properties.find(item=>item.id===selectedCommunity?.propertyId);
+  const buildingSpec=useBuildingSpec(selectedCommunity?.inmuebleId);
   const communityUnits=units.filter(item=>item.propertyId===selectedCommunity?.propertyId&&item.status!=="archived");
   const activeRelations=personUnitRelations.filter(item=>item.communityId===selectedCommunity?.id&&item.status!=="archived");
   // Los módulos operativos (cuotas, amenidades, votaciones, portal) exigen
@@ -75,7 +90,8 @@ function CommunityWorkspace(){
   useEffect(()=>{const unit=units.find(item=>item.id===monitorUnitId);const owner=unit&&communities.find(item=>item.propertyId===unit.propertyId);if(owner&&owner.id!==communityId)setCommunityId(owner.id);},[monitorUnitId,units,communities]);
   // Elegir otra comunidad a mano suelta la unidad del enlace; si no, al recargar
   // los datos el efecto de arriba la regresaría a la comunidad de esa unidad.
-  const selectCommunity=(id)=>{setCommunityId(id);setMonitorUnitId("");};
+  // Tocar la tarjeta ya elegida pliega o despliega su detalle.
+  const selectCommunity=(id)=>{if(id===selectedCommunity?.id){setDetailOpen(open=>!open);return;}setCommunityId(id);setMonitorUnitId("");setDetailOpen(true);};
 
   useEffect(()=>{
     if(!communityId&&communities[0])setCommunityId(communities[0].id);
@@ -103,9 +119,19 @@ function CommunityWorkspace(){
     const errors=validateCommunity(communityDraft);setCommunityErrors(errors);
     if(Object.keys(errors).length)return;
     try{if(creatingCommunity){const created=await addCommunity(communityDraft);setCommunityId(created.id);setCreatingCommunity(false);showToast("Comunidad guardada","success");}
-    else{await updateCommunity(selectedCommunity.id,communityDraft);showToast("Configuración actualizada","success");}}catch(error){showToast(error.response?.data?.error?.message||error.message,"warning")}
+    else{await updateCommunity(selectedCommunity.id,communityDraft);if(buildingDraft&&selectedCommunity.inmuebleId){await propertiesService.specs.save(selectedCommunity.inmuebleId,buildingSpecPayload(buildingDraft));await queryClient.invalidateQueries({queryKey:buildingSpecKey(selectedCommunity.inmuebleId)});}setEditingCommunity(false);showToast("Comunidad actualizada","success");}}catch(error){showToast(error.response?.data?.error?.message||error.message,"warning")}
   };
   const openNewCommunity=()=>{setCreatingCommunity(true);setCommunityDraft(EMPTY_COMMUNITY);setCommunityErrors({});};
+  // La ficha del edificio sólo se envía si ya se pudo leer: así no se pisa una
+  // ficha existente con una vacía cuando la consulta falló.
+  const openEditCommunity=()=>{setCommunityDraft({...selectedCommunity});setCommunityErrors({});setBuildingDraft(buildingSpec.isSuccess?buildingSpecDraft(buildingSpec.data):null);setEditingCommunity(true);};
+  const closeEditCommunity=()=>{setEditingCommunity(false);setCommunityDraft({...selectedCommunity});};
+  // ── Edición rápida de una unidad desde su detalle (datos + fotos) ──
+  const editedUnit=units.find(unit=>unit.id===unitEditId);
+  const openEditUnit=(id)=>{const unit=units.find(item=>item.id===id);if(!unit)return;setUnitEditId(id);setUnitErrors({});setUnitDraft({propertyId:unit.propertyId,ownerId:unit.ownerId||"",identifier:unit.identifier,type:unit.type,floor:unit.floor||"",area:String(unit.area||""),bedrooms:String(unit.bedrooms||""),bathrooms:String(unit.bathrooms||""),suggestedRent:String(unit.suggestedRent||""),status:unit.status,description:unit.description||"",specs:unitSpecDraft(unit.attributes)});};
+  const updateUnitDraft=(field,value)=>{setUnitDraft(current=>({...current,[field]:value}));setUnitErrors(current=>({...current,[field]:undefined}));};
+  const updateUnitSpec=(field,value)=>setUnitDraft(current=>({...current,specs:{...current.specs,[field]:value}}));
+  const saveUnit=async(event)=>{event.preventDefault();const errors=validateUnit(unitDraft,units,unitEditId);setUnitErrors(errors);if(Object.keys(errors).length)return;try{await updateUnit(unitEditId,unitDraft);if(editedUnit&&unitDraft.status!==editedUnit.status)await changeUnitStatus(unitEditId,unitDraft.status);setUnitEditId(null);showToast("Unidad actualizada","success");}catch(error){showToast(error.response?.data?.error?.message||error.message,"warning");}};
   const openPerson=(person=null)=>{setPersonModal(person?.id||"new");setPersonDraft(person?{...EMPTY_COMMUNITY_PERSON,...person,communityIds:[...new Set([...(person.communityIds||[]),selectedCommunity.id])],roles:isCommittee(person.roles)?["committee"]:[]}:{...EMPTY_COMMUNITY_PERSON,communityIds:[selectedCommunity.id]});setPersonErrors({});};
   const savePerson=async(event)=>{event.preventDefault();const errors=validateCommunityPerson(personDraft);setPersonErrors(errors);if(Object.keys(errors).length)return;const scopedDraft={...personDraft,communityIds:[...new Set([...(personDraft.communityIds||[]),selectedCommunity.id])]};try{if(personModal==="new")await addCommunityPerson(scopedDraft);else await updateCommunityPerson(personModal,scopedDraft);setPersonModal(null);showToast(personModal==="new"?"Persona agregada al directorio":"Persona actualizada","success")}catch(error){showToast(error.response?.data?.error?.message||error.message,"warning")}};
   // ── Pieza central: agregar a una persona a una unidad en un solo paso ──
@@ -140,17 +166,18 @@ function CommunityWorkspace(){
       <header className="community-heading"><div><img className="community-heading-logo" src="/brand/communities-logo-color.svg" alt="Communities"/><span>Comunidades y complejos</span><h1>La comunidad, conectada.</h1><p>Configura condominios, privadas, plazas, complejos de cabañas u hoteles y conecta sus espacios con la operación compartida.</p></div><button type="button" onClick={openNewCommunity} disabled={!canWrite}><HiPlus/> Nueva comunidad</button></header>
       <aside className="community-prototype-note">Configuración, directorio y relaciones persistidos en OwnTerra Properties.</aside>
 
-      <CommunityCards communities={communities} selectedId={selectedCommunity?.id} onSelect={selectCommunity} onAlert={openAlert} data={{units,personUnitRelations,condoCharges,packages,reservations,votes}}/>
+      <CommunityCards communities={communities} selectedId={selectedCommunity?.id} expanded={detailOpen} onSelect={selectCommunity} onAlert={openAlert} data={{units,personUnitRelations,condoCharges,packages,reservations,votes}}/>
+
+      {detailOpen&&selectedCommunity?<CommunityDetail community={selectedCommunity} property={selectedProperty} unitsCount={communityUnits.length} peopleCount={new Set(activeRelations.map(item=>item.personId)).size} canWrite={canWrite} onEdit={openEditCommunity} onClose={()=>setDetailOpen(false)}/>:null}
 
       {pendingSteps.length?<section className="community-readiness"><header><div><span>Preparación</span><h2>Falta{pendingSteps.length>1?"n":""} {pendingSteps.length} paso{pendingSteps.length>1?"s":""} para operar</h2><p>Cuotas, amenidades, votaciones y el portal de residentes necesitan esta base.</p></div><strong>{readiness.length-pendingSteps.length}/{readiness.length}</strong></header><ol>{readiness.map(step=><li key={step.key} className={step.done?"done":""}><i>{step.done?<HiCheckCircle/>:null}</i><div><strong>{step.label}</strong><small>{step.hint}</small></div>{step.done?<em>Listo</em>:<button type="button" onClick={step.action} disabled={!canWrite}>{step.cta}</button>}</li>)}</ol></section>:null}
 
-      <nav className="community-tabs" aria-label="Configuración de comunidad">{tabs.map(([key,label,Icon,hint])=><button type="button" key={key} className={activeTab===key?"active":""} onClick={()=>setActiveTab(key)}><Icon/><span><strong>{label}</strong><small>{hint}</small></span>{key==="configuration"&&selectedCommunity?<HiCheckCircle className="tab-ready"/>:null}</button>)}<button type="button" className="community-operations-entry" onClick={()=>navigate("/properties/comunidades/operacion")}><HiSquares2X2/><span><strong>Operación diaria</strong><small>Cuotas, avisos y amenidades</small></span></button></nav>
+      <nav className="community-tabs" aria-label="Configuración de comunidad">{tabs.map(([key,label,Icon,hint])=><button type="button" key={key} className={activeTab===key?"active":""} onClick={()=>setActiveTab(key)}><Icon/><span><strong>{label}</strong><small>{hint}</small></span></button>)}<button type="button" className="community-operations-entry" onClick={()=>navigate("/properties/comunidades/operacion")}><HiSquares2X2/><span><strong>Operación diaria</strong><small>Cuotas, avisos y amenidades</small></span></button></nav>
 
-      {activeTab==="configuration"&&selectedCommunity?<section className="community-panel community-config"><header><div><span>Datos generales</span><h2>Configuración de la comunidad</h2><p>La identidad operativa que verá el equipo antes de activar servicios compartidos, comunicación o accesos.</p></div><i>{COMMUNITY_KIND_LABEL[selectedCommunity.kind]||"Comunidad"}</i></header><form onSubmit={saveCommunity}><div className="community-form-grid"><label><span>Tipo de comunidad</span><select disabled={!canWrite} value={communityDraft.kind} onChange={event=>setCommunityDraft({...communityDraft,kind:event.target.value})}>{Object.entries(COMMUNITY_KIND_LABEL).map(([value,label])=><option value={value} key={value}>{label}</option>)}</select></label><label><span>Inmueble asociado</span><select disabled value={communityDraft.propertyId}><option value={selectedProperty?.id}>{selectedProperty?.name}</option></select></label><label className="wide"><span>Nombre operativo</span><input disabled={!canWrite} value={communityDraft.name} onChange={event=>setCommunityDraft({...communityDraft,name:event.target.value})}/><FieldError msg={communityErrors.name}/></label><label className="wide"><span>Dirección</span><input disabled value={[selectedProperty?.address,selectedProperty?.city,selectedProperty?.state].filter(Boolean).join(", ")||"Sin dirección registrada"}/></label><label><span>Cuota base mensual <small>Opcional</small></span><input disabled={!canWrite} type="number" min="0" value={communityDraft.cuotaBase} onChange={event=>setCommunityDraft({...communityDraft,cuotaBase:event.target.value})} placeholder="Ej. 1500"/><FieldError msg={communityErrors.cuotaBase}/></label><label><span>Día de cobro <small>1–28</small></span><input disabled={!canWrite} type="number" min="1" max="28" value={communityDraft.billingDay} onChange={event=>setCommunityDraft({...communityDraft,billingDay:event.target.value})}/><FieldError msg={communityErrors.billingDay}/></label><label className="wide"><span>Enlace al reglamento <small>Opcional</small></span><input disabled={!canWrite} type="url" value={communityDraft.reglamentoUrl} onChange={event=>setCommunityDraft({...communityDraft,reglamentoUrl:event.target.value})} placeholder="https://..."/></label><label><span>Unidades participantes</span><input disabled value={`${communityUnits.length} unidades activas`}/></label></div>{canWrite?<footer><span>Estos son los datos que OwnTerra Properties guarda de la comunidad. Las personas se asignan a cada unidad en la pestaña Unidades.</span><button type="submit">Guardar configuración</button></footer>:null}</form></section>:null}
 
       {activeTab==="directory"?<section className="community-panel"><header><div><span>Contactos</span><h2>Directorio de la comunidad</h2><p>Datos de contacto, acceso al portal y comité. Para decir quién es dueño o vive en cada unidad, usa la pestaña Unidades.</p></div><button type="button" onClick={()=>openPerson()} disabled={!canWrite}><HiPlus/> Agregar contacto</button></header><div className="community-directory-tools"><label><HiMagnifyingGlass/><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Buscar por nombre, correo, teléfono o rol"/></label><span>{directoryPeople.length} personas en {selectedCommunity?.name}{peopleElsewhere.length?<em className="community-directory-elsewhere"> · {peopleElsewhere.length} vinculada{peopleElsewhere.length>1?"s":""} a otra comunidad</em>:null}</span></div><nav className="community-directory-groups" aria-label="Categorías del directorio"><button type="button" className={directoryGroup==="all"?"active":""} onClick={()=>setDirectoryGroup("all")}>Todas</button><button type="button" className={directoryGroup==="responsible"?"active":""} onClick={()=>setDirectoryGroup("responsible")}>Dueños y encargados</button><button type="button" className={directoryGroup==="residents"?"active":""} onClick={()=>setDirectoryGroup("residents")}>Habitantes actuales</button></nav><div className="community-people">{visiblePeople.map(person=>{const relations=activeRelations.filter(item=>item.personId===person.id);return <article key={person.id}><span className="community-avatar">{person.name.split(" ").slice(0,2).map(word=>word[0]).join("")}</span><div><strong>{person.name}</strong><small>{person.personType==="company"?"Empresa":"Persona"} · {person.email||"Sin correo"} · {person.phone||"Sin teléfono"}</small><p>{personTags(person).map(tag=><i key={tag}>{tag}</i>)}</p></div><div className="community-person-links"><small>Unidades</small><strong>{relations.length}</strong>{relations.length?null:<button type="button" className="community-person-unlinked" onClick={()=>setActiveTab("units")}>Sin unidad</button>}<em>{person.communicationPreference==="whatsapp"?"WhatsApp":person.communicationPreference==="phone"?"Teléfono":"Correo"}</em></div><footer><button type="button" onClick={()=>copyContact(person)} aria-label={`Copiar contacto de ${person.name}`}><HiClipboardDocument/></button><button type="button" onClick={()=>setPortalPerson(person)} aria-label={`Acceso al portal de ${person.name}`} title="Acceso al portal"><HiKey/></button>{canWrite?<><button type="button" onClick={()=>openPerson(person)} aria-label={`Editar ${person.name}`}><HiPencilSquare/></button><button type="button" onClick={()=>archiveCommunityPerson(person.id)} aria-label={`Archivar ${person.name}`}><HiArchiveBox/></button></>:null}</footer></article>})}</div><footer className="community-directory-pagination"><span>Mostrando {visiblePeople.length} de {directoryPeople.length}</span><div><button type="button" disabled={directoryPage===1} onClick={()=>setDirectoryPage(page=>page-1)}>Anterior</button><strong>{directoryPage} / {directoryPages}</strong><button type="button" disabled={directoryPage===directoryPages} onClick={()=>setDirectoryPage(page=>page+1)}>Siguiente</button></div></footer></section>:null}
 
-      {activeTab==="units"&&selectedCommunity?<UnitMonitorPanel community={selectedCommunity} unitId={monitorUnitId} canWrite={canWrite} onSelectUnit={setMonitorUnitId} onAddMember={openMember} onUnlink={unlinkMember} onOpenCharges={()=>navigate(`/properties/comunidades/operacion?module=charges&community=${selectedCommunity.id}`)}/>:null}
+      {activeTab==="units"&&selectedCommunity?<UnitMonitorPanel community={selectedCommunity} unitId={monitorUnitId} canWrite={canWrite} onSelectUnit={setMonitorUnitId} onEditUnit={openEditUnit} onAddMember={openMember} onUnlink={unlinkMember} onOpenCharges={()=>navigate(`/properties/comunidades/operacion?module=charges&community=${selectedCommunity.id}`)}/>:null}
     </main>
 
     {portalPerson?<PortalAccessModal person={portalPerson} units={communityUnits} onClose={()=>setPortalPerson(null)}/>:null}
@@ -180,6 +207,43 @@ function CommunityWorkspace(){
           <div className="properties-form-grid"><label><span>Desde <small>Opcional</small></span><input id="unit-member-starts" type="date" value={memberDraft.startsAt} onChange={event=>setMemberDraft({...memberDraft,startsAt:event.target.value})}/></label><label><span>Hasta <small>Vacío si no tiene fin</small></span><input id="unit-member-ends" type="date" value={memberDraft.endsAt} onChange={event=>setMemberDraft({...memberDraft,endsAt:event.target.value})}/><FieldError msg={memberErrors.endsAt}/></label></div>
         </section>
       </form>
+    </Modal>
+    <Modal open={editingCommunity} onClose={closeEditCommunity} title={`Editar ${selectedCommunity?.name||"comunidad"}`} subtitle="Datos generales y fotos de la comunidad." icon={<HiPencilSquare/>} width="max-w-[760px]" footer={<><button type="button" onClick={closeEditCommunity}>Cancelar</button><button type="submit" form="edit-community-form">Guardar cambios</button></>}>
+      <form id="edit-community-form" className="properties-form" onSubmit={saveCommunity} noValidate>
+        <section className="properties-form-section"><div className="properties-form-grid">
+          <label className="properties-form-wide"><span>Nombre de la comunidad</span><input value={communityDraft.name} onChange={event=>setCommunityDraft({...communityDraft,name:event.target.value})}/><FieldError msg={communityErrors.name}/></label>
+          <label><span>Tipo</span><select value={communityDraft.kind} onChange={event=>setCommunityDraft({...communityDraft,kind:event.target.value})}>{Object.entries(COMMUNITY_KIND_LABEL).map(([value,label])=><option value={value} key={value}>{label}</option>)}</select></label>
+          <label><span>Inmueble asociado</span><input disabled value={selectedProperty?.name||""}/></label>
+          <label><span>Cuota base mensual <small>Opcional</small></span><input type="number" min="0" value={communityDraft.cuotaBase} onChange={event=>setCommunityDraft({...communityDraft,cuotaBase:event.target.value})} placeholder="Ej. 1500"/><FieldError msg={communityErrors.cuotaBase}/></label>
+          <label><span>Día de cobro <small>1–28</small></span><input type="number" min="1" max="28" value={communityDraft.billingDay} onChange={event=>setCommunityDraft({...communityDraft,billingDay:event.target.value})}/><FieldError msg={communityErrors.billingDay}/></label>
+          <label className="properties-form-wide"><span>Enlace al reglamento <small>Opcional</small></span><input type="url" value={communityDraft.reglamentoUrl} onChange={event=>setCommunityDraft({...communityDraft,reglamentoUrl:event.target.value})} placeholder="https://..."/></label>
+        </div></section>
+        {buildingDraft?<section className="properties-form-section"><header><div><h3>Ficha del edificio</h3><p>Lo que verán residentes e interesados sobre la comunidad.</p></div></header>
+          <div className="properties-form-grid">{BUILDING_DIMENSIONS.map(field=><label key={field.key}><span>{field.label}{field.unit?` (${field.unit})`:""} <small>Opcional</small></span><input type="number" min="0" value={buildingDraft.dimensiones[field.key]} onChange={event=>setBuildingDraft(current=>({...current,dimensiones:{...current.dimensiones,[field.key]:event.target.value}}))}/></label>)}</div>
+          <fieldset className="community-permission-picker spec-feature-picker"><legend>Amenidades y servicios</legend>{BUILDING_AMENITIES.map(field=><label key={field.key}><input type="checkbox" checked={Boolean(buildingDraft.attributos[field.key])} onChange={event=>setBuildingDraft(current=>({...current,attributos:{...current.attributos,[field.key]:event.target.checked}}))}/><span>{field.label}</span></label>)}</fieldset>
+        </section>:selectedCommunity?.inmuebleId?<p className="unit-member-note">No pudimos leer la ficha del edificio; guarda los demás datos y vuelve a intentarlo.</p>:null}
+        {selectedCommunity?.inmuebleId?<section className="properties-form-section"><MediaGallery entityType="inmueble" entityId={selectedCommunity.inmuebleId} editable label="Fotos de la comunidad"/></section>:null}
+      </form>
+    </Modal>
+
+    <Modal open={Boolean(unitEditId&&unitDraft)} onClose={()=>setUnitEditId(null)} title={`Editar ${editedUnit?.identifier||"unidad"}`} subtitle={`${selectedCommunity?.name||""} · Datos y fotos de la unidad.`} icon={<HiHomeModern/>} width="max-w-[760px]" footer={<><button type="button" onClick={()=>setUnitEditId(null)}>Cancelar</button><button type="submit" form="edit-unit-form">Guardar unidad</button></>}>
+      {unitDraft?<form id="edit-unit-form" className="properties-form" onSubmit={saveUnit} noValidate>
+        <section className="properties-form-section"><div className="properties-form-grid">
+          <label><span>Identificador</span><input value={unitDraft.identifier} onChange={event=>updateUnitDraft("identifier",event.target.value)} placeholder="Ej. 101, Casa 4" aria-invalid={Boolean(unitErrors.identifier)}/><FieldError msg={unitErrors.identifier}/></label>
+          <label><span>Tipo de unidad</span><select value={unitDraft.type} onChange={event=>updateUnitDraft("type",event.target.value)}>{Object.entries(UNIT_TYPE_LABEL).map(([value,label])=><option value={value} key={value}>{label}</option>)}</select></label>
+          <label><span>Piso o nivel <small>Opcional</small></span><input value={unitDraft.floor} onChange={event=>updateUnitDraft("floor",event.target.value)}/></label>
+          <label><span>Estado</span><select value={unitDraft.status} onChange={event=>updateUnitDraft("status",event.target.value)}>{Object.entries(UNIT_STATUS_LABEL).filter(([value])=>value!=="archived"&&(value!=="rented"||PROPERTIES_MVP_SCOPE.rentals||unitDraft.status==="rented")).map(([value,label])=><option value={value} key={value}>{label}</option>)}</select></label>
+          <label><span>Superficie (m²)</span><input type="number" min="0" value={unitDraft.area} onChange={event=>updateUnitDraft("area",event.target.value)} aria-invalid={Boolean(unitErrors.area)}/><FieldError msg={unitErrors.area}/></label>
+          <label><span>Recámaras</span><input type="number" min="0" value={unitDraft.bedrooms} onChange={event=>updateUnitDraft("bedrooms",event.target.value)}/></label>
+          <label><span>Baños</span><input type="number" min="0" step="0.5" value={unitDraft.bathrooms} onChange={event=>updateUnitDraft("bathrooms",event.target.value)}/></label>
+          <label className="properties-form-wide"><span>Descripción <small>Opcional</small></span><textarea rows="3" value={unitDraft.description} onChange={event=>updateUnitDraft("description",event.target.value)}/></label>
+        </div></section>
+        <section className="properties-form-section"><header><div><h3>Ficha técnica</h3><p>Lo que verán residentes e inquilinos en su portal.</p></div></header>
+          <div className="properties-form-grid"><label><span>Estacionamientos <small>Opcional</small></span><input type="number" min="0" value={unitDraft.specs.parking} onChange={event=>updateUnitSpec("parking",event.target.value)}/></label><label><span>Indiviso (%) <small>Opcional</small></span><input type="number" min="0" max="100" step="0.01" value={unitDraft.specs.indiviso_pct} onChange={event=>updateUnitSpec("indiviso_pct",event.target.value)}/></label></div>
+          <fieldset className="community-permission-picker spec-feature-picker"><legend>Características</legend>{UNIT_SPEC_FEATURES.map(field=><label key={field.key}><input type="checkbox" checked={Boolean(unitDraft.specs[field.key])} onChange={event=>updateUnitSpec(field.key,event.target.checked)}/><span>{field.label}</span></label>)}</fieldset>
+        </section>
+        <section className="properties-form-section"><MediaGallery entityType="property" entityId={unitEditId} editable label="Fotos de la unidad"/></section>
+      </form>:null}
     </Modal>
   </EcoLayout>;
 }

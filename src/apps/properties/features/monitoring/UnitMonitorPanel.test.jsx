@@ -20,6 +20,9 @@ vi.mock("../../data/PropertiesDataContext", () => ({
   }),
 }));
 
+// Las fotos se consultan a properties-back; aquí sólo importa la tabla.
+vi.mock("../media/MediaGallery", () => ({ default: () => null, useEntityMedia: () => ({ images: [] }) }));
+
 const community = { id: "c1", name: "Torre Jacarandas", propertyId: "p1" };
 
 describe("UnitMonitorPanel", () => {

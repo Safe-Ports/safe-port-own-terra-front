@@ -1,14 +1,22 @@
 import { useMemo, useState } from "react";
-import { HiArrowRight, HiBanknotes, HiBolt, HiBuildingOffice2, HiExclamationTriangle, HiHomeModern, HiMagnifyingGlass, HiUserPlus } from "react-icons/hi2";
+import { HiArrowRight, HiBanknotes, HiBolt, HiBuildingOffice2, HiExclamationTriangle, HiHomeModern, HiMagnifyingGlass, HiPencilSquare, HiUserPlus } from "react-icons/hi2";
 import { usePropertiesData } from "../../data/PropertiesDataContext";
 import { PROPERTIES_MVP_SCOPE } from "../../mvpScope";
 import { PERSON_UNIT_ROLE_LABEL } from "../community/communityModel";
+import MediaGallery, { useEntityMedia } from "../media/MediaGallery";
+import SpecSheet from "../specs/SpecSheet";
+import { unitSpecSheet } from "../specs/specModel";
 import { UNIT_STATUS_LABEL, UNIT_TYPE_LABEL } from "../units/unitModel";
 import { buildUnitMonitorRows } from "./unitMonitoringModel";
 import "./unit-monitoring.css";
 
 const money = (value) => new Intl.NumberFormat("es-MX", { style:"currency", currency:"MXN", maximumFractionDigits:0 }).format(value || 0);
 const stateLabel = (value) => ({ paid:"Pagado", partial:"Pago parcial", pending:"Pendiente", overdue:"Vencido", waived:"Condonado", due_soon:"Por vencer", pending_evidence:"Sin evidencia", open:"Abierto", in_progress:"En progreso", resolved:"Resuelto" }[value] || value);
+// Miniatura del encabezado: la portada de la unidad o, sin fotos, su ícono.
+function UnitCover({ unitId }) {
+  const { images } = useEntityMedia("property", unitId);
+  return <span className={images[0] ? "has-photo" : ""}>{images[0] ? <img src={images[0].url} alt="" /> : <HiHomeModern />}</span>;
+}
 const initials = (name = "") => name.split(" ").filter(Boolean).slice(0, 2).map((word) => word[0]).join("") || "?";
 
 /* Pestaña Unidades de una comunidad: aquí vive la pieza central de Properties,
@@ -16,7 +24,7 @@ const initials = (name = "") => name.split(" ").filter(Boolean).slice(0, 2).map(
    quién paga, con su saldo, y desde aquí se agrega a alguien en un solo paso.
    Servicios e incidencias sólo aparecen cuando esos módulos tengan backend
    (mvpScope.later): hoy son datos demo. */
-function UnitMonitorPanel({ community, unitId, onSelectUnit, onAddMember, onUnlink, onOpenCharges, canWrite = false }) {
+function UnitMonitorPanel({ community, unitId, onSelectUnit, onEditUnit, onAddMember, onUnlink, onOpenCharges, canWrite = false }) {
   const data = usePropertiesData();
   const [query, setQuery] = useState("");
   const withDemoModules = PROPERTIES_MVP_SCOPE.later;
@@ -32,6 +40,8 @@ function UnitMonitorPanel({ community, unitId, onSelectUnit, onAddMember, onUnli
   const visible = rows.filter((row) => `${row.identifier} ${row.occupants.map((item) => item.name).join(" ")} ${row.responsible.map((item) => item.name).join(" ")}`.toLowerCase().includes(query.trim().toLowerCase()));
   const selected = visible.find((row) => row.id === unitId) || visible[0];
   const links = selected ? data.personUnitRelations.filter((relation) => relation.unitId === selected.id && relation.status !== "archived") : [];
+  const selectedUnit = selected ? data.units.find((unit) => unit.id === selected.id) : null;
+  const spec = selectedUnit ? unitSpecSheet({ ...(selectedUnit.attributes || {}), type: selectedUnit.type, floor: selectedUnit.floor, area: selectedUnit.area, bedrooms: selectedUnit.bedrooms, bathrooms: selectedUnit.bathrooms, description: selectedUnit.description }) : null;
   const withoutPeople = rows.filter((row) => !data.personUnitRelations.some((relation) => relation.unitId === row.id && relation.status !== "archived")).length;
 
   if (!rows.length) return <section className="community-panel unit-monitor-empty"><HiBuildingOffice2/><h2>Esta comunidad aún no tiene unidades</h2><p>Registra sus departamentos, casas o locales para asignarles personas.</p></section>;
@@ -53,7 +63,8 @@ function UnitMonitorPanel({ community, unitId, onSelectUnit, onAddMember, onUnli
         {!visible.length ? <p className="unit-monitor-none">Ninguna unidad o persona coincide con “{query}”.</p> : null}
       </div>
       {selected ? <aside className="unit-monitor-detail">
-        <header><span><HiHomeModern/></span><div><small>{community?.name}</small><h2>{selected.identifier}</h2><p>{UNIT_STATUS_LABEL[selected.status]} · {selected.area || 0} m²</p></div></header>
+        <header><UnitCover unitId={selected.id}/><div><small>{community?.name}</small><h2>{selected.identifier}</h2><p>{UNIT_STATUS_LABEL[selected.status]} · {selected.area || 0} m²</p></div>{canWrite && onEditUnit ? <button type="button" className="unit-monitor-edit" onClick={() => onEditUnit(selected.id)} aria-label={`Editar ${selected.identifier}`}><HiPencilSquare/> Editar</button> : null}</header>
+        <MediaGallery entityType="property" entityId={selected.id} label={`Fotos de ${selected.identifier}`} emptyText={canWrite ? "Sin fotos. Agrégalas desde Editar." : "Sin fotos."}/>
 
         <section className="unit-members" aria-label={`Personas de ${selected.identifier}`}>
           <header><h3>Personas de la unidad</h3>{canWrite ? <button type="button" className="unit-members-add" onClick={() => onAddMember(selected.id)}><HiUserPlus/> Agregar persona</button> : null}</header>
@@ -75,6 +86,11 @@ function UnitMonitorPanel({ community, unitId, onSelectUnit, onAddMember, onUnli
         <nav className="unit-monitor-actions" aria-label={`Acciones para ${selected.identifier}`}>
           <button type="button" onClick={onOpenCharges}><HiBanknotes/> Ver cuotas y adeudos <HiArrowRight/></button>
         </nav>
+        {/* Plegada: al administrador rara vez le hace falta; al residente sí (portal). */}
+        <details className="unit-spec-details">
+          <summary>Ficha técnica <small>{spec.facts.length + spec.features.length ? `${spec.facts.length + spec.features.length} datos` : "Sin datos"}</small></summary>
+          <SpecSheet {...spec} label={`Ficha técnica de ${selected.identifier}`} emptyText={canWrite ? "Sin ficha técnica. Complétala desde Editar." : "Sin ficha técnica."}/>
+        </details>
         <section><h3>Movimientos recientes</h3>{selected.movements.length ? selected.movements.map((item) => <article key={item.id}><i>{item.type[0]}</i><span><strong>{item.title}</strong><small>{item.type} · {stateLabel(item.state)}</small></span><time>{String(item.date).slice(0, 10)}</time></article>) : <p>Esta unidad aún no tiene movimientos.</p>}</section>
       </aside> : null}
     </div>

@@ -21,6 +21,12 @@ export const propertiesService = {
     archive: (id) => data(propertiesApi.delete(`/properties/${id}`)),
     changeStatus: (id, estado, descripcion) => data(propertiesApi.post(`/properties/${id}/estados`, { estado, descripcion })),
   },
+  // Ficha técnica del edificio (una por inmueble). Sin ficha el backend responde
+  // 404: se trata como "vacía", no como error.
+  specs: {
+    get: (inmuebleId) => data(propertiesApi.get(`/inmuebles/${inmuebleId}/specs`)).catch((error) => { if (error.response?.status === 404) return null; throw error; }),
+    save: (inmuebleId, body) => data(propertiesApi.put(`/inmuebles/${inmuebleId}/specs`, body)),
+  },
   relations: {
     list: (params = {}) => data(propertiesApi.get("/property-relations", { params })),
     create: (body) => data(propertiesApi.post("/property-relations", body)),

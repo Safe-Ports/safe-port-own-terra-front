@@ -1,30 +1,33 @@
 import { useQueries } from "@tanstack/react-query";
 import { HiBanknotes, HiBuildingOffice2, HiCalendarDays, HiCheckCircle, HiExclamationTriangle, HiInboxStack, HiScale, HiUsers } from "react-icons/hi2";
 import propertiesService from "@/services/propertiesService";
+import { mediaQueryKey } from "../media/MediaGallery";
 import { COMMUNITY_KIND_LABEL, communityAlerts } from "./communityModel";
 
 const ALERT_ICON = { setup: HiExclamationTriangle, charges: HiBanknotes, reservations: HiCalendarDays, packages: HiInboxStack, votes: HiScale };
 const money = (value) => new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(value || 0);
 
-// Portada = primera imagen del expediente del inmueble. Las URLs vienen
-// firmadas y vencen, por eso se consultan con poco tiempo de vida en caché.
+// Portada = primera imagen de la galería del inmueble. Comparte la caché con
+// MediaGallery: al subir o cambiar la portada, la tarjeta se actualiza sola.
 function useCommunityCovers(communities) {
+  // Sin inmueble no hay galería; además, varias llaves `undefined` chocarían en caché.
+  const withMedia = communities.filter((community) => community.inmuebleId);
   const results = useQueries({
-    queries: communities.map((community) => ({
-      queryKey: ["properties", "community-cover", community.inmuebleId],
+    queries: withMedia.map((community) => ({
+      queryKey: mediaQueryKey("inmueble", community.inmuebleId),
       queryFn: () => propertiesService.media.list("inmueble", community.inmuebleId),
       enabled: Boolean(community.inmuebleId),
       staleTime: 4 * 60 * 1000,
       retry: false,
     })),
   });
-  return Object.fromEntries(communities.map((community, index) => {
+  return Object.fromEntries(withMedia.map((community, index) => {
     const image = (results[index]?.data || []).find((asset) => asset.content_type?.startsWith("image/") && asset.url);
     return [community.id, image?.url || ""];
   }));
 }
 
-function CommunityCards({ communities, selectedId, onSelect, onAlert, data }) {
+function CommunityCards({ communities, selectedId, expanded = false, onSelect, onAlert, data }) {
   const covers = useCommunityCovers(communities);
   return <section className="community-cards" aria-label="Comunidades">
     {communities.map((community) => {
@@ -33,7 +36,7 @@ function CommunityCards({ communities, selectedId, onSelect, onAlert, data }) {
       const alerts = communityAlerts({ community, units: data.units, relations: data.personUnitRelations, charges: data.condoCharges, packages: data.packages, reservations: data.reservations, votes: data.votes });
       const selected = community.id === selectedId;
       return <article key={community.id} className={`community-card ${selected ? "is-selected" : ""}`}>
-        <button type="button" className="community-card-main" onClick={() => onSelect(community.id)} aria-pressed={selected}>
+        <button type="button" className="community-card-main" onClick={() => onSelect(community.id)} aria-pressed={selected} aria-expanded={selected ? expanded : undefined} aria-controls={selected ? "community-detail" : undefined}>
           <span className="community-card-cover">{covers[community.id] ? <img src={covers[community.id]} alt="" loading="lazy" /> : <HiBuildingOffice2 aria-hidden="true" />}</span>
           <span className="community-card-copy">
             <strong>{community.name}</strong>
