@@ -28,7 +28,6 @@ const AREA_PATHS = {
     "/properties/modulos/mensajes",
     "/properties/modulos/notificaciones",
     "/properties/modulos/portal-propietario",
-    "/properties/responsables",
   ],
 };
 

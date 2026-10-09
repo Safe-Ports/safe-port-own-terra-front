@@ -15,7 +15,6 @@ describe("Properties MVP scope", () => {
     expect(isPathInScope("/properties/modulos/mensajes")).toBe(false);
     expect(isPathInScope("/properties/modulos/notificaciones")).toBe(false);
     expect(isPathInScope("/properties/modulos/portal-propietario")).toBe(false);
-    expect(isPathInScope("/properties/responsables")).toBe(false);
     expect(isPathInScope("/properties/accesos")).toBe(true);
     expect(isPathInScope("/properties/modulos/documentos")).toBe(true);
   });
@@ -26,5 +25,9 @@ describe("Properties MVP scope", () => {
     expect(isPathInScope("/properties/portafolio")).toBe(true);
     expect(isPathInScope("/portal-comunidad")).toBe(true);
     expect(isPathInScope("/properties/rentas-historicas")).toBe(true);
+  });
+
+  it("enables the service-provider network now that it has a real backend", () => {
+    expect(isPathInScope("/properties/responsables")).toBe(true);
   });
 });

@@ -129,7 +129,7 @@ function AppRouter() {
             <Route path="rentas" element={PROPERTIES_MVP_SCOPE.rentals ? <RequireFeature feature="properties.rent.read"><RentOperationsPage /></RequireFeature> : <Navigate to="/properties" replace />} />
             <Route path="publicaciones" element={PROPERTIES_MVP_SCOPE.rentals ? <RequireFeature feature="properties.rent.read"><RentalListingsPage /></RequireFeature> : <Navigate to="/properties" replace />} />
             <Route path="rentas/hospedaje" element={PROPERTIES_MVP_SCOPE.rentals ? <RequireFeature feature="properties.rent.read"><HospitalityOperationsPage /></RequireFeature> : <Navigate to="/properties" replace />} />
-            <Route path="responsables" element={PROPERTIES_MVP_SCOPE.later ? <RequireFeature feature="properties.units.read"><ServiceNetworkPage /></RequireFeature> : <Navigate to="/properties" replace />} />
+            <Route path="responsables" element={<RequireFeature feature="properties.providers.read"><ServiceNetworkPage /></RequireFeature>} />
             <Route path="comunidades" element={<RequireFeature feature="properties.properties.read"><CommunityWorkspace /></RequireFeature>} />
             <Route path="comunidades/operacion" element={<RequireFeature feature="properties.properties.read"><CondoOperationsSuite /></RequireFeature>} />
             <Route path="condominios" element={<Navigate to="/properties/comunidades" replace />} />
