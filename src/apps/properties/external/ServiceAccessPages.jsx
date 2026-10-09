@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { HiArrowRight, HiBuildingOffice2, HiCheckCircle, HiDevicePhoneMobile, HiEnvelope, HiKey, HiShieldCheck, HiUser } from "react-icons/hi2";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import propertiesPortalService from "@/services/propertiesPortalService";
 import propertiesService from "@/services/propertiesService";
 import "./service-access.css";
@@ -30,7 +30,10 @@ export function ServiceInvitation(){
 
 export function ServiceRegistration(){
   const navigate=useNavigate();
-  const {token}=useParams();
+  // Query param, no path param: esta página la renderiza App.jsx DIRECTO
+  // (fuera del árbol de <Routes>, igual que ServiceLogin/ServiceInvitation),
+  // así que useParams() nunca vería un :token de ruta.
+  const token=new URLSearchParams(window.location.search).get("token")||"";
   const [type,setType]=useState("independent");
   const [form,setForm]=useState(emptyApplication);
   const [info,setInfo]=useState(null);

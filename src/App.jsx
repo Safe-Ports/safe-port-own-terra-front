@@ -15,6 +15,7 @@ const RentalCatalogPage = lazy(() => import("@/apps/properties/public/RentalCata
 const CommunityPortal = lazy(() => import("@/apps/properties/external/CommunityPortal"));
 const ServiceLogin = lazy(() => import("@/apps/properties/external/ServiceAccessPages").then(module => ({ default: module.ServiceLogin })));
 const ServiceInvitation = lazy(() => import("@/apps/properties/external/ServiceAccessPages").then(module => ({ default: module.ServiceInvitation })));
+const ServiceRegistration = lazy(() => import("@/apps/properties/external/ServiceAccessPages").then(module => ({ default: module.ServiceRegistration })));
 
 function App() {
   const { currentUser } = useAppContext();
@@ -34,6 +35,10 @@ function App() {
   if (PROPERTIES_MVP_SCOPE.rentals && pathname === "/portal-inquilino") return <Suspense fallback={null}><TenantPortal /></Suspense>;
   if (pathname === "/servicio/login") return <Suspense fallback={null}><ServiceLogin /></Suspense>;
   if (pathname === "/servicio/invitacion") return <Suspense fallback={null}><ServiceInvitation /></Suspense>;
+  // Formulario público de inscripción de proveedores: sin sesión, por diseño
+  // (ACC/PRV-05 del doc de requerimientos) — igual que login/invitación de
+  // arriba, antes del gate `currentUser ? AppRouter : LoginScreen` de abajo.
+  if (pathname === "/servicio/registro" || pathname.startsWith("/servicio/registro/")) return <Suspense fallback={null}><ServiceRegistration /></Suspense>;
   if (pathname === "/portal-comunidad") return <Suspense fallback={null}><CommunityPortal /></Suspense>;
   return currentUser ? <AppRouter /> : <LoginScreen />;
 }

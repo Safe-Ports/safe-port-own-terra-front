@@ -118,7 +118,7 @@ function ServiceNetworkPage() {
 
   const createLink = withBusy(async () => {
     const row = await createServiceEnrollmentLink({});
-    const url = `${window.location.origin}/servicio/registro/${row.token}`;
+    const url = `${window.location.origin}/servicio/registro?token=${row.token}`;
     try { await navigator.clipboard.writeText(url); showToast("Enlace copiado al portapapeles", "success"); }
     catch { showToast(url, "success"); }
   });

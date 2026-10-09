@@ -95,7 +95,6 @@ function AppRouter() {
           <Route path="/servicio/login" element={<ServiceLogin />} />
           <Route path="/servicio/invitacion" element={<ServiceInvitation />} />
           <Route path="/servicio/registro" element={<ServiceRegistration />} />
-          <Route path="/servicio/registro/:token" element={<ServiceRegistration />} />
           <Route path="/portal-inquilino" element={PROPERTIES_MVP_SCOPE.rentals ? <TenantPortal /> : <Navigate to="/ecosistema" replace />} />
           <Route path="/portal-comunidad" element={<RequireFeature app="properties"><CommunityPortal /></RequireFeature>} />
           <Route path="/ecosistema/clientes" element={<RequireFeature feature="core.clients"><EcosystemClientes /></RequireFeature>} />
