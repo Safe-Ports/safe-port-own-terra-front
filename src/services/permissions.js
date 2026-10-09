@@ -63,6 +63,10 @@ export const FEATURE_LABEL = {
   "properties.units.read": "Unidades",
   "properties.rent.read": "Rentas",
   "properties.rent.write": "Operación de rentas",
+  "properties.providers.read": "Red de proveedores",
+  "properties.providers.manage": "Gestión de proveedores",
+  "properties.providers.approve": "Aprobación de proveedores",
+  "properties.providers.invite": "Invitar proveedores",
 };
 
 // Solo "admin": el CHECK de la tabla `users` admite exactamente 'admin' y
@@ -83,6 +87,9 @@ export function defaultPermissionsFor(appKey, role) {
       "properties.units.write",
       "properties.rent.read",
       "properties.rent.write",
+      "properties.providers.manage",
+      "properties.providers.approve",
+      "properties.providers.invite",
     ];
   }
   if (appKey === "properties" && role === "viewer") {
@@ -195,6 +202,10 @@ export function canUseFeature(user, feature) {
     "properties.units.read": () => canAccessApp(user, "properties") && hasPermission(user, "properties.units.read"),
     "properties.rent.read": () => canAccessApp(user, "properties") && hasPermission(user, "properties.rent.read"),
     "properties.rent.write": () => canAccessApp(user, "properties") && hasPermission(user, "properties.rent.write"),
+    "properties.providers.read": () => canAccessApp(user, "properties") && hasPermission(user, "properties.providers.read"),
+    "properties.providers.manage": () => canAccessApp(user, "properties") && hasPermission(user, "properties.providers.manage"),
+    "properties.providers.approve": () => canAccessApp(user, "properties") && hasPermission(user, "properties.providers.approve"),
+    "properties.providers.invite": () => canAccessApp(user, "properties") && hasPermission(user, "properties.providers.invite"),
   };
 
   // Si la función existe, su respuesta es la final. Antes esto era

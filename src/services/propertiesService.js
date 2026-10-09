@@ -85,6 +85,48 @@ export const propertiesService = {
     grant: (body) => data(propertiesApi.post("/access-grants", body)),
     revoke: (id) => data(propertiesApi.delete(`/access-grants/${id}`)),
   },
+  serviceNetwork: {
+    specialties: (params = {}) => data(propertiesApi.get("/service-specialties", { params })),
+    providers: {
+      list: (params = {}) => data(propertiesApi.get("/service-providers", { params })),
+      get: (id) => data(propertiesApi.get(`/service-providers/${id}`)),
+      create: (body) => data(propertiesApi.post("/service-providers", body)),
+      update: (id, body) => data(propertiesApi.patch(`/service-providers/${id}`, body)),
+      suspend: (id, reason) => data(propertiesApi.post(`/service-providers/${id}/suspend`, { reason })),
+      reactivate: (id) => data(propertiesApi.post(`/service-providers/${id}/reactivate`)),
+      archive: (id, reason) => data(propertiesApi.post(`/service-providers/${id}/archive`, { reason })),
+      scopes: (id) => data(propertiesApi.get(`/service-providers/${id}/scopes`)),
+      addScope: (id, body) => data(propertiesApi.post(`/service-providers/${id}/scopes`, body)),
+      endScope: (scopeId) => data(propertiesApi.delete(`/service-provider-scopes/${scopeId}`)),
+      contacts: (id) => data(propertiesApi.get(`/service-providers/${id}/contacts`)),
+      addContact: (id, body) => data(propertiesApi.post(`/service-providers/${id}/contacts`, body)),
+    },
+    contacts: {
+      update: (id, body) => data(propertiesApi.patch(`/service-provider-contacts/${id}`, body)),
+      invite: (id) => data(propertiesApi.post(`/service-provider-contacts/${id}/invite`)),
+      resendInvite: (id) => data(propertiesApi.post(`/service-provider-contacts/${id}/resend-invite`)),
+      revokeInvite: (id) => data(propertiesApi.post(`/service-provider-contacts/${id}/revoke-invite`)),
+      suspend: (id) => data(propertiesApi.post(`/service-provider-contacts/${id}/suspend`)),
+      reactivate: (id) => data(propertiesApi.post(`/service-provider-contacts/${id}/reactivate`)),
+    },
+    enrollmentLinks: {
+      list: () => data(propertiesApi.get("/service-enrollment-links")),
+      create: (body = {}) => data(propertiesApi.post("/service-enrollment-links", body)),
+      revoke: (id) => data(propertiesApi.post(`/service-enrollment-links/${id}/revoke`)),
+    },
+    applications: {
+      list: (params = {}) => data(propertiesApi.get("/service-provider-applications", { params })),
+      get: (id) => data(propertiesApi.get(`/service-provider-applications/${id}`)),
+      approve: (id, body = {}) => data(propertiesApi.post(`/service-provider-applications/${id}/approve`, body)),
+      reject: (id, reason) => data(propertiesApi.post(`/service-provider-applications/${id}/reject`, { reason })),
+    },
+    // Sin sesión: la pantalla pública de registro de proveedores vive detrás
+    // de un enlace de inscripción (token en la URL), no de un login.
+    public: {
+      info: (token) => data(propertiesApi.get(`/public/service-enrollment/${token}`)),
+      apply: (token, body) => data(propertiesApi.post(`/public/service-enrollment/${token}/applications`, body)),
+    },
+  },
   media: {
     list: (entityType, entityId) => data(propertiesApi.get(`/media/${entityType}/${entityId}`)),
     upload: (entityType, entityId, file) => { const body = new FormData(); body.append("file", file); return data(propertiesApi.post(`/media/${entityType}/${entityId}`, body)); },

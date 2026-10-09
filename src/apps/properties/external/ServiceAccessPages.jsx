@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { HiArrowRight, HiBuildingOffice2, HiCheckCircle, HiDevicePhoneMobile, HiEnvelope, HiKey, HiShieldCheck, HiUser } from "react-icons/hi2";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import propertiesPortalService from "@/services/propertiesPortalService";
+import propertiesService from "@/services/propertiesService";
 import "./service-access.css";
+
+const emptyApplication={name:"",representativeName:"",email:"",phone:"",specialtyIds:[],coverage:"",experience:"",consent:false};
 
 function ServiceBrand(){return <div className="service-auth-brand"><span><HiShieldCheck/></span><div><strong>OwnTerra</strong><small>Servicio</small></div></div>}
 
@@ -27,7 +30,58 @@ export function ServiceInvitation(){
 
 export function ServiceRegistration(){
   const navigate=useNavigate();
+  const {token}=useParams();
   const [type,setType]=useState("independent");
-  const [sent,setSent]=useState(false);
-  return <main className="service-registration-page"><header><ServiceBrand/><button type="button" onClick={()=>navigate("/servicio/login")}>Ya tengo cuenta</button></header><section className="service-registration-card"><aside><span>Red de servicio de Own Terra Demo</span><h1>Ofrece tus servicios profesionales.</h1><p>Crea una solicitud para colaborar en mantenimientos y operaciones inmobiliarias. La administración revisará tu perfil antes de habilitar asignaciones.</p><ol><li><strong>1</strong><span>Completa tu perfil y cobertura.</span></li><li><strong>2</strong><span>Own Terra Demo revisa tu solicitud.</span></li><li><strong>3</strong><span>Si es aprobada, activas tu Portal de servicio.</span></li></ol><small>Registrarte no da acceso automático a propiedades ni información privada.</small></aside><div>{!sent?<><header><span>Solicitud de colaboración</span><h2>Cuéntanos quién eres</h2></header><div className="registration-types"><button className={type==="independent"?"active":""} onClick={()=>setType("independent")}><HiUser/><span><strong>Profesional independiente</strong><small>Trabajo por cuenta propia.</small></span></button><button className={type==="company"?"active":""} onClick={()=>setType("company")}><HiBuildingOffice2/><span><strong>Empresa proveedora</strong><small>Tengo coordinadores o técnicos.</small></span></button></div><form onSubmit={event=>{event.preventDefault();setSent(true)}}><label><span>{type==="company"?"Razón social":"Nombre completo"}</span><input required placeholder={type==="company"?"Nombre legal de la empresa":"Tu nombre y apellidos"}/></label>{type==="company"?<label><span>Representante</span><input required placeholder="Nombre del contacto principal"/></label>:null}<label><span>Correo</span><input required type="email" placeholder="contacto@correo.mx"/></label><label><span>WhatsApp</span><input required placeholder="+52 55 0000 0000"/></label><label><span>Especialidad</span><select><option>Plomería</option><option>Electricidad</option><option>Aire acondicionado</option><option>Seguridad</option><option>Limpieza</option><option>Construcción y acabados</option><option>Otra especialidad</option></select></label><label><span>Zona de cobertura</span><input placeholder="Municipios, ciudades o colonias"/></label><label className="wide"><span>Experiencia y servicios</span><textarea rows="3" placeholder="Describe brevemente qué trabajos realizas…"/></label><label className="wide registration-consent"><input type="checkbox" required/><span>Confirmo que la información es correcta y acepto que Own Terra Demo revise mi solicitud.</span></label><button type="submit">Enviar solicitud para revisión <HiArrowRight/></button></form></>:<section className="registration-sent"><HiCheckCircle/><span>Solicitud OT-RS-0084</span><h2>Tu perfil está en revisión.</h2><p>Own Terra Demo recibió tu información. Te avisaremos por correo o WhatsApp cuando exista una decisión.</p><div><small>Estado actual</small><strong>Pendiente de revisión</strong><em>Tiempo estimado: 1–2 días hábiles</em></div><button type="button" onClick={()=>navigate("/servicio/login")}>Ir al inicio de sesión</button></section>}</div></section><footer>Registro administrado por Own Terra Demo · OwnTerra Servicio</footer></main>;
+  const [form,setForm]=useState(emptyApplication);
+  const [info,setInfo]=useState(null);
+  const [linkError,setLinkError]=useState("");
+  const [loading,setLoading]=useState(Boolean(token));
+  const [submitError,setSubmitError]=useState("");
+  const [submitting,setSubmitting]=useState(false);
+  const [ack,setAck]=useState(null);
+
+  useEffect(()=>{
+    if(!token){setLoading(false);return;}
+    let active=true;
+    propertiesService.serviceNetwork.public.info(token)
+      .then(result=>{if(active)setInfo(result);})
+      .catch(error=>{if(active)setLinkError(error.response?.data?.error?.message||"Este enlace de inscripción no es válido.");})
+      .finally(()=>{if(active)setLoading(false);});
+    return ()=>{active=false;};
+  },[token]);
+
+  const toggleSpecialty=id=>setForm(current=>({...current,specialtyIds:current.specialtyIds.includes(id)?current.specialtyIds.filter(item=>item!==id):[...current.specialtyIds,id]}));
+
+  const submit=async event=>{
+    event.preventDefault();
+    if(!form.consent){setSubmitError("Debes aceptar el consentimiento para enviar la solicitud.");return;}
+    setSubmitError("");setSubmitting(true);
+    try{
+      const result=await propertiesService.serviceNetwork.public.apply(token,{
+        kind:type,
+        name:form.name.trim(),
+        representative_name:type==="company"?form.representativeName.trim()||null:null,
+        email:form.email.trim(),
+        phone:form.phone.trim()||null,
+        specialty_ids:form.specialtyIds,
+        coverage:form.coverage.trim()||null,
+        experience:form.experience.trim()||null,
+        consent_version:"2026-10-08",
+        consent_accepted:true,
+      });
+      setAck(result);
+    }catch(error){
+      setSubmitError(error.response?.data?.error?.message||"No pudimos enviar tu solicitud. Intenta de nuevo.");
+    }finally{
+      setSubmitting(false);
+    }
+  };
+
+  if(!token) return <main className="service-registration-page"><header><ServiceBrand/><button type="button" onClick={()=>navigate("/servicio/login")}>Ya tengo cuenta</button></header><section className="service-registration-card"><aside><span>Red de servicio</span><h1>Falta el enlace de inscripción.</h1><p>Pide a la administración el enlace de inscripción de proveedores — este formulario no acepta registros sin uno.</p></aside></section></main>;
+
+  if(loading) return <main className="service-registration-page"><section className="service-registration-card"><aside><span>Red de servicio</span><h1>Cargando…</h1></aside></section></main>;
+
+  if(linkError) return <main className="service-registration-page"><header><ServiceBrand/></header><section className="service-registration-card"><aside><span>Red de servicio</span><h1>{linkError}</h1><p>Pide a la administración un enlace nuevo.</p></aside></section></main>;
+
+  return <main className="service-registration-page"><header><ServiceBrand/><button type="button" onClick={()=>navigate("/servicio/login")}>Ya tengo cuenta</button></header><section className="service-registration-card"><aside><span>Red de servicio{info?.organization_name?` de ${info.organization_name}`:""}</span><h1>Ofrece tus servicios profesionales.</h1><p>Crea una solicitud para colaborar en mantenimientos y operaciones inmobiliarias. La administración revisará tu perfil antes de habilitar asignaciones.</p><ol><li><strong>1</strong><span>Completa tu perfil y cobertura.</span></li><li><strong>2</strong><span>La administración revisa tu solicitud.</span></li><li><strong>3</strong><span>Si es aprobada, activas tu Portal de servicio.</span></li></ol><small>Registrarte no da acceso automático a propiedades ni información privada.</small></aside><div>{!ack?<><header><span>Solicitud de colaboración</span><h2>Cuéntanos quién eres</h2></header><div className="registration-types"><button type="button" className={type==="independent"?"active":""} onClick={()=>setType("independent")}><HiUser/><span><strong>Profesional independiente</strong><small>Trabajo por cuenta propia.</small></span></button><button type="button" className={type==="company"?"active":""} onClick={()=>setType("company")}><HiBuildingOffice2/><span><strong>Empresa proveedora</strong><small>Tengo coordinadores o técnicos.</small></span></button></div><form onSubmit={submit}><label><span>{type==="company"?"Razón social":"Nombre completo"}</span><input required value={form.name} onChange={event=>setForm({...form,name:event.target.value})} placeholder={type==="company"?"Nombre legal de la empresa":"Tu nombre y apellidos"}/></label>{type==="company"?<label><span>Representante</span><input required value={form.representativeName} onChange={event=>setForm({...form,representativeName:event.target.value})} placeholder="Nombre del contacto principal"/></label>:null}<label><span>Correo</span><input required type="email" value={form.email} onChange={event=>setForm({...form,email:event.target.value})} placeholder="contacto@correo.mx"/></label><label><span>WhatsApp</span><input required value={form.phone} onChange={event=>setForm({...form,phone:event.target.value})} placeholder="+52 55 0000 0000"/></label><label className="wide"><span>Especialidades</span><div className="registration-specialties">{(info?.specialties||[]).map(specialty=><label key={specialty.id} className="registration-specialty-chip"><input type="checkbox" checked={form.specialtyIds.includes(specialty.id)} onChange={()=>toggleSpecialty(specialty.id)}/> {specialty.label}</label>)}</div></label><label><span>Zona de cobertura</span><input value={form.coverage} onChange={event=>setForm({...form,coverage:event.target.value})} placeholder="Municipios, ciudades o colonias"/></label><label className="wide"><span>Experiencia y servicios</span><textarea rows="3" value={form.experience} onChange={event=>setForm({...form,experience:event.target.value})} placeholder="Describe brevemente qué trabajos realizas…"/></label><label className="wide registration-consent"><input type="checkbox" required checked={form.consent} onChange={event=>setForm({...form,consent:event.target.checked})}/><span>Confirmo que la información es correcta y acepto que la administración revise mi solicitud.</span></label>{submitError?<p role="alert">{submitError}</p>:null}<button type="submit" disabled={submitting}>{submitting?"Enviando…":"Enviar solicitud para revisión"} <HiArrowRight/></button></form></>:<section className="registration-sent"><HiCheckCircle/><span>Solicitud {ack.folio}</span><h2>Tu perfil está en revisión.</h2><p>Recibimos tu información. Te avisaremos por correo o WhatsApp cuando exista una decisión.</p><div><small>Estado actual</small><strong>Pendiente de revisión</strong></div><button type="button" onClick={()=>navigate("/servicio/login")}>Ir al inicio de sesión</button></section>}</div></section><footer>Registro administrado por OwnTerra · Servicio</footer></main>;
 }

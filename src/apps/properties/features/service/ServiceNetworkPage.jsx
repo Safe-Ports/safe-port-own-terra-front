@@ -1,47 +1,270 @@
 import { useMemo, useState } from "react";
-import { HiArrowLeft, HiArrowRight, HiBolt, HiBuildingOffice2, HiCheckBadge, HiClock, HiLink, HiMapPin, HiPhone, HiPlus, HiShieldCheck, HiUserGroup, HiWrenchScrewdriver } from "react-icons/hi2";
+import { HiArrowLeft, HiArrowRight, HiBuildingOffice2, HiCheckBadge, HiLink, HiPhone, HiPlus, HiShieldCheck, HiUserGroup, HiWrenchScrewdriver } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
 import EcoLayout from "@/pages/Ecosystem/EcoLayout";
-import useEscapeKey from "@/hooks/useEscapeKey";
+import Modal from "@/components/ui/Modal";
+import { useAppContext } from "@/context/AppContext";
+import { providerService } from "@/services/providerService";
 import { usePropertiesData } from "../../data/PropertiesDataContext";
 import "./service-network.css";
 
-const responders=[
-  {id:"rsp-1",name:"Ana Castillo",kind:"internal",specialty:"Coordinación operativa",skills:["Inspecciones","Entregas","Accesos"],zone:"CDMX",availability:"Disponible",active:2,rating:"Equipo OwnTerra",phone:"55 2055 1802",color:"green"},
-  {id:"rsp-2",name:"Diego Ruiz",kind:"internal",specialty:"Mantenimiento interno",skills:["Electricidad","Inventarios","Supervisión"],zone:"CDMX · Edo. Méx.",availability:"En servicio",active:3,rating:"Equipo OwnTerra",phone:"55 8190 4431",color:"amber"},
-  {id:"rsp-3",name:"Plomería Díaz",kind:"external",specialty:"Plomería residencial",skills:["Fugas","Bombas","Calentadores"],zone:"CDMX centro y poniente",availability:"En servicio",active:1,rating:"4.9 · 28 servicios",phone:"55 6432 7781",color:"amber"},
-  {id:"rsp-4",name:"Obra Ligera MTY",kind:"external",specialty:"Adecuaciones comerciales",skills:["Plafón","Pintura","Albañilería"],zone:"Monterrey metropolitano",availability:"Disponible mañana",active:1,rating:"4.7 · 16 servicios",phone:"81 2098 7740",color:"blue"},
-  {id:"rsp-5",name:"Climas del Centro",kind:"external",specialty:"Aire acondicionado",skills:["Minisplit","Preventivo","Diagnóstico"],zone:"CDMX",availability:"Disponible",active:1,rating:"4.8 · 21 servicios",phone:"55 3221 9084",color:"green"},
-  {id:"rsp-6",name:"Caseta Jacarandas",kind:"external",specialty:"Seguridad y accesos",skills:["Accesos","Bitácora","Paquetería"],zone:"Torre Jacarandas",availability:"Turno activo",active:1,rating:"Sitio permanente",phone:"55 4108 0021",color:"green"},
-  {id:"rsp-7",name:"Construcciones Tapalpa",kind:"external",specialty:"Cubiertas y madera",skills:["Techos","Humedad","Carpintería"],zone:"Tapalpa y alrededores",availability:"Cotizando",active:1,rating:"4.6 · 9 servicios",phone:"33 2210 6577",color:"blue"},
-];
+const STATUS_LABEL = { pending: "Pendiente", active: "Activo", suspended: "Suspendido", archived: "Archivado" };
+const KIND_LABEL = { independent: "Profesional independiente", company: "Empresa proveedora" };
+const ROLE_LABEL = { independent: "Independiente", coordinator: "Coordinador", technician: "Técnico" };
 
-const workOrders=[
-  {ticket:"OT-240381",title:"Fuga debajo del lavabo",assignee:"Plomería Díaz",status:"En sitio",sla:"Respuesta en 14 min",tone:"urgent"},
-  {ticket:"OT-240349",title:"Plafón con humedad",assignee:"Obra Ligera MTY",status:"En progreso",sla:"Actualizado hace 2 h",tone:"active"},
-  {ticket:"OT-240301",title:"Verificar minisplit",assignee:"Climas del Centro",status:"Por confirmar",sla:"Respuesta límite 16:30",tone:"waiting"},
-  {ticket:"OT-240366",title:"Revisión de cubierta",assignee:"Construcciones Tapalpa",status:"Cotizando",sla:"Visita mañana 09:00",tone:"waiting"},
-];
+const emptyEnable = { coreProviderId: "", name: "", kind: "independent", specialtyIds: [], description: "", declaredAvailability: "" };
+const emptyContact = { name: "", email: "", phone: "", role: "technician", invitationMode: "permanent" };
 
-function ServiceNetworkPage(){
-  const navigate=useNavigate();
-  const {tickets}=usePropertiesData();
-  const [filter,setFilter]=useState("all");
-  const [selected,setSelected]=useState(responders[2]);
-  const [showInvite,setShowInvite]=useState(false);
-  const [accountType,setAccountType]=useState("independent");
-  useEscapeKey(()=>setShowInvite(false),showInvite);
-  const visible=useMemo(()=>filter==="all"?responders:responders.filter(item=>item.kind===filter),[filter]);
+function ServiceNetworkPage() {
+  const navigate = useNavigate();
+  const { showToast, canUseFeature } = useAppContext();
+  const canManage = canUseFeature("properties.providers.manage");
+  const canApprove = canUseFeature("properties.providers.approve");
+  const canInvite = canUseFeature("properties.providers.invite");
+  const {
+    serviceProviders, serviceSpecialties, serviceApplications, serviceEnrollmentLinks,
+    serviceNetworkLoading, serviceNetworkError,
+    enableServiceProvider, suspendServiceProvider, reactivateServiceProvider, archiveServiceProvider,
+    getServiceProviderContacts, addServiceProviderContact, inviteServiceContact, revokeServiceContactInvite,
+    createServiceEnrollmentLink, approveServiceApplication, rejectServiceApplication,
+  } = usePropertiesData();
+
+  const [filter, setFilter] = useState("all");
+  const [selectedId, setSelectedId] = useState(null);
+  const [showEnable, setShowEnable] = useState(false);
+  const [enableDraft, setEnableDraft] = useState(emptyEnable);
+  const [coreQuery, setCoreQuery] = useState("");
+  const [coreResults, setCoreResults] = useState([]);
+  const [coreSearching, setCoreSearching] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [showApplications, setShowApplications] = useState(false);
+  const [contacts, setContacts] = useState([]);
+  const [contactsLoading, setContactsLoading] = useState(false);
+  const [showContact, setShowContact] = useState(false);
+  const [contactDraft, setContactDraft] = useState(emptyContact);
+
+  const visible = useMemo(() => (filter === "all" ? serviceProviders : serviceProviders.filter((item) => item.kind === filter)), [filter, serviceProviders]);
+  const selected = serviceProviders.find((item) => item.id === selectedId) || visible[0] || null;
+
+  const loadContacts = async (profileId) => {
+    setContactsLoading(true);
+    try { setContacts(await getServiceProviderContacts(profileId)); }
+    catch { setContacts([]); }
+    finally { setContactsLoading(false); }
+  };
+
+  const selectProvider = (item) => { setSelectedId(item.id); loadContacts(item.id); };
+
+  const searchCore = async (query) => {
+    setCoreQuery(query);
+    if (!query.trim()) { setCoreResults([]); return; }
+    setCoreSearching(true);
+    try { setCoreResults((await providerService.list({ search: query, limit: 10 })).items || []); }
+    catch { setCoreResults([]); }
+    finally { setCoreSearching(false); }
+  };
+
+  const pickCoreProvider = (provider) => {
+    setEnableDraft((current) => ({ ...current, coreProviderId: provider.id, name: provider.name }));
+    setCoreResults([]);
+    setCoreQuery(provider.name);
+  };
+
+  const toggleSpecialty = (id) => setEnableDraft((current) => ({
+    ...current,
+    specialtyIds: current.specialtyIds.includes(id) ? current.specialtyIds.filter((item) => item !== id) : [...current.specialtyIds, id],
+  }));
+
+  const submitEnable = async (event) => {
+    event.preventDefault();
+    if (!enableDraft.coreProviderId) return showToast("Busca y selecciona el proveedor en el catálogo de Core", "warning");
+    setBusy(true);
+    try {
+      await enableServiceProvider(enableDraft);
+      showToast("Proveedor habilitado en la red de servicio", "success");
+      setShowEnable(false);
+      setEnableDraft(emptyEnable);
+      setCoreQuery("");
+    } catch (error) {
+      showToast(error.response?.data?.error?.message || error.message, "warning");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitContact = async (event) => {
+    event.preventDefault();
+    if (!selected) return;
+    setBusy(true);
+    try {
+      await addServiceProviderContact(selected.id, { mode: "new", ...contactDraft });
+      showToast("Contacto agregado", "success");
+      setShowContact(false);
+      setContactDraft(emptyContact);
+      loadContacts(selected.id);
+    } catch (error) {
+      showToast(error.response?.data?.error?.message || error.message, "warning");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const withBusy = (action) => async (...args) => {
+    setBusy(true);
+    try { await action(...args); }
+    catch (error) { showToast(error.response?.data?.error?.message || error.message, "warning"); }
+    finally { setBusy(false); }
+  };
+
+  const createLink = withBusy(async () => {
+    const row = await createServiceEnrollmentLink({});
+    const url = `${window.location.origin}/servicio/registro/${row.token}`;
+    try { await navigator.clipboard.writeText(url); showToast("Enlace copiado al portapapeles", "success"); }
+    catch { showToast(url, "success"); }
+  });
+
+  // Esta fase solo aprueba vinculando un Provider que YA existe en Core
+  // (créalo primero desde "Habilitar proveedor" si todavía no está en el
+  // catálogo) — la creación delegada queda para la fase de tickets/seguridad.
+  const approveApplication = withBusy(async (application) => {
+    const coreProviderId = window.prompt("ID del proveedor de Core a vincular (créalo primero si no existe):");
+    if (!coreProviderId) return;
+    await approveServiceApplication(application.id, { existing_core_provider_id: coreProviderId });
+    showToast("Solicitud aprobada", "success");
+  });
+
+  const rejectApplication = withBusy(async (application) => {
+    const reason = window.prompt("Motivo del rechazo:");
+    if (!reason) return;
+    await rejectServiceApplication(application.id, reason);
+    showToast("Solicitud rechazada", "success");
+  });
+
+  if (serviceNetworkLoading) return <EcoLayout active="properties" title="OwnTerra Properties" subtitle="Operación · Red de servicio"><main className="service-page"><p className="service-loading">Cargando red de servicio…</p></main></EcoLayout>;
+  if (serviceNetworkError) return <EcoLayout active="properties" title="OwnTerra Properties" subtitle="Operación · Red de servicio"><main className="service-page"><p className="service-loading">No pudimos cargar la red de servicio. Intenta recargar la página.</p></main></EcoLayout>;
+
   return <EcoLayout active="properties" title="OwnTerra Properties" subtitle="Operación · Red de servicio"><main className="service-page">
-    <header className="service-heading"><button type="button" onClick={()=>navigate("/properties")}><HiArrowLeft/> Properties</button><div><span>Quién resuelve</span><h1>Red de servicio. <em className="service-soon">Próximamente</em></h1><p>Personas, especialidades y carga operativa antes de asignar el trabajo.</p></div><button type="button" onClick={()=>setShowInvite(true)}><HiPlus/> Invitar proveedor</button></header>
-    <section className="service-access-model"><div><HiUserGroup/><span><strong>Equipo interno</strong><small>Reutiliza usuarios, roles y Mi Día del ecosistema.</small></span></div><i/><div><HiLink/><span><strong>Proveedor externo</strong><small>Usa su Portal de servicio con acceso limitado por asignación.</small></span></div><button type="button" onClick={()=>navigate("/portal-servicio")}>Ver experiencia del técnico <HiArrowRight/></button></section>
-    <section className="service-enrollment"><div><HiLink/><span><small>Registro autónomo</small><strong>Comparte tu enlace para que los proveedores soliciten acceso.</strong><em>ownterra.com/servicio/registro/OT-DEMO</em></span></div><button type="button" onClick={()=>navigate("/servicio/registro")}>Ver formulario público</button><i/><div><span className="service-request-count">3</span><span><small>Solicitudes pendientes</small><strong>Revisa identidad, especialidad y cobertura antes de aprobar.</strong></span></div><button type="button" disabled title="Todavía no está conectado — vista previa del diseño">Revisar solicitudes</button></section>
-    <section className="service-stats"><article><small>Red aprobada</small><strong>{responders.length}</strong><span>2 internos · 5 externos</span></article><article><small>Solicitudes nuevas</small><strong>3</strong><span>Pendientes de revisión</span></article><article><small>Trabajos abiertos</small><strong>{tickets.filter(item=>item.status!=="resolved").length}</strong><span>En toda la operación</span></article><article><small>Sin responsable</small><strong>{tickets.filter(item=>item.status!=="resolved"&&!item.assignee).length}</strong><span>Requieren asignación</span></article></section>
-    <section className="service-layout"><div className="service-directory"><header><div><span>Directorio operativo</span><h2>Responsables</h2></div><nav><button type="button" className={filter==="all"?"active":""} onClick={()=>setFilter("all")}>Todos</button><button type="button" className={filter==="internal"?"active":""} onClick={()=>setFilter("internal")}>Equipo</button><button type="button" className={filter==="external"?"active":""} onClick={()=>setFilter("external")}>Externos</button></nav></header><div>{visible.map(item=><button type="button" className={selected.id===item.id?"active":""} onClick={()=>setSelected(item)} key={item.id}><span className="service-avatar">{item.name.split(" ").slice(0,2).map(word=>word[0]).join("")}</span><span><small>{item.kind==="internal"?"Equipo interno":"Proveedor externo"}</small><strong>{item.name}</strong><em>{item.specialty}</em></span><i className={item.color}>{item.availability}</i></button>)}</div></div>
-      <article className="service-profile"><header><span className="service-profile-avatar">{selected.name.split(" ").slice(0,2).map(word=>word[0]).join("")}</span><div><small>{selected.kind==="internal"?"Integrante del ecosistema":"Colaborador externo"}</small><h2>{selected.name}</h2><p>{selected.specialty}</p></div><span className={`service-availability ${selected.color}`}><HiCheckBadge/> {selected.availability}</span></header><section className="service-profile-facts"><div><HiMapPin/><span><small>Cobertura</small><strong>{selected.zone}</strong></span></div><div><HiWrenchScrewdriver/><span><small>Carga actual</small><strong>{selected.active} {selected.active===1?"trabajo":"trabajos"}</strong></span></div><div><HiShieldCheck/><span><small>Referencia</small><strong>{selected.rating}</strong></span></div><div><HiPhone/><span><small>Contacto</small><strong>{selected.phone}</strong></span></div></section><section className="service-skills"><small>Puede resolver</small><div>{selected.skills.map(skill=><span key={skill}>{skill}</span>)}</div></section><section className="service-profile-access"><div><HiLink/><span><strong>{selected.kind==="internal"?"Acceso desde OwnTerra":"Orden de trabajo por enlace"}</strong><small>{selected.kind==="internal"?"Ve tickets asignados dentro de Mi Día.":"Puede aceptar, actualizar, reportar y chatear sin ver el resto del sistema."}</small></span></div><button type="button" onClick={()=>navigate(selected.kind==="internal"?"/ecosistema/mi-dia":"/portal-servicio")}>Vista del responsable</button></section></article>
+    <header className="service-heading">
+      <button type="button" onClick={() => navigate("/properties")}><HiArrowLeft /> Properties</button>
+      <div><span>Quién resuelve</span><h1>Red de servicio.</h1><p>Proveedores habilitados de Core, sus especialidades y sus contactos operativos.</p></div>
+      {canManage ? <button type="button" onClick={() => setShowEnable(true)}><HiPlus /> Habilitar proveedor</button> : null}
+    </header>
+
+    <section className="service-access-model">
+      <div><HiUserGroup /><span><strong>Equipo interno</strong><small>Reutiliza usuarios y roles del ecosistema.</small></span></div>
+      <i />
+      <div><HiLink /><span><strong>Proveedor externo</strong><small>Usa su Portal de servicio con acceso limitado por asignación.</small></span></div>
+      <button type="button" onClick={() => navigate("/portal-servicio")}>Ver experiencia del técnico <HiArrowRight /></button>
     </section>
-    <section className="dispatch-board"><header><div><span>Despacho actual</span><h2>Órdenes en movimiento</h2></div><p>Asignar no termina el flujo: cada responsable debe aceptar y mantener visible el siguiente paso.</p></header><div>{workOrders.map(order=><article key={order.ticket}><span className={`dispatch-icon ${order.tone}`}>{order.tone==="urgent"?<HiBolt/>:<HiClock/>}</span><div><small>{order.ticket}</small><strong>{order.title}</strong></div><div><small>Responsable</small><strong>{order.assignee}</strong></div><i className={order.tone}>{order.status}</i><span>{order.sla}</span><HiArrowRight/></article>)}</div></section>
-    {showInvite?<div className="service-invite-backdrop" onClick={()=>setShowInvite(false)}><section className="service-invite" role="dialog" aria-modal="true" aria-label="Agregar proveedor" onClick={event=>event.stopPropagation()}><header><div><span>Red de servicio</span><h2>Invitar proveedor</h2><p>Crea la identidad externa y envía un acceso protegido.</p></div><button type="button" onClick={()=>setShowInvite(false)}>×</button></header><div className="service-invite-types"><button type="button" className={accountType==="independent"?"active":""} onClick={()=>setAccountType("independent")}><HiUserGroup/><span><strong>Profesional independiente</strong><small>Una persona recibe y resuelve sus órdenes.</small></span></button><button type="button" className={accountType==="company"?"active":""} onClick={()=>setAccountType("company")}><HiBuildingOffice2/><span><strong>Empresa proveedora</strong><small>Un coordinador puede asignar trabajos a técnicos.</small></span></button></div><form><label><span>{accountType==="company"?"Razón social":"Nombre completo"}</span><input placeholder={accountType==="company"?"Ej. Climas del Centro, S.A.":"Ej. Rafael Díaz"}/></label>{accountType==="company"?<label><span>Contacto administrador</span><input placeholder="Nombre del coordinador"/></label>:null}<label><span>Correo de invitación</span><input type="email" placeholder="contacto@proveedor.mx"/></label><label><span>Teléfono / WhatsApp</span><input placeholder="+52 55 0000 0000"/></label><label><span>Especialidad principal</span><select><option>Plomería</option><option>Electricidad</option><option>Aire acondicionado</option><option>Seguridad</option><option>Limpieza</option><option>Construcción y acabados</option></select></label><label><span>Tipo de acceso</span><select><option>Portal de servicio permanente</option><option>Invitado por una sola orden</option></select></label></form><aside><HiLink/><div><strong>Se enviará una invitación de un solo uso</strong><span>Vence en 48 horas. El proveedor validará su correo o teléfono antes de crear el acceso.</span></div><button type="button" onClick={()=>navigate("/servicio/invitacion")}>Vista previa</button></aside><footer><button type="button" onClick={()=>setShowInvite(false)}>Cancelar</button><button type="button" disabled title="Todavía no está conectado — vista previa del diseño">Crear y enviar invitación</button></footer></section></div>:null}
+
+    <section className="service-enrollment">
+      <div><HiLink /><span><small>Registro autónomo</small><strong>Comparte tu enlace para que los proveedores soliciten acceso.</strong>{serviceEnrollmentLinks[0] ? <em>Vence: {serviceEnrollmentLinks[0].expires_at ? new Date(serviceEnrollmentLinks[0].expires_at).toLocaleDateString("es-MX") : "sin vencimiento"}</em> : <em>Sin enlaces creados todavía.</em>}</span></div>
+      {canInvite ? <button type="button" disabled={busy} onClick={createLink}>Generar y copiar enlace</button> : null}
+      <i />
+      <div><span className="service-request-count">{serviceApplications.length}</span><span><small>Solicitudes pendientes</small><strong>Revisa identidad, especialidad y cobertura antes de aprobar.</strong></span></div>
+      {canApprove ? <button type="button" onClick={() => setShowApplications(true)}>Revisar solicitudes</button> : null}
+    </section>
+
+    <section className="service-stats">
+      <article><small>Red habilitada</small><strong>{serviceProviders.length}</strong><span>{serviceProviders.filter((item) => item.status === "active").length} activos</span></article>
+      <article><small>Solicitudes nuevas</small><strong>{serviceApplications.length}</strong><span>Pendientes de revisión</span></article>
+      <article><small>Independientes</small><strong>{serviceProviders.filter((item) => item.kind === "independent").length}</strong><span>En la red</span></article>
+      <article><small>Empresas</small><strong>{serviceProviders.filter((item) => item.kind === "company").length}</strong><span>En la red</span></article>
+    </section>
+
+    <section className="service-layout">
+      <div className="service-directory">
+        <header><div><span>Directorio operativo</span><h2>Proveedores</h2></div>
+          <nav>
+            <button type="button" className={filter === "all" ? "active" : ""} onClick={() => setFilter("all")}>Todos</button>
+            <button type="button" className={filter === "independent" ? "active" : ""} onClick={() => setFilter("independent")}>Independientes</button>
+            <button type="button" className={filter === "company" ? "active" : ""} onClick={() => setFilter("company")}>Empresas</button>
+          </nav>
+        </header>
+        <div>
+          {visible.length ? visible.map((item) => (
+            <button type="button" className={selected?.id === item.id ? "active" : ""} onClick={() => selectProvider(item)} key={item.id}>
+              <span className="service-avatar">{(item.name || "?").split(" ").slice(0, 2).map((word) => word[0]).join("")}</span>
+              <span><small>{KIND_LABEL[item.kind]}</small><strong>{item.name || "(sin nombre en Core)"}</strong><em>{item.categoria || "Sin categoría"}</em></span>
+              <i className={item.status === "active" ? "green" : item.status === "suspended" ? "amber" : "blue"}>{STATUS_LABEL[item.status]}</i>
+            </button>
+          )) : <p className="service-empty">Todavía no hay proveedores habilitados en esta red.</p>}
+        </div>
+      </div>
+
+      {selected ? <article className="service-profile">
+        <header>
+          <span className="service-profile-avatar">{(selected.name || "?").split(" ").slice(0, 2).map((word) => word[0]).join("")}</span>
+          <div><small>{KIND_LABEL[selected.kind]}</small><h2>{selected.name || "(sin nombre en Core)"}</h2><p>{selected.categoria || "Sin categoría"}</p></div>
+          <span className={`service-availability ${selected.status === "active" ? "green" : selected.status === "suspended" ? "amber" : "blue"}`}><HiCheckBadge /> {STATUS_LABEL[selected.status]}</span>
+        </header>
+        <section className="service-profile-facts">
+          <div><HiPhone /><span><small>Contacto comercial</small><strong>{selected.phone || "Sin teléfono en Core"}</strong></span></div>
+          <div><HiWrenchScrewdriver /><span><small>Disponibilidad declarada</small><strong>{selected.declared_availability || "Sin declarar"}</strong></span></div>
+        </section>
+        <section className="service-skills"><small>Especialidades</small><div>{selected.specialty_ids.length ? selected.specialty_ids.map((id) => <span key={id}>{serviceSpecialties.find((s) => s.id === id)?.label || id}</span>) : <span>Sin especialidades declaradas</span>}</div></section>
+
+        <section className="service-profile-access">
+          <div><HiUserGroup /><span><strong>Contactos operativos</strong><small>Independiente, coordinador o técnicos vinculados a este perfil.</small></span></div>
+          {canInvite ? <button type="button" onClick={() => setShowContact(true)}>Agregar contacto</button> : null}
+        </section>
+        {contactsLoading ? <p className="service-empty">Cargando contactos…</p> : contacts.length ? <ul className="service-contact-list">
+          {contacts.map((contact) => <li key={contact.id}>
+            <span><strong>{contact.persona_name}</strong><small>{ROLE_LABEL[contact.role]} · {STATUS_LABEL[contact.status]}</small></span>
+            {canInvite ? <span className="service-contact-actions">
+              <button type="button" disabled={busy} onClick={withBusy(async () => { await inviteServiceContact(contact.id); showToast("Invitación enviada", "success"); })}>Invitar</button>
+              <button type="button" disabled={busy} onClick={withBusy(async () => { await revokeServiceContactInvite(contact.id); showToast("Invitación revocada", "success"); })}>Revocar invitación</button>
+            </span> : null}
+          </li>)}
+        </ul> : <p className="service-empty">Sin contactos todavía.</p>}
+
+        {canApprove ? <section className="service-profile-actions">
+          {selected.status === "active" ? <button type="button" disabled={busy} onClick={withBusy(async () => { const reason = window.prompt("Motivo de la suspensión:"); if (!reason) return; await suspendServiceProvider(selected.id, reason); showToast("Proveedor suspendido", "success"); })}>Suspender</button> : null}
+          {selected.status === "suspended" ? <button type="button" disabled={busy} onClick={withBusy(async () => { await reactivateServiceProvider(selected.id); showToast("Proveedor reactivado", "success"); })}>Reactivar</button> : null}
+          {selected.status !== "archived" ? <button type="button" disabled={busy} onClick={withBusy(async () => { const reason = window.prompt("Motivo del archivo:"); if (!reason) return; await archiveServiceProvider(selected.id, reason); showToast("Proveedor archivado", "success"); })}>Archivar</button> : null}
+        </section> : null}
+      </article> : null}
+    </section>
+
+    <Modal open={showEnable} onClose={() => setShowEnable(false)} title="Habilitar proveedor" subtitle="Vincula un proveedor ya registrado en Core" icon={<HiBuildingOffice2 />} footer={<><button type="button" onClick={() => setShowEnable(false)}>Cancelar</button><button type="submit" form="enable-provider-form" disabled={busy}>{busy ? "Habilitando…" : "Habilitar"}</button></>}>
+      <form id="enable-provider-form" className="properties-form" onSubmit={submitEnable}>
+        <section className="properties-form-section"><div className="properties-form-grid">
+          <label className="properties-form-wide"><span>Buscar proveedor en Core</span><input value={coreQuery} onChange={(event) => searchCore(event.target.value)} placeholder="Nombre o categoría" /></label>
+          {coreSearching ? <p className="service-empty">Buscando…</p> : null}
+          {coreResults.length ? <ul className="service-core-results">{coreResults.map((provider) => <li key={provider.id}><button type="button" onClick={() => pickCoreProvider(provider)}>{provider.name} <small>{provider.categoria || ""}</small></button></li>)}</ul> : null}
+          {enableDraft.coreProviderId ? <p className="service-core-selected">Seleccionado: <strong>{enableDraft.name}</strong></p> : null}
+          <label><span>Tipo</span><select value={enableDraft.kind} onChange={(event) => setEnableDraft({ ...enableDraft, kind: event.target.value })}><option value="independent">Profesional independiente</option><option value="company">Empresa proveedora</option></select></label>
+          <label><span>Disponibilidad declarada</span><input value={enableDraft.declaredAvailability} onChange={(event) => setEnableDraft({ ...enableDraft, declaredAvailability: event.target.value })} placeholder="Ej. tiempo completo" /></label>
+          <label className="properties-form-wide"><span>Especialidades</span><div className="registration-specialties">{serviceSpecialties.map((specialty) => <label key={specialty.id} className="registration-specialty-chip"><input type="checkbox" checked={enableDraft.specialtyIds.includes(specialty.id)} onChange={() => toggleSpecialty(specialty.id)} /> {specialty.label}</label>)}</div></label>
+          <label className="properties-form-wide"><span>Descripción</span><textarea rows="2" value={enableDraft.description} onChange={(event) => setEnableDraft({ ...enableDraft, description: event.target.value })} /></label>
+        </div></section>
+      </form>
+    </Modal>
+
+    <Modal open={showContact} onClose={() => setShowContact(false)} title="Agregar contacto" subtitle={selected?.name} icon={<HiUserGroup />} footer={<><button type="button" onClick={() => setShowContact(false)}>Cancelar</button><button type="submit" form="add-contact-form" disabled={busy}>{busy ? "Guardando…" : "Agregar"}</button></>}>
+      <form id="add-contact-form" className="properties-form" onSubmit={submitContact}>
+        <section className="properties-form-section"><div className="properties-form-grid">
+          <label className="properties-form-wide"><span>Nombre completo</span><input required value={contactDraft.name} onChange={(event) => setContactDraft({ ...contactDraft, name: event.target.value })} /></label>
+          <label><span>Correo</span><input type="email" value={contactDraft.email} onChange={(event) => setContactDraft({ ...contactDraft, email: event.target.value })} /></label>
+          <label><span>Teléfono</span><input value={contactDraft.phone} onChange={(event) => setContactDraft({ ...contactDraft, phone: event.target.value })} /></label>
+          <label><span>Rol</span><select value={contactDraft.role} onChange={(event) => setContactDraft({ ...contactDraft, role: event.target.value })}><option value="independent">Independiente</option><option value="coordinator">Coordinador</option><option value="technician">Técnico</option></select></label>
+          <label><span>Modalidad</span><select value={contactDraft.invitationMode} onChange={(event) => setContactDraft({ ...contactDraft, invitationMode: event.target.value })}><option value="permanent">Permanente</option><option value="single_order">Una sola orden</option></select></label>
+        </div></section>
+      </form>
+    </Modal>
+
+    <Modal open={showApplications} onClose={() => setShowApplications(false)} title="Solicitudes pendientes" subtitle="Revisión administrativa" icon={<HiShieldCheck />} width="max-w-[720px]">
+      {serviceApplications.length ? <ul className="service-application-list">
+        {serviceApplications.map((application) => <li key={application.id}>
+          <div><strong>{application.name}</strong><small>{application.folio} · {KIND_LABEL[application.kind]}</small><em>{application.email_normalized}{application.phone ? ` · ${application.phone}` : ""}</em>{application.coverage ? <p>{application.coverage}</p> : null}</div>
+          <span className="service-application-actions">
+            <button type="button" disabled={busy} onClick={() => approveApplication(application)}>Aprobar</button>
+            <button type="button" disabled={busy} onClick={() => rejectApplication(application)}>Rechazar</button>
+          </span>
+        </li>)}
+      </ul> : <p className="service-empty">No hay solicitudes pendientes.</p>}
+    </Modal>
   </main></EcoLayout>;
 }
+
 export default ServiceNetworkPage;
