@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { HiArrowLeft, HiArrowRight, HiBuildingOffice2, HiCheckBadge, HiLink, HiPhone, HiPlus, HiShieldCheck, HiUserGroup, HiWrenchScrewdriver } from "react-icons/hi2";
+import { HiExclamationTriangle, HiArrowLeft, HiArrowRight, HiBuildingOffice2, HiCheckBadge, HiLink, HiPhone, HiPlus, HiShieldCheck, HiUserGroup, HiWrenchScrewdriver } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
 import EcoLayout from "@/pages/Ecosystem/EcoLayout";
 import Modal from "@/components/ui/Modal";
@@ -42,6 +42,17 @@ function ServiceNetworkPage() {
   const [contactsLoading, setContactsLoading] = useState(false);
   const [showContact, setShowContact] = useState(false);
   const [contactDraft, setContactDraft] = useState(emptyContact);
+  // Suspender, archivar y rechazar piden un motivo que queda en la bitácora:
+  // se captura en un diálogo de la app, no en un window.prompt.
+  const [reasonAsk, setReasonAsk] = useState(null);
+  const [reasonText, setReasonText] = useState("");
+  // Aprobar vincula la solicitud con un proveedor del catálogo de Core. Se elige
+  // buscándolo por nombre, no pegando su UUID a mano.
+  const [approveFor, setApproveFor] = useState(null);
+  const [approveQuery, setApproveQuery] = useState("");
+  const [approveResults, setApproveResults] = useState([]);
+  const [approveSearching, setApproveSearching] = useState(false);
+  const [approvePick, setApprovePick] = useState(null);
 
   const visible = useMemo(() => (filter === "all" ? serviceProviders : serviceProviders.filter((item) => item.kind === filter)), [filter, serviceProviders]);
   const selected = serviceProviders.find((item) => item.id === selectedId) || visible[0] || null;
@@ -116,6 +127,45 @@ function ServiceNetworkPage() {
     finally { setBusy(false); }
   };
 
+  const askReason = (config) => { setReasonText(""); setReasonAsk(config); };
+
+  const confirmReason = withBusy(async () => {
+    const reason = reasonText.trim();
+    if (!reason || !reasonAsk) return;
+    await reasonAsk.action(reason);
+    showToast(reasonAsk.done, "success");
+    setReasonAsk(null);
+    setReasonText("");
+  });
+
+  const searchCoreForApproval = async (query) => {
+    setApproveQuery(query);
+    setApprovePick(null);
+    if (!query.trim()) { setApproveResults([]); return; }
+    setApproveSearching(true);
+    try { setApproveResults((await providerService.list({ search: query, limit: 10 })).items || []); }
+    catch { setApproveResults([]); }
+    finally { setApproveSearching(false); }
+  };
+
+  const openApproval = (application) => {
+    setApproveFor(application);
+    setApproveQuery(application.name || "");
+    setApprovePick(null);
+    setApproveResults([]);
+    if (application.name) searchCoreForApproval(application.name);
+  };
+
+  const confirmApproval = withBusy(async () => {
+    if (!approveFor || !approvePick) return;
+    await approveServiceApplication(approveFor.id, { existing_core_provider_id: approvePick.id });
+    showToast("Solicitud aprobada", "success");
+    setApproveFor(null);
+    setApprovePick(null);
+    setApproveQuery("");
+    setApproveResults([]);
+  });
+
   const createLink = withBusy(async () => {
     const row = await createServiceEnrollmentLink({});
     const url = `${window.location.origin}/servicio/registro?token=${row.token}`;
@@ -126,18 +176,14 @@ function ServiceNetworkPage() {
   // Esta fase solo aprueba vinculando un Provider que YA existe en Core
   // (créalo primero desde "Habilitar proveedor" si todavía no está en el
   // catálogo) — la creación delegada queda para la fase de tickets/seguridad.
-  const approveApplication = withBusy(async (application) => {
-    const coreProviderId = window.prompt("ID del proveedor de Core a vincular (créalo primero si no existe):");
-    if (!coreProviderId) return;
-    await approveServiceApplication(application.id, { existing_core_provider_id: coreProviderId });
-    showToast("Solicitud aprobada", "success");
-  });
-
-  const rejectApplication = withBusy(async (application) => {
-    const reason = window.prompt("Motivo del rechazo:");
-    if (!reason) return;
-    await rejectServiceApplication(application.id, reason);
-    showToast("Solicitud rechazada", "success");
+  const rejectApplication = (application) => askReason({
+    title: `¿Rechazar la solicitud de ${application.name}?`,
+    subtitle: application.folio,
+    confirmLabel: "Rechazar solicitud",
+    danger: true,
+    done: "Solicitud rechazada",
+    hint: "El motivo queda registrado y se le comparte al solicitante.",
+    action: (reason) => rejectServiceApplication(application.id, reason),
   });
 
   if (serviceNetworkLoading) return <EcoLayout active="properties" title="OwnTerra Properties" subtitle="Operación · Red de servicio"><main className="service-page"><p className="service-loading">Cargando red de servicio…</p></main></EcoLayout>;
@@ -219,9 +265,9 @@ function ServiceNetworkPage() {
         </ul> : <p className="service-empty">Sin contactos todavía.</p>}
 
         {canApprove ? <section className="service-profile-actions">
-          {selected.status === "active" ? <button type="button" disabled={busy} onClick={withBusy(async () => { const reason = window.prompt("Motivo de la suspensión:"); if (!reason) return; await suspendServiceProvider(selected.id, reason); showToast("Proveedor suspendido", "success"); })}>Suspender</button> : null}
+          {selected.status === "active" ? <button type="button" disabled={busy} onClick={() => askReason({ title: `¿Suspender a ${selected.name}?`, subtitle: "Deja de recibir asignaciones hasta que lo reactives.", confirmLabel: "Suspender", danger: true, done: "Proveedor suspendido", hint: "El motivo queda en la bitácora del proveedor.", action: (reason) => suspendServiceProvider(selected.id, reason) })}>Suspender</button> : null}
           {selected.status === "suspended" ? <button type="button" disabled={busy} onClick={withBusy(async () => { await reactivateServiceProvider(selected.id); showToast("Proveedor reactivado", "success"); })}>Reactivar</button> : null}
-          {selected.status !== "archived" ? <button type="button" disabled={busy} onClick={withBusy(async () => { const reason = window.prompt("Motivo del archivo:"); if (!reason) return; await archiveServiceProvider(selected.id, reason); showToast("Proveedor archivado", "success"); })}>Archivar</button> : null}
+          {selected.status !== "archived" ? <button type="button" disabled={busy} onClick={() => askReason({ title: `¿Archivar a ${selected.name}?`, subtitle: "Sale del directorio operativo. El historial se conserva.", confirmLabel: "Archivar", danger: true, done: "Proveedor archivado", hint: "El motivo queda en la bitácora del proveedor.", action: (reason) => archiveServiceProvider(selected.id, reason) })}>Archivar</button> : null}
         </section> : null}
       </article> : null}
     </section>
@@ -258,11 +304,65 @@ function ServiceNetworkPage() {
         {serviceApplications.map((application) => <li key={application.id}>
           <div><strong>{application.name}</strong><small>{application.folio} · {KIND_LABEL[application.kind]}</small><em>{application.email_normalized}{application.phone ? ` · ${application.phone}` : ""}</em>{application.coverage ? <p>{application.coverage}</p> : null}</div>
           <span className="service-application-actions">
-            <button type="button" disabled={busy} onClick={() => approveApplication(application)}>Aprobar</button>
+            <button type="button" disabled={busy} onClick={() => openApproval(application)}>Aprobar</button>
             <button type="button" disabled={busy} onClick={() => rejectApplication(application)}>Rechazar</button>
           </span>
         </li>)}
       </ul> : <p className="service-empty">No hay solicitudes pendientes.</p>}
+    </Modal>
+
+    <Modal
+      open={Boolean(reasonAsk)}
+      onClose={() => { setReasonAsk(null); setReasonText(""); }}
+      title={reasonAsk?.title || ""}
+      subtitle={reasonAsk?.subtitle}
+      icon={<HiExclamationTriangle />}
+      width="max-w-[460px]"
+      footer={<>
+        <button type="button" onClick={() => { setReasonAsk(null); setReasonText(""); }}>Cancelar</button>
+        <button type="submit" form="service-reason-form" disabled={busy || !reasonText.trim()}>{busy ? "Procesando…" : reasonAsk?.confirmLabel || "Aceptar"}</button>
+      </>}
+    >
+      <form id="service-reason-form" className="properties-form" onSubmit={(event) => { event.preventDefault(); confirmReason(); }}>
+        <section className="properties-form-section"><div className="properties-form-grid">
+          <label className="properties-form-wide">
+            <span>Motivo</span>
+            <textarea rows="3" autoFocus value={reasonText} onChange={(event) => setReasonText(event.target.value)} placeholder="Explica brevemente por qué." />
+          </label>
+          {reasonAsk?.hint ? <p className="service-reason-hint">{reasonAsk.hint}</p> : null}
+        </div></section>
+      </form>
+    </Modal>
+
+    <Modal
+      open={Boolean(approveFor)}
+      onClose={() => setApproveFor(null)}
+      title="Aprobar solicitud"
+      subtitle={approveFor ? `${approveFor.name} · ${approveFor.folio}` : ""}
+      icon={<HiShieldCheck />}
+      width="max-w-[560px]"
+      footer={<>
+        <button type="button" onClick={() => setApproveFor(null)}>Cancelar</button>
+        <button type="button" className="is-primary" disabled={busy || !approvePick} onClick={confirmApproval}>{busy ? "Aprobando…" : "Aprobar y vincular"}</button>
+      </>}
+    >
+      <div className="properties-form"><section className="properties-form-section">
+        <p className="service-approve-help">Vincula la solicitud con el proveedor que ya existe en el catálogo de Core. Si todavía no está, créalo con <strong>Habilitar proveedor</strong> y vuelve aquí.</p>
+        <label className="properties-form-wide">
+          <span>Buscar proveedor en Core</span>
+          <input value={approveQuery} onChange={(event) => searchCoreForApproval(event.target.value)} placeholder="Nombre o categoría" />
+        </label>
+        {approveSearching ? <p className="service-empty">Buscando…</p> : null}
+        {!approveSearching && approveQuery.trim() && !approveResults.length ? <p className="service-empty">Ningún proveedor de Core coincide con esa búsqueda.</p> : null}
+        {approveResults.length ? <ul className="service-core-results">
+          {approveResults.map((provider) => <li key={provider.id}>
+            <button type="button" className={approvePick?.id === provider.id ? "active" : ""} onClick={() => setApprovePick(provider)}>
+              {provider.name} <small>{provider.categoria || ""}</small>
+            </button>
+          </li>)}
+        </ul> : null}
+        {approvePick ? <p className="service-core-selected">Se vinculará con: <strong>{approvePick.name}</strong></p> : null}
+      </section></div>
     </Modal>
   </main></EcoLayout>;
 }
