@@ -11,5 +11,7 @@
 .service-reason-hint { margin: 8px 0 0; grid-column: 1 / -1; color: var(--text-secondary, #777); font-size: .74rem; line-height: 1.45; }
 
 /* Ayuda del selector de proveedor al aprobar una solicitud. */
-.service-approve-help { margin: 0 0 14px; font-size: .84rem; line-height: 1.5; color: var(--text-secondary, #555b55); }
+.service-approve-help { grid-column: 1 / -1; margin: 0 0 4px; font-size: .84rem; line-height: 1.5; color: var(--text-secondary, #555b55); }
+.service-core-results { grid-column: 1 / -1; }
+.service-core-selected { grid-column: 1 / -1; }
 .service-core-results button.active { outline: 2px solid var(--forest, #2f5d50); outline-offset: -2px; }

@@ -346,7 +346,7 @@ function ServiceNetworkPage() {
         <button type="button" className="is-primary" disabled={busy || !approvePick} onClick={confirmApproval}>{busy ? "Aprobando…" : "Aprobar y vincular"}</button>
       </>}
     >
-      <div className="properties-form"><section className="properties-form-section">
+      <div className="properties-form"><section className="properties-form-section"><div className="properties-form-grid">
         <p className="service-approve-help">Vincula la solicitud con el proveedor que ya existe en el catálogo de Core. Si todavía no está, créalo con <strong>Habilitar proveedor</strong> y vuelve aquí.</p>
         <label className="properties-form-wide">
           <span>Buscar proveedor en Core</span>
@@ -362,7 +362,7 @@ function ServiceNetworkPage() {
           </li>)}
         </ul> : null}
         {approvePick ? <p className="service-core-selected">Se vinculará con: <strong>{approvePick.name}</strong></p> : null}
-      </section></div>
+      </div></section></div>
     </Modal>
   </main></EcoLayout>;
 }
