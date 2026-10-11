@@ -127,3 +127,65 @@ describe("MatrixSheet · files asociados", () => {
     expect(screen.getByText("L-002")).toBeInTheDocument();
   });
 });
+
+describe("MatrixSheet · paginado", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const MUCHOS_LOTES = Array.from({ length: 25 }, (_, i) => ({
+    id: `lot-${i + 1}`,
+    code: `L-${String(i + 1).padStart(3, "0")}`,
+    status: "available",
+    area_m2: "120",
+    price_contado: "500000",
+  }));
+
+  function pintarConLotes(lots) {
+    documentService.forLots.mockResolvedValue({});
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    return render(
+      <QueryClientProvider client={qc}>
+        <MatrixSheet lots={lots} fracId="frac-1" fracName="Las Palmas"
+                     loading={false} showError={vi.fn()} />
+      </QueryClientProvider>
+    );
+  }
+
+  it("con 2 lotes no hay control de paginación (entran en una sola página)", async () => {
+    pintar();
+    await screen.findByText("L-001");
+    expect(screen.queryByText(/Mostrando/)).not.toBeInTheDocument();
+  });
+
+  it("con 25 lotes solo pinta los primeros 20 y deja avanzar a la página 2", async () => {
+    pintarConLotes(MUCHOS_LOTES);
+    await screen.findByText("L-001");
+
+    expect(screen.getAllByRole("row")).toHaveLength(1 + 20); // encabezado + 20 filas
+    expect(screen.queryByText("L-021")).not.toBeInTheDocument();
+    expect(screen.getByText("Mostrando 1 a 20 de 25")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "›" }));
+
+    expect(await screen.findByText("L-021")).toBeInTheDocument();
+    expect(screen.queryByText("L-001")).not.toBeInTheDocument();
+    expect(screen.getByText("Mostrando 21 a 25 de 25")).toBeInTheDocument();
+  });
+
+  it("al cambiar la lista de lotes vuelve a la página 1", async () => {
+    const { rerender } = pintarConLotes(MUCHOS_LOTES);
+    await screen.findByText("L-001");
+    fireEvent.click(screen.getByRole("button", { name: "›" }));
+    await screen.findByText("L-021");
+
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    rerender(
+      <QueryClientProvider client={qc}>
+        <MatrixSheet lots={MUCHOS_LOTES.slice(0, 2)} fracId="frac-1" fracName="Las Palmas"
+                     loading={false} showError={vi.fn()} />
+      </QueryClientProvider>
+    );
+
+    expect(await screen.findByText("L-001")).toBeInTheDocument();
+    expect(screen.queryByText(/Mostrando/)).not.toBeInTheDocument();
+  });
+});

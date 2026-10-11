@@ -1,10 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { HiArrowDownTray } from "react-icons/hi2";
 import FilesDropdown from "@/components/shared/FilesDropdown";
+import Pagination, { paginate } from "@/components/shared/Pagination";
 import { lotService } from "@/services/lotService";
 import { documentService } from "@/services/documentService";
 import { measure } from "@/services/formatters";
+
+const PAGE_SIZE = 20;
 
 /**
  * Encabezados de la plantilla de importación, en su orden exacto.
@@ -74,6 +77,14 @@ function money(value) {
  */
 export default function MatrixSheet({ lots, fracId, fracName, loading, showError }) {
   const [downloading, setDownloading] = useState(null);
+  const [page, setPage] = useState(1);
+
+  // Vuelve a la página 1 cuando cambian los lotes mostrados (otro fraccionamiento
+  // o un filtro distinto) — sin esto, pasar de 1500 a 20 lotes podía dejar la
+  // paginación apuntando a una página que ya no existe.
+  useEffect(() => setPage(1), [lots]);
+
+  const pageLots = useMemo(() => paginate(lots, page, PAGE_SIZE), [lots, page]);
 
   /* Si falla, la matriz se pinta igual: los archivos son un extra de la vista,
      no la vista. */
@@ -134,6 +145,7 @@ export default function MatrixSheet({ lots, fracId, fracName, loading, showError
       ) : lots.length === 0 ? (
         <div className="frac-empty">No hay lotes que coincidan con los filtros.</div>
       ) : (
+        <>
         <div className="mx-wrap">
           <table className="mx-table">
             <thead>
@@ -145,7 +157,7 @@ export default function MatrixSheet({ lots, fracId, fracName, loading, showError
               </tr>
             </thead>
             <tbody>
-              {lots.map((lot) => {
+              {pageLots.map((lot) => {
                 const money_c = money(lot.price_contado);
                 const money_f = money(lot.price_financiado);
                 const fr = measure(lot.frente_ml);
@@ -185,6 +197,8 @@ export default function MatrixSheet({ lots, fracId, fracName, loading, showError
             </tbody>
           </table>
         </div>
+        <Pagination total={lots.length} page={page} limit={PAGE_SIZE} onPage={setPage} />
+        </>
       )}
 
       <div className="mx-foot">
