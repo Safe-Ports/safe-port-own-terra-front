@@ -14,7 +14,7 @@ import { useAppContext } from "@/context/AppContext";
 const APPS = [
   { key: "lands",  label: "Lands",        icon: "eco-g-lands",  to: "/dashboard",    gate: (c) => c.canAccessApp("lands") },
   { key: "homes",  label: "Construction", icon: "eco-g-homes",  to: "/construccion", live: false },
-  { key: "neighb", label: "Properties",   icon: "eco-g-neighb", to: "/ecosistema",   live: false },
+  { key: "neighb", label: "Properties",   icon: "eco-g-neighb", to: "/properties",   gate: (c) => c.canAccessApp("properties") },
 ];
 
 /**

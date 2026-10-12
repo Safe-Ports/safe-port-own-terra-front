@@ -17,6 +17,8 @@ const ServiceLogin = lazy(() => import("@/apps/properties/external/ServiceAccess
 const ServiceInvitation = lazy(() => import("@/apps/properties/external/ServiceAccessPages").then(module => ({ default: module.ServiceInvitation })));
 const ServiceRegistration = lazy(() => import("@/apps/properties/external/ServiceAccessPages").then(module => ({ default: module.ServiceRegistration })));
 
+const PortalRecovery = lazy(() => import("@/apps/properties/external/PortalRecovery"));
+
 function App() {
   const { currentUser } = useAppContext();
   const { pathname } = useLocation();
@@ -33,8 +35,15 @@ function App() {
   if (PROPERTIES_MVP_SCOPE.rentals && (pathname === "/rentas" || pathname.startsWith("/rentas/"))) return <Suspense fallback={null}><RentalCatalogPage /></Suspense>;
   // Portal del inquilino: vista pública de demostración, sin sesión propia.
   if (PROPERTIES_MVP_SCOPE.rentals && pathname === "/portal-inquilino") return <Suspense fallback={null}><TenantPortal /></Suspense>;
-  if (pathname === "/servicio/login") return <Suspense fallback={null}><ServiceLogin /></Suspense>;
-  if (pathname === "/servicio/invitacion") return <Suspense fallback={null}><ServiceInvitation /></Suspense>;
+  // Acceso del residente. Las rutas viven bajo /portal: decían /servicio y un
+  // residente que recibe el enlace por WhatsApp no tiene por qué leer
+  // "servicio" para entrar a su comunidad. Las viejas siguen resolviendo
+  // porque hay invitaciones de un solo uso ya repartidas.
+  if (pathname === "/portal/recuperar") return <Suspense fallback={null}><PortalRecovery /></Suspense>;
+  // URL de recuperación que Core ya envía por correo.
+  if (pathname === "/portal/entrar/restablecer" || pathname === "/portal/restablecer") return <Suspense fallback={null}><PortalRecovery reset /></Suspense>;
+  if (pathname === "/portal/acceso" || pathname === "/portal/entrar" || pathname === "/servicio/login") return <Suspense fallback={null}><ServiceLogin /></Suspense>;
+  if (pathname === "/portal/invitacion" || pathname === "/servicio/invitacion") return <Suspense fallback={null}><ServiceInvitation /></Suspense>;
   // Formulario público de inscripción de proveedores: sin sesión, por diseño
   // (ACC/PRV-05 del doc de requerimientos) — igual que login/invitación de
   // arriba, antes del gate `currentUser ? AppRouter : LoginScreen` de abajo.

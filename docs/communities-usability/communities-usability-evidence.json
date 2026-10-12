@@ -1,0 +1,281 @@
+{
+  "fixture": {
+    "communities": 2,
+    "unitsPerCommunity": 30,
+    "people": 60
+  },
+  "observations": [
+    {
+      "name": "new-community",
+      "fields": [
+        {
+          "type": "select-one",
+          "label": "TipoCondominio verticalCondominio horizontalFraccionamiento o privadaComunidad mixta",
+          "disabled": false,
+          "options": 4
+        },
+        {
+          "type": "select-one",
+          "label": "Inmueble asociadoSeleccionar inmueble",
+          "disabled": false,
+          "options": 1
+        },
+        {
+          "type": "text",
+          "label": "Nombre de la comunidad",
+          "disabled": false
+        },
+        {
+          "type": "number",
+          "label": "Cuota base mensual Opcional",
+          "disabled": false
+        },
+        {
+          "type": "number",
+          "label": "Día de cobro 1–28",
+          "disabled": false
+        }
+      ],
+      "height": {
+        "client": 390,
+        "scroll": 390
+      }
+    },
+    {
+      "name": "contact",
+      "fields": [
+        {
+          "type": "select-one",
+          "label": "Tipo de personaPersona físicaPersona moral",
+          "disabled": false,
+          "options": 2
+        },
+        {
+          "type": "select-one",
+          "label": "Preferencia de comunicaciónCorreo electrónicoWhatsAppTeléfono",
+          "disabled": false,
+          "options": 3
+        },
+        {
+          "type": "text",
+          "label": "Nombre completo",
+          "disabled": false
+        },
+        {
+          "type": "email",
+          "label": "Correo Opcional · para invitarla al portal",
+          "disabled": false
+        },
+        {
+          "type": "text",
+          "label": "Teléfono",
+          "disabled": false
+        },
+        {
+          "type": "checkbox",
+          "label": "Forma parte del comité",
+          "disabled": false
+        },
+        {
+          "type": "text",
+          "label": "Contacto de emergencia",
+          "disabled": false
+        },
+        {
+          "type": "text",
+          "label": "Teléfono de emergencia",
+          "disabled": false
+        },
+        {
+          "type": "textarea",
+          "label": "Notas internas",
+          "disabled": false
+        }
+      ],
+      "height": {
+        "client": 655,
+        "scroll": 655
+      }
+    },
+    {
+      "name": "member-new",
+      "fields": [
+        {
+          "type": "radio",
+          "label": "Persona nueva",
+          "disabled": false
+        },
+        {
+          "type": "radio",
+          "label": "Ya está en el directorio",
+          "disabled": false
+        },
+        {
+          "type": "text",
+          "label": "Nombre completo",
+          "disabled": false
+        },
+        {
+          "type": "email",
+          "label": "Correo Opcional · para invitarla al portal",
+          "disabled": false
+        },
+        {
+          "type": "text",
+          "label": "Teléfono Opcional",
+          "disabled": false
+        },
+        {
+          "type": "radio",
+          "label": "PropietarioEs dueño de la unidad, viva o no en ella.",
+          "disabled": false
+        },
+        {
+          "type": "radio",
+          "label": "ResidenteVive en la unidad sin ser dueño ni inquilino.",
+          "disabled": false
+        },
+        {
+          "type": "radio",
+          "label": "InquilinoRenta la unidad.",
+          "disabled": false
+        },
+        {
+          "type": "checkbox",
+          "label": "Responsable de pagoRecibe las cuotas de la unidad",
+          "disabled": true
+        },
+        {
+          "type": "checkbox",
+          "label": "Derecho a votoParticipa en las votaciones",
+          "disabled": false
+        },
+        {
+          "type": "checkbox",
+          "label": "Acceso a amenidadesPuede reservar",
+          "disabled": false
+        },
+        {
+          "type": "checkbox",
+          "label": "Contacto principalA quien se busca primero",
+          "disabled": false
+        },
+        {
+          "type": "date",
+          "label": "Desde Opcional",
+          "disabled": false
+        },
+        {
+          "type": "date",
+          "label": "Hasta Vacío si no tiene fin",
+          "disabled": false
+        }
+      ],
+      "height": {
+        "client": 808,
+        "scroll": 808
+      }
+    },
+    {
+      "name": "member-existing",
+      "fields": [
+        {
+          "type": "radio",
+          "label": "Persona nueva",
+          "disabled": false
+        },
+        {
+          "type": "radio",
+          "label": "Ya está en el directorio",
+          "disabled": false
+        },
+        {
+          "type": "select-one",
+          "label": "PersonaElige a la personaPersona 1 · p1@example.comPersona 10 · p10@example.comPersona 11 · p11@example.comPersona 12 · p12@example.comPersona 13 · p13@example.comPersona 14 · p14@example.comPersona 15 · p15@example.comPersona 16 · p16@example.comPersona 17 · p17@example.comPersona 18 · p18@example.comPersona 19 · p19@example.comPersona 2 · p2@example.comPersona 20 · p20@example.comPersona 21 · p21@example.comPersona 22 · p22@example.comPersona 23 · p23@example.comPersona 24 · p24@example.comPersona 25 · p25@example.comPersona 26 · p26@example.comPersona 27 · p27@example.comPersona 28 · p28@example.comPersona 29 · p29@example.comPersona 3 · p3@example.comPersona 30 · p30@example.comPersona 32 · p32@example.comPersona 33 · p33@example.comPersona 34 · p34@example.comPersona 35 · p35@example.comPersona 36 · p36@example.comPersona 37 · p37@example.comPersona 38 · p38@example.comPersona 39 · p39@example.comPersona 4 · p4@example.comPersona 40 · p40@example.comPersona 41 · p41@example.comPersona 42 · p42@example.comPersona 43 · p43@example.comPersona 44 · p44@example.comPersona 45 · p45@example.comPersona 46 · p46@example.comPersona 47 · p47@example.comPersona 48 · p48@example.comPersona 49 · p49@example.comPersona 5 · p5@example.comPersona 50 · p50@example.comPersona 51 · p51@example.comPersona 52 · p52@example.comPersona 53 · p53@example.comPersona 54 · p54@example.comPersona 55 · p55@example.comPersona 56 · p56@example.comPersona 57 · p57@example.comPersona 58 · p58@example.comPersona 59 · p59@example.comPersona 6 · p6@example.comPersona 60 · p60@example.comPersona 7 · p7@example.comPersona 8 · p8@example.comPersona 9 · p9@example.com",
+          "disabled": false,
+          "options": 60
+        },
+        {
+          "type": "radio",
+          "label": "PropietarioEs dueño de la unidad, viva o no en ella.",
+          "disabled": false
+        },
+        {
+          "type": "radio",
+          "label": "ResidenteVive en la unidad sin ser dueño ni inquilino.",
+          "disabled": false
+        },
+        {
+          "type": "radio",
+          "label": "InquilinoRenta la unidad.",
+          "disabled": false
+        },
+        {
+          "type": "checkbox",
+          "label": "Responsable de pagoRecibe las cuotas de la unidad",
+          "disabled": true
+        },
+        {
+          "type": "checkbox",
+          "label": "Derecho a votoParticipa en las votaciones",
+          "disabled": false
+        },
+        {
+          "type": "checkbox",
+          "label": "Acceso a amenidadesPuede reservar",
+          "disabled": false
+        },
+        {
+          "type": "checkbox",
+          "label": "Contacto principalA quien se busca primero",
+          "disabled": false
+        },
+        {
+          "type": "date",
+          "label": "Desde Opcional",
+          "disabled": false
+        },
+        {
+          "type": "date",
+          "label": "Hasta Vacío si no tiene fin",
+          "disabled": false
+        }
+      ],
+      "height": {
+        "client": 733,
+        "scroll": 733
+      }
+    },
+    {
+      "name": "operations-entry-context",
+      "url": "http://localhost:5173/properties/comunidades/operacion",
+      "selected": "community-1"
+    },
+    {
+      "name": "module-switch-context",
+      "url": "http://localhost:5173/properties/comunidades/operacion?module=communications",
+      "selected": "community-2"
+    },
+    {
+      "name": "module-switch-after-reload",
+      "url": "http://localhost:5173/properties/comunidades/operacion?module=communications",
+      "selected": "community-1"
+    },
+    {
+      "name": "mobile-detail-before-filter",
+      "box": {
+        "x": 33,
+        "y": 3304.28125,
+        "width": 324,
+        "height": 596.859375
+      },
+      "matrixHeight": 1855,
+      "scrollAreaHeight": 721
+    },
+    {
+      "name": "filtered-unit-selection",
+      "visibleRows": 1,
+      "detailTitle": "230"
+    }
+  ]
+}

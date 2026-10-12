@@ -1,3 +1,4 @@
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import { useEffect, useState } from "react";
 import {
   HiOutlineArrowLeft, HiOutlineArrowDownTray, HiOutlineCheckCircle,
@@ -139,6 +140,7 @@ function Asistente({ onSalir }) {
   const qc = useQueryClient();
   const { fracs = [], showToast } = useAppContext();
   const guardado = leerAvance(orgId);
+  const [restartOpen, setRestartOpen] = useState(false);
   const [fracId, setFracId] = useState(guardado?.fracId ?? "");
   const [fracNuevo, setFracNuevo] = useState("");
   const [creandoFrac, setCreandoFrac] = useState(false);
@@ -292,6 +294,7 @@ function Asistente({ onSalir }) {
   };
 
   const confirmar = async () => {
+    if (ocupado) return;
     setOcupado(true); setError("");
     try {
       const r = await correr(paso.id, archivo, false);
@@ -332,6 +335,7 @@ function Asistente({ onSalir }) {
         <HiOutlineArrowLeft /> Volver a Carga de Lotes
       </button>
 
+      <ConfirmDialog open={restartOpen} title="¿Reiniciar el asistente?" confirmLabel="Reiniciar" onCancel={() => setRestartOpen(false)} onConfirm={() => { empezarOtra(); setRestartOpen(false); }}>Se olvida el avance de esta pantalla. Lo ya cargado en la base se conserva.</ConfirmDialog>
       {Object.keys(hechos).length > 0 && (
         <div className="mx-auto mb-5 flex max-w-[720px] items-center justify-between gap-4 rounded-[12px] border border-[#BEE0C6] bg-[#EDF7EF] px-4 py-3">
           <span className="text-[0.78rem] leading-relaxed text-[#2F6A38]">
@@ -340,12 +344,7 @@ function Asistente({ onSalir }) {
             se vuelve a subir.
           </span>
           <button
-            onClick={() => {
-              if (!window.confirm(
-                "Se olvida el avance de esta pantalla. Lo ya cargado en la base NO se borra: " +
-                "al volver a subir los archivos se actualizarán en vez de duplicarse.")) return;
-              empezarOtra();
-            }}
+            onClick={() => setRestartOpen(true)}
             className="shrink-0 text-[0.75rem] font-bold text-[#4E7A55] underline"
           >
             Empezar de nuevo

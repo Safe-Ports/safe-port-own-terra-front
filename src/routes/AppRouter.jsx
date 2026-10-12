@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import AppShell from "@/layouts/AppShell";
 import { useAppContext } from "@/context/AppContext";
 import { getDeniedMessage } from "@/services/permissions";
@@ -58,6 +58,12 @@ const TenantPortal = lazyWithRetry(() => import("@/apps/properties/external/Tena
 const CommunityPortal = lazyWithRetry(() => import("@/apps/properties/external/CommunityPortal"));
 const PropertiesModule = lazyWithRetry(() => import("@/apps/properties/PropertiesModule"));
 
+// `Navigate` no conserva la query y el token de invitación viaja ahí.
+function KeepQuery({ to }) {
+  const { search } = useLocation();
+  return <Navigate to={`${to}${search}`} replace />;
+}
+
 function PageLoader() {
   return (
     <div className="flex min-h-[50vh] items-center justify-center">
@@ -92,8 +98,12 @@ function AppRouter() {
           <Route path="/planes" element={<RequireFeature feature="core.config"><PricingPage /></RequireFeature>} />
           <Route path="/ecosistema" element={<EcosystemHub />} />
           <Route path="/portal-servicio" element={<ServicePartnerPortal />} />
-          <Route path="/servicio/login" element={<ServiceLogin />} />
-          <Route path="/servicio/invitacion" element={<ServiceInvitation />} />
+          <Route path="/portal/acceso" element={<ServiceLogin />} />
+          <Route path="/portal/invitacion" element={<ServiceInvitation />} />
+          {/* Rutas anteriores: hay invitaciones de un solo uso ya repartidas,
+              así que redirigen conservando el ?token= en vez de romperse. */}
+          <Route path="/servicio/login" element={<KeepQuery to="/portal/acceso" />} />
+          <Route path="/servicio/invitacion" element={<KeepQuery to="/portal/invitacion" />} />
           <Route path="/servicio/registro" element={<ServiceRegistration />} />
           <Route path="/portal-inquilino" element={PROPERTIES_MVP_SCOPE.rentals ? <TenantPortal /> : <Navigate to="/ecosistema" replace />} />
           <Route path="/portal-comunidad" element={<RequireFeature app="properties"><CommunityPortal /></RequireFeature>} />

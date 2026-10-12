@@ -92,7 +92,7 @@ function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
               {currentUser?.organization?.name || currentUser?.organization || "Mi organización"}
             </div>
             <div className="ts-schema">
-              {currentUser?.name ? `Hola, ${currentUser.name.split(" ")[0]} 👋` : "OwnTerra Platform"}
+              {currentUser?.name ? `Hola, ${currentUser.name.split(" ")[0]}` : "OwnTerra Platform"}
             </div>
           </div>
         </div>

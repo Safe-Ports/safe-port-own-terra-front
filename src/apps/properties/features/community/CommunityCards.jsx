@@ -1,6 +1,7 @@
 import { useQueries } from "@tanstack/react-query";
 import { HiBanknotes, HiBuildingOffice2, HiCalendarDays, HiCheckCircle, HiExclamationTriangle, HiInboxStack, HiScale, HiUsers } from "react-icons/hi2";
 import propertiesService from "@/services/propertiesService";
+import { communityReferenceImage } from "./communityImages";
 import { mediaQueryKey } from "../media/MediaGallery";
 import { COMMUNITY_KIND_LABEL, communityAlerts } from "./communityModel";
 
@@ -15,7 +16,7 @@ function useCommunityCovers(communities) {
   const results = useQueries({
     queries: withMedia.map((community) => ({
       queryKey: mediaQueryKey("inmueble", community.inmuebleId),
-      queryFn: () => propertiesService.media.list("inmueble", community.inmuebleId),
+      queryFn: async () => { const assets = await propertiesService.media.list("inmueble", community.inmuebleId); if (!Array.isArray(assets)) throw new Error("La galería recibió una respuesta inesperada."); return assets; },
       enabled: Boolean(community.inmuebleId),
       staleTime: 4 * 60 * 1000,
       retry: false,
@@ -35,12 +36,13 @@ function CommunityCards({ communities, selectedId, expanded = false, onSelect, o
       const people = new Set(data.personUnitRelations.filter((relation) => relation.communityId === community.id && relation.status !== "archived").map((relation) => relation.personId));
       const alerts = communityAlerts({ community, units: data.units, relations: data.personUnitRelations, charges: data.condoCharges, packages: data.packages, reservations: data.reservations, votes: data.votes });
       const selected = community.id === selectedId;
+      const cover = covers[community.id] || communityReferenceImage(community.id).src;
       return <article key={community.id} className={`community-card ${selected ? "is-selected" : ""}`}>
         <button type="button" className="community-card-main" onClick={() => onSelect(community.id)} aria-pressed={selected} aria-expanded={selected ? expanded : undefined} aria-controls={selected ? "community-detail" : undefined}>
-          <span className="community-card-cover">{covers[community.id] ? <img src={covers[community.id]} alt="" loading="lazy" /> : <HiBuildingOffice2 aria-hidden="true" />}</span>
+          <span className="community-card-cover">{cover ? <img src={cover} alt="" loading="lazy" /> : <HiBuildingOffice2 aria-hidden="true" />}</span>
           <span className="community-card-copy">
             <strong>{community.name}</strong>
-            <small>{COMMUNITY_KIND_LABEL[community.kind] || "Comunidad"}</small>
+            <small>{COMMUNITY_KIND_LABEL[community.kind] || "Comunidad"}</small>{!covers[community.id] ? <small className="community-card-reference" aria-hidden="true">Foto sugerida</small> : null}
             <span className="community-card-counts">
               <i title="Unidades"><HiBuildingOffice2 aria-hidden="true" /> {units.length}<span className="sr-only"> unidades</span></i>
               <i title="Personas vinculadas"><HiUsers aria-hidden="true" /> {people.size}<span className="sr-only"> personas vinculadas</span></i>

@@ -59,4 +59,12 @@ describe("FilePicker", () => {
     render(<Envoltura />);
     expect(screen.getByText(/Agregar otro archivo/)).toBeInTheDocument();
   });
+  it("permite elegir un archivo con Enter y Espacio", () => {
+    const {container} = render(<FilePicker value={null} onChange={() => {}} />);
+    const click = vi.spyOn(inputDe(container), "click");
+    fireEvent.keyDown(screen.getByRole("button", {name:"Elegir archivo"}), {key:"Enter"});
+    fireEvent.keyDown(screen.getByRole("button", {name:"Elegir archivo"}), {key:" "});
+    expect(click).toHaveBeenCalledTimes(2);
+  });
+
 });

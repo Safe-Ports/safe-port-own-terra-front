@@ -1,4 +1,5 @@
-import { createPortal } from "react-dom";
+import { useRef } from "react";
+import DialogPortal from "./DialogPortal";
 import { HiXMark } from "react-icons/hi2";
 import useEscapeKey from "@/hooks/useEscapeKey";
 
@@ -13,27 +14,17 @@ function Modal({
   footer,
   overlayClassName = "",
 }) {
-  useEscapeKey(onClose, open);
+  const box = useRef(null);
+  const isSaving = () => Boolean(box.current?.querySelector('form[aria-busy="true"]'));
+  const close = () => { if (!isSaving()) onClose?.(); };
+  useEscapeKey(close, open);
 
   if (!open) return null;
 
-  // El modal se saca del árbol de la página: cualquier ancestro con
-  // position/z-index, transform, filter u overflow abre un contexto de
-  // apilamiento y lo atrapa por debajo del topbar, pida el z-index que pida
-  // (ver la regla de z-index en AGENTS.md).
-  //
-  // El destino es la raíz del layout (`.eco-root` / `.app-shell`), no <body>:
-  // ahí viven las variables de tema y ~890 reglas escritas como
-  // `.eco-root .algo`, que dejarían de aplicar si el modal colgara de <body>.
-  // Esa raíz ya está fuera de `.content`, que es el contenedor que atrapaba.
-  const host =
-    (typeof document !== "undefined" && document.querySelector(".eco-root, .app-shell")) ||
-    (typeof document !== "undefined" ? document.body : null);
-  if (!host) return null;
-
-  return createPortal(
-    <div className={`modal-overlay open ${overlayClassName}`.trim()} onClick={onClose}>
+  return (
+    <DialogPortal className={`modal-overlay open ${overlayClassName}`.trim()} onClick={close}>
       <div
+        ref={box}
         className={`modal-box ${width}`}
         role="dialog"
         aria-modal="true"
@@ -46,15 +37,16 @@ function Modal({
             <div className="modal-title">{title}</div>
             {subtitle ? <div className="modal-sub">{subtitle}</div> : null}
           </div>
-          <button className="modal-close" onClick={onClose} aria-label="Cerrar">
+          <button className="modal-close" onClick={close} aria-label="Cerrar">
             <HiXMark />
           </button>
         </div>
         <div className="modal-body">{children}</div>
-        {footer ? <div className="modal-foot">{footer}</div> : null}
+        {footer ? <div className="modal-foot" onClickCapture={event => {
+          if (isSaving()) { event.preventDefault(); event.stopPropagation(); }
+        }}>{footer}</div> : null}
       </div>
-    </div>,
-    host,
+    </DialogPortal>
   );
 }
 

@@ -6,7 +6,9 @@ import {
   HiUserCircle,
 } from "react-icons/hi2";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import Avatar from "@/components/Avatar";
+import Modal from "@/components/ui/Modal";
 import AppLauncher from "@/components/layout/AppLauncher";
 import { useAppContext } from "@/context/AppContext";
 
@@ -14,9 +16,11 @@ function CoreTopbarActions({ onGuide, className = "" }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser, logout, notificationCount } = useAppContext();
+  const [logoutOpen, setLogoutOpen] = useState(false);
 
-  const handleLogout = () => {
-    if (window.confirm("¿Cerrar sesión?")) logout();
+  const handleLogout = (event) => {
+    event.currentTarget.focus();
+    setLogoutOpen(true);
   };
 
   const isActive = (path) => location.pathname === path;
@@ -29,6 +33,7 @@ function CoreTopbarActions({ onGuide, className = "" }) {
   const profilePath = inLands ? "/perfil" : "/ecosistema/perfil";
 
   return (
+    <>
     <nav className={`core-topbar-actions ${className}`} aria-label="Acciones del ecosistema">
       {onGuide && (
         <button
@@ -84,6 +89,7 @@ function CoreTopbarActions({ onGuide, className = "" }) {
         type="button"
         className="core-topbar-action core-logout-action"
         onClick={handleLogout}
+        aria-label="Cerrar sesión"
         title="Cerrar sesión"
       >
         <HiArrowLeftOnRectangle aria-hidden="true" />
@@ -94,6 +100,18 @@ function CoreTopbarActions({ onGuide, className = "" }) {
           ella, así que no se mezcla con las demás. */}
       <AppLauncher />
     </nav>
+    <Modal
+      open={logoutOpen}
+      title="¿Cerrar sesión?"
+      onClose={() => setLogoutOpen(false)}
+      footer={<>
+        <button type="button" onClick={() => setLogoutOpen(false)}>Cancelar</button>
+        <button type="button" onClick={() => { setLogoutOpen(false); logout(); }}>Cerrar sesión</button>
+      </>}
+    >
+      <p>Podrás volver a entrar con tu cuenta de Own Terra.</p>
+    </Modal>
+    </>
   );
 }
 

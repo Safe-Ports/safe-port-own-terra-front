@@ -1,4 +1,5 @@
 import { useMemo, useState, useRef, useEffect } from "react";
+import DialogPortal from "@/components/ui/DialogPortal";
 import GuideModal from "@/components/shared/GuideModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -78,7 +79,7 @@ function FolderNode({ node, folders, activeId, onSelect, onAddChild, onRename, o
         {editing ? (
           <input
             autoFocus
-            className="doc-folder-rename"
+            aria-label={`Nombre de la carpeta ${node.name}`} className="doc-folder-rename"
             value={draft}
             onChange={e => setDraft(e.target.value)}
             onBlur={commit}
@@ -124,8 +125,8 @@ function FolderNode({ node, folders, activeId, onSelect, onAddChild, onRename, o
 }
 
 /* ── MoveModal ──────────────────────────────────────────────────────────── */
-function MoveModal({ folders, doc, onMove, onClose }) {
-  useEscapeKey(onClose);
+function MoveModal({ folders, doc, onMove, onClose, busy }) {
+  useEscapeKey(() => { if (!busy) onClose(); });
   const [expanded, setExpanded] = useState({});
 
   function Tree({ parentId = null, depth = 0 }) {
@@ -138,9 +139,9 @@ function MoveModal({ folders, doc, onMove, onClose }) {
           return (
             <div key={f.id}>
               <div
-                className={`move-tree-row${isCurrent ? " current" : ""}`}
+                role="button" tabIndex={busy ? -1 : 0} aria-disabled={busy} onKeyDown={event => { if (!busy && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); onMove(isCurrent ? null : f.id); } }} className={`move-tree-row${isCurrent ? " current" : ""}`}
                 style={{ paddingLeft: 12 + depth * 16 }}
-                onClick={() => onMove(isCurrent ? null : f.id)}
+                onClick={() => { if (!busy) onMove(isCurrent ? null : f.id); }}
               >
                 {grand.length > 0 ? (
                   <span className="move-chevron" onClick={e => { e.stopPropagation(); setExpanded(p => ({...p,[f.id]:!p[f.id]})); }}>
@@ -160,15 +161,15 @@ function MoveModal({ folders, doc, onMove, onClose }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" style={{maxWidth:340}} onClick={e => e.stopPropagation()}>
+    <DialogPortal className="modal-overlay lands-document-dialog" onClick={() => { if (!busy) onClose(); }}>
+      <div role="dialog" aria-modal="true" aria-label="Mover archivo" className="modal-box" style={{maxWidth:340}} onClick={e => e.stopPropagation()}>
         <div className="modal-title"><HiFolder /> Mover archivo</div>
         <div style={{fontSize:".8rem", color:"var(--mu)", marginBottom:12, fontWeight:500}}>{doc.name}</div>
         <div style={{maxHeight:300, overflowY:"auto", margin:"0 -18px", padding:"0 18px"}}>
           <div
-            className={`move-tree-row${!doc.folder_id ? " current" : ""}`}
+            role="button" tabIndex={busy ? -1 : 0} aria-disabled={busy} onKeyDown={event => { if (!busy && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); onMove(null); } }} className={`move-tree-row${!doc.folder_id ? " current" : ""}`}
             style={{paddingLeft:12}}
-            onClick={() => onMove(null)}
+            onClick={() => { if (!busy) onMove(null); }}
           >
             <HiOutlineFolder />
             <span style={{flex:1,fontSize:".85rem"}}>Sin carpeta (raíz)</span>
@@ -182,7 +183,7 @@ function MoveModal({ folders, doc, onMove, onClose }) {
           <button className="btn-s" style={{flex:1}} onClick={onClose}>Cancelar</button>
         </div>
       </div>
-    </div>
+    </DialogPortal>
   );
 }
 
@@ -216,7 +217,7 @@ export default function DocumentsPage() {
   });
   const moveDoc = useMutation({
     mutationFn: ({ id, folderId }) => documentService.move(id, folderId),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["documents"] }); qc.invalidateQueries({ queryKey: ["document-folders"] }); showToast("Archivo movido"); },
+    onSuccess: () => { setMoveTarget(null); qc.invalidateQueries({ queryKey: ["documents"] }); qc.invalidateQueries({ queryKey: ["document-folders"] }); showToast("Archivo movido"); },
     onError: (e) => showError(e, "Error al mover el archivo"),
   });
 
@@ -231,9 +232,8 @@ export default function DocumentsPage() {
 
   const handleAddChild = (parentId) => { setNewIn(parentId); setNewDraft(""); };
   const handleCreate   = (parentId) => {
-    if (!newDraft.trim()) { setNewIn(null); return; }
-    createFolder.mutate({ name: newDraft.trim(), parent_id: parentId === "__root__" ? null : parentId });
-    setNewIn(null); setNewDraft("");
+    if (!newDraft.trim() || createFolder.isPending) return;
+    createFolder.mutate({ name: newDraft.trim(), parent_id: parentId === "__root__" ? null : parentId }, {onSuccess: () => { setNewIn(null); setNewDraft(""); }});
   };
 
   const filtered = useMemo(() => {
@@ -396,7 +396,7 @@ export default function DocumentsPage() {
         .move-chevron { width:14px; font-size:.72rem; cursor:pointer; }
 
         /* confirm modal */
-        .modal-overlay { position:fixed; inset:0; background:rgba(20,30,22,.45); backdrop-filter:blur(6px); z-index:9000; display:flex; align-items:center; justify-content:center; }
+        .lands-document-dialog { position:fixed; inset:0; background:rgba(20,30,22,.45); backdrop-filter:blur(6px); z-index:50; display:flex; align-items:center; justify-content:center; }
         .modal-box { background:#FFFFFF; border:1px solid var(--bd); border-radius:22px; padding:24px; width:100%; box-shadow:0 24px 60px rgba(0,0,0,.22); }
         .modal-title { font-family: var(--font-title); font-weight:600; font-size:1.15rem; margin-bottom:8px; color:#1E3D2B; }
 
@@ -452,6 +452,7 @@ export default function DocumentsPage() {
           {newIn !== null && (
             <div className="doc-new-folder-row">
               <input
+                aria-label="Nombre de la nueva carpeta" disabled={createFolder.isPending}
                 autoFocus className="fi" placeholder="Nombre de carpeta…"
                 value={newDraft}
                 onChange={e => setNewDraft(e.target.value)}
@@ -586,10 +587,10 @@ export default function DocumentsPage() {
       {moveTarget && (
         <MoveModal
           folders={folders}
+          busy={moveDoc.isPending}
           doc={moveTarget}
           onMove={(folderId) => {
             moveDoc.mutate({ id: moveTarget.id, folderId });
-            setMoveTarget(null);
           }}
           onClose={() => setMoveTarget(null)}
         />
@@ -597,8 +598,8 @@ export default function DocumentsPage() {
 
       {/* ── Confirm delete ───────────────────────────────── */}
       {delDoc && (
-        <div className="modal-overlay" onClick={() => setDelDoc(null)}>
-          <div className="modal-box" style={{maxWidth:300}} onClick={e => e.stopPropagation()}>
+        <DialogPortal className="modal-overlay lands-document-dialog" onClick={() => setDelDoc(null)}>
+          <div role="dialog" aria-modal="true" aria-label="Eliminar documento" className="modal-box" style={{maxWidth:300}} onClick={e => e.stopPropagation()}>
             <div className="modal-title">¿Eliminar documento?</div>
             <div style={{fontSize:".82rem",color:"var(--mu)",marginBottom:20}}>Esta acción no se puede deshacer.</div>
             <div className="fr-row" style={{gap:8}}>
@@ -606,7 +607,7 @@ export default function DocumentsPage() {
               <button className="btn-dan" style={{flex:1}} onClick={() => { deleteDocument(delDoc); setDelDoc(null); }}>Eliminar</button>
             </div>
           </div>
-        </div>
+        </DialogPortal>
       )}
       <GuideModal
         open={showGuide}

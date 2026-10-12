@@ -31,6 +31,7 @@ describe("CommunityWorkspace · Unidades", () => {
     const dialog = screen.getByRole("dialog");
     fireEvent.click(within(dialog).getByRole("button", { name: "Agregar a la unidad" }));
     expect(within(dialog).getByText("Ingresa el nombre de la persona.")).toBeInTheDocument();
+    await waitFor(() => expect(dialog.querySelector("form")).toHaveAttribute("aria-busy", "false"));
 
     fireEvent.change(within(dialog).getByLabelText(/Nombre completo/), { target: { value: "Ana Ruiz" } });
     fireEvent.click(within(dialog).getByRole("radio", { name: /Inquilino/ }));

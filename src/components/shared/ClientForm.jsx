@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { HiExclamationTriangle, HiGlobeAlt } from "react-icons/hi2";
 import PhoneInput from "@/components/shared/PhoneInput";
 import FieldError from "@/components/shared/FieldError";
@@ -77,6 +77,7 @@ export function useClientForm(initial = null, clients = []) {
  */
 export default function ClientForm({ ctl, compact = false, showNotice = true, isEditing = false }) {
   const { form, setForm, fe, dupe } = ctl;
+  const prefix = useId();
 
   const setField = (key) => (e) => {
     const value = e.target.value;
@@ -108,9 +109,9 @@ export default function ClientForm({ ctl, compact = false, showNotice = true, is
 
       <div className="fr-row">
         <div className="fg" style={{ flex: 1 }}>
-          <label className="fl">Nombre</label>
+          <label className="fl" htmlFor={`${prefix}-name`}>Nombre *</label>
           <input
-            {...fe.fieldProps("nombre")}
+            id={`${prefix}-name`} autoComplete="given-name" {...fe.fieldProps("nombre")}
             value={form.nombre}
             onChange={setField("nombre")}
             placeholder="Nombre"
@@ -118,30 +119,30 @@ export default function ClientForm({ ctl, compact = false, showNotice = true, is
           <FieldError msg={fe.errors.nombre} />
         </div>
         <div className="fg" style={{ flex: 1 }}>
-          <label className="fl">Apellidos</label>
+          <label className="fl" htmlFor={`${prefix}-surname`}>Apellidos (opcional)</label>
           <input
             className="fi"
             value={form.apellidos}
             onChange={setField("apellidos")}
-            placeholder="Apellidos"
+            id={`${prefix}-surname`} autoComplete="family-name" placeholder="Apellidos"
           />
         </div>
       </div>
 
       <div className="fg">
-        <label className="fl">Teléfono</label>
-        <PhoneInput inputClassName="fi" value={form.phone} onChange={(v) => setForm((p) => ({ ...p, phone: v }))} />
+        <label className="fl" htmlFor={`${prefix}-phone`}>Teléfono (opcional)</label>
+        <PhoneInput id={`${prefix}-phone`} inputClassName="fi" value={form.phone} onChange={(v) => setForm((p) => ({ ...p, phone: v }))} />
       </div>
 
       <div className="fg">
-        <label className="fl">Correo electrónico</label>
-        <input {...fe.fieldProps("email")} type="email" value={form.email} onChange={setField("email")} />
+        <label className="fl" htmlFor={`${prefix}-email`}>Correo electrónico (opcional)</label>
+        <input id={`${prefix}-email`} autoComplete="email" {...fe.fieldProps("email")} type="email" value={form.email} onChange={setField("email")} />
         <FieldError msg={fe.errors.email} />
       </div>
 
       <div className="fg">
-        <label className="fl">Tipo de cliente</label>
-        <select className="fi" value={form.type} onChange={setField("type")}>
+        <label className="fl" htmlFor={`${prefix}-type`}>Tipo de cliente</label>
+        <select id={`${prefix}-type`} className="fi" value={form.type} onChange={setField("type")}>
           <option value="buyer">Comprador</option>
           <option value="tenant">Arrendatario</option>
           <option value="lead">Prospecto</option>
@@ -152,8 +153,8 @@ export default function ClientForm({ ctl, compact = false, showNotice = true, is
           poder apartar o agendar, y se pueden agregar después en su ficha. */}
       {!compact && (
         <div className="fg">
-          <label className="fl">Notas</label>
-          <textarea className="fi" rows="2" value={form.notes} onChange={setField("notes")} />
+          <label className="fl" htmlFor={`${prefix}-notes`}>Notas (opcional)</label>
+          <textarea id={`${prefix}-notes`} className="fi" rows="2" value={form.notes} onChange={setField("notes")} />
         </div>
       )}
     </>

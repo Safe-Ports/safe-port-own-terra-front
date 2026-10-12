@@ -1,58 +1,149 @@
-import { useState } from "react";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { HiArrowRight, HiBanknotes, HiBuildingOffice2, HiCheck, HiInboxStack, HiWrenchScrewdriver } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 import EcoLayout from "@/pages/Ecosystem/EcoLayout";
 import { usePropertiesData } from "../../data/PropertiesDataContext";
-import { PROPERTY_ACTION_ICONS, PROPERTY_ENTITY_ICONS } from "../../components/propertiesIconCatalog";
-import { PROPERTIES_MVP_SCOPE } from "../../mvpScope";
 import "./properties-dashboard.css";
 
-const { open: HiArrowRight } = PROPERTY_ACTION_ICONS;
-const { community: HiBuildingOffice2, rent: HiKey, sale: HiTag, unit: HiHomeModern, portfolio: HiOutlineSquares2X2, owner: HiUserGroup } = PROPERTY_ENTITY_ICONS;
+const money = (value) => new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(value || 0);
+const today = new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long" });
+const OPERATIONS = "/properties/comunidades/operacion";
 
-const allPaths = [
-  { key:"communities", number:"01", label:"Comunidades", caption:"Espacios y operación compartida", description:"Coordina condominios, privadas, plazas, cabañas u hoteles con sus unidades, accesos y servicios.", action:"Abrir comunidades", icon:HiBuildingOffice2, logo:"/brand/communities-mark-color.svg", tone:"community", status:"Disponible", journey:["Configura","Conecta personas","Opera servicios","Atiende"] },
-  { key:"rentals", number:"02", label:"Rentas", caption:"Ocupación e ingresos", description:"Administra disponibilidad, contratos, cobranza y renovaciones.", action:"Abrir rentas", icon:HiKey, tone:"rentals", status:"Operativo", journey:["Prepara","Publica","Firma","Cobra"] },
-  { key:"sales", number:"03", label:"Venta", caption:"Comercialización", description:"Prepara inmuebles, publicaciones, prospectos, visitas y ofertas.", action:"Abrir ventas", icon:HiTag, tone:"sales", status:"Vista previa", journey:["Prepara","Atrae","Visita","Negocia"] },
-];
+function PropertiesDashboard() {
+  const navigate = useNavigate();
+  const { currentUser } = useAppContext();
+  const { properties, units, communities, condoCharges, votes, packages, reservations, tickets, personUnitRelations, quotaPlans, portalIdentities, propertiesLoading } = usePropertiesData();
 
-// Rentas y Venta salen del MVP (ver mvpScope): sólo se muestran si su bandera está activa.
-const paths = allPaths.filter(path=>path.key==="communities"||PROPERTIES_MVP_SCOPE[path.key]);
+  const firstName = currentUser?.name?.split(" ")[0] || "equipo";
+  const organizationName = currentUser?.organization?.name || currentUser?.organization || "Tu organización";
 
-function PropertyPathCard({ path, onOpen, preview, dimmed, onPreview }) {
-  const Icon=path.icon;
-  return <button type="button" className={`property-path-card ${path.tone} ${preview?"is-preview":""} ${dimmed?"is-dimmed":""}`} onClick={onOpen} onMouseEnter={()=>onPreview(path.key)} onMouseLeave={()=>onPreview(null)} onFocus={()=>onPreview(path.key)} onBlur={()=>onPreview(null)} aria-label={`${path.action}: ${path.label}`}>
-    <span className="property-path-number" aria-hidden="true">{path.number}</span>
-    <span className="property-path-intro"><span className="property-path-icon">{path.logo?<img src={path.logo} alt=""/>:<Icon/>}</span><span className="property-path-copy"><small>{path.caption}</small><strong>{path.label}</strong><em>{path.description}</em></span></span>
-    <span className="property-path-journey" aria-hidden="true"><small>Flujo principal</small><span>{path.journey.map((stage,index)=><i key={stage} style={{"--stage":index}}><b>{index+1}</b>{stage}</i>)}</span></span>
-    <span className="property-path-foot"><i>{path.status}</i><b>{path.action} <HiArrowRight/></b></span>
-  </button>;
-}
+  const activeUnits = units.filter((unit) => unit.status !== "archived");
+  const occupied = activeUnits.filter((unit) => unit.status === "rented").length;
+  const occupancy = activeUnits.length ? Math.round((occupied / activeUnits.length) * 100) : 0;
+  const overdue = condoCharges.filter((charge) => charge.status === "overdue");
+  const overdueAmount = overdue.reduce((sum, charge) => sum + Number(charge.amount || 0), 0);
+  const openVotes = votes.filter((vote) => vote.status === "open");
+  const pendingPackages = packages.filter((item) => item.status === "pending");
+  const requestedReservations = reservations.filter((item) => item.status === "requested");
+  const openTickets = tickets.filter((item) => item.status !== "resolved" && item.status !== "cancelled");
+  const urgentTickets = openTickets.filter((item) => ["urgent", "high"].includes(item.priority));
 
-function PropertiesDashboard(){
-  const navigate=useNavigate();
-  const {currentUser}=useAppContext();
-  const {properties,units,communities,propertiesLoading}=usePropertiesData();
-  const [previewPath,setPreviewPath]=useState(null);
-  const organizationName=currentUser?.organization?.name||currentUser?.organization||"Tu organización";
-  const firstName=currentUser?.name?.split(" ")[0]||"equipo";
-  const activeProperties=properties.filter(property=>property.status!=="archived").length;
-  const activeUnits=units.filter(unit=>unit.status!=="archived");
-  const occupiedUnits=activeUnits.filter(unit=>unit.status==="rented").length;
-  const attentionUnits=activeUnits.filter(unit=>unit.status==="maintenance").length;
-  const occupancy=activeUnits.length?`${Math.round(occupiedUnits/activeUnits.length*100)}%`:"—";
-  const openPath=(key)=>{
-    if(key==="rentals")return navigate("/properties/rentas");
-    if(key==="sales")return navigate("/properties/modulos/publicaciones");
-    return navigate("/properties/comunidades");
-  };
-  return <EcoLayout active="properties" title="OwnTerra Properties" subtitle={`${organizationName} · Todo en su lugar`}>
-    <main className="properties-dashboard">
-      {!propertiesLoading&&!communities.length?<section className="properties-setup-callout"><span><HiBuildingOffice2/></span><div><small>Configuración inicial</small><h2>Crea tu primera comunidad</h2><p>Registra el lugar, define su estructura y deja lista la operación en tres pasos guiados.</p></div><button type="button" onClick={()=>navigate("/properties/guia")}>Comenzar configuración <HiArrowRight/></button></section>:null}
-      <section className="properties-hero"><div><span className="properties-eyebrow"><HiHomeModern/> Resumen operativo</span><h1>Buen día, {firstName}.</h1><p>Revisa el estado del portafolio y entra al área que requiere tu atención.</p><button className="properties-guide-cta" type="button" onClick={()=>navigate("/properties/guia")}>Guía de configuración <HiArrowRight/></button></div><div className="properties-pulse" aria-label="Resumen del portafolio"><div><strong>{activeProperties}</strong><span>Propiedades</span></div><div><strong>{occupancy}</strong><span>Ocupación</span></div><div><strong>{attentionUnits}</strong><span>Por atender</span></div></div></section>
-      <section className={`property-paths journey-${previewPath||"idle"}`} aria-labelledby="property-paths-title"><header><div><span>Áreas de trabajo</span><h2 id="property-paths-title">Selecciona una operación</h2></div><p>{previewPath?"Vista previa del flujo operativo.":paths.length>1?"Comunidades, rentas, hospedaje y venta comparten el mismo portafolio.":"Comunidades, unidades y personas comparten el mismo portafolio."}</p></header><div className={`property-paths-grid ${paths.length===1?"is-single":""}`}>{paths.map(path=><PropertyPathCard key={path.key} path={path} preview={previewPath===path.key} dimmed={Boolean(previewPath&&previewPath!==path.key)} onPreview={setPreviewPath} onOpen={()=>openPath(path.key)}/>)}</div></section>
-      <footer className="properties-continuity properties-first-level-note"><HiOutlineSquares2X2/><p><strong>Contexto compartido.</strong> Propiedades, unidades y personas permanecen conectadas entre áreas.</p><span><HiUserGroup/> Equipo conectado</span></footer>
+  // Lo que requiere una decisión del administrador. Sólo aparece lo que existe:
+  // una bandeja vacía es una buena noticia, no una fila que rellenar.
+  const decisions = useMemo(() => [
+    overdue.length && { key: "charges", tone: "danger", title: `${overdue.length} ${overdue.length === 1 ? "cuota vencida" : "cuotas vencidas"}`, detail: `${money(overdueAmount)} por cobrar`, cta: "Revisar cobranza", to: `${OPERATIONS}?module=charges` },
+    urgentTickets.length && { key: "tickets", tone: "warning", title: `${urgentTickets.length} ${urgentTickets.length === 1 ? "ticket de prioridad alta" : "tickets de prioridad alta"}`, detail: `${openTickets.length} abiertos en total`, cta: "Asignar", to: "/properties/tickets" },
+    pendingPackages.length && { key: "packages", tone: "info", title: `${pendingPackages.length} ${pendingPackages.length === 1 ? "paquete en recepción" : "paquetes en recepción"}`, detail: "Esperan entrega al residente", cta: "Entregar", to: "/properties/accesos" },
+    requestedReservations.length && { key: "amenities", tone: "info", title: `${requestedReservations.length} ${requestedReservations.length === 1 ? "reserva por aprobar" : "reservas por aprobar"}`, detail: "Amenidades de la comunidad", cta: "Aprobar", to: `${OPERATIONS}?module=amenities` },
+    openVotes.length && { key: "votes", tone: "info", title: `${openVotes.length} ${openVotes.length === 1 ? "votación abierta" : "votaciones abiertas"}`, detail: "Da seguimiento a la participación", cta: "Ver", to: `${OPERATIONS}?module=committee` },
+  ].filter(Boolean), [overdue.length, overdueAmount, urgentTickets.length, openTickets.length, pendingPackages.length, requestedReservations.length, openVotes.length]);
+
+  // Progreso real de configuración: cada paso se marca con un dato que existe,
+  // no con una casilla que alguien palomeó.
+  const steps = [
+    { label: "Crear comunidades", done: communities.length > 0 },
+    { label: "Registrar unidades", done: activeUnits.length > 0 },
+    { label: "Asignar personas a sus unidades", done: personUnitRelations.some((item) => item.status !== "archived") },
+    { label: "Definir la cuota", done: (quotaPlans || []).length > 0 },
+    { label: "Invitar residentes al portal", done: (portalIdentities || []).length > 0 },
+  ];
+  const doneSteps = steps.filter((step) => step.done).length;
+  const nextStep = steps.find((step) => !step.done);
+
+  const resolved = [
+    { label: "cuotas pagadas", count: condoCharges.filter((charge) => charge.status === "paid").length },
+    { label: "paquetes entregados", count: packages.filter((item) => item.status === "delivered").length },
+    { label: "tickets resueltos", count: tickets.filter((item) => item.status === "resolved").length },
+  ].filter((row) => row.count > 0);
+
+  return <EcoLayout active="properties" title="Properties" subtitle={organizationName}>
+    <main className="pd-page">
+
+      <section className="pd-hero">
+        <div className="pd-hero-copy">
+          <p className="pd-date">{today.format(new Date()).toUpperCase()}</p>
+          <h1>Buen día, {firstName}.</h1>
+          <p className="pd-lede">
+            {decisions.length
+              ? <>Hay <strong>{decisions.length} {decisions.length === 1 ? "cosa" : "cosas"}</strong> que requieren tu decisión. El resto de la operación está al corriente.</>
+              : <>No hay pendientes que requieran tu decisión. Todo está al corriente.</>}
+          </p>
+          <div className="pd-hero-actions">
+            <button type="button" className="pd-primary" onClick={() => navigate(decisions[0]?.to || "/properties/comunidades")}>
+              {decisions.length ? decisions[0].cta : "Abrir comunidades"}
+            </button>
+            <button type="button" className="pd-ghost" onClick={() => navigate(`${OPERATIONS}?module=communications`)}>Nuevo comunicado</button>
+          </div>
+        </div>
+
+        <aside className="pd-setup" aria-label="Progreso de configuración">
+          <header><h2>Configura tu portafolio</h2><span>{doneSteps} de {steps.length}</span></header>
+          <div className="pd-bar"><i style={{ width: `${Math.round((doneSteps / steps.length) * 100)}%` }} /></div>
+          <ul>
+            {steps.map((step) => <li key={step.label} className={step.done ? "is-done" : ""}>
+              <span className="pd-tick" aria-hidden="true">{step.done ? <HiCheck /> : null}</span>
+              {step.label}
+            </li>)}
+          </ul>
+          {nextStep ? <button type="button" className="pd-link" onClick={() => navigate("/properties/guia")}>Continuar guía <HiArrowRight /></button> : null}
+        </aside>
+      </section>
+
+      <section className="pd-kpis" aria-label="Resumen del portafolio">
+        <button type="button" onClick={() => navigate("/properties/portafolio")}>
+          <small>Propiedades</small><strong>{properties.filter((item) => item.status !== "archived").length}</strong>
+          <span>{activeUnits.length} {activeUnits.length === 1 ? "unidad" : "unidades"} en total</span>
+        </button>
+        <button type="button" onClick={() => navigate("/properties/comunidades?tab=units")}>
+          <small>Ocupación</small><strong>{activeUnits.length ? `${occupancy}%` : "—"}</strong>
+          <span className="pd-mini-bar"><i style={{ width: `${occupancy}%` }} /></span>
+        </button>
+        <button type="button" className={overdue.length ? "is-alert" : ""} onClick={() => navigate(`${OPERATIONS}?module=charges`)}>
+          <small>Cuotas vencidas</small><strong>{overdue.length}</strong>
+          <span>{overdue.length ? `${money(overdueAmount)} por cobrar` : "Nada vencido"}</span>
+        </button>
+        <button type="button" onClick={() => navigate(`${OPERATIONS}?module=committee`)}>
+          <small>Votaciones abiertas</small><strong>{openVotes.length}</strong>
+          <span>{openVotes.length ? "Da seguimiento" : "Ninguna en curso"}</span>
+        </button>
+      </section>
+
+      <section className="pd-cols">
+        <div className="pd-card pd-decisions">
+          <header>
+            <h2>Necesita tu decisión</h2>
+            <button type="button" className="pd-link" onClick={() => navigate("/properties/operacion")}>Todas las herramientas</button>
+          </header>
+          {decisions.length ? decisions.map((item) => <article key={item.key}>
+            <span className={`pd-dot ${item.tone}`} aria-hidden="true" />
+            <div><strong>{item.title}</strong><small>{item.detail}</small></div>
+            <button type="button" onClick={() => navigate(item.to)}>{item.cta}</button>
+          </article>) : <p className="pd-empty">{propertiesLoading ? "Cargando la operación…" : "Sin pendientes. Nada requiere tu atención ahora mismo."}</p>}
+        </div>
+
+        <div className="pd-side">
+          <div className="pd-card">
+            <header><h2>Resuelto hasta hoy</h2></header>
+            {resolved.length ? resolved.map((row) => <p key={row.label} className="pd-done-row">
+              <HiCheck aria-hidden="true" /><span><strong>{row.count}</strong> {row.label}</span>
+            </p>) : <p className="pd-empty">Todavía no hay movimientos registrados.</p>}
+          </div>
+
+          <div className="pd-card">
+            <header><h2>Acciones rápidas</h2></header>
+            <div className="pd-quick">
+              <button type="button" onClick={() => navigate("/properties/accesos")}><HiInboxStack /> Registrar paquete</button>
+              <button type="button" onClick={() => navigate("/properties/comunidades?tab=units")}><HiBuildingOffice2 /> Agregar residente</button>
+              <button type="button" onClick={() => navigate("/properties/tickets")}><HiWrenchScrewdriver /> Nuevo ticket</button>
+              <button type="button" onClick={() => navigate(`${OPERATIONS}?module=charges`)}><HiBanknotes /> Generar cargo</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
     </main>
   </EcoLayout>;
 }
+
 export default PropertiesDashboard;

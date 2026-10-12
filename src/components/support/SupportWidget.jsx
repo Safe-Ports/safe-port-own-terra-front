@@ -1,3 +1,4 @@
+import WorkflowForm from "@/components/forms/WorkflowForm";
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAppContext } from '@/context/AppContext'
 import { useLocation } from 'react-router-dom'
@@ -176,11 +177,11 @@ function CreateView({ botFetch, onCreated }) {
 
   return (
     <div className="sp-body">
-      <form className="sp-form" onSubmit={handleSubmit}>
+      <WorkflowForm className="sp-form" onSubmit={handleSubmit}>
         {error && <div className="sp-form-error">{error}</div>}
         <div className="sp-field">
-          <label className="sp-label">Descripción del problema</label>
-          <textarea
+          <label htmlFor="field-support-supportwidget-1" className="sp-label">Descripción del problema</label>
+          <textarea id="field-support-supportwidget-1"
             className="sp-textarea"
             placeholder="Describe tu problema con el mayor detalle posible…"
             value={description}
@@ -189,8 +190,8 @@ function CreateView({ botFetch, onCreated }) {
           />
         </div>
         <div className="sp-field">
-          <label className="sp-label">Dispositivo / Plataforma</label>
-          <input
+          <label htmlFor="field-support-supportwidget-2" className="sp-label">Dispositivo / Plataforma</label>
+          <input id="field-support-supportwidget-2"
             className="sp-input"
             type="text"
             placeholder="Ej. Chrome en Mac, Safari en iPhone…"
@@ -202,7 +203,7 @@ function CreateView({ botFetch, onCreated }) {
         <button className="sp-submit" type="submit" disabled={loading}>
           {loading ? 'Enviando…' : 'Enviar ticket'}
         </button>
-      </form>
+      </WorkflowForm>
     </div>
   )
 }

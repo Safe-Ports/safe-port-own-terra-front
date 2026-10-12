@@ -10,7 +10,7 @@ const inPeriod=(value,period)=>{
 
 export const REPORT_PERIOD_LABEL={day:"Hoy",week:"Últimos 7 días",month:"Este mes",year:"Este año"};
 
-export function buildCommunityReport({community,units=[],charges=[],announcements=[],reservations=[],votes=[],services=[],readings=[],tickets=[],people=[],relations=[]},period="month"){
+export function buildCommunityReport({community,units=[],charges=[],announcements=[],reservations=[],votes=[],services=[],bills=[],tickets=[],people=[],relations=[]},period="month"){
   const propertyUnits=units.filter(item=>item.status!=="archived");
   const occupied=propertyUnits.filter(item=>item.status==="rented").length;
   const billed=charges.filter(item=>inPeriod(item.createdAt,period)).reduce((sum,item)=>sum+item.amount,0);
@@ -18,20 +18,21 @@ export function buildCommunityReport({community,units=[],charges=[],announcement
   const overdue=charges.filter(item=>item.status==="overdue").reduce((sum,item)=>sum+item.amount,0);
   const periodAnnouncements=announcements.filter(item=>inPeriod(item.publishedAt,period));
   const periodReservations=reservations.filter(item=>inPeriod(item.date,period));
-  const periodReadings=readings.filter(item=>inPeriod(item.recordedAt,period));
+  const periodBills=bills.filter(item=>inPeriod(item.periodEnd||item.dueDate,period));
   const periodTickets=tickets.filter(item=>inPeriod(item.updatedAt||item.createdAt,period));
   const activeTickets=tickets.filter(item=>item.status!=="resolved");
   const resolvedTickets=tickets.filter(item=>item.status==="resolved"&&inPeriod(item.updatedAt,period));
   const serviceAmount=services.reduce((sum,item)=>sum+Number(item.amount||0),0);
   const evidencePending=services.filter(item=>item.status==="pending_evidence").length;
-  const anomalies=services.filter(item=>item.anomaly||item.status==="incident").length;
+  const overdueServices=services.filter(item=>item.status==="overdue").length;
+  const disputed=services.filter(item=>item.status==="disputed").length;
   const activePeople=new Set(relations.filter(item=>item.status!=="archived").map(item=>item.personId));
   return {
     communityId:community?.id,
     period,
     units:{total:propertyUnits.length,occupied,available:propertyUnits.filter(item=>item.status==="available").length,maintenance:propertyUnits.filter(item=>item.status==="maintenance").length,occupancy:propertyUnits.length?Math.round(occupied/propertyUnits.length*100):0},
     finance:{billed,collected,overdue,collectionRate:billed?Math.round(collected/billed*100):0},
-    utilities:{count:services.length,amount:serviceAmount,evidencePending,anomalies,readings:periodReadings.length,verified:services.filter(item=>item.status==="verified").length},
+    utilities:{count:services.length,amount:serviceAmount,evidencePending,overdue:overdueServices,disputed,bills:periodBills.length,periodAmount:periodBills.reduce((sum,item)=>sum+Number(item.amount||0),0),verified:services.filter(item=>item.status==="verified").length},
     maintenance:{active:activeTickets.length,resolved:resolvedTickets.length,urgent:activeTickets.filter(item=>["urgent","high"].includes(item.priority)).length,periodActivity:periodTickets.length},
     community:{people:activePeople.size||people.filter(item=>item.status!=="archived").length,announcements:periodAnnouncements.length,reads:periodAnnouncements.reduce((sum,item)=>sum+item.readCount,0),amenityReservations:periodReservations.length,openVotes:votes.filter(item=>item.status==="open").length},
   };

@@ -70,6 +70,8 @@ export default function FilePicker({ value, onChange, accept, hint, multiple = f
 
   const zona = (
     <label
+      role="button" tabIndex={0} aria-label={multiple ? "Elegir archivos" : "Elegir archivo"}
+      onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); inputRef.current?.click(); } }}
       onDragOver={e => { e.preventDefault(); setDentro(true); }}
       onDragLeave={() => setDentro(false)}
       onDrop={e => { e.preventDefault(); setDentro(false); tomar(e.dataTransfer.files); }}

@@ -1,3 +1,4 @@
+import WorkflowForm from "@/components/forms/WorkflowForm";
 import { useEffect, useMemo, useState } from "react";
 import {
   HiChatBubbleLeftRight,
@@ -17,9 +18,14 @@ import {
 } from "react-icons/hi2";
 import GuideModal from "@/components/shared/GuideModal";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
+import useDebouncedValue from "@/hooks/useDebouncedValue";
+import Pagination from "@/components/shared/Pagination";
+import InlineError from "@/components/shared/InlineError";
+import { parseApiError } from "@/errors/parseApiError";
+import DialogPortal from "@/components/ui/DialogPortal";
 import Modal from "@/components/ui/Modal";
 import InlineDocumentsPanel from "@/components/shared/InlineDocumentsPanel";
 import FieldError from "@/components/shared/FieldError";
@@ -84,7 +90,7 @@ function ClientModalInner() {
           {editingClient && canUseFeature("lands.write") && (
             <Button variant="danger" onClick={() => deleteClient(editingClient.id)}><HiTrash /> Eliminar</Button>
           )}
-          <Button variant="primary" onClick={submit} disabled={saving}>
+          <Button variant="primary" type="submit" form="lands-client-form" disabled={saving}>
             {saving ? "Guardando..." : dupe ? <><HiLink /> Vincular a Lands</> : <><HiCheck /> Guardar</>}
           </Button>
         </>
@@ -99,7 +105,7 @@ function ClientModalInner() {
         </div>
       )}
 
-      <ClientForm ctl={ctl} isEditing={!!editingClient} />
+      <WorkflowForm id="lands-client-form" onSubmit={event => { event.preventDefault(); if (!saving) submit(); }}><ClientForm ctl={ctl} isEditing={!!editingClient} /></WorkflowForm>
     </Modal>
   );
 }
@@ -118,7 +124,7 @@ function ClientsPage() {
     selectedClientId, setSelectedClientId,
     openModal, setEditingClient,
     openClientReport, sendClientMessage, openContractCreate,
-    showError, currentUser,
+    showError, currentUser, canUseFeature,
   } = useAppContext();
   const [showGuide, setShowGuide] = useState(false);
   useLandsGuide(() => setShowGuide(true));
@@ -149,41 +155,54 @@ function ClientsPage() {
       setCancelling(false);
     }
   };
-  const [filter, setFilter] = useState("all");
-  const [search, setSearch] = useState("");
+  const [params, setParams] = useSearchParams();
+  const filter = params.get("type") || "all";
+  const search = params.get("q") || "";
+  const page = Math.max(1, Number(params.get("page")) || 1);
+  const debounced = useDebouncedValue(search.trim());
+  const clientList = useQuery({
+    queryKey: ["clients", "lands-directory", debounced, filter, page],
+    queryFn: () => clientService.list({ page, limit: 20, ...(debounced ? { search: debounced } : {}), ...(filter !== "all" ? { type: filter } : {}) }),
+  });
+  const pageClients = clientList.data?.items || [];
+  const listBusy = clientList.isFetching || search.trim() !== debounced;
+  const changeFilters = changes => setParams(previous => {
+    const next = new URLSearchParams(previous);
+    next.delete("client"); next.delete("page");
+    Object.entries(changes).forEach(([key,value]) => value ? next.set(key,value) : next.delete(key));
+    return next;
+  }, { replace: true });
+  const selectClient = id => { setSelectedClientId(id); setParams(previous => { const next = new URLSearchParams(previous); next.set("client",id); return next; }); };
+  const linkedId = params.get("client");
+  const linkedClient = useQuery({ queryKey: ["client", linkedId], queryFn: () => clientService.get(linkedId), enabled: !!linkedId });
+  const linkedApps = useQuery({ queryKey: ["client-apps", String(linkedId)], queryFn: () => clientService.getApps(linkedId), enabled: !!linkedId });
   const clientAppQueries = useQueries({
-    queries: clients.map((client) => ({
+    queries: pageClients.map((client) => ({
       queryKey: ["client-apps", String(client.id)],
       queryFn: () => clientService.getApps(client.id),
       staleTime: 60_000,
     })),
   });
   const clientAppsById = new Map(
-    clients.map((client, index) => [
+    pageClients.map((client, index) => [
       String(client.id),
       clientAppQueries[index]?.data?.apps ?? [],
     ])
   );
   const clientAssignmentsLoading = clientAppQueries.some((queryResult) => queryResult.isPending);
   const clientAssignmentsError = clientAppQueries.some((queryResult) => queryResult.isError);
-  const landsClients = clients.filter((client) => clientAppsById.get(String(client.id))?.includes("lands"));
+  const landsClients = pageClients.filter((client) => clientAppsById.get(String(client.id))?.includes("lands"));
 
-  const filtered = useMemo(
-    () => landsClients.filter((c) => {
-      const matchesFilter = filter === "all" || c.type === filter;
-      const matchesSearch = `${c.name} ${c.email || ""}`.toLowerCase().includes(search.toLowerCase());
-      return matchesFilter && matchesSearch;
-    }),
-    [landsClients, filter, search]
-  );
-
-  const selected = landsClients.find((c) => c.id === selectedClientId) || filtered[0] || null;
+  const filtered = listBusy ? [] : landsClients;
+  const selected = linkedId
+    ? (linkedApps.data?.apps?.includes("lands") ? linkedClient.data : null)
+    : (filtered[0] || null);
   // Un administrador puede con todos; un colaborador, sólo con los que tiene
   // asignados (mismo criterio que aplica el backend en ClientService).
   const puedeEditar = Boolean(
     selected && (currentUser?.role === "admin" || selected.seller?.id === currentUser?.id)
   );
-  const withApps = (client) => client ? { ...client, apps: clientAppsById.get(String(client.id)) ?? [] } : null;
+  const withApps = (client) => client ? { ...client, apps: clientAppsById.get(String(client.id)) ?? (String(client.id) === linkedId ? linkedApps.data?.apps : []) ?? [] } : null;
   const eco = selected ? getClientEcosystem(withApps(selected)) : null;
 
   const { data: selectedDetail } = useQuery({
@@ -234,7 +253,7 @@ function ClientsPage() {
 
   return (
     <>
-      <div className="cl-layout">
+      <div className="cl-layout lands-clients">
         {/* ── LEFT: client list ── */}
         <div className="cl-list-card">
           <div className="cl-hd">
@@ -249,7 +268,7 @@ function ClientsPage() {
                 <Button
                   variant="primary"
                   style={{ padding: "6px 12px", fontSize: ".74rem", whiteSpace: "nowrap" }}
-                  onClick={() => openModal("clientModal")}
+                  onClick={() => { setEditingClient(null); openModal("clientModal"); }}
                 >
                   + Agregar cliente
                 </Button>
@@ -257,18 +276,20 @@ function ClientsPage() {
             </div>
             <div className="cl-src">
               <span style={{ color: "var(--mu)" }}><HiMagnifyingGlass /></span>
-              <input type="text" placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} />
+              <input aria-label="Buscar clientes" type="search" placeholder="Nombre, correo o teléfono" value={search} onChange={(e) => changeFilters({ q: e.target.value })} />
             </div>
           </div>
           <div className="cl-filters">
             {[["all","Todos"],["buyer","Compradores"],["tenant","Arrendatarios"],["lead","Prospectos"]].map(([v, l]) => (
-              <div key={v} className={`cl-fp ${filter === v ? "act" : ""}`} onClick={() => setFilter(v)}>{l}</div>
+              <button type="button" key={v} className={`cl-fp ${filter === v ? "act" : ""}`} aria-pressed={filter === v} onClick={() => changeFilters({ type: v === "all" ? "" : v })}>{l}</button>
             ))}
           </div>
           <div className="cl-list-body">
-            {clientsLoading ? (
+            {listBusy || clientAssignmentsLoading ? (
               <SkeletonRows rows={6} />
-            ) : clients.length === 0 ? (
+            ) : clientList.isError || clientAssignmentsError ? (
+              <div className="lands-list-message"><InlineError error={parseApiError(clientList.error || clientAppQueries.find(q => q.isError)?.error, "No se pudieron consultar los clientes")} /><button type="button" className="btn-s" onClick={() => { clientList.refetch(); clientAppQueries.forEach(q => q.refetch()); }}>Reintentar</button></div>
+            ) : pageClients.length === 0 && !search && filter === "all" ? (
               <EmptyState
                 icon={<HiUserGroup />}
                 title="Aún no tienes clientes"
@@ -285,7 +306,7 @@ function ClientsPage() {
             {filtered.map((client) => {
               const cEco = getClientEcosystem(withApps(client));
               return (
-                <div key={client.id} className={`cl-item ${selected?.id === client.id ? "act" : ""}`} onClick={() => setSelectedClientId(client.id)}>
+                <button type="button" key={client.id} className={`cl-item ${selected?.id === client.id ? "act" : ""}`} aria-label={`Ver cliente ${client.name}`} onClick={() => selectClient(client.id)}>
                   <div className="cl-av">
                     {client.initials || client.name?.slice(0, 2).toUpperCase()}
                   </div>
@@ -304,7 +325,7 @@ function ClientsPage() {
                   <div className="cl-type-chip chip ch-lo" style={{ background: `${TYPE_COLOR[client.type]}18`, color: TYPE_COLOR[client.type], border: `1px solid ${TYPE_COLOR[client.type]}30` }}>
                     {TYPE_LABEL[client.type] || client.type}
                   </div>
-                </div>
+                </button>
               );
             })}
             {clientAssignmentsLoading && (
@@ -325,11 +346,13 @@ function ClientsPage() {
               </>
             )}
           </div>
+          <Pagination total={clientList.data?.total || 0} page={page} limit={20} onPage={value => changeFilters({ page: String(value) })} />
+          <p className="lands-list-note">La búsqueda consulta el directorio completo. Se muestran las personas vinculadas a Lands de cada página.</p>
         </div>
 
         {/* ── RIGHT: client detail ── */}
         <div className="cl-det-card">
-          {selected ? (
+          {linkedId && (linkedClient.isPending || linkedApps.isPending) ? <p role="status" className="lands-list-message">Cargando cliente…</p> : linkedId && (linkedClient.isError || linkedApps.isError) ? <div className="lands-list-message"><InlineError error={parseApiError(linkedClient.error || linkedApps.error)} /><button type="button" className="btn-s" onClick={() => { linkedClient.refetch(); linkedApps.refetch(); }}>Reintentar</button></div> : linkedId && !linkedApps.data?.apps?.includes("lands") ? <p className="lands-list-message">Este cliente no está vinculado a Lands.</p> : selected ? (
             <>
               {/* Header */}
               <div className="cl-det-hd">
@@ -342,10 +365,10 @@ function ClientsPage() {
                     {selected.email || "Sin correo"}{selected.phone ? ` · ${selected.phone}` : ""}
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                  <a href={`tel:${selected.phone}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #E2E7E5", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiPhone /></a>
-                  <a href={`mailto:${selected.email}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #E2E7E5", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiEnvelope /></a>
-                  <a href={`https://wa.me/${(selected.phone || "").replace(/\D/g,"")}`} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #E2E7E5", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiChatBubbleLeftRight /></a>
+                <div className="lands-contact-actions">
+                  {selected.phone && <a aria-label={`Llamar a ${selected.name}`} href={`tel:${selected.phone}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #E2E7E5", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiPhone /></a>}
+                  {selected.email && <a aria-label={`Enviar correo a ${selected.name}`} href={`mailto:${selected.email}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #E2E7E5", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiEnvelope /></a>}
+                  {selected.phone && <a aria-label={`WhatsApp de ${selected.name}`} href={`https://wa.me/${(selected.phone || "").replace(/\D/g,"")}`} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 10, border: "1.5px solid #E2E7E5", background: "#fff", fontSize: "1rem", cursor: "pointer", textDecoration: "none" }}><HiChatBubbleLeftRight /></a>}
                   {/* Toda la cartera se ve, pero cada quien edita la suya. Un
                       botón que sólo sirve para chocar con un 403 no ayuda: en su
                       lugar se dice de quién es el cliente. */}
@@ -490,10 +513,10 @@ function ClientsPage() {
 
                 {/* Actions */}
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-                  <Button variant="primary" style={{ padding: "8px 15px", fontSize: ".78rem" }} onClick={() => openContractCreate({ clientId: selected.id })}>
+                  {canUseFeature("lands.sales") && <Button variant="primary" style={{ padding: "8px 15px", fontSize: ".78rem" }} onClick={() => openContractCreate({ clientId: selected.id })}>
                     <HiDocumentText /> Nuevo Contrato
-                  </Button>
-                  {selected.type === "lead" && (
+                  </Button>}
+                  {selected.type === "lead" && canUseFeature("lands.sales") && (
                     <Button variant="primary" style={{ padding: "8px 15px", fontSize: ".78rem" }} onClick={() => openContractCreate({ clientId: selected.id, type: "reserve" })}>
                       <HiLockClosed /> Registrar Apartado
                     </Button>
@@ -519,10 +542,10 @@ function ClientsPage() {
       </div>
 
       {cancelDraft && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center" }}
+        <DialogPortal className="lands-payment-dialog" style={{ background: "rgba(0,0,0,.45)" }}
           onClick={() => !cancelling && setCancelDraft(null)}
         >
-          <div style={{ background: "#fff", borderRadius: 16, width: "min(92vw, 440px)", boxShadow: "0 24px 60px rgba(0,0,0,.22)", overflow: "hidden" }}
+          <div role="dialog" aria-modal="true" aria-label="Cancelar contrato" style={{ maxHeight: "90dvh", overflowY: "auto", background: "#fff", borderRadius: 16, width: "min(92vw, 440px)", boxShadow: "0 24px 60px rgba(0,0,0,.22)", overflow: "hidden" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -540,8 +563,8 @@ function ClientsPage() {
                 Esta acción cancelará el contrato activo, liberará el lote y cancelará los pagos pendientes. No se puede deshacer.
               </p>
               <div>
-                <label style={{ display: "block", fontSize: ".68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#83867C", marginBottom: 5 }}>Motivo de cancelación *</label>
-                <textarea
+                <label htmlFor="field-clients-index-1" style={{ display: "block", fontSize: ".68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#83867C", marginBottom: 5 }}>Motivo de cancelación *</label>
+                <textarea id="field-clients-index-1"
                   rows={2}
                   value={cancelForm.reason}
                   onChange={(e) => setCancelForm((p) => ({ ...p, reason: e.target.value }))}
@@ -550,8 +573,8 @@ function ClientsPage() {
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: ".68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#83867C", marginBottom: 5 }}>Monto de reembolso ($) <span style={{ fontWeight: 400, textTransform: "none" }}>— opcional</span></label>
-                <input
+                <label htmlFor="field-clients-index-2" style={{ display: "block", fontSize: ".68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#83867C", marginBottom: 5 }}>Monto de reembolso ($) <span style={{ fontWeight: 400, textTransform: "none" }}>— opcional</span></label>
+                <input id="field-clients-index-2"
                   type="number"
                   min="0"
                   value={cancelForm.refund_amount}
@@ -573,7 +596,7 @@ function ClientsPage() {
               </button>
             </div>
           </div>
-        </div>
+        </DialogPortal>
       )}
 
       <ClientModal />
@@ -584,7 +607,7 @@ function ClientsPage() {
         subtitle="Seguimiento de compradores, prospectos y sus contratos activos."
         steps={[
           { title: "Seleccionar un cliente", text: "Haz clic en cualquier cliente de la lista izquierda para ver su detalle completo: contratos, pagos, saldo y documentos vinculados." },
-          { title: "Buscar y filtrar", text: "Usa la barra de búsqueda para encontrar clientes por nombre o correo. El filtro de pestañas separa compradores activos de prospectos." },
+          { title: "Buscar y filtrar", text: "Usa la barra de búsqueda para encontrar clientes por nombre, correo o teléfono en todas las páginas. El filtro de pestañas separa compradores activos de prospectos." },
           { title: "Agregar un cliente", text: "El botón '+ Agregar cliente' abre el formulario para registrarlo y darle acceso a OwnTerra Lands. Si el correo ya existe en el ecosistema, se vincula esa identidad en vez de duplicarla." },
           { title: "Editar cliente", text: "En el detalle del cliente, el botón 'Editar' permite modificar nombre, correo, teléfono y datos del contrato." },
           { title: "Estado de cuenta", text: "Desde el detalle puedes ver el historial de pagos, descargarlo en PDF o enviarlo por correo directamente al cliente." },

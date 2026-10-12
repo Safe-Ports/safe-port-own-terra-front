@@ -1,145 +1,130 @@
-import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { HiArrowRight, HiBanknotes, HiBellAlert, HiBolt, HiBuildingOffice2, HiCalendarDays, HiChatBubbleLeftRight, HiClipboardDocumentList, HiDocumentText, HiHomeModern, HiInboxStack, HiKey, HiMegaphone, HiScale, HiSquares2X2, HiTicket, HiUserGroup, HiUsers, HiWrenchScrewdriver } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 import EcoLayout from "@/pages/Ecosystem/EcoLayout";
-import { PROPERTY_ACTION_ICONS, PROPERTY_ENTITY_ICONS } from "../../components/propertiesIconCatalog";
-import { PROPERTIES_MVP_SCOPE, isPathInScope } from "../../mvpScope";
-import "./properties-dashboard.css";
+import { usePropertiesData } from "../../data/PropertiesDataContext";
+import { isPathInScope } from "../../mvpScope";
+import "./properties-hub.css";
 
-const { back: HiArrowLeft, open: HiArrowRight } = PROPERTY_ACTION_ICONS;
-const { portfolio: HiBuildingOffice2, operations: HiWrenchScrewdriver, commercial: HiMegaphone, relationships: HiChatBubbleLeftRight } = PROPERTY_ENTITY_ICONS;
+const money = (value) => new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(value || 0);
+const OPERATIONS = "/properties/comunidades/operacion";
 
-const allAreas = [
+// Un solo nivel. El selector de áreas obligaba a dos clics para llegar a
+// cualquier destino y escondía catorce entradas detrás de una pestaña; aquí
+// todo está a la vista, agrupado por el momento en que se usa.
+const groups = [
+  {
+    key: "daily",
+    label: "Día a día",
+    caption: "La operación que se repite cada mes",
+    items: [
+      ["Cuotas y adeudos", "Cargos, pagos y saldos por unidad", `${OPERATIONS}?module=charges`, HiBanknotes, "properties.properties.read"],
+      ["Gastos de servicios", "Agua, luz y gas: recibos, importes y comprobantes", `${OPERATIONS}?module=utilities`, HiBolt, "properties.properties.read"],
+      ["Comunicados", "Avisos oficiales, audiencias y lecturas", `${OPERATIONS}?module=communications`, HiMegaphone, "properties.properties.read"],
+      ["Amenidades", "Disponibilidad y reservaciones", `${OPERATIONS}?module=amenities`, HiCalendarDays, "properties.properties.read"],
+      ["Comité y votaciones", "Acuerdos, aprobaciones y participación", `${OPERATIONS}?module=committee`, HiScale, "properties.properties.read"],
+      ["Reportes de comunidad", "Cobranza, actividad y gobernanza", `${OPERATIONS}?module=reports`, HiClipboardDocumentList, "properties.properties.read"],
+    ],
+  },
+  {
+    key: "attention",
+    label: "Atención",
+    caption: "Lo que entra sin avisar y hay que resolver",
+    items: [
+      ["Tickets y mantenimiento", "Solicitudes, prioridades y responsables", "/properties/tickets", HiTicket],
+      ["Recepción y paquetería", "Paquetes recibidos y entregas a residentes", "/properties/accesos", HiInboxStack, "properties.units.read"],
+      ["Proveedores", "Quién resuelve: red habilitada y solicitudes", "/properties/responsables", HiWrenchScrewdriver, "properties.providers.read"],
+      ["Inspecciones", "Checklists, evidencia y firmas", "/properties/modulos/inspecciones", HiClipboardDocumentList],
+      ["Mensajes", "Conversaciones de toda la operación", "/properties/modulos/mensajes", HiChatBubbleLeftRight],
+      ["Notificaciones", "Alertas que requieren atención", "/properties/modulos/notificaciones", HiBellAlert],
+    ],
+  },
   {
     key: "portfolio",
-    label: "Portafolio",
-    caption: "Lo que administras",
-    icon: HiBuildingOffice2,
-    summary: "La fuente de verdad de todos tus activos.",
+    label: "Portafolio y personas",
+    caption: "La fuente de verdad: qué administras y quién vive ahí",
     items: [
-      ["Abrir portafolio", "Inmuebles, unidades y propietarios en contexto", "/properties/portafolio", "properties.properties.read"],
-      ["Documentos", "Expedientes y versiones", "/properties/modulos/documentos"],
+      ["Comunidades", "Condominios, privadas, plazas, cabañas y hoteles", "/properties/comunidades", HiUserGroup, "properties.properties.read"],
+      ["Inmuebles y unidades", "Portafolio completo con propietarios en contexto", "/properties/portafolio", HiBuildingOffice2, "properties.properties.read"],
+      ["Unidades y residentes", "Quién vive, quién paga y saldo de cada unidad", "/properties/comunidades?tab=units", HiUsers, "properties.units.read"],
+      ["Estatus de unidades", "Disponibilidad de casas, departamentos y espacios", "/properties/unidades?view=board", HiHomeModern, "properties.units.read"],
+      ["Invitaciones al portal", "Invita residentes y define qué unidades ven", "/properties/comunidades?tab=directory", HiKey, "properties.read"],
+      ["Documentos", "Expedientes y versiones", "/properties/modulos/documentos", HiDocumentText],
+      ["Contratos", "Vigencias, renovaciones e historial", "/properties/modulos/contratos", HiDocumentText],
+      ["Actividad", "Historial y auditoría", "/properties/modulos/actividad", HiSquares2X2],
+      ["Rentas", "Prospectos, contratos, cobranza e inspecciones", "/properties/rentas", HiKey, "properties.rent.read"],
+      ["Hospedaje", "Reservaciones, huéspedes, check-in y tarifas", "/properties/rentas/hospedaje", HiCalendarDays, "properties.rent.read"],
+      ["Marketplace de renta", "Publicaciones, disponibilidad y consultas", "/properties/publicaciones", HiMegaphone, "properties.rent.read"],
     ],
   },
-  {
-    key: "operations",
-    label: "Operación",
-    caption: "Lo que sucede hoy",
-    icon: HiWrenchScrewdriver,
-    summary: "Comunidades, cuotas y atención cotidiana en un solo flujo.",
-    items: [
-      ["Comunidades", "Condominios, privadas, plazas, complejos de cabañas y hoteles", "/properties/comunidades", "properties.properties.read"],
-      ["Cuotas y adeudos", "Cargos, pagos y saldos por unidad", "/properties/comunidades/operacion?module=charges", "properties.properties.read"],
-      ["Servicios y medidores", "Agua, luz, gas, lecturas, recibos, responsables y anomalías", "/properties/comunidades/operacion?module=utilities", "properties.properties.read"],
-      ["Comunicados", "Avisos oficiales, audiencias y lecturas", "/properties/comunidades/operacion?module=communications", "properties.properties.read"],
-      ["Amenidades", "Disponibilidad y reservaciones", "/properties/comunidades/operacion?module=amenities", "properties.properties.read"],
-      ["Comité y votaciones", "Acuerdos, aprobaciones y participación", "/properties/comunidades/operacion?module=committee", "properties.properties.read"],
-      ["Reportes de comunidad", "Cobranza, actividad y gobernanza", "/properties/comunidades/operacion?module=reports", "properties.properties.read"],
-      ["Estatus de unidades", "Disponibilidad de casas, departamentos y espacios", "/properties/unidades?view=board", "properties.units.read"],
-      ["Unidades y residentes", "Quién vive, quién paga y saldo de cada unidad", "/properties/comunidades?tab=units", "properties.units.read"],
-      ["Contratos", "Vigencias, renovaciones e historial", "/properties/modulos/contratos"],
-      ["Rentas", "Prospectos, contratos, cobranza, renovaciones e inspecciones", "/properties/rentas", "properties.rent.read"],
-      ["Hospedaje", "Reservaciones, huéspedes, check-in, limpieza, tarifas y cobros", "/properties/rentas/hospedaje", "properties.rent.read"],
-      ["Tickets y mantenimiento", "Solicitudes, conversación, prioridades y responsables", "/properties/tickets"],
-      ["Inspecciones", "Checklists, evidencia y firmas", "/properties/modulos/inspecciones"],
-      ["Actividad", "Historial y auditoría", "/properties/modulos/actividad"],
-    ],
-  },
-  {
-    key: "commercial",
-    label: "Comercial",
-    caption: "Lo que hace crecer",
-    icon: HiMegaphone,
-    summary: "Del inventario publicado a una relación comercial.",
-    items: [
-      ["Marketplace de renta", "Publicaciones, disponibilidad, precio y consultas", "/properties/publicaciones", "properties.rent.read"],
-      ["Publicaciones de venta", "Próxima etapa de comercialización", "/properties/modulos/publicaciones"],
-      ["Prospectos", "Interesados, visitas y negociación", "/properties/modulos/prospectos"],
-    ],
-  },
-  {
-    key: "relationships",
-    label: "Relaciones",
-    caption: "Las personas primero",
-    icon: HiChatBubbleLeftRight,
-    summary: "Cada conversación y experiencia, sin perder contexto.",
-    items: [
-      ...(PROPERTIES_MVP_SCOPE.later
-        ? [["Accesos, visitas y paquetería", "Pases, entradas, salidas y entregas para caseta", "/properties/accesos"]]
-        : [["Recepción y paquetería", "Paquetes recibidos y entregas a residentes", "/properties/accesos"]]),
-      ["Red de servicio", "Equipo, proveedores y carga operativa", "/properties/responsables"],
-      ["Mensajes", "Conversaciones de toda la operación", "/properties/modulos/mensajes"],
-      ["Notificaciones", "Alertas que requieren atención", "/properties/modulos/notificaciones"],
-      ["Portal del inquilino", "Pagos, solicitudes y documentos", "/portal-inquilino"],
-      // El administrador no entra al portal (pide la cuenta del residente): desde
-      // aquí invita residentes y decide qué unidades ven, en el directorio.
-      ["Invitaciones al portal", "Invita residentes y define qué unidades ven", "/properties/comunidades?tab=directory", "properties.read"],
-      ["Portal del propietario", "Rendimiento, contratos y reportes", "/properties/modulos/portal-propietario"],
-    ],
-  },
-];
-
-// Las áreas fuera del MVP (ver mvpScope) se quitan del menú; un área que se
-// queda sin accesos, como Comercial, desaparece completa.
-const areas = allAreas
-  .map((area) => ({ ...area, items: area.items.filter(([, , to]) => isPathInScope(to)) }))
-  .filter((area) => area.items.length);
-
-const areaKeys = new Set(areas.map((area) => area.key));
+].map((group) => ({ ...group, items: group.items.filter(([, , to]) => isPathInScope(to)) })).filter((group) => group.items.length);
 
 function PropertiesOperationsHub() {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const { canUseFeature } = useAppContext();
-  const requestedArea = searchParams.get("section");
-  const [activeArea, setActiveArea] = useState(areaKeys.has(requestedArea) ? requestedArea : "operations");
-  const selected = areas.find((area) => area.key === activeArea);
+  const { quotaPlans, units, communities, condoCharges } = usePropertiesData();
 
-  const selectArea = (key) => {
-    setActiveArea(key);
-    setSearchParams({ section: key }, { replace: true });
-  };
+  // La operación del mes: un plan de cuota genera de golpe los cargos de todas
+  // las unidades. Es lo único que hoy sustituye decenas de capturas a mano.
+  const plan = (quotaPlans || [])[0];
+  const activeUnits = units.filter((unit) => unit.status !== "archived");
+  const planCommunity = plan ? communities.find((item) => item.id === plan.communityId) : null;
+  const planUnits = plan ? activeUnits.filter((unit) => unit.propertyId === planCommunity?.propertyId) : [];
+  const planTotal = useMemo(() => planUnits.length * Number(plan?.amount || 0), [planUnits.length, plan?.amount]);
+  const period = new Intl.DateTimeFormat("es-MX", { month: "long", year: "numeric" }).format(new Date());
+  const pendingCharges = condoCharges.filter((charge) => charge.status !== "paid").length;
 
-  return (
-    <EcoLayout active="properties" title="Centro de operación" subtitle="OwnTerra Properties · Segundo nivel">
-      <main className="properties-operations-page">
-        <button className="properties-level-back" type="button" onClick={() => navigate("/properties")}>
-          <HiArrowLeft /> Volver a elegir ruta
-        </button>
-        <header className="properties-operations-heading">
-          <span>Segundo nivel</span>
-          <h1>Tu mapa de operación.</h1>
-          <p>Aquí aparecen las herramientas cuando ya sabes en qué parte del viaje quieres trabajar.</p>
+  const visible = groups
+    .map((group) => ({ ...group, items: group.items.filter(([, , , , feature]) => !feature || canUseFeature(feature)) }))
+    .filter((group) => group.items.length);
+
+  return <EcoLayout active="properties" title="Todas las herramientas" subtitle="Properties">
+    <main className="hub-page">
+
+      <section className="hub-run" aria-label="Operación del mes">
+        <div className="hub-run-copy">
+          <p className="hub-run-period">OPERACIÓN DEL MES · {period.toUpperCase()}</p>
+          {plan
+            ? <>
+                <h1>{plan.concept}</h1>
+                <p>{planUnits.length} {planUnits.length === 1 ? "unidad" : "unidades"} de {planCommunity?.name || "la comunidad"} · {money(plan.amount)} cada una{planTotal ? ` · ${money(planTotal)} en total` : ""}</p>
+              </>
+            : <>
+                <h1>Aún no defines una cuota</h1>
+                <p>Con un plan de cuota generas los cargos de todas las unidades de una vez, en lugar de capturarlos uno por uno.</p>
+              </>}
+        </div>
+        <div className="hub-run-actions">
+          <button type="button" className="hub-run-primary" onClick={() => navigate(`${OPERATIONS}?module=charges`)}>
+            {plan ? "Generar el periodo" : "Definir la cuota"} <HiArrowRight />
+          </button>
+          <p className="hub-run-manual">
+            {plan ? "Se simula antes de aplicar. " : ""}
+            <button type="button" onClick={() => navigate(`${OPERATIONS}?module=charges`)}>
+              {plan ? "¿Un caso especial? Crear un cargo suelto" : "Crear un cargo suelto"}
+            </button>
+          </p>
+          {pendingCharges ? <p className="hub-run-note">{pendingCharges} {pendingCharges === 1 ? "cargo sigue sin pagarse" : "cargos siguen sin pagarse"}</p> : null}
+        </div>
+      </section>
+
+      {visible.map((group) => <section className="hub-group" key={group.key} aria-label={group.label}>
+        <header>
+          <h2>{group.label}</h2>
+          <p>{group.caption}</p>
         </header>
-        <section className="properties-cell" aria-label="Áreas de Properties">
-          <nav className="properties-particles" aria-label="Áreas de la operación">
-            {areas.map(({ key, label, caption, icon: Icon }) => (
-              <button type="button" className={activeArea === key ? "active" : ""} key={key} onClick={() => selectArea(key)}>
-                <span className="particle-icon"><Icon /></span>
-                <span><strong>{label}</strong><small>{caption}</small></span>
-                <HiArrowRight className="particle-arrow" />
-              </button>
-            ))}
-          </nav>
-          <div className="properties-organism" key={selected.key}>
-            <header><span>{selected.label}</span><h2>{selected.summary}</h2></header>
-            <div className="organism-list">
-              {selected.items.map(([title, description, path, permission]) => {
-                const allowed = !permission || canUseFeature(permission);
-                return (
-                  <button type="button" key={title} disabled={!allowed} onClick={() => allowed && navigate(path)}>
-                    <span className="organism-dot" />
-                    <span><strong>{title}</strong><small>{allowed ? description : "Sin acceso para tu rol"}</small></span>
-                    <HiArrowRight />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      </main>
-    </EcoLayout>
-  );
+        <div className="hub-grid">
+          {group.items.map(([label, description, to, Icon]) => <button type="button" key={to} onClick={() => navigate(to)}>
+            <span className="hub-tile-icon"><Icon aria-hidden="true" /></span>
+            <span className="hub-tile-copy"><strong>{label}</strong><small>{description}</small></span>
+            <HiArrowRight className="hub-tile-arrow" aria-hidden="true" />
+          </button>)}
+        </div>
+      </section>)}
+
+    </main>
+  </EcoLayout>;
 }
 
 export default PropertiesOperationsHub;

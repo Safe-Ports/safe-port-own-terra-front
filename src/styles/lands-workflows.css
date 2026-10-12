@@ -1,0 +1,69 @@
+.app-shell .lands-list-filters{display:grid;grid-template-columns:minmax(180px,1fr) minmax(220px,1.3fr) minmax(160px,.8fr);gap:16px;padding:20px;border-bottom:1px solid var(--bd);align-items:start}
+.app-shell .lands-list-filters label{display:grid;gap:8px;font-size:14px;font-weight:600}
+.app-shell .lands-list-filters input,.app-shell .lands-list-filters select{width:100%;min-width:0}
+.app-shell .lands-table-scroll{overflow-x:auto;max-width:100%}
+.app-shell .lands-row-secondary{display:block;color:var(--mu);font-size:12px;margin-top:4px}
+.app-shell .lands-list-message,.app-shell .lands-list-note{padding:12px 16px;font-size:14px;line-height:1.5}
+.app-shell .lands-list-note{color:var(--mu);margin:0}
+.app-shell .lands-found-record,.app-shell .lands-receipt-pending{padding:16px;border:1px solid var(--bd);border-radius:12px;background:var(--sf2);margin-bottom:16px}
+.app-shell .lands-found-record{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.app-shell .lands-clients .cl-item{width:100%;text-align:left;font:inherit;color:inherit}
+.app-shell .lands-clients .cl-det-hd{flex-wrap:wrap}
+.app-shell .lands-contact-actions{display:flex;gap:8px;flex-wrap:wrap;flex-shrink:0}
+.app-shell .lands-contact-actions a{min-height:44px;min-width:44px}
+.app-shell .lands-clients .cl-det-nm{overflow-wrap:anywhere}
+.app-shell .lands-clients .cl-det-sub{overflow-wrap:anywhere;line-height:1.5}
+.app-shell .client-row{width:100%;text-align:left;font:inherit;color:inherit;border:0;background:transparent;cursor:pointer}
+.app-shell .client-row:hover,.app-shell .client-row:focus-visible{background:var(--sf2)}
+.app-shell .client-field{min-width:0}
+.app-shell .client-search-row{display:flex;gap:8px;align-items:center}
+.app-shell .client-search-wrap{position:relative;flex:1;min-width:0}
+.app-shell .client-search-wrap .search-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--mu);pointer-events:none}
+.app-shell .client-search{width:100%;min-height:44px;border:1px solid var(--bd);border-radius:12px;background:var(--sf);padding:12px 12px 12px 36px;color:var(--tx);font:inherit}
+.app-shell .client-new-btn,.app-shell .selected-summary .swap{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:8px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--sf);color:var(--tx);font:inherit;cursor:pointer;flex-shrink:0}
+.app-shell .selected-summary{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--bd);border-radius:12px;background:var(--sf2);flex-wrap:wrap}
+.app-shell .selected-summary>div:nth-child(2){flex:1;min-width:100px}
+.app-shell .client-av{width:36px;height:36px;border-radius:50%;background:var(--forest);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.app-shell .client-name{font-weight:600;overflow-wrap:anywhere}
+.app-shell .client-meta{font-size:12px;color:var(--mu);overflow-wrap:anywhere;margin-top:4px}
+.app-shell .client-results{border:1px solid var(--bd);border-radius:12px;overflow:hidden;margin-top:8px;max-height:240px;overflow-y:auto}
+.app-shell .client-row{display:flex;align-items:center;gap:12px;padding:12px;min-height:44px}
+.app-shell .client-row-empty{padding:12px;font-size:13px;line-height:1.5;width:100%;text-align:left}
+.app-shell .client-row-empty.as-cta{border:0;background:var(--sf2);color:var(--tx);cursor:pointer}
+.app-shell .lands-contract-summary{flex-basis:100%;display:grid;gap:4px;font-size:13px;line-height:1.4;padding:8px 0;overflow-wrap:anywhere}
+.app-shell .modal-foot:has(.lands-contract-summary){flex-wrap:wrap}
+.app-shell .lands-payment-dialog{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
+.app-shell .lands-payment-dialog .modal-box{max-height:90dvh;display:flex;flex-direction:column;padding:0;width:100%;overflow:hidden}
+.app-shell .lands-payment-dialog .modal-body{overflow-y:auto;min-height:0}
+.app-shell .lands-payment-dialog .modal-hd,.app-shell .lands-payment-dialog .modal-foot{flex-shrink:0}
+.app-shell .lands-quote-dialog{position:fixed;inset:0;z-index:50}
+.app-shell .lands-quote-explanation{padding:20px;line-height:1.6}
+.app-shell .lands-quote-explanation label{display:grid;gap:8px;margin:12px 0}
+@media(max-width:640px){
+.app-shell .lands-list-filters{grid-template-columns:minmax(0,1fr);padding:16px}
+.app-shell .lands-clients .cl-det-hd>div:nth-child(2){flex-basis:calc(100% - 76px)}
+.app-shell .lands-contact-actions{width:100%;justify-content:flex-start}
+.app-shell .lands-contracts .card-hd{flex-wrap:wrap;gap:12px}
+.app-shell .lands-contracts input,.app-shell .lands-contracts select,.app-shell .lands-payment-dialog input,.app-shell .lands-payment-dialog select,.app-shell .lands-payment-dialog textarea,.app-shell .modal-box input,.app-shell .modal-box select,.app-shell .modal-box textarea,.app-shell .lands-clients .cl-src input{font-size:16px}
+.app-shell .lands-list-filters button,.app-shell .lands-clients button,.app-shell .lands-contracts button{min-height:44px}
+.app-shell .lands-payment-dialog{padding:12px;padding-bottom:max(12px,env(safe-area-inset-bottom))}
+}
+.app-shell .lands-form-fields{border:0;padding:0;margin:0;display:grid;gap:16px;min-width:0}
+.app-shell .lands-form-fields .space-y-3{display:grid;gap:8px}
+.app-shell .lands-form-fields .fg{margin-top:12px}
+.app-shell .lands-calculator-grid{grid-template-columns:minmax(260px,340px) minmax(0,1fr)}
+.app-shell .lands-document-dialog{padding:16px}
+.app-shell .lands-document-dialog .modal-box{max-height:90dvh;overflow-y:auto;width:min(100%,440px)}
+.app-shell .lot-edit-overlay{position:fixed;inset:0;z-index:50;padding:16px;display:flex;align-items:center;justify-content:center}
+.app-shell .lot-edit-overlay .lot-edit-modal{max-height:90dvh;display:flex;flex-direction:column;overflow:hidden;max-width:100%}
+.app-shell .lot-edit-body{overflow-y:auto;min-height:0}
+.app-shell .lot-edit-head,.app-shell .lot-edit-foot{flex-shrink:0}
+.app-shell [role="button"]:focus-visible,.app-shell label[role="button"]:focus-visible{outline:2px solid var(--forest);outline-offset:3px}
+@media(max-width:640px){
+.app-shell .lands-calculator-grid{grid-template-columns:minmax(0,1fr)}
+.app-shell .lot-edit-row,.app-shell .lot-edit-row.cols-3{grid-template-columns:minmax(0,1fr)}
+.app-shell .lot-edit-input,.app-shell .lots-builder-input,.app-shell .lot-upload-shell input,.app-shell .calc-page input,.app-shell .calc-page textarea,.app-shell .lotp-form input,.app-shell .lotp-form textarea{font-size:16px}
+.app-shell .lot-edit-foot{flex-wrap:wrap}
+.app-shell .lot-edit-foot button,.app-shell .lands-document-dialog button,.app-shell .lands-payment-dialog button{min-height:44px}
+.app-shell .calc-page .card-hd{flex-wrap:wrap;gap:8px}
+}

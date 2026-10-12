@@ -1,3 +1,4 @@
+import WorkflowForm from "@/components/forms/WorkflowForm";
 import { useState } from "react";
 import { HiArrowPath, HiCalendarDays, HiCheckCircle, HiExclamationTriangle, HiPlus } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
@@ -63,7 +64,7 @@ function QuotaPlansPanel({community,units}){
       <button type="button" onClick={()=>setCreating(value=>!value)} disabled={!canWrite||!community}><HiPlus/> {creating?"Cancelar":"Nuevo plan"}</button>
     </header>
 
-    {creating?<form className="quota-form" onSubmit={savePlan}>
+    {creating?<WorkflowForm className="quota-form" onSubmit={savePlan}>
       <label className="wide"><span>Concepto</span><input autoFocus value={planDraft.concept} onChange={e=>setPlanDraft({...planDraft,concept:e.target.value})} placeholder="Cuota ordinaria de mantenimiento"/></label>
       <label><span>Tipo</span><select value={planDraft.quotaKind} onChange={e=>setPlanDraft({...planDraft,quotaKind:e.target.value})}>{Object.entries(KIND).map(([v,l])=><option value={v} key={v}>{l}</option>)}</select></label>
       <label><span>Cómo se reparte</span><select value={planDraft.basis} onChange={e=>setPlanDraft({...planDraft,basis:e.target.value})}>{Object.entries(BASIS).map(([v,l])=><option value={v} key={v}>{l}</option>)}</select></label>
@@ -74,7 +75,7 @@ function QuotaPlansPanel({community,units}){
       <label><span>Vigente desde</span><input type="date" value={planDraft.effectiveFrom} onChange={e=>setPlanDraft({...planDraft,effectiveFrom:e.target.value})}/></label>
       {planDraft.basis==="by_indiviso"?<p className="quota-hint wide"><HiExclamationTriangle/> Repartida por indiviso: el importe se prorratea con el <b>porcentaje de indiviso</b> de cada unidad. Las unidades que no lo tengan capturado quedarán fuera de la generación.</p>:null}
       <footer className="wide"><button type="submit" disabled={busy==="plan"}>{busy==="plan"?"Guardando…":"Crear plan"}</button></footer>
-    </form>:null}
+    </WorkflowForm>:null}
 
     {plans.length?<div className="quota-list">
       {plans.map(plan=><article key={plan.id} className={runPlanId===plan.id?"open":""}>

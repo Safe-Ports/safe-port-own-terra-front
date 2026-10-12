@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { HiArrowLeft, HiArrowRight, HiBanknotes, HiBuildingOffice2, HiCheckCircle, HiHomeModern, HiKey, HiLink, HiMegaphone, HiScale, HiSquares2X2, HiTicket, HiUserGroup } from "react-icons/hi2";
+import { HiArrowRight, HiBanknotes, HiBuildingOffice2, HiCheckCircle, HiHomeModern, HiKey, HiLink, HiMegaphone, HiScale, HiSquares2X2, HiTicket, HiUserGroup } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
 import EcoLayout from "@/pages/Ecosystem/EcoLayout";
 import { usePropertiesData } from "../../data/PropertiesDataContext";
@@ -70,7 +70,7 @@ function buildStages(d){
        how:["Úsalo para enseñar la idea, nunca para operar.","Lo que captures aquí se pierde al recargar.","No lo presentes a un cliente como funcionalidad lista."]}]:[]),
       {id:"tickets", label:"Tickets y servicios", state:"demo", to:"/properties/tickets", cta:"Ver Tickets",
        done:false, count:"Datos demo",
-       what:"Incidencias, mantenimiento y medidores de servicios. Tampoco tienen contrato de backend.",
+       what:"Incidencias, mantenimiento y gastos de servicios. Tampoco tienen contrato de backend.",
        how:["Mismo criterio: demostración, no operación.","Monitoreo por unidad solo puede mostrar datos derivados de los módulos que sí persisten."]},
     ]},
   ];
@@ -90,7 +90,6 @@ function PropertiesGuidePage(){
 
   return <EcoLayout active="properties" title="Guía de Properties" subtitle="Cómo dejar la operación lista, paso a paso">
     <main className="guide-page">
-      <button className="guide-back" type="button" onClick={()=>navigate("/properties")}><HiArrowLeft/> Volver a Properties</button>
 
       <header className="guide-hero">
         <div>

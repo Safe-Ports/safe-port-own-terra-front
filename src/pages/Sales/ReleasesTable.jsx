@@ -1,3 +1,6 @@
+import WorkflowForm from "@/components/forms/WorkflowForm";
+import InlineError from "@/components/shared/InlineError";
+import DialogPortal from "@/components/ui/DialogPortal";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { HiArrowUturnLeft, HiOutlineClock } from "react-icons/hi2";
@@ -34,6 +37,7 @@ function SettleModal({ fila, onClose, onDone }) {
   const retenido = Math.max(cobrado - (invalido ? 0 : val), 0);
 
   const guardar = async () => {
+    if (busy) return;
     if (invalido) { setErr("Ingresa cuánto se devolvió (puede ser $0)."); return; }
     if (val > cobrado + 0.001) { setErr(`No se puede devolver más de ${money(cobrado)}.`); return; }
     setBusy(true);
@@ -56,15 +60,15 @@ function SettleModal({ fila, onClose, onDone }) {
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-box" style={{ maxWidth: 420 }}>
+    <DialogPortal className="modal-overlay lands-payment-dialog">
+      <div role="dialog" aria-modal="true" aria-label="Registrar devolución" className="modal-box" style={{ maxWidth: 420 }}>
         <div className="modal-hd">
           <div style={{ flex: 1 }}>
             <div className="modal-title" style={{ fontSize: "1.25rem" }}>Registrar devolución</div>
             <div className="modal-sub">{fila.lot_label} · {fila.client_name || "sin cliente"}</div>
           </div>
         </div>
-        <div className="modal-body">
+        <WorkflowForm id="lands-refund-form" className="modal-body" noValidate busy={busy} onSubmit={event => { event.preventDefault(); return guardar(); }}>
           <div style={{ background: "var(--sf2)", borderRadius: 12, padding: "12px 14px",
                         marginBottom: 14, display: "flex", justifyContent: "space-between", fontSize: ".84rem" }}>
             <span style={{ color: "var(--mu)" }}>El cliente entregó</span>
@@ -72,10 +76,10 @@ function SettleModal({ fila, onClose, onDone }) {
           </div>
 
           <div className="fg">
-            <label className="fl">¿Cuánto se le devolvió?</label>
-            <input className={`fi ${err ? "is-invalid" : ""}`} type="number" min="0" step="0.01"
+            <label className="fl" htmlFor="release-refund">¿Cuánto se le devolvió?</label>
+            <input id="release-refund" aria-invalid={!!err} className={`fi ${err ? "is-invalid" : ""}`} type="number" min="0" step="0.01"
               value={monto} onChange={(e) => { setMonto(e.target.value); setErr(""); }} autoFocus />
-            {err && <div style={{ marginTop: 6, fontSize: ".76rem", color: "var(--danger)" }}>{err}</div>}
+            {err && <div role="alert" style={{ marginTop: 6, fontSize: ".76rem", color: "var(--danger)" }}>{err}</div>}
             {!err && !invalido && (
               <div style={{ marginTop: 6, fontSize: ".76rem", fontWeight: 600,
                             color: retenido > 0 ? "#b0791f" : "#2F6A38" }}>
@@ -92,15 +96,15 @@ function SettleModal({ fila, onClose, onDone }) {
               accept="application/pdf,image/jpeg,image/png,image/webp"
               hint="PDF o imagen. Puedes registrarlo ahora y subir el papel después." />
           </div>
-        </div>
+        </WorkflowForm>
         <div className="modal-foot">
           <Button variant="secondary" style={{ flex: 1 }} onClick={onClose} disabled={busy}>Cancelar</Button>
-          <Button variant="primary" style={{ flex: 2 }} onClick={guardar} disabled={busy}>
+          <Button type="submit" form="lands-refund-form" variant="primary" style={{ flex: 2 }} disabled={busy}>
             {busy ? "Guardando…" : "Registrar devolución"}
           </Button>
         </div>
       </div>
-    </div>
+    </DialogPortal>
   );
 }
 
@@ -108,13 +112,13 @@ export default function ReleasesTable() {
   const qc = useQueryClient();
   const [liquidando, setLiquidando] = useState(null);
   const [page, setPage] = useState(1);
-  const { data, isPending, isError } = useQuery({
+  const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: ["contracts", "releases"],
     queryFn: () => contractService.releases(50),
     retry: (n, err) => err?.response?.status !== 403 && n < 2,
   });
 
-  if (isError) return null;
+  if (isError) return <div className="card"><InlineError error={parseApiError(error)} /><button type="button" className="btn-s" onClick={() => refetch()}>Reintentar devoluciones</button></div>;
 
   const filas = data || [];
   const porLiquidar = filas.filter(f => !f.settled).length;
@@ -146,7 +150,7 @@ export default function ReleasesTable() {
             Todavía no se liberó ningún lote.
           </div>
         ) : (
-          <table className="tbl">
+          <div className="lands-table-scroll"><table className="tbl">
             <thead>
               <tr>
                 <th>Motivo</th>
@@ -219,7 +223,7 @@ export default function ReleasesTable() {
                 );
               })}
             </tbody>
-          </table>
+          </table></div>
         )}
         <Pagination total={filas.length} page={page} limit={POR_PAGINA} onPage={setPage} />
       </div>

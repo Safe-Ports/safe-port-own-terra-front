@@ -3,6 +3,7 @@ import MediaGallery, { useEntityMedia } from "../media/MediaGallery";
 import SpecSheet from "../specs/SpecSheet";
 import { buildingSpecSheet } from "../specs/specModel";
 import { useBuildingSpec } from "../specs/useBuildingSpec";
+import { communityReferenceImage } from "./communityImages";
 import { COMMUNITY_KIND_LABEL } from "./communityModel";
 
 const money = (value) => new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(value || 0);
@@ -11,7 +12,7 @@ const money = (value) => new Intl.NumberFormat("es-MX", { style: "currency", cur
    con acceso directo a editarlos. Reemplaza a la antigua pestaña Configuración. */
 function CommunityDetail({ community, property, unitsCount, peopleCount, canWrite, onEdit, onClose }) {
   const { images } = useEntityMedia("inmueble", community.inmuebleId);
-  const cover = images[0]?.url;
+  const cover = images[0]?.url || communityReferenceImage(community.id).src;
   const building = buildingSpecSheet(useBuildingSpec(community.inmuebleId).data);
   const address = [property?.address, property?.city, property?.state].filter(Boolean).join(", ");
   const facts = [
@@ -22,7 +23,7 @@ function CommunityDetail({ community, property, unitsCount, peopleCount, canWrit
     ["Día de cobro", community.billingDay === "" ? "Sin definir" : `Día ${community.billingDay}`],
   ];
   return <section id="community-detail" className="community-detail" aria-label={`Detalle de ${community.name}`}>
-    <div className="community-detail-cover">{cover ? <img src={cover} alt="" /> : <HiBuildingOffice2 aria-hidden="true" />}</div>
+    <div className="community-detail-cover">{cover ? <img src={cover} alt="" /> : <HiBuildingOffice2 aria-hidden="true" />}{!images.length ? <small className="community-reference-label">Imagen de referencia · elige una foto para guardarla en la galería</small> : null}</div>
     <div className="community-detail-body">
       <header>
         <div><span>Comunidad seleccionada</span><h2>{community.name}</h2><p>{address || "Sin dirección registrada en el inmueble"}</p></div>

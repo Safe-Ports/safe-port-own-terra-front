@@ -5,6 +5,11 @@ import ServiceNetworkPage from "./ServiceNetworkPage";
 
 const mocks = vi.hoisted(() => ({
   canManage: true,
+  networkError: null,
+  retryServiceNetwork: vi.fn(),
+  enableServiceProvider: vi.fn().mockResolvedValue({}),
+  createServiceEnrollmentLink: vi.fn().mockResolvedValue({ token: "enrollment-test" }),
+  addServiceProviderContact: vi.fn().mockResolvedValue({}),
   showToast: vi.fn(),
   suspendServiceProvider: vi.fn().mockResolvedValue({}),
   archiveServiceProvider: vi.fn().mockResolvedValue({}),
@@ -37,16 +42,17 @@ vi.mock("../../data/PropertiesDataContext", () => ({
     serviceApplications: [application],
     serviceEnrollmentLinks: [],
     serviceNetworkLoading: false,
-    serviceNetworkError: null,
-    enableServiceProvider: vi.fn(),
+    serviceNetworkError: mocks.networkError,
+    retryServiceNetwork: mocks.retryServiceNetwork,
+    enableServiceProvider: mocks.enableServiceProvider,
     suspendServiceProvider: mocks.suspendServiceProvider,
     reactivateServiceProvider: vi.fn(),
     archiveServiceProvider: mocks.archiveServiceProvider,
     getServiceProviderContacts: mocks.getServiceProviderContacts,
-    addServiceProviderContact: vi.fn(),
+    addServiceProviderContact: mocks.addServiceProviderContact,
     inviteServiceContact: vi.fn(),
     revokeServiceContactInvite: vi.fn(),
-    createServiceEnrollmentLink: vi.fn(),
+    createServiceEnrollmentLink: mocks.createServiceEnrollmentLink,
     approveServiceApplication: mocks.approveServiceApplication,
     rejectServiceApplication: mocks.rejectServiceApplication,
   }),
@@ -56,7 +62,8 @@ const renderPage = () => render(<MemoryRouter><ServiceNetworkPage /></MemoryRout
 
 describe("ServiceNetworkPage", () => {
   beforeEach(() => {
-    mocks.canManage = true;
+    mocks.canManage = true; mocks.networkError = null;
+    mocks.getServiceProviderContacts.mockResolvedValue([]);
     Object.values(mocks).forEach((value) => typeof value?.mockClear === "function" && value.mockClear());
     mocks.coreList.mockResolvedValue({ items: [{ id: "core-77", name: "Plomería Díaz", categoria: "Plomería" }] });
   });
@@ -142,5 +149,56 @@ describe("ServiceNetworkPage", () => {
     expect(screen.queryByRole("button", { name: "Suspender" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Habilitar proveedor" })).not.toBeInTheDocument();
     expect(within(screen.getByText("Plomería Díaz", { selector: "h2" }).closest("article")).queryByRole("button", { name: "Agregar contacto" })).not.toBeInTheDocument();
+  });
+});
+
+
+describe("Estados e inscripción de proveedores", () => {
+  beforeEach(() => { mocks.canManage = true; mocks.networkError = null; mocks.getServiceProviderContacts.mockResolvedValue([]); vi.clearAllMocks(); });
+  it("carga automáticamente los contactos del primer proveedor", async () => {
+    mocks.getServiceProviderContacts.mockResolvedValue([{ id: "contact", persona_name: "Ana Técnica", role: "technician", status: "active" }]);
+    renderPage();
+    expect(await screen.findByText("Ana Técnica")).toBeVisible();
+    expect(mocks.getServiceProviderContacts).toHaveBeenCalledWith("prof-1");
+  });
+  it("muestra el fallo de contactos y permite reintentar, sin fingir una lista vacía", async () => {
+    mocks.getServiceProviderContacts.mockRejectedValueOnce({ response: { status: 503, data: { error: { code: "OT-SYS-9001", message: "Contactos no disponibles" } } } });
+    renderPage();
+    expect(await screen.findByText("Contactos no disponibles")).toBeVisible();
+    expect(screen.queryByText("Sin contactos todavía.")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Reintentar contactos" }));
+    expect(await screen.findByText("Sin contactos todavía.")).toBeVisible();
+  });
+  it("conserva el enlace generado cuando el portapapeles falla", async () => {
+    const clipboard = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) } });
+    renderPage(); fireEvent.click(screen.getByRole("button", { name: "Generar y copiar enlace" }));
+    const link = await screen.findByLabelText("Enlace público de inscripción");
+    expect(link.value).toContain("/servicio/registro?token=enrollment-test");
+    expect(screen.getByText(/No pudimos copiar automáticamente/)).toBeVisible();
+    if (clipboard) Object.defineProperty(navigator, "clipboard", clipboard); else delete navigator.clipboard;
+  });
+  it("exige seleccionar Core otra vez si cambia la búsqueda", async () => {
+    renderPage(); fireEvent.click(screen.getByRole("button", { name: "Habilitar proveedor" }));
+    const dialog = screen.getByRole("dialog", { name: "Habilitar proveedor" });
+    const input = within(dialog).getByLabelText("Buscar proveedor en Core");
+    fireEvent.change(input, { target: { value: "Díaz" } });
+    fireEvent.click(await within(dialog).findByRole("button", { name: /Plomería Díaz/ }));
+    fireEvent.change(input, { target: { value: "Otro" } });
+    fireEvent.submit(dialog.querySelector("form"));
+    expect(await within(dialog).findByText("Busca y selecciona un proveedor del catálogo de Core.")).toBeVisible();
+    expect(mocks.enableServiceProvider).not.toHaveBeenCalled();
+  });
+  it("valida el contacto en el campo sin enviarlo en blanco", async () => {
+    renderPage(); fireEvent.click(screen.getByRole("button", { name: "Agregar contacto" }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Agregar contacto" })).getByRole("button", { name: "Agregar", exact: true }));
+    expect(screen.getByText("Escribe el nombre del contacto.")).toBeVisible();
+    expect(mocks.addServiceProviderContact).not.toHaveBeenCalled();
+  });
+  it("permite reintentar la consulta de red fallida", () => {
+    mocks.networkError = { response: { status: 503, data: { error: { code: "OT-SYS-9001", message: "Red no disponible" } } } };
+    renderPage(); fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+    expect(screen.getByRole("alert")).toBeVisible();
+    expect(mocks.retryServiceNetwork).toHaveBeenCalledOnce();
   });
 });

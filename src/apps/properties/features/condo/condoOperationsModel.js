@@ -23,7 +23,7 @@ export function createVote(draft) {
 
 export const UTILITY_STATUS_LABEL = {
   pending_evidence:"Pendiente de evidencia", due_soon:"Por vencer", reported_paid:"Pago reportado",
-  verified:"Verificado", overdue:"Vencido", incident:"Con incidencia", suspended:"Suspendido",
+  verified:"Verificado", overdue:"Vencido", disputed:"En disputa", suspended:"Suspendido",
 };
 
 export const UTILITY_TYPE_LABEL = { water:"Agua", electricity:"Luz", gas:"Gas", internet:"Internet", other:"Otro" };
@@ -33,14 +33,26 @@ export function createUtilityService(draft) {
   if (!draft.communityId || !draft.name?.trim() || !UTILITY_TYPE_LABEL[draft.type] || !UTILITY_PAYER_LABEL[draft.payerRole]) {
     throw new Error("Completa comunidad, servicio, nombre y responsable.");
   }
-  return {id:id("utility"),communityId:draft.communityId,unitId:draft.unitId||"",type:draft.type,name:draft.name.trim(),provider:draft.provider?.trim()||"",accountReference:draft.accountReference?.trim()||"",meterNumber:draft.meterNumber?.trim()||"",payerRole:draft.payerRole,billingCycle:draft.billingCycle||"monthly",dueDate:draft.dueDate||"",status:"pending_evidence",previousReading:Number(draft.previousReading)||0,currentReading:Number(draft.currentReading)||0,unit:draft.unit?.trim()||"",amount:Number(draft.amount)||0,evidenceName:"",updatedAt:new Date().toISOString(),anomaly:false};
+  return {id:id("utility"),communityId:draft.communityId,unitId:draft.unitId||"",type:draft.type,name:draft.name.trim(),provider:draft.provider?.trim()||"",accountReference:draft.accountReference?.trim()||"",payerRole:draft.payerRole,billingCycle:draft.billingCycle||"monthly",periodStart:draft.periodStart||"",periodEnd:draft.periodEnd||"",dueDate:draft.dueDate||"",status:"pending_evidence",amount:Number(draft.amount)||0,reportedAmount:0,evidenceName:"",note:draft.note?.trim()||"",updatedAt:new Date().toISOString()};
 }
 
-export function createUtilityReading(service, draft) {
-  const value=Number(draft.value);
-  if (!service?.id || !Number.isFinite(value) || value < 0 || !draft.recordedAt) throw new Error("Completa una lectura válida y su fecha.");
-  const consumption=Math.max(0,value-Number(service.currentReading||0));
-  const previousConsumption=Math.max(0,Number(service.currentReading||0)-Number(service.previousReading||0));
-  const anomaly=previousConsumption>0&&consumption>previousConsumption*1.35;
-  return {reading:{id:id("reading"),serviceId:service.id,value,recordedAt:draft.recordedAt,recordedBy:draft.recordedBy?.trim()||"Administración",evidenceName:draft.evidenceName?.trim()||"",note:draft.note?.trim()||""},service:{...service,previousReading:Number(service.currentReading)||0,currentReading:value,evidenceName:draft.evidenceName?.trim()||service.evidenceName,status:anomaly?"incident":service.status,anomaly,updatedAt:new Date().toISOString()}};
+export function seedUtilityBill(service) {
+  if (!service?.periodStart || !Number(service.amount)) return null;
+  return {id:id("bill"),serviceId:service.id,periodStart:service.periodStart,periodEnd:service.periodEnd||service.periodStart,amount:Number(service.amount),dueDate:service.dueDate||"",status:service.status||"pending_evidence",reportedAmount:Number(service.reportedAmount)||0,paidAt:"",recordedBy:"Administración",evidenceName:service.evidenceName||"",note:service.note||""};
+}
+
+export function createUtilityBill(service, draft) {
+  const amount=Number(draft.amount);
+  if (!service) throw new Error("Selecciona un servicio antes de registrar el recibo.");
+  if (!draft.periodStart || !draft.periodEnd) throw new Error("Indica el periodo que cubre el recibo.");
+  if (draft.periodEnd < draft.periodStart) throw new Error("El periodo termina antes de empezar.");
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error("Captura el importe del recibo.");
+  const bill={id:id("bill"),serviceId:service.id,periodStart:draft.periodStart,periodEnd:draft.periodEnd,amount,dueDate:draft.dueDate||"",status:"pending_evidence",reportedAmount:0,paidAt:"",recordedBy:draft.recordedBy?.trim()||"Administración",evidenceName:draft.evidenceName?.trim()||"",note:draft.note?.trim()||""};
+  // Un recibo de un periodo anterior se archiva en el historial, pero no se
+  // convierte en el periodo vigente del servicio.
+  const isCurrent=!service.periodEnd||bill.periodEnd>=service.periodEnd;
+  const updated=isCurrent
+    ?{...service,periodStart:bill.periodStart,periodEnd:bill.periodEnd,amount,dueDate:bill.dueDate,status:"pending_evidence",reportedAmount:0,evidenceName:bill.evidenceName,updatedAt:new Date().toISOString()}
+    :service;
+  return {bill,service:updated,isCurrent};
 }

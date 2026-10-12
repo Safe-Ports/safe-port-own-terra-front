@@ -24,7 +24,7 @@ const initials = (name = "") => name.split(" ").filter(Boolean).slice(0, 2).map(
    quién paga, con su saldo, y desde aquí se agrega a alguien en un solo paso.
    Servicios e incidencias sólo aparecen cuando esos módulos tengan backend
    (mvpScope.later): hoy son datos demo. */
-function UnitMonitorPanel({ community, unitId, onSelectUnit, onEditUnit, onAddMember, onUnlink, onOpenCharges, canWrite = false }) {
+function UnitMonitorPanel({ community, unitId, onSelectUnit, onAddUnit, onEditUnit, onAddMember, onUnlink, onOpenCharges, canWrite = false }) {
   const data = usePropertiesData();
   const [query, setQuery] = useState("");
   const withDemoModules = PROPERTIES_MVP_SCOPE.later;
@@ -44,30 +44,30 @@ function UnitMonitorPanel({ community, unitId, onSelectUnit, onEditUnit, onAddMe
   const spec = selectedUnit ? unitSpecSheet({ ...(selectedUnit.attributes || {}), type: selectedUnit.type, floor: selectedUnit.floor, area: selectedUnit.area, bedrooms: selectedUnit.bedrooms, bathrooms: selectedUnit.bathrooms, description: selectedUnit.description }) : null;
   const withoutPeople = rows.filter((row) => !data.personUnitRelations.some((relation) => relation.unitId === row.id && relation.status !== "archived")).length;
 
-  if (!rows.length) return <section className="community-panel unit-monitor-empty"><HiBuildingOffice2/><h2>Esta comunidad aún no tiene unidades</h2><p>Registra sus departamentos, casas o locales para asignarles personas.</p></section>;
+  if (!rows.length) return <section id="community-unit-workspace" className="community-panel unit-monitor-empty" aria-label={`Unidades de ${community?.name}`}><HiBuildingOffice2/><h2>Esta comunidad aún no tiene unidades</h2><p>Agrega sus casas, departamentos o espacios; quedarán vinculados a {community?.name}.</p>{canWrite&&onAddUnit?<button type="button" className="community-add-unit" onClick={onAddUnit}><HiHomeModern/> Agregar unidad</button>:null}</section>;
 
-  return <section className="community-panel unit-monitor-panel">
-    <header><div><span>Unidades y personas</span><h2>Quién vive, quién paga y cuánto debe.</h2><p>{withoutPeople ? `${withoutPeople} de ${rows.length} unidades aún no tienen a nadie asignado.` : `Las ${rows.length} unidades tienen al menos una persona asignada.`}</p></div><label className="unit-monitor-search"><HiMagnifyingGlass/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar unidad o persona"/></label></header>
+  return <section id="community-unit-workspace" className="community-panel unit-monitor-panel" aria-label={`Unidades de ${community?.name}`}>
+    <header><div><h2>Unidades de {community?.name}</h2><p>Elige una casa, departamento o espacio para abrir su ficha.</p><p>{withoutPeople ? `${withoutPeople} de ${rows.length} unidades aún no tienen a nadie asignado.` : rows.length===1?"La unidad tiene al menos una persona asignada.":`Las ${rows.length} unidades tienen al menos una persona asignada.`}</p></div><label className="unit-monitor-search"><HiMagnifyingGlass/><input aria-label="Buscar unidad o persona" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar unidad o persona"/></label>{canWrite&&onAddUnit?<button type="button" className="community-add-unit" onClick={onAddUnit}><HiHomeModern/> Agregar unidad</button>:null}</header>
     <div className={`unit-monitor-workspace ${withDemoModules ? "" : "is-compact"}`}>
       <div className="unit-monitor-matrix">
         <header><span>Unidad</span><span>Personas</span><span>Saldo pendiente</span>{withDemoModules ? <><span>Servicios</span><span>Atención</span></> : null}</header>
         {visible.map((row) => {
           const names = [...new Map([...row.responsible, ...row.occupants].map((person) => [person.id, person])).values()].map((person) => person.name);
-          return <button type="button" className={selected?.id === row.id ? "active" : ""} aria-pressed={selected?.id === row.id} key={row.id} onClick={() => onSelectUnit(row.id)}>
+          return <button type="button" className={selected?.id === row.id ? "active" : ""} aria-pressed={selected?.id === row.id} aria-label={`Abrir ${row.identifier}`} key={row.id} onClick={() => onSelectUnit(row.id)}>
             <span><strong>{row.identifier}</strong><small>{UNIT_TYPE_LABEL[row.type] || "Unidad"} · {UNIT_STATUS_LABEL[row.status]}</small></span>
-            <span>{names.length ? <><strong>{names.join(", ")}</strong><small>{row.responsible.length ? `Paga: ${row.responsible.map((item) => item.name).join(", ")}` : "Sin responsable de pago"}</small></> : <><strong className="unit-monitor-unassigned">Sin personas</strong><small>Agrega a quien vive o es dueño</small></>}</span>
-            <span className={row.openChargeAmount ? "attention" : "ok"}><strong>{money(row.openChargeAmount)}</strong><small>{row.charges.length} movimientos</small></span>
+            <span>{names.length ? <><strong>{names.join(", ")}</strong><small>{row.responsible.length ? `Paga: ${row.responsible.map((item) => item.name).join(", ")}` : "Sin responsable de pago"}</small></> : <strong className="unit-monitor-unassigned">Sin personas</strong>}</span>
+            <span className={row.openChargeAmount ? "attention" : "ok"}><strong>{money(row.openChargeAmount)}</strong>{row.charges.length ? <small>{row.charges.length} movimientos</small> : null}</span>
             {withDemoModules ? <><span><strong>{money(row.openServiceAmount)}</strong><small>{row.services.length} servicios</small></span><span className={row.openTickets ? "attention" : "ok"}><strong>{row.openTickets}</strong><small>incidencias abiertas</small></span></> : null}
           </button>;
         })}
         {!visible.length ? <p className="unit-monitor-none">Ninguna unidad o persona coincide con “{query}”.</p> : null}
       </div>
-      {selected ? <aside className="unit-monitor-detail">
+      {selected ? <aside id="community-unit-detail" className="unit-monitor-detail" aria-label={`Detalle de ${selected.identifier}`}>
         <header><UnitCover unitId={selected.id}/><div><small>{community?.name}</small><h2>{selected.identifier}</h2><p>{UNIT_STATUS_LABEL[selected.status]} · {selected.area || 0} m²</p></div>{canWrite && onEditUnit ? <button type="button" className="unit-monitor-edit" onClick={() => onEditUnit(selected.id)} aria-label={`Editar ${selected.identifier}`}><HiPencilSquare/> Editar</button> : null}</header>
         <MediaGallery entityType="property" entityId={selected.id} label={`Fotos de ${selected.identifier}`} emptyText={canWrite ? "Sin fotos. Agrégalas desde Editar." : "Sin fotos."}/>
 
         <section className="unit-members" aria-label={`Personas de ${selected.identifier}`}>
-          <header><h3>Personas de la unidad</h3>{canWrite ? <button type="button" className="unit-members-add" onClick={() => onAddMember(selected.id)}><HiUserPlus/> Agregar persona</button> : null}</header>
+          <header><h3>Personas de la unidad</h3>{canWrite && links.length ? <button type="button" className="unit-members-add" onClick={() => onAddMember(selected.id)}><HiUserPlus/> Agregar persona</button> : null}</header>
           {links.length ? links.map((link) => {
             const person = peopleById[link.personId];
             const perms = [link.isPaymentResponsible && "Paga", link.canVote && "Vota", link.amenityAccess && "Amenidades"].filter(Boolean);

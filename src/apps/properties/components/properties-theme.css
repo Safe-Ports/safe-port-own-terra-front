@@ -1,0 +1,162 @@
+/* Lenguaje de Core, paleta de Properties. Ámbito: vertical y sus portales.
+   Jerarquía editorial, superficies bento y controles estables; no altera datos. */
+.eco-root.properties-focus{
+  --deep:#1e3a5f;--mid:#304f73;--leaf:#46668a;--light:#9fb6cc;
+  --bg:#f4f5f7;--bg2:#e9edf1;--surface:#fff;--surface2:#f0f3f6;
+  --border:rgba(30,58,95,.10);--border2:rgba(30,58,95,.20);
+  --text:#15293f;--text2:#405164;--text3:#63758a;
+  --properties-ink:#15293f;--properties-muted:#63758a;--properties-line:#dce2e9;
+  --properties-shadow:0 4px 24px rgba(21,41,63,.04);
+  --radius:20px;--radius-sm:12px;
+}
+.eco-root.properties-focus .main::before{background:radial-gradient(640px 360px at 95% 0,rgba(70,102,138,.09),transparent 70%),radial-gradient(540px 420px at 0 95%,rgba(159,182,204,.08),transparent 70%)}
+.eco-root.properties-focus .topbar{height:76px;border-color:var(--border);background:rgba(255,255,255,.84);z-index:20}
+.eco-root.properties-focus .topbar-title{color:var(--properties-ink);font-weight:500;font-size:24px}
+.eco-root.properties-focus .scroll-area{padding:32px 40px 48px}
+.eco-root.properties-focus main h1{font-family:var(--font-title);font-size:clamp(30px,3.1vw,42px);font-weight:500;letter-spacing:-.035em;line-height:1.15}
+.eco-root.properties-focus main h2{font-family:var(--font-title);font-weight:500;letter-spacing:-.025em}
+.eco-root.properties-focus main :is(button,select){font-family:var(--font-body)}
+.eco-root.properties-focus main button{font-weight:600;transition:background .18s,border-color .18s,box-shadow .18s,color .18s}
+.eco-root.properties-focus :is(.properties-hero,.community-heading,.portfolio-heading,.owners-header,.properties-header,.units-header,.service-heading,.condo-suite-heading,.ticket-heading,.access-heading){padding-top:8px;padding-bottom:16px}
+.eco-root.properties-focus :is(.properties-eyebrow,.properties-operations-heading>span,.service-heading>div>span,.portfolio-heading>div>span,.owners-header>div>span,.units-header>div>span){color:var(--leaf);font-size:11px;font-weight:600;letter-spacing:.14em}
+.eco-root.properties-focus :is(.community-panel,.community-detail,.community-card,.property-card,.properties-cell,.portfolio-cell,.service-directory,.service-profile,.condo-module,.unit-monitor-panel,.owners-list,.units-list){border-color:var(--properties-line);border-radius:var(--radius);background:var(--surface);box-shadow:var(--properties-shadow)}
+.eco-root.properties-focus :is(.community-panel,.service-directory,.service-profile,.condo-module)>header{background:var(--surface);border-color:var(--properties-line);padding:24px}
+.eco-root.properties-focus :is(.community-panel,.condo-module)>header h2{font-size:26px}
+.eco-root.properties-focus :is(.owners-toolbar,.properties-toolbar,.units-toolbar,.ticket-toolbar,.community-directory-tools){background:var(--surface);border-color:var(--properties-line);border-radius:12px;padding:16px 20px}
+.eco-root.properties-focus :is(.community-heading-action,.owners-primary,.property-primary,.units-primary,.portfolio-create,.community-add-unit,.service-heading>button){min-height:44px;border:1px solid var(--deep);border-radius:12px;background:linear-gradient(145deg,var(--mid),var(--deep));color:#fff;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(30,58,95,.12)}
+.eco-root.properties-focus :is(.community-heading-action,.owners-primary,.property-primary,.units-primary,.portfolio-create,.community-add-unit,.service-heading>button):hover:not(:disabled){box-shadow:0 6px 18px rgba(30,58,95,.20);filter:brightness(1.06)}
+.eco-root.properties-focus :is(.community-tabs,.condo-module-tabs){gap:8px}
+.eco-root.properties-focus :is(.community-tabs,.condo-module-tabs) button{background:rgba(255,255,255,.7);border-color:var(--properties-line);border-radius:12px;box-shadow:none}
+.eco-root.properties-focus :is(.community-tabs,.condo-module-tabs) button.active{background:var(--deep);border-color:var(--deep);color:#fff;box-shadow:0 4px 12px rgba(30,58,95,.10)}
+.eco-root.properties-focus .community-tabs strong{font-size:13px;font-weight:600}
+.eco-root.properties-focus .community-tabs small{font-size:12px}
+.eco-root.properties-focus :is(.service-enrollment,.service-phase-note,.properties-setup-callout,.properties-first-level-note){border-color:var(--properties-line);border-radius:16px;background:var(--surface2);box-shadow:none}
+.eco-root.properties-focus :is(.service-stats,.properties-pulse,.portfolio-vitals) strong{font-weight:500;font-variant-numeric:tabular-nums}
+.eco-root.properties-focus :is(.service-stats,.properties-pulse,.portfolio-vitals) span{font-size:12px;text-transform:none;letter-spacing:0}
+.eco-root.properties-focus :is(.service-contact-actions,.service-application-actions,.service-profile-actions) button{min-height:40px;font-size:12px;font-weight:600;border-radius:9px}
+.eco-root.properties-focus :is(.owner-row,.unit-row,.community-people article){border-color:var(--properties-line)}
+.eco-root.properties-focus :is(.owner-row,.unit-row,.community-people article):hover{background:#f8fafc}
+
+/* Portadas con presencia, sin convertir la selección en una ficha de marketing. */
+.eco-root.properties-focus .community-card-main{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;padding:16px;position:relative;text-align:left;width:100%}
+.eco-root.properties-focus .community-card-cover{display:block;width:100%;height:152px;border-radius:12px;overflow:hidden;background:var(--surface2)}
+.eco-root.properties-focus .community-card-cover img{width:100%;height:100%;object-fit:cover;transition:transform .3s ease}
+.eco-root.properties-focus .community-card-main:hover .community-card-cover img{transform:scale(1.025)}
+.eco-root.properties-focus .community-card-copy{width:100%;min-width:0}
+.eco-root.properties-focus .community-card-copy strong{display:block;font-family:var(--font-title);font-size:22px;font-weight:500;line-height:1.2;letter-spacing:-.02em;text-transform:none}
+.eco-root.properties-focus .community-card-copy small{font-size:12px;margin-top:6px;color:var(--text3)}
+.eco-root.properties-focus .community-card-counts{margin-top:12px}
+.eco-root.properties-focus .community-card-counts i{font-size:12px;font-weight:500;background:var(--surface2);padding:4px 8px}
+.eco-root.properties-focus .community-card-badge{top:24px;right:24px;border-radius:6px;background:var(--deep);font-size:10px;font-weight:600;padding:5px 8px;letter-spacing:.04em}
+.eco-root.properties-focus .community-card.is-selected{border-color:var(--leaf);box-shadow:0 0 0 1px rgba(70,102,138,.12),var(--properties-shadow)}
+.eco-root.properties-focus .community-card-alerts{padding:12px 16px;background:#f8fafc;border-color:var(--properties-line)}
+.eco-root.properties-focus .community-card-clear{font-size:12px;font-weight:500;color:var(--text3)}
+
+/* La misma composición que Core: contenido primero, acciones claras y sin saltos. */
+.eco-root.properties-focus .properties-hero{border-color:var(--properties-line)}
+.eco-root.properties-focus .property-paths{margin:0;padding:24px 0}
+.eco-root.properties-focus .property-paths::before{inset:0;background:none}
+.eco-root.properties-focus .property-paths>header h2{font-size:28px}
+.eco-root.properties-focus .property-paths>header p{font-size:14px}
+.eco-root.properties-focus .property-path-card{border:1px solid var(--properties-line);border-radius:20px;background:var(--surface);box-shadow:var(--properties-shadow);padding:28px;transform:none}
+.eco-root.properties-focus .property-path-card.is-preview{transform:none;border-color:var(--leaf);box-shadow:0 8px 28px rgba(30,58,95,.08)}
+.eco-root.properties-focus .property-path-copy strong{font-family:var(--font-title);font-size:32px;font-weight:500;letter-spacing:-.03em}
+.eco-root.properties-focus .property-path-copy :is(small,em){font-size:13px;line-height:1.65}
+.eco-root.properties-focus .property-path-icon{background:var(--surface2);color:var(--deep);box-shadow:none}
+.eco-root.properties-focus .property-path-journey{max-height:100px;margin:20px 0 8px;opacity:1;transform:none}
+.eco-root.properties-focus .property-path-journey>small{font-size:10px}
+.eco-root.properties-focus .property-path-journey i{font-size:12px}
+.eco-root.properties-focus .property-path-foot :is(i,b){font-size:12px;font-weight:600}
+.eco-root.properties-focus .properties-particles{background:var(--surface2);border-color:var(--properties-line);padding:16px}
+.eco-root.properties-focus .properties-particles button{padding:16px 12px}
+.eco-root.properties-focus .properties-particles strong{font-size:14px;font-weight:600}
+.eco-root.properties-focus .properties-particles small{font-size:12px}
+.eco-root.properties-focus .particle-icon{background:#e2e9f1;color:var(--deep)}
+.eco-root.properties-focus .organism-list small{font-size:12px;white-space:normal;line-height:1.5}
+
+/* Formularios y portales al body: comparten tokens y acabado con el shell. */
+.eco-root.properties-focus.dialog-theme .modal-box{border:1px solid var(--border2);border-radius:20px;box-shadow:0 24px 80px rgba(21,41,63,.20)}
+.eco-root.properties-focus.dialog-theme .modal-hd{padding:24px;border-color:var(--properties-line);background:#fff}
+.eco-root.properties-focus.dialog-theme .modal-title{font-family:var(--font-title);font-size:26px;font-weight:500}
+.eco-root.properties-focus.dialog-theme .modal-ico{border-radius:12px;background:var(--surface2);color:var(--deep);box-shadow:none}
+.eco-root.properties-focus.dialog-theme .modal-body{padding:24px;background:#f8fafc}
+.eco-root.properties-focus .properties-form-section{border-radius:14px;border-color:var(--properties-line);box-shadow:none}
+.eco-root.properties-focus .properties-form-section>header{background:#fff;padding:16px 20px}
+.eco-root.properties-focus .properties-form-grid{gap:20px;padding:20px}
+.eco-root.properties-focus .properties-form-grid label{font-size:12px;font-weight:600;text-transform:none;letter-spacing:0}
+.eco-root.properties-focus .properties-form-grid :is(input:not([type=checkbox]):not([type=radio]),select,textarea){border-radius:10px;background:#fff;border-color:var(--properties-line);font-weight:400}
+.eco-root.properties-focus.dialog-theme .modal-foot{padding:18px 24px;background:#fff;border-color:var(--properties-line);gap:12px}
+.eco-root.properties-focus.dialog-theme .modal-foot button{min-height:44px;font-size:13px;font-weight:600;border-radius:10px}
+
+@media(min-width:901px){
+ .eco-root.properties-focus,.eco-root.properties-focus:has(nav.properties-focus-rail:hover),.eco-root.properties-focus:has(nav.properties-focus-rail:focus-within){--sidebar-w:240px}
+ .eco-root.properties-focus .properties-focus-rail,.eco-root.properties-focus .properties-focus-rail:hover,.eco-root.properties-focus .properties-focus-rail:focus-within{width:240px;padding:24px 16px;background:linear-gradient(170deg,#203c5d,#142d4b);box-shadow:none;overflow-y:auto;justify-content:flex-start}
+ .eco-root.properties-focus .sidebar,.eco-root.properties-focus .main{transition:none}
+ .eco-root.properties-focus .focus-brand,.eco-root.properties-focus .properties-focus-rail:hover .focus-brand,.eco-root.properties-focus .properties-focus-rail:focus-within .focus-brand{width:208px;background:transparent;border-color:rgba(255,255,255,.14);box-shadow:none;border-radius:12px;color:#fff}
+ .eco-root.properties-focus .focus-brand strong{font-size:20px;font-weight:500}
+ .eco-root.properties-focus .focus-brand small{color:#bbcadb;font-size:11px}
+ .eco-root.properties-focus .focus-brand>span:not(.properties-logo),.eco-root.properties-focus .focus-rail-nav button>span,.eco-root.properties-focus .focus-exit>span{opacity:1;min-width:0}
+ .eco-root.properties-focus .focus-rail-nav{gap:4px;padding:20px 0;flex:1;align-content:start}
+ .eco-root.properties-focus .focus-rail-group{height:auto;overflow:visible;margin:16px 12px 6px;opacity:1;font-size:10px;font-weight:500;flex-shrink:0;color:#9fb6cc}
+ .eco-root.properties-focus .focus-rail-nav button,.eco-root.properties-focus .focus-exit,.eco-root.properties-focus .properties-focus-rail:hover .focus-rail-nav button,.eco-root.properties-focus .properties-focus-rail:focus-within .focus-rail-nav button,.eco-root.properties-focus .properties-focus-rail:hover .focus-exit{width:208px;min-height:44px;border-radius:10px;gap:10px;color:#c2cede;transform:none}
+ .eco-root.properties-focus .focus-rail-nav button>span,.eco-root.properties-focus .focus-exit>span{font-size:12px;font-weight:500}
+ .eco-root.properties-focus .focus-rail-nav button.active{background:rgba(159,182,204,.15);border-color:rgba(159,182,204,.22);color:#fff;box-shadow:none}
+ .eco-root.properties-focus .focus-rail-nav button>i,.eco-root.properties-focus .properties-focus-rail:hover .focus-rail-nav button>i,.eco-root.properties-focus .properties-focus-rail:focus-within .focus-rail-nav button>i{position:static;margin-left:auto;flex-shrink:0;width:20px;height:20px;font-size:10px;font-weight:600}
+}
+@media(max-width:900px){.eco-root.properties-focus .scroll-area{padding:24px}.eco-root.properties-focus .topbar{height:auto;min-height:76px}}
+@media(max-width:760px){
+ .eco-root.properties-focus .scroll-area{padding:24px 16px calc(32px + env(safe-area-inset-bottom))}
+ .eco-root.properties-focus .topbar{padding:12px 16px}
+ .eco-root.properties-focus .topbar-title{font-size:20px}
+ .eco-root.properties-focus .property-path-card{padding:20px}
+ .eco-root.properties-focus .property-path-copy strong{font-size:28px}
+ .eco-root.properties-focus .community-card-cover{height:144px}
+ .eco-root.properties-focus :is(.service-contact-actions,.service-application-actions,.service-profile-actions) button{min-height:44px}
+ .eco-root.properties-focus.dialog-theme .modal-hd,.eco-root.properties-focus.dialog-theme .modal-body{padding:20px}
+ .eco-root.properties-focus .properties-form-grid{padding:16px;gap:16px}
+}
+@media(prefers-reduced-motion:reduce){.eco-root.properties-focus .community-card-cover img{transition:none}.eco-root.properties-focus .community-card-main:hover .community-card-cover img{transform:none}}
+
+/* Portal externo: las mismas serif, tinta y superficies, sin depender del shell. */
+:is(.community-portal-shell,.partner-shell,.tenant-shell,.service-auth-page,.service-invitation-page,.service-registration-page){--portal-ink:#1e3a5f;--portal-muted:#63758a;background:#f4f5f7;font-family:var(--font-body)}
+.community-portal-shell .community-portal-nav{background:linear-gradient(170deg,#203c5d,#142d4b)}
+.community-portal-shell .community-portal-main :is(h1,h2,h3),:is(.service-auth-page,.service-invitation-page,.service-registration-page) :is(h1,h2){font-family:var(--font-title);font-weight:500;letter-spacing:-.03em;color:var(--portal-ink)}
+.community-portal-shell .community-unit-banner{background:#fff;border:1px solid #dce2e9;border-radius:20px;box-shadow:0 4px 24px rgba(21,41,63,.04)}
+.community-portal-shell :is(.community-pulse article,.community-unit-specs article,.community-list article,.community-vote){border-color:#dce2e9;border-radius:16px;box-shadow:none}
+.service-auth-page .service-auth-story{background:linear-gradient(155deg,#203c5d,#142d4b)}
+.service-auth-page .service-auth-story h1{color:#fff}
+.service-auth-page .service-auth-box h2{font-size:32px}
+:is(.service-invitation-page,.service-registration-page) :is(.service-invitation-card,.service-registration-card){border-color:#dce2e9;border-radius:20px;box-shadow:0 12px 40px rgba(21,41,63,.06)}
+/* Densidad de lectura consistente: no microtexto ni contenido oculto al hover. */
+.eco-root.properties-focus main button{font-size:13px;min-height:44px}
+.eco-root.properties-focus main strong{font-weight:600}
+.eco-root.properties-focus .community-card-copy strong{font-weight:500;white-space:normal}
+.eco-root.properties-focus :is(.unit-monitor-matrix th,.unit-monitor-matrix td,.unit-monitor-detail small,.portfolio-index small,.service-access-model a,.service-enrollment>button,.service-directory nav button,.service-directory li em){font-size:12px}
+.eco-root.properties-focus :is(.service-enrollment small,.service-stats small,.service-profile-facts small,.service-directory li small){font-weight:500;letter-spacing:.04em}
+.eco-root.properties-focus .properties-pulse strong{font-weight:500;font-size:24px}
+.eco-root.properties-focus .properties-pulse span{font-weight:500}
+.eco-root.properties-focus .property-path-journey,.eco-root.properties-focus .property-path-journey i{filter:none;opacity:1;transform:none}
+.eco-root.properties-focus .property-path-journey i b{font-size:11px;box-shadow:none}
+.eco-root.properties-focus .property-path-copy em{max-width:50ch;font-weight:400}
+.eco-root.properties-focus .property-path-copy small{font-weight:500;font-size:11px;letter-spacing:.1em}
+.eco-root.properties-focus .property-path-card::after,.eco-root.properties-focus .property-path-card::before{display:none}
+.eco-root.properties-focus .property-paths-grid.is-single .property-path-card{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);align-items:center;gap:24px;min-height:0}
+.eco-root.properties-focus .property-path-foot{grid-column:1/-1}
+@media(min-width:761px){
+ .eco-root.properties-focus .community-cards{grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+ .eco-root.properties-focus .community-cards:has(.community-card:only-child){grid-template-columns:minmax(0,1fr)}
+ .eco-root.properties-focus .community-cards>.community-card:only-child .community-card-main{grid-template-columns:220px minmax(0,1fr);gap:24px;padding:20px}
+ .eco-root.properties-focus .community-cards>.community-card:only-child .community-card-copy{padding-right:110px}
+ .eco-root.properties-focus .community-cards>.community-card:only-child .community-card-cover{height:128px}
+}
+@media(max-width:760px){.eco-root.properties-focus .property-paths-grid.is-single .property-path-card{grid-template-columns:minmax(0,1fr);gap:16px}.eco-root.properties-focus .property-path-journey{margin:8px 0}.eco-root.properties-focus .community-cards{grid-template-columns:minmax(0,1fr)}}
+.eco-root.properties-focus .unit-monitor-matrix>header{font-size:11px;font-weight:500;letter-spacing:.04em;padding:16px}
+.eco-root.properties-focus .unit-monitor-matrix strong{font-size:13px;font-weight:600}
+.eco-root.properties-focus .unit-monitor-matrix small{font-size:12px;font-weight:400}
+.eco-root.properties-focus .unit-monitor-matrix>button{padding:16px}
+.eco-root.properties-focus :is(.unit-monitor-detail>section h3,.unit-monitor-detail>section strong,.unit-monitor-cards strong){font-size:13px}
+.eco-root.properties-focus :is(.unit-monitor-detail>section small,.unit-monitor-cards small,.unit-monitor-cards em){font-size:12px;font-weight:400}
+.community-portal-shell .community-portal-nav nav span{font-size:13px;font-weight:500}
+.community-portal-shell .community-portal-nav nav button{min-height:44px}
+.partner-shell .partner-nav,.tenant-shell .tenant-nav{background:linear-gradient(170deg,#203c5d,#142d4b)}
+:is(.partner-shell,.tenant-shell) main :is(h1,h2){font-family:var(--font-title);font-weight:500;letter-spacing:-.03em;color:var(--portal-ink)}

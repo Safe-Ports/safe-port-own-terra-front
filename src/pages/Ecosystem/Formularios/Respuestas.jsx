@@ -1,3 +1,4 @@
+import useConfirmation from "@/hooks/useConfirmation";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -24,6 +25,7 @@ function exportCsv(template, submissions) {
 }
 
 function EcosystemFormRespuestas() {
+  const { requestConfirmation, confirmationDialog } = useConfirmation();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { id } = useParams();
@@ -57,14 +59,14 @@ function EcosystemFormRespuestas() {
     onError: (err) => showError(err, "Error al eliminar"),
   });
 
-  const handleDelete = (sub) => {
-    if (!window.confirm("¿Eliminar esta respuesta?")) return;
+  const handleDelete = async (sub) => {
+    if (!await requestConfirmation("¿Eliminar esta respuesta?")) return;
     deleteMutation.mutate(sub.id);
   };
 
   if (loadingTemplate) {
     return (
-      <EcoLayout active="formularios" title="Respuestas" subtitle="Cargando…">
+      <EcoLayout active="formularios" title="Respuestas" subtitle="Cargando…">{confirmationDialog}
         <div className="usr-empty">Cargando formulario…</div>
       </EcoLayout>
     );
@@ -77,7 +79,7 @@ function EcosystemFormRespuestas() {
       active="formularios"
       title="Respuestas"
       subtitle={template ? `${template.name}` : ""}
-    >
+    >{confirmationDialog}
       <div className="section-head">
         <h3>{template?.name ?? "Respuestas"}</h3>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>

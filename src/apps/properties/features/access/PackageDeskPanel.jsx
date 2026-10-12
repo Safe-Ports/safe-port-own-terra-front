@@ -1,3 +1,4 @@
+import WorkflowForm from "@/components/forms/WorkflowForm";
 import { useMemo, useState } from "react";
 import { HiArchiveBox, HiCheckCircle, HiPlus, HiTruck } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
@@ -55,13 +56,13 @@ function PackageDeskPanel(){
       <button type="button" onClick={()=>setCreating(value=>!value)} disabled={!canWrite||!communityUnits.length}><HiPlus/> {creating?"Cancelar":"Registrar paquete"}</button>
     </header>
 
-    {creating?<form className="pkg-form" onSubmit={save}>
+    {creating?<WorkflowForm className="pkg-form" onSubmit={save}>
       <label><span>Unidad destino</span><select value={draft.unitId} onChange={e=>setDraft({...draft,unitId:e.target.value})}><option value="">Seleccionar unidad</option>{communityUnits.map(unit=><option value={unit.id} key={unit.id}>{unit.identifier}</option>)}</select></label>
       <label><span>Paquetería</span><input value={draft.carrier} onChange={e=>setDraft({...draft,carrier:e.target.value})} placeholder="DHL, Estafeta, Amazon"/></label>
       <label><span>Número de guía</span><input value={draft.trackingNumber} onChange={e=>setDraft({...draft,trackingNumber:e.target.value})}/></label>
       <label><span>Fotografía <small>Opcional</small></span><input type="url" value={draft.photoUrl} onChange={e=>setDraft({...draft,photoUrl:e.target.value})} placeholder="https://..."/></label>
       <footer><button type="submit" disabled={busy}>{busy?"Guardando…":"Registrar en recepción"}</button></footer>
-    </form>:null}
+    </WorkflowForm>:null}
 
     <div className="pkg-columns">
       <section>

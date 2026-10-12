@@ -1,0 +1,109 @@
+@import "./properties-theme.css";
+
+/* Base compartida de Properties. No alcanza al shell de Core ni a Lands. */
+.eco-root.properties-focus{--properties-ink:#0f2742;--properties-muted:#4f647c;--properties-line:#dee2e6;height:100dvh}
+.eco-root.properties-focus :is(.main,.scroll-area,main,section,article,header,footer,form,nav,label){min-width:0}
+.eco-root.properties-focus main :is(h1,h2,h3,p){overflow-wrap:break-word}
+.eco-root.properties-focus main h1{font-size:clamp(28px,3.5vw,44px);line-height:1.12;letter-spacing:-.025em}
+.eco-root.properties-focus main h2{line-height:1.25;letter-spacing:-.015em}
+.eco-root.properties-focus main p{font-size:14px;line-height:1.65}
+.eco-root.properties-focus main :is(small,time){font-size:12px;line-height:1.5}
+.eco-root.properties-focus main :is(input:not([type=checkbox]):not([type=radio]),select,textarea),.eco-root.properties-focus.dialog-theme :is(input:not([type=checkbox]):not([type=radio]),select,textarea){min-width:0;max-width:100%;min-height:44px;font-size:16px}
+.eco-root.properties-focus :is(button,a,input,select,textarea,[tabindex]):focus-visible{outline:3px solid #46668a;outline-offset:3px}
+.eco-root.properties-focus :is(.owners-header,.properties-header,.units-header,.community-heading,.condo-suite-heading,.portfolio-heading,.ticket-heading,.access-heading,.service-heading){gap:24px}
+.eco-root.properties-focus :is(.owners-toolbar,.properties-toolbar,.units-toolbar,.community-context,.ticket-toolbar){border-color:var(--properties-line);border-radius:16px}
+.eco-root.properties-focus :is(.owner-row,.property-card,.unit-row,.community-card){border-color:var(--properties-line)}
+.eco-root.properties-focus :is(.unit-monitor-matrix,.unit-board,.calendar-grid){overscroll-behavior-x:contain}
+/* Overlays en body: límites independientes del header y del scroll. */
+.dialog-theme :is(.ticket-modal-backdrop,.ticket-trace-backdrop,.tenant-payment-backdrop,.market-gallery-backdrop,.market-inquiry-backdrop){position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+.dialog-theme :is(.ticket-modal,.ticket-trace,.tenant-payment-sheet,.market-gallery,.market-inquiry){max-width:100%;max-height:90dvh;min-width:0;overflow-y:auto;overscroll-behavior:contain}
+.dialog-theme .ticket-trace{height:auto;max-height:90dvh;border-radius:20px}
+@media(max-width:760px){
+.eco-root.properties-focus .scroll-area{padding:20px 16px calc(24px + env(safe-area-inset-bottom));overscroll-behavior-y:contain}
+.eco-root.properties-focus :is(button,a[role=button]){min-width:44px;min-height:44px}
+.eco-root.properties-focus .topbar{gap:8px;padding:12px 16px;padding-top:max(12px,env(safe-area-inset-top))}
+.eco-root.properties-focus .eco-topbar-heading{min-width:0;flex:1}
+.eco-root.properties-focus .topbar-title{font-size:16px;overflow-wrap:break-word}
+.eco-root.properties-focus .topbar-sub{font-size:12px}
+.eco-root.properties-focus .core-profile-fallback{display:none}
+.eco-root.properties-focus main button{font-size:13px;line-height:1.4}
+.eco-root.properties-focus :is(.properties-hero,.owners-header,.units-header,.properties-header)>p{color:var(--properties-muted)}
+.eco-root.properties-focus :is(.properties-hero,.property-paths>header,.owners-header,.owners-toolbar,.units-header,.properties-header,.community-heading,.condo-suite-heading,.unit-monitor-heading){align-items:stretch;flex-direction:column;gap:16px}
+.eco-root.properties-focus :is(.portfolio-heading,.ticket-heading,.access-heading,.service-heading,.unicell-heading,.hospitality-heading){grid-template-columns:minmax(0,1fr)}
+.eco-root.properties-focus :is(.property-paths-grid,.property-paths>div,.property-grid,.community-cards,.guide-map-grid){grid-template-columns:minmax(0,1fr)}
+.eco-root.properties-focus :is(.community-context,.community-detail,.condo-split,.utility-workspace,.service-layout,.access-layout,.portfolio-cell,.unit-monitor-workspace,.unicell-context){grid-template-columns:minmax(0,1fr)}
+.eco-root.properties-focus :is(.community-detail-body>dl,.community-permission-picker,.community-unit-relations,.service-profile-facts,.service-protocol>div){grid-template-columns:repeat(2,minmax(0,1fr))}
+.eco-root.properties-focus :is(.owners-segments,.properties-filters,.community-tabs,.condo-module-tabs,.unit-board,.ticket-toolbar>div){max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
+.eco-root.properties-focus :is(.owners-segments,.community-tabs,.condo-module-tabs){gap:8px}
+.eco-root.properties-focus .owners-segments button{flex-shrink:0}
+.eco-root.properties-focus .units-toolbar{grid-template-columns:minmax(0,1fr)}
+.eco-root.properties-focus :is(.unit-row,.owner-row){gap:12px}
+.eco-root.properties-focus .unit-row{grid-template-columns:minmax(0,1fr) auto}
+.eco-root.properties-focus .unit-actions{flex-wrap:wrap;justify-content:flex-end}
+.eco-root.properties-focus .owner-actions{flex-wrap:wrap}
+.eco-root.properties-focus :is(.owner-actions,.unit-actions) button{width:44px;height:44px}
+.eco-root.properties-focus :is(.service-access-model,.service-enrollment,.dispatch-board>div>article){grid-template-columns:minmax(0,1fr);gap:16px}
+.eco-root.properties-focus :is(.service-access-model>i,.service-enrollment>i,.unicell-context>i){display:none}
+.eco-root.properties-focus .service-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+.eco-root.properties-focus :is(.condo-module>header,.condo-records article,.community-people article){flex-wrap:wrap;gap:12px}
+.eco-root.properties-focus .community-people article{grid-template-columns:auto minmax(0,1fr)}
+.eco-root.properties-focus .community-people article>button{grid-column:2}
+.eco-root.properties-focus :is(.unit-monitor-detail,.utility-detail){position:static}
+.eco-root.properties-focus .unit-monitor-matrix{overflow-x:auto;max-width:100%}
+.eco-root.properties-focus :is(.unit-form,.owner-form,.property-form,.ticket-modal form){grid-template-columns:minmax(0,1fr)}
+.eco-root.properties-focus .ticket-audit-stamps{flex-wrap:wrap;gap:8px}
+.eco-root.properties-focus .ticket-trace-layout{grid-template-columns:minmax(0,1fr);overflow:visible}
+.eco-root.properties-focus .ticket-trace-story{overflow:visible}
+.eco-root.properties-focus .trace-chat{min-height:420px}
+.eco-root.properties-focus .trace-messages article{max-width:100%}
+.eco-root.properties-focus .trace-messages article>div{flex-wrap:wrap}
+.eco-root.properties-focus .trace-chat form button{width:44px;height:44px}
+.eco-root.properties-focus .guide-hero{grid-template-columns:minmax(0,1fr)}
+}
+@media(prefers-reduced-motion:reduce){.eco-root.properties-focus *{animation:none;transition:none;scroll-behavior:auto}}
+/* Portales y registro fuera del shell: ámbito explícito, sin alcanzar login Core. */
+:is(.partner-shell,.tenant-shell,.community-portal-shell,.service-auth-page,.service-invitation-page,.service-registration-page,.rental-market){min-height:100dvh}
+:is(.partner-shell,.tenant-shell,.community-portal-shell,.service-auth-page,.service-invitation-page,.service-registration-page) :is(main,section,article,header,form,label){min-width:0}
+:is(.partner-shell,.tenant-shell,.community-portal-shell,.service-auth-page,.service-invitation-page,.service-registration-page) :is(button,a,input,select,textarea):focus-visible{outline:3px solid #46668a;outline-offset:3px}
+@media(max-width:760px){
+:is(.partner-shell,.tenant-shell,.community-portal-shell,.service-auth-page,.service-invitation-page,.service-registration-page) :is(button,a[role=button]){min-height:44px;min-width:44px;font-size:13px}
+:is(.partner-shell,.tenant-shell,.community-portal-shell,.service-auth-page,.service-invitation-page,.service-registration-page) :is(input:not([type=checkbox]):not([type=radio]),select,textarea){min-width:0;max-width:100%;min-height:44px;font-size:16px}
+:is(.partner-shell,.tenant-shell,.community-portal-shell,.service-auth-page,.service-invitation-page,.service-registration-page) :is(p,small){font-size:13px;line-height:1.6}
+.service-registration-page,.service-invitation-page{padding:16px;padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+.service-registration-card,.service-invitation-card,.service-auth-page{grid-template-columns:minmax(0,1fr)}
+.service-registration-card>div,.service-registration-card>aside,.service-auth-card,.invitation-form,.invitation-summary{padding:20px}
+.registration-types,.registration-types+form{grid-template-columns:minmax(0,1fr)}
+.service-registration-card :is(label,input,textarea){min-width:0}
+.partner-nav nav button,.community-portal-nav nav button,.tenant-nav nav button{width:44px;height:44px}
+.partner-main,.tenant-main,.community-portal-main{padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+.partner-layout,.tenant-grid,.community-home-grid{grid-template-columns:minmax(0,1fr)}
+.partner-main>header,.partner-order>header{flex-wrap:wrap;gap:12px}
+.partner-jobs>button{grid-template-columns:auto minmax(0,1fr)}
+.partner-job-state{grid-column:2}
+.partner-chat form{grid-template-columns:minmax(0,1fr) auto}
+.dialog-theme :is(.market-gallery-viewer,.market-inquiry-sheet){max-width:100%;max-height:90dvh;overflow-y:auto}
+}
+
+.eco-root.properties-focus .properties-workspace-state{display:grid;align-content:center;justify-items:start;gap:24px;min-height:60dvh;max-width:680px}.eco-root.properties-focus .properties-workspace-state>button{padding:12px 20px;border-radius:12px;background:var(--properties-ink);color:#fff}
+/* Lectura secundaria: etiquetas y bitácora conservan una escala reconocible. */
+.eco-root.properties-focus main label>span,.eco-root.properties-focus.dialog-theme label>span{font-size:12px;line-height:1.5}
+.eco-root.properties-focus :is(.trace-chat strong,.trace-status strong,.trace-status h3,.trace-incident h3){font-size:14px}
+.eco-root.properties-focus :is(.trace-chat>header span,.trace-chat>footer,.properties-pulse span,.ticket-summary span){font-size:12px}
+.eco-root.properties-focus :is(.service-access-model,.service-enrollment,.service-directory,.service-profile-facts,.service-profile-access,.dispatch-board) strong{font-size:14px;line-height:1.4}
+.eco-root.properties-focus :is(.service-enrollment em,.service-directory em,.service-stats span,.service-skills>div span,.service-availability,.dispatch-board article>i,.dispatch-board article>span:nth-last-child(2)){font-size:12px;line-height:1.5}
+@media(max-width:760px){.eco-root.properties-focus .dispatch-board>div,.eco-root.properties-focus .dispatch-board>header{min-width:0}.eco-root.properties-focus .dispatch-board>header{flex-wrap:wrap;gap:12px}.eco-root.properties-focus .dispatch-board>header p{text-align:left}}
+@media(max-width:760px){:is(.service-registration-page,.service-auth-page,.service-invitation-page) label>span{font-size:12px;line-height:1.5}.partner-shell :is(.partner-jobs strong,.partner-order strong,.partner-mini-trace strong){font-size:14px}}
+
+/* ── Botones de acción: del tamaño de lo que dicen ───────────────────────
+   Los botones de envío eran hijos directos de formularios en grid, así que
+   se estiraban a todo el ancho de su columna. Un botón tan largo como su
+   contenedor deja de leerse como acción y parece una barra.
+
+   Esto NO toca las filas de lista dibujadas como <button> (cargos, tickets,
+   la cola de accesos): ésas sí deben ocupar el renglón completo. */
+.eco-root.properties-focus form>button[type="submit"],
+.eco-root.properties-focus form>button:not([type]){justify-self:start;width:max-content;min-width:128px;padding:9px 16px}
+
+/* El pie del riel agrupa la salida: todo lo que no cabe en los cinco
+   destinos principales, y el regreso al ecosistema. */
+.eco-root .focus-rail-foot{display:flex;flex-direction:column;gap:2px;width:100%;padding-top:8px;border-top:1px solid rgba(255,255,255,.1)}

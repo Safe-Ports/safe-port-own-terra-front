@@ -1,3 +1,4 @@
+import WorkflowForm from "@/components/forms/WorkflowForm";
 import { useMemo, useState } from "react";
 import { HiMapPin } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
@@ -12,7 +13,7 @@ import { EMPTY_PROPERTY, PROPERTY_TYPE_LABEL, validateProperty } from "./propert
 import "./properties.css";
 
 const containerTypes = new Set(["apartment_building", "commercial", "office", "warehouse", "industrial", "mixed"]);
-const { archive: HiArchiveBox, back: HiArrowLeft, create: HiPlus, edit: HiPencilSquare, search: HiMagnifyingGlass } = PROPERTY_ACTION_ICONS;
+const { archive: HiArchiveBox, create: HiPlus, edit: HiPencilSquare, search: HiMagnifyingGlass } = PROPERTY_ACTION_ICONS;
 const { property: HiBuildingOffice2 } = PROPERTY_ENTITY_ICONS;
 
 function PropertiesPage() {
@@ -107,7 +108,6 @@ function PropertiesPage() {
   return (
     <EcoLayout active="properties" title="Propiedades" subtitle="OwnTerra Properties · Portafolio administrado">
       <main className="property-page">
-        <button className="property-back" type="button" onClick={() => navigate("/properties")}><HiArrowLeft /> Volver a Properties</button>
 
         <header className="property-header">
           <div><span>Operación interna</span><h1>Propiedades</h1><p>Inmuebles bajo administración y su estructura de unidades.</p></div>
@@ -155,7 +155,7 @@ function PropertiesPage() {
       </main>
 
       <Modal open={editingId !== null} onClose={closeModal} title={editingId === "new" ? "Nueva propiedad" : "Editar propiedad"} subtitle="Información general del inmueble administrado." icon={<HiBuildingOffice2 />} width="max-w-[680px]" footer={<><button className="property-secondary" type="button" onClick={closeModal}>Cancelar</button><button className="property-primary" type="submit" form="property-form">Guardar propiedad</button></>}>
-        <form id="property-form" className="properties-form" onSubmit={saveProperty} noValidate>
+        <WorkflowForm id="property-form" className="properties-form" onSubmit={saveProperty} noValidate>
           <section className="properties-form-section">
             <header><span className="properties-form-step">01</span><div><h3>Información general</h3><p>El nombre de la propiedad inicia el expediente. El propietario puede asignarse después.</p></div></header>
             <div className="properties-form-grid">
@@ -182,7 +182,7 @@ function PropertiesPage() {
             </div>
           </section>
           <section className="properties-form-section is-compact"><div className="properties-form-grid"><label className="properties-form-wide"><span>Descripción <small>Opcional</small></span><textarea rows="3" value={draft.description} onChange={(event) => updateDraft("description", event.target.value)} placeholder="Características generales, accesos o contexto del inmueble…" /></label></div></section>
-        </form>
+        </WorkflowForm>
       </Modal>
     </EcoLayout>
   );

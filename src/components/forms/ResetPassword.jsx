@@ -1,3 +1,4 @@
+import WorkflowForm from "./WorkflowForm";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
@@ -22,6 +23,7 @@ function ResetPassword() {
   const goToLogin = () => navigate("/", { replace: true });
 
   const submit = async () => {
+    if (loading) return;
     setFieldError("");
     setError(null);
 
@@ -70,7 +72,7 @@ function ResetPassword() {
               <button type="button" className="lf-btn" onClick={goToLogin}>Volver al inicio de sesión</button>
             </div>
           ) : (
-            <>
+            <WorkflowForm busy={loading} noValidate onSubmit={event => { event.preventDefault(); return submit(); }}>
               <button
                 type="button"
                 onClick={goToLogin}
@@ -119,11 +121,11 @@ function ResetPassword() {
                 <FieldError msg={fieldError} />
               </div>
 
-              <button type="button" className={`lf-btn${loading ? " loading" : ""}`} onClick={submit} disabled={loading}>
+              <button type="submit" className={`lf-btn${loading ? " loading" : ""}`} disabled={loading}>
                 {loading ? <span className="btn-spinner" /> : null}
                 {loading ? "Guardando..." : "Actualizar contraseña"}
               </button>
-            </>
+            </WorkflowForm>
           )}
         </div>
       </div>

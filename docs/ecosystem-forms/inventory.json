@@ -1,0 +1,423 @@
+{
+  "method": "Inventario estático de JSX; controles de componentes reutilizados se cuentan en su archivo, no por instancia ni por ruta.",
+  "files": [
+    {
+      "file": "src/apps/properties/external/ServiceAccessPages.jsx",
+      "forms": 3,
+      "controls": 13,
+      "ids": []
+    },
+    {
+      "file": "src/apps/properties/external/ServicePartnerPortal.jsx",
+      "forms": 1,
+      "controls": 1,
+      "ids": []
+    },
+    {
+      "file": "src/apps/properties/external/TenantPortal.jsx",
+      "forms": 1,
+      "controls": 2,
+      "ids": [
+        "tenant-request-form"
+      ]
+    },
+    {
+      "file": "src/apps/properties/features/access/AccessControlPage.jsx",
+      "forms": 1,
+      "controls": 6,
+      "ids": [
+        "access-pass-form"
+      ]
+    },
+    {
+      "file": "src/apps/properties/features/access/PackageDeskPanel.jsx",
+      "forms": 1,
+      "controls": 6,
+      "ids": []
+    },
+    {
+      "file": "src/apps/properties/features/community/CommunityOnboarding.jsx",
+      "forms": 1,
+      "controls": 9,
+      "ids": []
+    },
+    {
+      "file": "src/apps/properties/features/community/CommunityWorkspace.jsx",
+      "forms": 5,
+      "controls": 44,
+      "ids": [
+        "new-community-form",
+        "community-person-form",
+        "unit-member-form",
+        "edit-community-form",
+        "edit-unit-form"
+      ]
+    },
+    {
+      "file": "src/apps/properties/features/condo/CommunityReportsPanel.jsx",
+      "forms": 0,
+      "controls": 1,
+      "ids": []
+    },
+    {
+      "file": "src/apps/properties/features/condo/CondoOperationsSuite.jsx",
+      "forms": 4,
+      "controls": 15,
+      "ids": []
+    },
+    {
+      "file": "src/apps/properties/features/condo/QuotaPlansPanel.jsx",
+      "forms": 1,
+      "controls": 11,
+      "ids": []
+    },
+    {
+      "file": "src/apps/properties/features/condo/UtilityMonitoringPanel.jsx",
+      "forms": 3,
+      "controls": 18,
+      "ids": []
+    },
+    {
+      "file": "src/apps/properties/features/hospitality/HospitalityOperationsPage.jsx",
+      "forms": 1,
+      "controls": 13,
+      "ids": [
+        "hospitality-reservation-form"
+      ]
+    },
+    {
+      "file": "src/apps/properties/features/listings/RentalListingsPage.jsx",
+      "forms": 1,
+      "controls": 15,
+      "ids": [
+        "rental-listing-form"
+      ]
+    },
+    {
+      "file": "src/apps/properties/features/media/MediaGallery.jsx",
+      "forms": 0,
+      "controls": 1,
+      "ids": []
+    },
+    {
+      "file": "src/apps/properties/features/modules/ModulePreviewPage.jsx",
+      "forms": 0,
+      "controls": 1,
+      "ids": []
+    },
+    {
+      "file": "src/apps/properties/features/monitoring/UnitMonitorPanel.jsx",
+      "forms": 0,
+      "controls": 1,
+      "ids": []
+    },
+    {
+      "file": "src/apps/properties/features/owners/OwnersPage.jsx",
+      "forms": 1,
+      "controls": 6,
+      "ids": [
+        "owner-form"
+      ]
+    },
+    {
+      "file": "src/apps/properties/features/portal/PortalAccessModal.jsx",
+      "forms": 2,
+      "controls": 2,
+      "ids": []
+    },
+    {
+      "file": "src/apps/properties/features/portfolio/PortfolioWorkspace.jsx",
+      "forms": 0,
+      "controls": 1,
+      "ids": []
+    },
+    {
+      "file": "src/apps/properties/features/properties/PropertiesPage.jsx",
+      "forms": 1,
+      "controls": 14,
+      "ids": [
+        "property-form"
+      ]
+    },
+    {
+      "file": "src/apps/properties/features/rent/RentOperationsPage.jsx",
+      "forms": 1,
+      "controls": 42,
+      "ids": [
+        "rental-form"
+      ]
+    },
+    {
+      "file": "src/apps/properties/features/service/ServiceNetworkPage.jsx",
+      "forms": 3,
+      "controls": 14,
+      "ids": [
+        "enable-provider-form",
+        "add-contact-form",
+        "service-reason-form"
+      ]
+    },
+    {
+      "file": "src/apps/properties/features/tickets/TicketsPage.jsx",
+      "forms": 2,
+      "controls": 9,
+      "ids": []
+    },
+    {
+      "file": "src/apps/properties/features/units/UnitsPage.jsx",
+      "forms": 1,
+      "controls": 15,
+      "ids": [
+        "unit-form"
+      ]
+    },
+    {
+      "file": "src/apps/properties/public/RentalCatalogPage.jsx",
+      "forms": 2,
+      "controls": 10,
+      "ids": []
+    },
+    {
+      "file": "src/components/Input.jsx",
+      "forms": 0,
+      "controls": 1,
+      "ids": []
+    },
+    {
+      "file": "src/components/forms/LoginScreen.jsx",
+      "forms": 3,
+      "controls": 7,
+      "ids": []
+    },
+    {
+      "file": "src/components/forms/ResetPassword.jsx",
+      "forms": 1,
+      "controls": 2,
+      "ids": []
+    },
+    {
+      "file": "src/components/shared/ClientForm.jsx",
+      "forms": 0,
+      "controls": 5,
+      "ids": []
+    },
+    {
+      "file": "src/components/shared/ClientPicker.jsx",
+      "forms": 0,
+      "controls": 2,
+      "ids": []
+    },
+    {
+      "file": "src/components/shared/ContractModal.jsx",
+      "forms": 1,
+      "controls": 19,
+      "ids": [
+        "lands-contract-form"
+      ]
+    },
+    {
+      "file": "src/components/shared/ContractPicker.jsx",
+      "forms": 0,
+      "controls": 1,
+      "ids": []
+    },
+    {
+      "file": "src/components/shared/DocumentModal.jsx",
+      "forms": 1,
+      "controls": 1,
+      "ids": [
+        "lands-document-form"
+      ]
+    },
+    {
+      "file": "src/components/shared/DocumentUploadFields.jsx",
+      "forms": 0,
+      "controls": 5,
+      "ids": []
+    },
+    {
+      "file": "src/components/shared/FilePicker.jsx",
+      "forms": 0,
+      "controls": 1,
+      "ids": []
+    },
+    {
+      "file": "src/components/shared/PhoneInput.jsx",
+      "forms": 0,
+      "controls": 2,
+      "ids": []
+    },
+    {
+      "file": "src/components/support/SupportWidget.jsx",
+      "forms": 1,
+      "controls": 5,
+      "ids": []
+    },
+    {
+      "file": "src/components/ui/GlobalSearchModal.jsx",
+      "forms": 0,
+      "controls": 1,
+      "ids": []
+    },
+    {
+      "file": "src/pages/Calculator/index.jsx",
+      "forms": 1,
+      "controls": 6,
+      "ids": []
+    },
+    {
+      "file": "src/pages/Clients/index.jsx",
+      "forms": 1,
+      "controls": 3,
+      "ids": [
+        "lands-client-form"
+      ]
+    },
+    {
+      "file": "src/pages/Documents/index.jsx",
+      "forms": 0,
+      "controls": 4,
+      "ids": []
+    },
+    {
+      "file": "src/pages/Ecosystem/Agenda.jsx",
+      "forms": 1,
+      "controls": 9,
+      "ids": []
+    },
+    {
+      "file": "src/pages/Ecosystem/Clientes.jsx",
+      "forms": 1,
+      "controls": 10,
+      "ids": [
+        "core-client-form"
+      ]
+    },
+    {
+      "file": "src/pages/Ecosystem/ConnectCalendarModal.jsx",
+      "forms": 0,
+      "controls": 1,
+      "ids": []
+    },
+    {
+      "file": "src/pages/Ecosystem/Equipo.jsx",
+      "forms": 2,
+      "controls": 12,
+      "ids": [
+        "core-employee-form",
+        "core-team-form"
+      ]
+    },
+    {
+      "file": "src/pages/Ecosystem/Formularios/Editor.jsx",
+      "forms": 2,
+      "controls": 7,
+      "ids": [
+        "core-field-form"
+      ]
+    },
+    {
+      "file": "src/pages/Ecosystem/Proveedores.jsx",
+      "forms": 1,
+      "controls": 6,
+      "ids": [
+        "core-provider-form"
+      ]
+    },
+    {
+      "file": "src/pages/Ecosystem/TasksBoard.jsx",
+      "forms": 1,
+      "controls": 1,
+      "ids": []
+    },
+    {
+      "file": "src/pages/Ecosystem/Vault.jsx",
+      "forms": 1,
+      "controls": 7,
+      "ids": [
+        "core-vault-form"
+      ]
+    },
+    {
+      "file": "src/pages/FormPublico/index.jsx",
+      "forms": 1,
+      "controls": 1,
+      "ids": []
+    },
+    {
+      "file": "src/pages/Fracs/index.jsx",
+      "forms": 4,
+      "controls": 10,
+      "ids": []
+    },
+    {
+      "file": "src/pages/LotTrack/index.jsx",
+      "forms": 0,
+      "controls": 3,
+      "ids": []
+    },
+    {
+      "file": "src/pages/Lots/MigrationWizard.jsx",
+      "forms": 0,
+      "controls": 2,
+      "ids": []
+    },
+    {
+      "file": "src/pages/Lots/index.jsx",
+      "forms": 1,
+      "controls": 15,
+      "ids": [
+        "lands-lot-draft-form"
+      ]
+    },
+    {
+      "file": "src/pages/Payments/index.jsx",
+      "forms": 4,
+      "controls": 35,
+      "ids": [
+        "lands-egresomodal-form",
+        "lands-ingresomodal-form",
+        "lands-cobromodal-form",
+        "lands-abonomodal-form"
+      ]
+    },
+    {
+      "file": "src/pages/Profile/ProfileContent.jsx",
+      "forms": 2,
+      "controls": 6,
+      "ids": []
+    },
+    {
+      "file": "src/pages/Reports/index.jsx",
+      "forms": 0,
+      "controls": 1,
+      "ids": []
+    },
+    {
+      "file": "src/pages/Sales/PendingApproval.jsx",
+      "forms": 1,
+      "controls": 1,
+      "ids": []
+    },
+    {
+      "file": "src/pages/Sales/ReleasesTable.jsx",
+      "forms": 1,
+      "controls": 1,
+      "ids": [
+        "lands-refund-form"
+      ]
+    },
+    {
+      "file": "src/pages/Sales/index.jsx",
+      "forms": 0,
+      "controls": 2,
+      "ids": []
+    },
+    {
+      "file": "src/pages/Settings/index.jsx",
+      "forms": 1,
+      "controls": 5,
+      "ids": []
+    }
+  ]
+}

@@ -1,3 +1,5 @@
+import WorkflowForm from "@/components/forms/WorkflowForm";
+import DialogPortal from "@/components/ui/DialogPortal";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { HiArchiveBox, HiBuildingStorefront, HiMagnifyingGlass, HiPencilSquare, HiPlus, HiSquares2X2 } from "react-icons/hi2";
@@ -27,7 +29,7 @@ function EcosystemProveedores() {
   const [modal, setModal] = useState(null);
   const [formError, setFormError] = useState(null);
   const fieldErrors = useFieldErrors();
-  useEscapeKey(() => setModal(null), Boolean(modal));
+  useEscapeKey(() => { if (!pending) setModal(null); }, Boolean(modal));
 
   const providersQuery = useQuery({ queryKey: ["providers", "ecosystem-directory", showArchived], queryFn: () => providerService.list({ limit: 100, is_archived: showArchived }) });
   const providers = providersQuery.data?.items ?? [];
@@ -63,6 +65,7 @@ function EcosystemProveedores() {
   const openEdit = (provider) => { setFormError(null); fieldErrors.clearAll(); setModal({ mode: "edit", providerId: provider.id, draft: { name: provider.name || "", categoria: normalizeProviderType(provider.categoria), tax_id: provider.tax_id || "", phone: provider.phone || "", notes: provider.notes || "" } }); };
   const setDraft = (patch) => setModal((current) => ({ ...current, draft: { ...current.draft, ...patch } }));
   const saveDraft = () => {
+    if (pending) return;
     fieldErrors.clearAll(); setFormError(null);
     if (!modal.draft.name.trim()) { fieldErrors.setErrors({ name: "El nombre o razón social es obligatorio." }); return; }
     if (modal.mode === "create") { createMutation.mutate(modal.draft); return; }
@@ -81,8 +84,8 @@ function EcosystemProveedores() {
       </section>
 
       <section className="provider-toolbar">
-        <label><HiMagnifyingGlass /><input aria-label="Buscar proveedores" placeholder="Buscar por nombre, RFC, teléfono o notas" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
-        <select aria-label="Filtrar por tipo" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">Todos los tipos</option>{PROVIDER_TYPES.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}</select>
+        <label ><HiMagnifyingGlass /><input aria-label="Buscar proveedores" placeholder="Buscar por nombre, RFC, teléfono o notas" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
+        <select id="field-ecosystem-proveedores-1" aria-label="Filtrar por tipo" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">Todos los tipos</option>{PROVIDER_TYPES.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}</select>
         <div><button type="button" className={!showArchived ? "active" : ""} onClick={() => setShowArchived(false)}>Activos</button><button type="button" className={showArchived ? "active" : ""} onClick={() => setShowArchived(true)}>Dados de baja</button></div>
       </section>
 
@@ -103,17 +106,17 @@ function EcosystemProveedores() {
       </section> : null}
     </main>
 
-    {modal ? <div className="provider-modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && setModal(null)}><div className="provider-modal" role="dialog" aria-modal="true" aria-labelledby="provider-modal-title">
-      <header><div><span>CATÁLOGO DEL ECOSISTEMA</span><h2 id="provider-modal-title">{modal.mode === "create" ? "Nuevo proveedor" : "Editar proveedor"}</h2><p>Se registra directamente. No necesita correo ni invitación para existir en el catálogo.</p></div><button type="button" aria-label="Cerrar" onClick={() => setModal(null)}>×</button></header>
-      <div className="provider-modal-body"><InlineError error={formError} onDismiss={() => setFormError(null)} />
+    {modal ? <DialogPortal className="provider-modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && !pending && setModal(null)}><div className="provider-modal" role="dialog" aria-modal="true" aria-labelledby="provider-modal-title">
+      <header><div><span>CATÁLOGO DEL ECOSISTEMA</span><h2 id="provider-modal-title">{modal.mode === "create" ? "Nuevo proveedor" : "Editar proveedor"}</h2><p>Se registra directamente. No necesita correo ni invitación para existir en el catálogo.</p></div><button type="button" aria-label="Cerrar" disabled={pending} onClick={() => setModal(null)}>×</button></header>
+      <WorkflowForm id="core-provider-form" busy={pending} className="provider-modal-body" onSubmit={event => { event.preventDefault(); saveDraft(); }}><InlineError error={formError} />
         <label className="wide"><span>Nombre o razón social *</span><input {...fieldErrors.fieldProps("name")} value={modal.draft.name} onChange={(event) => { setDraft({ name: event.target.value }); fieldErrors.clear("name"); }} placeholder="Ej. Hidráulica del Centro" /><FieldError msg={fieldErrors.errors.name} /></label>
         <label><span>Tipo de proveedor *</span><select value={modal.draft.categoria} onChange={(event) => setDraft({ categoria: event.target.value })}>{PROVIDER_TYPES.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}</select><small>{providerTypeMeta(modal.draft.categoria).description}</small></label>
         <label><span>RFC</span><input value={modal.draft.tax_id} onChange={(event) => setDraft({ tax_id: event.target.value.toUpperCase() })} placeholder="Opcional" /></label>
         <label><span>Teléfono</span><PhoneInput inputClassName="provider-phone" value={modal.draft.phone} onChange={(phone) => setDraft({ phone })} /></label>
         <label className="wide"><span>Notas operativas</span><textarea rows="3" value={modal.draft.notes} onChange={(event) => setDraft({ notes: event.target.value })} placeholder="Especialidad, cobertura, contacto o condiciones relevantes" /></label>
-      </div>
-      <footer><p>Podrás asignarlo a obras, servicios o mantenimientos después.</p><div><button type="button" onClick={() => setModal(null)}>Cancelar</button><button type="button" onClick={saveDraft} disabled={pending}>{pending ? "Guardando…" : "Guardar proveedor"}</button></div></footer>
-    </div></div> : null}
+      </WorkflowForm>
+      <footer><p>Podrás asignarlo a obras, servicios o mantenimientos después.</p><div><button type="button" disabled={pending} onClick={() => setModal(null)}>Cancelar</button><button type="submit" form="core-provider-form" disabled={pending}>{pending ? "Guardando…" : "Guardar proveedor"}</button></div></footer>
+    </div></DialogPortal> : null}
   </EcoLayout>;
 }
 

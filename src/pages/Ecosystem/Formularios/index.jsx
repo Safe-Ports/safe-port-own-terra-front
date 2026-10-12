@@ -1,3 +1,4 @@
+import useConfirmation from "@/hooks/useConfirmation";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -56,6 +57,7 @@ const IcoTrash = () => (
 );
 
 function EcosystemFormularios() {
+  const { requestConfirmation, confirmationDialog } = useConfirmation();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { showToast, showError, currentUser } = useAppContext();
@@ -91,14 +93,14 @@ function EcosystemFormularios() {
     navigator.clipboard.writeText(url).then(() => showToast("Link copiado al portapapeles"));
   };
 
-  const handleDelete = (t) => {
-    if (!window.confirm(`¿Eliminar "${t.name}"? También se borrarán todas sus respuestas.`)) return;
+  const handleDelete = async (t) => {
+    if (!await requestConfirmation(`¿Eliminar "${t.name}"? También se borrarán todas sus respuestas.`)) return;
     deleteMutation.mutate(t.id);
   };
 
   if (isLoading) {
     return (
-      <EcoLayout active="formularios" title="Formularios" subtitle="Captura de datos para compradores e interesados">
+      <EcoLayout active="formularios" title="Formularios" subtitle="Captura de datos para compradores e interesados">{confirmationDialog}
         <SkeletonRows rows={5} />
       </EcoLayout>
     );
@@ -110,7 +112,7 @@ function EcosystemFormularios() {
       title="Formularios"
       subtitle="Captura de datos para compradores e interesados"
       onGuide={() => setShowGuide(true)}
-    >
+    >{confirmationDialog}
       <div className="section-head">
         <h3>Formularios de captura</h3>
         {isAdmin && (

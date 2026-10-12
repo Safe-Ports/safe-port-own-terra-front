@@ -1,3 +1,4 @@
+import useConfirmation from "@/hooks/useConfirmation";
 import { NavLink } from "react-router-dom";
 import {
   HiArrowLeftOnRectangle,
@@ -54,11 +55,12 @@ function Logo({ onClick }) {
 }
 
 function Sidebar() {
+  const { requestConfirmation, confirmationDialog } = useConfirmation();
   const { ui, closeSidebar, fracs, clients, payments, documents, notificationCount, logout, currentUser, canAccessApp, canUseFeature, resetFracsView, setDraftProject, sidebarCollapsed, toggleSidebarCollapsed } = useAppContext();
   useEscapeKey(closeSidebar, ui.sidebarOpen);
 
-  const handleLogout = () => {
-    if (window.confirm("¿Cerrar sesión?")) logout();
+  const handleLogout = async () => {
+    if (await requestConfirmation("¿Cerrar sesión?")) logout();
   };
 
   let lastSection = "";
@@ -66,7 +68,7 @@ function Sidebar() {
   return (
     <>
       <div className={`sidebar-backdrop ${ui.sidebarOpen ? "show" : ""}`} onClick={closeSidebar} />
-      <aside className={`sb app-sidebar ${ui.sidebarOpen ? "open" : ""} ${sidebarCollapsed ? "collapsed" : ""}`}>
+      <aside className={`sb app-sidebar ${ui.sidebarOpen ? "open" : ""} ${sidebarCollapsed ? "collapsed" : ""}`}>{confirmationDialog}
         <button
           className="sb-collapse"
           onClick={toggleSidebarCollapsed}

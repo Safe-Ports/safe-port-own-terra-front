@@ -1,3 +1,4 @@
+import WorkflowForm from "@/components/forms/WorkflowForm";
 import { useMemo, useState } from "react";
 import {
   HiArrowTopRightOnSquare, HiBuildingStorefront, HiCheckCircle, HiEye,
@@ -87,7 +88,7 @@ export default function RentalListingsPage() {
       </article>; })}</section> : <section className="rental-publication-empty"><HiBuildingStorefront /><h2>Sin publicaciones</h2><p>Crea un anuncio desde una unidad disponible del portafolio.</p>{canWrite ? <button type="button" onClick={() => open()}><HiPlus /> Crear publicación</button> : null}</section>}
     </main>
     <Modal open={editingId !== null} onClose={close} title={editingId === "new" ? "Nueva publicación" : "Editar publicación"} subtitle="Contenido que verá la persona interesada." icon={<HiBuildingStorefront />} width="max-w-[820px]" footer={<><button type="button" className="rental-listing-secondary" onClick={close}>Cancelar</button><button type="submit" className="rental-listing-primary" form="rental-listing-form"><HiCheckCircle /> Guardar</button></>}>
-      <form id="rental-listing-form" className="properties-form rental-listing-form" onSubmit={save} noValidate><FieldError msg={errors.form} /><div className="properties-form-grid">
+      <WorkflowForm id="rental-listing-form" className="properties-form rental-listing-form" onSubmit={save} noValidate><FieldError msg={errors.form} /><div className="properties-form-grid">
         <label><span>Unidad disponible *</span><select value={draft.unitId} onChange={(event) => { const unit=unitById[event.target.value]; update("unitId",event.target.value); if(unit&&!draft.monthlyRent)update("monthlyRent",String(unit.suggestedRent||"")); }} aria-invalid={Boolean(errors.unitId)}><option value="">Selecciona</option>{editingId!=="new"&&unitById[draft.unitId]?<option value={draft.unitId}>{propertyById[unitById[draft.unitId].propertyId]?.name} · {unitById[draft.unitId].identifier}</option>:null}{eligibleUnits.map((unit)=><option key={unit.id} value={unit.id}>{propertyById[unit.propertyId]?.name} · {unit.identifier}</option>)}</select><FieldError msg={errors.unitId}/></label>
         <label><span>Estado inicial</span><select value={draft.status} onChange={(event)=>update("status",event.target.value)}>{Object.entries(RENTAL_LISTING_STATUS).map(([value,label])=><option value={value} key={value}>{label}</option>)}</select></label>
         <label className="properties-form-wide"><span>Título del anuncio *</span><input value={draft.title} onChange={(event)=>update("title",event.target.value)} placeholder="Ej. Departamento luminoso con balcón"/><FieldError msg={errors.title}/></label>
@@ -102,7 +103,7 @@ export default function RentalListingsPage() {
         <label className="properties-form-wide"><span>Amenidades separadas por coma</span><input value={draft.amenities} onChange={(event)=>update("amenities",event.target.value)} placeholder="Elevador, balcón, vigilancia, estacionamiento"/></label>
         <fieldset className="properties-form-wide rental-photo-picker"><legend>Fotografía principal</legend>{RENTAL_PHOTO_POSITIONS.map((position)=><button type="button" aria-label={`Fotografía ${position}`} className={draft.photoPosition===position?"active":""} onClick={()=>update("photoPosition",position)} key={position}><RentalPhoto position={position}/></button>)}</fieldset>
         <label className="rental-listing-check"><input type="checkbox" checked={draft.furnished} onChange={(event)=>update("furnished",event.target.checked)}/><span>Se renta amueblada</span></label><label className="rental-listing-check"><input type="checkbox" checked={draft.featured} onChange={(event)=>update("featured",event.target.checked)}/><span>Destacar en el catálogo</span></label>
-      </div></form>
+      </div></WorkflowForm>
     </Modal>
   </EcoLayout>;
 }

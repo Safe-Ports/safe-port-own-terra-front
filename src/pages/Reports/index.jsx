@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import GuideModal from "@/components/shared/GuideModal";
+import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   HiOutlineMagnifyingGlass, HiOutlinePrinter, HiOutlineUserCircle,
@@ -664,7 +665,9 @@ function ClientReport({ clientId }) {
 export default function ReportsPage() {
   const { clients, clientsLoading } = useAppContext();
   const [search, setSearch]     = useState("");
-  const [selectedId, setSelectedId] = useState(null);
+  const [params, setParams] = useSearchParams();
+  const selectedId = params.get("client");
+  const setSelectedId = id => setParams(id ? { client: id } : {});
   const [showGuide, setShowGuide]   = useState(false);
   useLandsGuide(() => setShowGuide(true));
 

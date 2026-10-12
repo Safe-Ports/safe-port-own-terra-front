@@ -1,3 +1,4 @@
+import WorkflowForm from "@/components/forms/WorkflowForm";
 import { useEffect, useMemo, useState } from "react";
 import { HiQueueList, HiViewColumns } from "react-icons/hi2";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -13,7 +14,7 @@ import "./unit-status-board.css";
 
 const money = (value) => value ? new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(value) : "Sin definir";
 const STATUS_ORDER = ["available", "rented", "maintenance", "archived"];
-const { archive: HiArchiveBox, back: HiArrowLeft, create: HiPlus, edit: HiPencilSquare, open: HiArrowRight, search: HiMagnifyingGlass } = PROPERTY_ACTION_ICONS;
+const { archive: HiArchiveBox, create: HiPlus, edit: HiPencilSquare, open: HiArrowRight, search: HiMagnifyingGlass } = PROPERTY_ACTION_ICONS;
 const { unit: HiHomeModern } = PROPERTY_ENTITY_ICONS;
 
 function UnitsPage() {
@@ -98,13 +99,12 @@ function UnitsPage() {
   return (
     <EcoLayout active="properties" title="Unidades" subtitle="OwnTerra Properties · Inventario rentable">
       <main className="units-page">
-        <button className="units-back" type="button" onClick={() => navigate("/properties")}><HiArrowLeft /> Volver a Properties</button>
         <header className="units-header"><div><span>Operación interna</span><h1>Unidades</h1><p>Espacios rentables dentro de cada propiedad administrada.</p></div><button className="units-primary" type="button" onClick={openCreate} disabled={!canWrite}><HiPlus /> Nueva unidad</button></header>
         <aside className="units-prototype-note">El estado es operativo. Más adelante “Rentada” será determinado por contratos vigentes y la disponibilidad para estancias cortas tendrá su propio calendario.</aside>
 
         <section className="units-toolbar" aria-label="Filtros de unidades">
-          <label className="units-search"><HiMagnifyingGlass /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar unidad o propiedad" /></label>
-          <select value={propertyFilter} onChange={(event) => setPropertyFilter(event.target.value)}><option value="all">Todas las propiedades</option>{activeProperties.map((property) => <option key={property.id} value={property.id}>{property.name}</option>)}</select>
+          <label  className="units-search"><HiMagnifyingGlass /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar unidad o propiedad" /></label>
+          <select id="field-units-unitspage-1" value={propertyFilter} onChange={(event) => setPropertyFilter(event.target.value)}><option value="all">Todas las propiedades</option>{activeProperties.map((property) => <option key={property.id} value={property.id}>{property.name}</option>)}</select>
           {view === "list" ? <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="all">Todos los estados</option>{Object.entries(UNIT_STATUS_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select> : null}
           <div className="units-view-toggle" role="tablist" aria-label="Vista de unidades">
             <button type="button" role="tab" aria-selected={view === "list"} className={view === "list" ? "active" : ""} onClick={() => changeView("list")}><HiQueueList /> Lista</button>
@@ -155,7 +155,7 @@ function UnitsPage() {
       </main>
 
       <Modal open={editingId !== null} onClose={closeModal} title={editingId === "new" ? "Nueva unidad" : "Editar unidad"} subtitle="Características y estado del espacio rentable." icon={<HiHomeModern />} width="max-w-[720px]" footer={<><button className="units-secondary" type="button" onClick={closeModal}>Cancelar</button><button className="units-primary" type="submit" form="unit-form">Guardar unidad</button></>}>
-        <form id="unit-form" className="properties-form" onSubmit={saveUnit} noValidate>
+        <WorkflowForm id="unit-form" className="properties-form" onSubmit={saveUnit} noValidate>
           <section className="properties-form-section">
             <header><span className="properties-form-step">01</span><div><h3>Identificación</h3><p>Ubica la unidad dentro de su propiedad.</p></div></header>
             <div className="properties-form-grid">
@@ -182,7 +182,7 @@ function UnitsPage() {
               <label className="properties-form-wide"><span>Descripción <small>Opcional</small></span><textarea rows="3" value={draft.description} onChange={(event) => updateDraft("description", event.target.value)} placeholder="Amenidades, distribución o indicaciones internas…" /></label>
             </div>
           </section>
-        </form>
+        </WorkflowForm>
       </Modal>
     </EcoLayout>
   );

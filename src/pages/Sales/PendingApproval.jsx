@@ -1,3 +1,4 @@
+import WorkflowForm from "@/components/forms/WorkflowForm";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { HiCheck, HiClock, HiXMark } from "react-icons/hi2";
@@ -96,15 +97,15 @@ export default function PendingApproval() {
             </div>
 
             {rechazando === c.id ? (
-              <form
+              <WorkflowForm
                 className="pa-reject"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  if (motivo.trim()) rechazar.mutate({ id: c.id, reason: motivo.trim() });
+                  if (!trabajando && motivo.trim()) rechazar.mutate({ id: c.id, reason: motivo.trim() });
                 }}
               >
                 <input
-                  className="pa-input"
+                  aria-label="Motivo del rechazo" className="pa-input"
                   value={motivo}
                   onChange={(e) => setMotivo(e.target.value)}
                   placeholder="¿Por qué lo rechazas? Lo verá quien lo armó"
@@ -122,7 +123,7 @@ export default function PendingApproval() {
                 >
                   Cancelar
                 </button>
-              </form>
+              </WorkflowForm>
             ) : (
               <div className="pa-actions">
                 <button

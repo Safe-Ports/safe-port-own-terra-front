@@ -1,5 +1,5 @@
+import WorkflowForm from "@/components/forms/WorkflowForm";
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import FieldError from "@/components/shared/FieldError";
 import Modal from "@/components/ui/Modal";
 import { useAppContext } from "@/context/AppContext";
@@ -10,11 +10,10 @@ import { PROPERTY_ACTION_ICONS, PROPERTY_ENTITY_ICONS } from "../../components/p
 import "./owners.css";
 
 const TYPE_LABEL = { individual: "Persona física", company: "Persona moral" };
-const { archive: HiArchiveBox, back: HiArrowLeft, create: HiPlus, edit: HiPencilSquare, search: HiMagnifyingGlass } = PROPERTY_ACTION_ICONS;
+const { archive: HiArchiveBox, create: HiPlus, edit: HiPencilSquare, search: HiMagnifyingGlass } = PROPERTY_ACTION_ICONS;
 const { owner: HiUserGroup } = PROPERTY_ENTITY_ICONS;
 
 function OwnersPage() {
-  const navigate = useNavigate();
   const { canUseFeature, showToast } = useAppContext();
   const canWrite = canUseFeature("properties.owners.write") || canUseFeature("properties.write");
   const { owners, properties, addOwner, updateOwner, archiveOwner: archiveOwnerRecord } = usePropertiesData();
@@ -34,7 +33,8 @@ function OwnersPage() {
     });
   }, [owners, query, status]);
 
-  const openCreate = () => {
+  const openCreate = (event) => {
+    event.currentTarget.focus();
     setEditingId("new");
     setDraft(EMPTY_OWNER);
     setErrors({});
@@ -82,7 +82,6 @@ function OwnersPage() {
   return (
     <EcoLayout active="properties" title="Propietarios" subtitle="OwnTerra Properties · Directorio operativo">
       <main className="owners-page">
-        <button className="owners-back" type="button" onClick={() => navigate("/properties")}><HiArrowLeft /> Volver a Properties</button>
 
         <header className="owners-header">
           <div>
@@ -117,7 +116,7 @@ function OwnersPage() {
                 <span className={`owner-status ${owner.status}`}>{owner.status === "active" ? "Activo" : "Archivado"}</span>
                 {canWrite && owner.status === "active" ? (
                   <div className="owner-actions">
-                    <button type="button" onClick={() => openEdit(owner)} aria-label={`Editar ${owner.name}`}><HiPencilSquare /></button>
+                    <button type="button" onClick={(event) => { event.currentTarget.focus(); openEdit(owner); }} aria-label={`Editar ${owner.name}`}><HiPencilSquare /></button>
                     <button type="button" onClick={() => archiveOwner(owner)} aria-label={`Archivar ${owner.name}`}><HiArchiveBox /></button>
                   </div>
                 ) : null}
@@ -145,7 +144,7 @@ function OwnersPage() {
           <><button className="owners-secondary" type="button" onClick={closeModal}>Cancelar</button><button className="owners-primary" type="submit" form="owner-form">Guardar propietario</button></>
         )}
       >
-        <form id="owner-form" className="properties-form" onSubmit={saveOwner} noValidate>
+        <WorkflowForm id="owner-form" className="properties-form" onSubmit={saveOwner} noValidate>
           <section className="properties-form-section">
             <header><span className="properties-form-step">01</span><div><h3>Identidad del propietario</h3><p>Datos con los que aparecerá en el portafolio.</p></div></header>
             <div className="properties-form-grid">
@@ -163,7 +162,7 @@ function OwnersPage() {
           <section className="properties-form-section is-compact">
             <div className="properties-form-grid"><label className="properties-form-wide"><span>Notas internas <small>Opcional</small></span><textarea rows="3" value={draft.notes} onChange={(event) => updateDraft("notes", event.target.value)} placeholder="Acuerdos, preferencias o contexto para el equipo…" /></label></div>
           </section>
-        </form>
+        </WorkflowForm>
       </Modal>
     </EcoLayout>
   );

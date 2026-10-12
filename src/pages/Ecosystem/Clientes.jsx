@@ -1,3 +1,6 @@
+import FieldError from "@/components/shared/FieldError";
+import WorkflowForm from "@/components/forms/WorkflowForm";
+import DialogPortal from "@/components/ui/DialogPortal";
 import { useMemo, useState } from "react";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import GuideModal from "@/components/shared/GuideModal";
@@ -31,6 +34,7 @@ const DownloadIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="current
 function EcosystemClientes() {
   const qc = useQueryClient();
   const { downloadDocument, exportAppData, showToast, showError } = useAppContext();
+  const [captureError, setCaptureError] = useState("");
   const [selectedId, setSelectedId] = useState(null);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState("contracts");
@@ -222,6 +226,7 @@ function EcosystemClientes() {
   const activeContracts = contracts.filter((c) => c.status === "active").length;
 
   const openAdd = (type) => {
+    setCaptureError("");
     if (type === "client") {
       setModal({
         type,
@@ -244,6 +249,7 @@ function EcosystemClientes() {
     }
   };
   const openEditClient = () => {
+    setCaptureError("");
     if (!selected) return;
     const nameParts = selected.name.trim().split(/\s+/);
     setModal({
@@ -265,12 +271,14 @@ function EcosystemClientes() {
   const setDraft = (patch) => setModal((m) => ({ ...m, draft: { ...m.draft, ...patch } }));
 
   const saveDraft = () => {
+    if (uploadDocMutation.isPending || createClientMutation.isPending || updateClientMutation.isPending) return;
+    setCaptureError("");
     const { type, draft } = modal;
     if (type === "client") {
       const fullName = `${draft.first_name || ""} ${draft.last_name || ""}`.trim();
-      if (!fullName) return;
+      if (!fullName) { setCaptureError("Escribe el nombre del cliente."); document.getElementById("field-ecosystem-clientes-1")?.focus(); return; }
       if (!emailOk(draft.email)) {
-        showToast("Ingresa un correo válido");
+        setCaptureError("Ingresa un correo válido.");
         return;
       }
       if (modal.mode === "edit") {
@@ -280,7 +288,7 @@ function EcosystemClientes() {
       }
     } else if (type === "document") {
       if (!draft.file) {
-        showToast("Selecciona un archivo para subir");
+        setCaptureError("Selecciona un archivo para subir.");
         return;
       }
       uploadDocMutation.mutate({ file: draft.file, name: draft.name || draft.file.name, category: draft.category });
@@ -520,8 +528,8 @@ function EcosystemClientes() {
 
       {/* MODAL alta cliente / documento */}
       {modal && (modal.type === "client" || selected) && (
-        <div className="usr-modal-overlay" onClick={(e) => e.target === e.currentTarget && setModal(null)}>
-          <div className="usr-modal">
+        <DialogPortal className="usr-modal-overlay" onClick={(e) => e.target === e.currentTarget && setModal(null)}>
+          <div className="usr-modal" role="dialog" aria-modal="true" aria-label={modal.type === "client" ? (modal.mode === "edit" ? "Editar cliente" : "Nuevo cliente") : "Documento de identidad"}>
             <div className="usr-modal-head">
               <div>
                 <div className="usr-modal-title">{modal.type === "client" ? (modal.mode === "edit" ? "Editar cliente" : "Nuevo cliente") : "Documento de identidad"}</div>
@@ -533,23 +541,24 @@ function EcosystemClientes() {
               </div>
               <button className="usr-modal-close" onClick={() => setModal(null)}>×</button>
             </div>
-            <div className="usr-modal-body">
+            <WorkflowForm id="core-client-form" busy={uploadDocMutation.isPending || createClientMutation.isPending || updateClientMutation.isPending} className="usr-modal-body" onInput={() => setCaptureError("")} onSubmit={event => { event.preventDefault(); saveDraft(); }}>
+              <FieldError msg={captureError} />
               {modal.type === "client" ? (
                 <>
                   <div className="usr-field-row">
                     <div className="usr-field">
-                      <label className="usr-field-lbl">Nombre(s)</label>
-                      <input className="usr-input" value={modal.draft.first_name} onChange={(e) => setDraft({ first_name: e.target.value })} placeholder="Ej. Mariana" />
+                      <label htmlFor="field-ecosystem-clientes-1" className="usr-field-lbl">Nombre(s)</label>
+                      <input id="field-ecosystem-clientes-1" className="usr-input" value={modal.draft.first_name} onChange={(e) => setDraft({ first_name: e.target.value })} placeholder="Ej. Mariana" />
                     </div>
                     <div className="usr-field">
-                      <label className="usr-field-lbl">Apellido(s)</label>
-                      <input className="usr-input" value={modal.draft.last_name} onChange={(e) => setDraft({ last_name: e.target.value })} placeholder="Ej. López" />
+                      <label htmlFor="field-ecosystem-clientes-2" className="usr-field-lbl">Apellido(s)</label>
+                      <input id="field-ecosystem-clientes-2" className="usr-input" value={modal.draft.last_name} onChange={(e) => setDraft({ last_name: e.target.value })} placeholder="Ej. López" />
                     </div>
                   </div>
                   <div className="usr-field-row">
                     <div className="usr-field">
-                      <label className="usr-field-lbl">Correo</label>
-                      <input className="usr-input" type="email" value={modal.draft.email} onChange={(e) => setDraft({ email: e.target.value })} />
+                      <label htmlFor="field-ecosystem-clientes-3" className="usr-field-lbl">Correo</label>
+                      <input id="field-ecosystem-clientes-3" className="usr-input" type="email" value={modal.draft.email} onChange={(e) => setDraft({ email: e.target.value })} />
                     </div>
                     <div className="usr-field">
                       <label className="usr-field-lbl">Telefono</label>
@@ -558,14 +567,14 @@ function EcosystemClientes() {
                   </div>
                   <div className="usr-field-row">
                     <div className="usr-field">
-                      <label className="usr-field-lbl">Tipo</label>
-                      <select className="usr-select" value={modal.draft.type} disabled={modal.mode === "edit"} onChange={(e) => setDraft({ type: e.target.value })}>
+                      <label htmlFor="field-ecosystem-clientes-4" className="usr-field-lbl">Tipo</label>
+                      <select id="field-ecosystem-clientes-4" className="usr-select" value={modal.draft.type} disabled={modal.mode === "edit"} onChange={(e) => setDraft({ type: e.target.value })}>
                         {Object.entries(TYPE_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                       </select>
                     </div>
                     <div className="usr-field">
-                      <label className="usr-field-lbl">Etapa</label>
-                      <select className="usr-select" value={modal.draft.pipeline_stage} onChange={(e) => setDraft({ pipeline_stage: e.target.value })}>
+                      <label htmlFor="field-ecosystem-clientes-5" className="usr-field-lbl">Etapa</label>
+                      <select id="field-ecosystem-clientes-5" className="usr-select" value={modal.draft.pipeline_stage} onChange={(e) => setDraft({ pipeline_stage: e.target.value })}>
                         {Object.entries(STAGE_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                       </select>
                     </div>
@@ -581,7 +590,7 @@ function EcosystemClientes() {
                             <div className="usr-app-name">{app.name}{!app.live && <span className="usr-app-soon">Próximamente</span>}</div>
                             <div className="usr-app-handle">{app.handle}</div>
                           </div>
-                          <button
+                          <button type="button"
                             className={`usr-switch ${isOn ? "on" : ""}`}
                             role="switch"
                             aria-checked={isOn}
@@ -595,40 +604,40 @@ function EcosystemClientes() {
                     );
                   })}
                   <div className="usr-field">
-                    <label className="usr-field-lbl">Notas</label>
-                    <textarea className="usr-input" rows="3" value={modal.draft.notes} onChange={(e) => setDraft({ notes: e.target.value })} />
+                    <label htmlFor="field-ecosystem-clientes-6" className="usr-field-lbl">Notas</label>
+                    <textarea id="field-ecosystem-clientes-6" className="usr-input" rows="3" value={modal.draft.notes} onChange={(e) => setDraft({ notes: e.target.value })} />
                   </div>
                 </>
               ) : (
                 <>
                   <div className="usr-field">
-                    <label className="usr-field-lbl">Archivo</label>
-                    <input className="usr-input" type="file" onChange={(e) => {
+                    <label htmlFor="field-ecosystem-clientes-7" className="usr-field-lbl">Archivo</label>
+                    <input id="field-ecosystem-clientes-7" className="usr-input" type="file" onChange={(e) => {
                       const f = e.target.files?.[0];
                       if (f) setDraft({ file: f, name: modal.draft.name || f.name });
                     }} />
                   </div>
                   <div className="usr-field">
-                    <label className="usr-field-lbl">Nombre del documento</label>
-                    <input className="usr-input" placeholder="Ej. INE_frente.jpg" value={modal.draft.name} onChange={(e) => setDraft({ name: e.target.value })} />
+                    <label htmlFor="field-ecosystem-clientes-8" className="usr-field-lbl">Nombre del documento</label>
+                    <input id="field-ecosystem-clientes-8" className="usr-input" placeholder="Ej. INE_frente.jpg" value={modal.draft.name} onChange={(e) => setDraft({ name: e.target.value })} />
                   </div>
                   <div className="usr-field">
-                    <label className="usr-field-lbl">Tipo de identidad</label>
-                    <select className="usr-select" value={modal.draft.category} onChange={(e) => setDraft({ category: e.target.value })}>
+                    <label htmlFor="field-ecosystem-clientes-9" className="usr-field-lbl">Tipo de identidad</label>
+                    <select id="field-ecosystem-clientes-9" className="usr-select" value={modal.draft.category} onChange={(e) => setDraft({ category: e.target.value })}>
                       {IDENTITY_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
                 </>
               )}
-            </div>
+            </WorkflowForm>
             <div className="usr-modal-foot">
               <button className="usr-btn-ghost" onClick={() => setModal(null)}>Cancelar</button>
-              <button className="usr-btn-primary" onClick={saveDraft} disabled={uploadDocMutation.isPending || createClientMutation.isPending || updateClientMutation.isPending}>
+              <button className="usr-btn-primary" type="submit" form="core-client-form" disabled={uploadDocMutation.isPending || createClientMutation.isPending || updateClientMutation.isPending}>
                 {uploadDocMutation.isPending || createClientMutation.isPending || updateClientMutation.isPending ? "Guardando…" : "✓ Guardar"}
               </button>
             </div>
           </div>
-        </div>
+        </DialogPortal>
       )}
 
       <GuideModal

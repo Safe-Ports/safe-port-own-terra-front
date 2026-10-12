@@ -1,6 +1,6 @@
+import WorkflowForm from "@/components/forms/WorkflowForm";
 import { useState } from "react";
 import { HiCheckBadge, HiClock, HiMapPin, HiShieldCheck, HiTruck, HiUser } from "react-icons/hi2";
-import { useNavigate } from "react-router-dom";
 import EcoLayout from "@/pages/Ecosystem/EcoLayout";
 import { PROPERTY_ACTION_ICONS, PROPERTY_ENTITY_ICONS } from "../../components/propertiesIconCatalog";
 import Modal from "@/components/ui/Modal";
@@ -8,7 +8,7 @@ import PackageDeskPanel from "./PackageDeskPanel";
 import "./access-control.css";
 import { PROPERTIES_MVP_SCOPE } from "../../mvpScope";
 
-const { back: HiArrowLeft, create: HiPlus } = PROPERTY_ACTION_ICONS;
+const { create: HiPlus } = PROPERTY_ACTION_ICONS;
 const { access: HiQrCode } = PROPERTY_ENTITY_ICONS;
 
 const initialPasses=[
@@ -21,7 +21,6 @@ const initialPasses=[
 const statusLabel={expected:"Por llegar",inside:"Dentro",completed:"Salida registrada"};
 
 function AccessControlPage(){
-  const navigate=useNavigate();
   const [passes,setPasses]=useState(initialPasses);
   const [selectedId,setSelectedId]=useState(initialPasses[0].folio);
   const [creating,setCreating]=useState(false);
@@ -33,7 +32,7 @@ function AccessControlPage(){
     {/* Pases de visita, QR y bitácora de caseta todavía no tienen backend:
         quedan para una versión futura (mvpScope.later). En el MVP esta
         pantalla es sólo recepción y paquetería, que sí persiste. */}
-    {PROPERTIES_MVP_SCOPE.later?<header className="access-heading"><button type="button" onClick={()=>navigate("/properties/comunidades/operacion")}><HiArrowLeft/> Operación comunitaria</button><div><span>Recepción y paquetería</span><h1>Accesos sin fricción.</h1><p>La caseta recibe instrucciones claras para visitas, proveedores y entregas.</p></div><button type="button" onClick={()=>setCreating(true)}><HiPlus/> Crear pase</button></header>:<header className="access-heading"><button type="button" onClick={()=>navigate("/properties/comunidades/operacion")}><HiArrowLeft/> Operación comunitaria</button><div><span>Recepción y paquetería</span><h1>Paquetes bajo control.</h1><p>Registra lo que llega a recepción y entrégalo a una persona vinculada a la unidad.</p></div></header>}
+    {PROPERTIES_MVP_SCOPE.later?<header className="access-heading"><div><span>Recepción y paquetería</span><h1>Accesos sin fricción.</h1><p>La caseta recibe instrucciones claras para visitas, proveedores y entregas.</p></div><button type="button" onClick={()=>setCreating(true)}><HiPlus/> Crear pase</button></header>:<header className="access-heading"><div><span>Recepción y paquetería</span><h1>Paquetes bajo control.</h1><p>Registra lo que llega a recepción y entrégalo a una persona vinculada a la unidad.</p></div></header>}
     <PackageDeskPanel/>
     {PROPERTIES_MVP_SCOPE.later?<><aside className="access-prototype-note"><span>▲</span><span><b>Lo de abajo es prototipo.</b> Los pases de visita no existen en el backend: lo que registres aquí se pierde al recargar. La paquetería de arriba sí se guarda.</span></aside>
     <section className="access-principle"><HiShieldCheck/><div><strong>Una vista pública, una sola tarea.</strong><p>Seguridad abre el enlace o escanea el QR, compara identificación, sigue instrucciones y registra entrada o salida.</p></div><span>Sin usuario · Sin contraseña</span></section>
@@ -43,7 +42,7 @@ function AccessControlPage(){
     </section>
     <section className="access-protocol"><header><span>Protocolo mínimo</span><h2>Lo que seguridad necesita saber</h2></header><div><article><strong>1</strong><h3>Quién llega</h3><p>Nombre, empresa, acompañantes y fotografía opcional.</p></article><article><strong>2</strong><h3>A dónde va</h3><p>Propiedad, unidad, persona anfitriona y zona permitida.</p></article><article><strong>3</strong><h3>Cuándo entra</h3><p>Ventana de vigencia; el pase expira automáticamente.</p></article><article><strong>4</strong><h3>Qué debe hacer</h3><p>Instrucciones breves y teléfono para cualquier excepción.</p></article></div></section>
     </>:null}
-    <Modal open={creating} onClose={()=>setCreating(false)} title="Crear pase" subtitle="Visita, proveedor o entrega" icon={<HiQrCode/>} width="max-w-[620px]" footer={<><button type="button" onClick={()=>setCreating(false)}>Cancelar</button><button type="submit" form="access-pass-form">Crear pase</button></>}><form id="access-pass-form" className="properties-form" onSubmit={createPass}><section className="properties-form-section"><div className="properties-form-grid"><label><span>Tipo</span><select value={draft.kind} onChange={e=>setDraft({...draft,kind:e.target.value})}><option>Visita</option><option>Proveedor</option><option>Entrega</option><option>Mantenimiento</option></select></label><label><span>Nombre o empresa</span><input required value={draft.name} onChange={e=>setDraft({...draft,name:e.target.value})}/></label><label className="properties-form-wide"><span>Destino</span><input required value={draft.target} onChange={e=>setDraft({...draft,target:e.target.value})} placeholder="Comunidad · Unidad"/></label><label><span>Ventana de acceso</span><input required value={draft.window} onChange={e=>setDraft({...draft,window:e.target.value})} placeholder="Hoy · 14:00–16:00"/></label><label><span>Autoriza</span><input required value={draft.host} onChange={e=>setDraft({...draft,host:e.target.value})}/></label><label className="properties-form-wide"><span>Instrucciones</span><textarea rows="3" value={draft.note} onChange={e=>setDraft({...draft,note:e.target.value})}/></label></div></section></form></Modal>
+    <Modal open={creating} onClose={()=>setCreating(false)} title="Crear pase" subtitle="Visita, proveedor o entrega" icon={<HiQrCode/>} width="max-w-[620px]" footer={<><button type="button" onClick={()=>setCreating(false)}>Cancelar</button><button type="submit" form="access-pass-form">Crear pase</button></>}><WorkflowForm id="access-pass-form" className="properties-form" onSubmit={createPass}><section className="properties-form-section"><div className="properties-form-grid"><label><span>Tipo</span><select value={draft.kind} onChange={e=>setDraft({...draft,kind:e.target.value})}><option>Visita</option><option>Proveedor</option><option>Entrega</option><option>Mantenimiento</option></select></label><label><span>Nombre o empresa</span><input required value={draft.name} onChange={e=>setDraft({...draft,name:e.target.value})}/></label><label className="properties-form-wide"><span>Destino</span><input required value={draft.target} onChange={e=>setDraft({...draft,target:e.target.value})} placeholder="Comunidad · Unidad"/></label><label><span>Ventana de acceso</span><input required value={draft.window} onChange={e=>setDraft({...draft,window:e.target.value})} placeholder="Hoy · 14:00–16:00"/></label><label><span>Autoriza</span><input required value={draft.host} onChange={e=>setDraft({...draft,host:e.target.value})}/></label><label className="properties-form-wide"><span>Instrucciones</span><textarea rows="3" value={draft.note} onChange={e=>setDraft({...draft,note:e.target.value})}/></label></div></section></WorkflowForm></Modal>
   </main></EcoLayout>;
 }
 export default AccessControlPage;
