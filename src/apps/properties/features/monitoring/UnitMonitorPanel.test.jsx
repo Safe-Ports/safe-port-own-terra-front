@@ -27,13 +27,25 @@ const community = { id: "c1", name: "Torre Jacarandas", propertyId: "p1" };
 
 describe("UnitMonitorPanel", () => {
   it("shows only the community's units with occupants and pending balance from real data", () => {
-    render(<UnitMonitorPanel community={community} unitId="u1" onSelectUnit={() => {}} onOpenCharges={() => {}} onOpenRelations={() => {}} />);
-    expect(screen.getByRole("button", { name: /J-201/, pressed: true })).toHaveTextContent("Mariana Torres");
+    render(<UnitMonitorPanel community={community} unitId="" onSelectUnit={() => {}} onOpenCharges={() => {}} onOpenRelations={() => {}} />);
+    expect(screen.getByRole("button", { name: /J-201/ })).toHaveTextContent("Mariana Torres");
     expect(screen.getByRole("button", { name: /J-202/ })).toBeInTheDocument();
     expect(screen.queryByText("Z-1")).not.toBeInTheDocument();
     expect(screen.getAllByText("$1,000").length).toBeGreaterThan(0);
     // Servicios e incidencias siguen en datos demo: fuera del MVP.
     expect(screen.queryByText(/Servicios pendientes|incidencias abiertas/)).not.toBeInTheDocument();
+    // El catálogo no abre ninguna ficha por su cuenta.
+    expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+  });
+
+  it("opens a unit on its own view, without the catalog, and goes back to it", () => {
+    const onBackToUnits = vi.fn();
+    render(<UnitMonitorPanel community={community} unitId="u1" onSelectUnit={() => {}} onOpenCharges={() => {}} onBackToUnits={onBackToUnits} />);
+    expect(screen.getByRole("complementary", { name: "Detalle de J-201" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /J-202/ })).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("Buscar unidad o persona")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "← Volver a unidades" }));
+    expect(onBackToUnits).toHaveBeenCalled();
   });
 
   it("lists who is in the unit with their permissions and lets a writer add or remove people", () => {
@@ -53,8 +65,9 @@ describe("UnitMonitorPanel", () => {
 
   it("points an empty unit to its first person and hides edits for read-only users", () => {
     const onAddMember = vi.fn();
-    const { rerender } = render(<UnitMonitorPanel community={community} unitId="u2" canWrite onSelectUnit={() => {}} onAddMember={onAddMember} onUnlink={() => {}} onOpenCharges={() => {}} />);
+    const { rerender } = render(<UnitMonitorPanel community={community} unitId="" canWrite onSelectUnit={() => {}} onAddMember={onAddMember} onUnlink={() => {}} onOpenCharges={() => {}} />);
     expect(screen.getByText(/1 de 2 unidades aún no tienen a nadie asignado/)).toBeInTheDocument();
+    rerender(<UnitMonitorPanel community={community} unitId="u2" canWrite onSelectUnit={() => {}} onAddMember={onAddMember} onUnlink={() => {}} onOpenCharges={() => {}} />);
     fireEvent.click(screen.getByRole("button", { name: /Agregar la primera persona/ }));
     expect(onAddMember).toHaveBeenCalledWith("u2");
     rerender(<UnitMonitorPanel community={community} unitId="u1" canWrite={false} onSelectUnit={() => {}} onAddMember={onAddMember} onUnlink={() => {}} onOpenCharges={() => {}} />);

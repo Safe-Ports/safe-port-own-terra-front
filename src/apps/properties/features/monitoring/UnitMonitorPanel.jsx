@@ -24,7 +24,7 @@ const initials = (name = "") => name.split(" ").filter(Boolean).slice(0, 2).map(
    quién paga, con su saldo, y desde aquí se agrega a alguien en un solo paso.
    Servicios e incidencias sólo aparecen cuando esos módulos tengan backend
    (mvpScope.later): hoy son datos demo. */
-function UnitMonitorPanel({ community, unitId, onSelectUnit, onAddUnit, onEditUnit, onAddMember, onUnlink, onOpenCharges, canWrite = false }) {
+function UnitMonitorPanel({ community, unitId, onSelectUnit, onAddUnit, onEditUnit, onAddMember, onUnlink, onOpenCharges, onBackToUnits, canWrite = false }) {
   const data = usePropertiesData();
   const [query, setQuery] = useState("");
   const withDemoModules = PROPERTIES_MVP_SCOPE.later;
@@ -38,7 +38,8 @@ function UnitMonitorPanel({ community, unitId, onSelectUnit, onAddUnit, onEditUn
   }), [data.units, data.communityPeople, data.personUnitRelations, data.condoCharges, data.utilityServices, data.tickets, community?.propertyId, withDemoModules]);
   const peopleById = useMemo(() => Object.fromEntries(data.communityPeople.map((person) => [person.id, person])), [data.communityPeople]);
   const visible = rows.filter((row) => `${row.identifier} ${row.occupants.map((item) => item.name).join(" ")} ${row.responsible.map((item) => item.name).join(" ")}`.toLowerCase().includes(query.trim().toLowerCase()));
-  const selected = visible.find((row) => row.id === unitId) || visible[0];
+  // Sin `unitId` se ve el catálogo; con él, solo la ficha de esa unidad (sin autoseleccionar la primera).
+  const selected = unitId ? rows.find((row) => row.id === unitId) : null;
   const links = selected ? data.personUnitRelations.filter((relation) => relation.unitId === selected.id && relation.status !== "archived") : [];
   const selectedUnit = selected ? data.units.find((unit) => unit.id === selected.id) : null;
   const spec = selectedUnit ? unitSpecSheet({ ...(selectedUnit.attributes || {}), type: selectedUnit.type, floor: selectedUnit.floor, area: selectedUnit.area, bedrooms: selectedUnit.bedrooms, bathrooms: selectedUnit.bathrooms, description: selectedUnit.description }) : null;
@@ -47,9 +48,10 @@ function UnitMonitorPanel({ community, unitId, onSelectUnit, onAddUnit, onEditUn
   if (!rows.length) return <section id="community-unit-workspace" className="community-panel unit-monitor-empty" aria-label={`Unidades de ${community?.name}`}><HiBuildingOffice2/><h2>Esta comunidad aún no tiene unidades</h2><p>Agrega sus casas, departamentos o espacios; quedarán vinculados a {community?.name}.</p>{canWrite&&onAddUnit?<button type="button" className="community-add-unit" onClick={onAddUnit}><HiHomeModern/> Agregar unidad</button>:null}</section>;
 
   return <section id="community-unit-workspace" className="community-panel unit-monitor-panel unit-floating-catalog" aria-label={`Unidades de ${community?.name}`}>
-    <header><div><h2>Unidades de {community?.name}</h2><p>Elige una casa, departamento o espacio para abrir su ficha.</p><p>{withoutPeople ? `${withoutPeople} de ${rows.length} unidades aún no tienen a nadie asignado.` : rows.length===1?"La unidad tiene al menos una persona asignada.":`Las ${rows.length} unidades tienen al menos una persona asignada.`}</p></div><label className="unit-monitor-search"><HiMagnifyingGlass/><input aria-label="Buscar unidad o persona" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar unidad o persona"/></label>{canWrite&&onAddUnit?<button type="button" className="community-add-unit" onClick={onAddUnit}><HiHomeModern/> Agregar unidad</button>:null}</header>
+    {selected ? null : <header><div><h2>Unidades de {community?.name}</h2><p>Elige una casa, departamento o espacio para abrir su ficha.</p><p>{withoutPeople ? `${withoutPeople} de ${rows.length} unidades aún no tienen a nadie asignado.` : rows.length===1?"La unidad tiene al menos una persona asignada.":`Las ${rows.length} unidades tienen al menos una persona asignada.`}</p></div><label className="unit-monitor-search"><HiMagnifyingGlass/><input aria-label="Buscar unidad o persona" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar unidad o persona"/></label>{canWrite&&onAddUnit?<button type="button" className="community-add-unit" onClick={onAddUnit}><HiHomeModern/> Agregar unidad</button>:null}</header>}
+    {selected ? <nav className="community-catalog-back unit-view-back" aria-label="Navegación de unidades"><button type="button" onClick={onBackToUnits}>← Volver a unidades</button><span>{community?.name} / {selected.identifier}</span></nav> : null}
     <div className={`unit-monitor-workspace ${withDemoModules ? "" : "is-compact"}`}>
-      <div className="unit-monitor-matrix">
+      {selected ? null : <div className="unit-monitor-matrix">
         <header><span>Unidad</span><span>Personas</span><span>Saldo pendiente</span>{withDemoModules ? <><span>Servicios</span><span>Atención</span></> : null}</header>
         {visible.map((row) => {
           const names = [...new Map([...row.responsible, ...row.occupants].map((person) => [person.id, person])).values()].map((person) => person.name);
@@ -61,7 +63,7 @@ function UnitMonitorPanel({ community, unitId, onSelectUnit, onAddUnit, onEditUn
           </button>;
         })}
         {!visible.length ? <p className="unit-monitor-none">Ninguna unidad o persona coincide con “{query}”.</p> : null}
-      </div>
+      </div>}
       {selected ? <aside id="community-unit-detail" className="unit-monitor-detail" aria-label={`Detalle de ${selected.identifier}`}>
         <header><UnitCover unitId={selected.id}/><div><small>{community?.name}</small><h2>{selected.identifier}</h2><p>{UNIT_STATUS_LABEL[selected.status]} · {selected.area || 0} m²</p></div>{canWrite && onEditUnit ? <button type="button" className="unit-monitor-edit" onClick={() => onEditUnit(selected.id)} aria-label={`Editar ${selected.identifier}`}><HiPencilSquare/> Editar</button> : null}</header>
         <MediaGallery entityType="property" entityId={selected.id} label={`Fotos de ${selected.identifier}`} emptyText={canWrite ? "Sin fotos. Agrégalas desde Editar." : "Sin fotos."}/>

@@ -83,7 +83,7 @@ describe("CommunityWorkspace · Detalle y edición", () => {
     fireEvent.change(within(dialog).getByLabelText(/Identificador/), { target: { value: "Depto 201-B" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Guardar unidad" }));
     await waitFor(() => expect(mocks.showToast).toHaveBeenCalledWith("Unidad actualizada", "success"));
-    expect(screen.getByRole("button", { name: /Depto 201-B/, pressed: true })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Depto 201-B" })).toBeInTheDocument();
   });
 
   it("saves the unit spec sheet and shows it in the unit detail", async () => {

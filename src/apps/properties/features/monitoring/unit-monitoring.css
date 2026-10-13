@@ -42,4 +42,6 @@
 @media(max-width:700px){.eco-root .unit-floating-catalog .unit-monitor-matrix{gap:22px}.eco-root .unit-floating-catalog .unit-monitor-matrix>button{grid-template-columns:1fr;min-height:210px;padding:22px}}
 @media(prefers-reduced-motion:reduce){.eco-root .unit-floating-catalog .unit-monitor-matrix>button{transition:none;transform:none}.eco-root .unit-floating-catalog .unit-monitor-matrix>button:hover,.eco-root .unit-floating-catalog .unit-monitor-matrix>button:focus-visible{transform:none}}
 
-.eco-root .community-panel.unit-floating-catalog{border:0;background:transparent;box-shadow:none}
+/* Sin plano detrás: el tema de Properties le pone fondo y sombra a .unit-monitor-panel y la matriz trae la sombra de la tabla. */
+.eco-root.properties-focus .unit-floating-catalog,.eco-root .community-panel.unit-floating-catalog,.eco-root .unit-floating-catalog .unit-monitor-matrix{border:0;background:transparent;box-shadow:none}
+.eco-root .unit-view-back{padding:4px 10px 0}
