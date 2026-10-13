@@ -24,3 +24,22 @@
  .eco-root .unit-monitor-workspace.is-compact .unit-monitor-matrix>button strong{white-space:normal;overflow-wrap:anywhere}
  .eco-root .unit-monitor-workspace.is-compact .unit-monitor-matrix>button>span:first-child strong{font-size:15px}
 }
+
+/* Tarjetas elevadas sobre un fondo abierto: el catálogo tiene su propia profundidad. */
+.eco-root .unit-floating-catalog{overflow:visible;border:0;background:transparent;box-shadow:none}
+.eco-root .unit-floating-catalog>.unit-monitor-workspace{grid-template-columns:minmax(0,1fr);padding:24px 10px;gap:28px}
+.eco-root .unit-floating-catalog .unit-monitor-matrix{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:26px;border:0;border-radius:0;background:transparent;overflow:visible;perspective:1200px}
+.eco-root .unit-floating-catalog .unit-monitor-matrix>header{display:none}
+.eco-root .unit-floating-catalog .unit-monitor-matrix>button{position:relative;display:grid;grid-template-columns:1fr;align-content:start;gap:18px;min-width:0;min-height:230px;padding:24px;text-align:left;border:1px solid #fff;border-bottom:4px solid #d4deea;border-radius:22px;background:linear-gradient(145deg,#fff 30%,#edf3f9);box-shadow:0 18px 28px -14px rgba(15,39,66,.35),0 5px 0 #dce5ef,inset 0 1px 0 #fff;transform:rotateX(3deg) translateY(-4px);transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease}
+.eco-root .unit-floating-catalog .unit-monitor-matrix>button:hover,.eco-root .unit-floating-catalog .unit-monitor-matrix>button:focus-visible{transform:rotateX(0) translateY(-10px);box-shadow:0 26px 36px -14px rgba(15,39,66,.4),0 5px 0 #cedbea;border-color:#9cb3cc;outline:2px solid #9cb3cc;outline-offset:3px}
+.eco-root .unit-floating-catalog .unit-monitor-matrix>button.active{border-color:#33567e;background:linear-gradient(145deg,#fff,#e1ecf7);box-shadow:0 22px 32px -12px rgba(15,39,66,.4),0 5px 0 #9db3cc}
+.eco-root .unit-floating-catalog .unit-monitor-matrix>button>span{min-width:0;display:grid;gap:5px}
+.eco-root .unit-floating-catalog .unit-monitor-matrix>button strong{font-size:14px;white-space:normal;overflow-wrap:anywhere}
+.eco-root .unit-floating-catalog .unit-monitor-matrix>button small{font-size:12px;line-height:1.5}
+.eco-root .unit-floating-catalog .unit-monitor-matrix>button .unit-floating-identity{grid-column:auto}
+.eco-root .unit-floating-icon{display:grid;place-items:center;width:48px;height:48px;margin-bottom:8px;border:1px solid #fff;border-radius:15px;background:linear-gradient(145deg,#f6faff,#d9e5f2);color:#33567e;box-shadow:0 7px 12px -6px #7892ad;font-size:25px}
+.eco-root .unit-floating-catalog .unit-monitor-detail{position:static;width:100%;max-width:900px;justify-self:center}
+@media(max-width:700px){.eco-root .unit-floating-catalog .unit-monitor-matrix{gap:22px}.eco-root .unit-floating-catalog .unit-monitor-matrix>button{grid-template-columns:1fr;min-height:210px;padding:22px}}
+@media(prefers-reduced-motion:reduce){.eco-root .unit-floating-catalog .unit-monitor-matrix>button{transition:none;transform:none}.eco-root .unit-floating-catalog .unit-monitor-matrix>button:hover,.eco-root .unit-floating-catalog .unit-monitor-matrix>button:focus-visible{transform:none}}
+
+.eco-root .community-panel.unit-floating-catalog{border:0;background:transparent;box-shadow:none}

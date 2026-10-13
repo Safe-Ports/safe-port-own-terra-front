@@ -46,7 +46,7 @@ function UnitMonitorPanel({ community, unitId, onSelectUnit, onAddUnit, onEditUn
 
   if (!rows.length) return <section id="community-unit-workspace" className="community-panel unit-monitor-empty" aria-label={`Unidades de ${community?.name}`}><HiBuildingOffice2/><h2>Esta comunidad aún no tiene unidades</h2><p>Agrega sus casas, departamentos o espacios; quedarán vinculados a {community?.name}.</p>{canWrite&&onAddUnit?<button type="button" className="community-add-unit" onClick={onAddUnit}><HiHomeModern/> Agregar unidad</button>:null}</section>;
 
-  return <section id="community-unit-workspace" className="community-panel unit-monitor-panel" aria-label={`Unidades de ${community?.name}`}>
+  return <section id="community-unit-workspace" className="community-panel unit-monitor-panel unit-floating-catalog" aria-label={`Unidades de ${community?.name}`}>
     <header><div><h2>Unidades de {community?.name}</h2><p>Elige una casa, departamento o espacio para abrir su ficha.</p><p>{withoutPeople ? `${withoutPeople} de ${rows.length} unidades aún no tienen a nadie asignado.` : rows.length===1?"La unidad tiene al menos una persona asignada.":`Las ${rows.length} unidades tienen al menos una persona asignada.`}</p></div><label className="unit-monitor-search"><HiMagnifyingGlass/><input aria-label="Buscar unidad o persona" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar unidad o persona"/></label>{canWrite&&onAddUnit?<button type="button" className="community-add-unit" onClick={onAddUnit}><HiHomeModern/> Agregar unidad</button>:null}</header>
     <div className={`unit-monitor-workspace ${withDemoModules ? "" : "is-compact"}`}>
       <div className="unit-monitor-matrix">
@@ -54,7 +54,7 @@ function UnitMonitorPanel({ community, unitId, onSelectUnit, onAddUnit, onEditUn
         {visible.map((row) => {
           const names = [...new Map([...row.responsible, ...row.occupants].map((person) => [person.id, person])).values()].map((person) => person.name);
           return <button type="button" className={selected?.id === row.id ? "active" : ""} aria-pressed={selected?.id === row.id} aria-label={`Abrir ${row.identifier}`} key={row.id} onClick={() => onSelectUnit(row.id)}>
-            <span><strong>{row.identifier}</strong><small>{UNIT_TYPE_LABEL[row.type] || "Unidad"} · {UNIT_STATUS_LABEL[row.status]}</small></span>
+            <span className="unit-floating-identity"><i className="unit-floating-icon" aria-hidden="true"><HiHomeModern/></i><strong>{row.identifier}</strong><small>{UNIT_TYPE_LABEL[row.type] || "Unidad"} · {UNIT_STATUS_LABEL[row.status]}</small></span>
             <span>{names.length ? <><strong>{names.join(", ")}</strong><small>{row.responsible.length ? `Paga: ${row.responsible.map((item) => item.name).join(", ")}` : "Sin responsable de pago"}</small></> : <strong className="unit-monitor-unassigned">Sin personas</strong>}</span>
             <span className={row.openChargeAmount ? "attention" : "ok"}><strong>{money(row.openChargeAmount)}</strong>{row.charges.length ? <small>{row.charges.length} movimientos</small> : null}</span>
             {withDemoModules ? <><span><strong>{money(row.openServiceAmount)}</strong><small>{row.services.length} servicios</small></span><span className={row.openTickets ? "attention" : "ok"}><strong>{row.openTickets}</strong><small>incidencias abiertas</small></span></> : null}

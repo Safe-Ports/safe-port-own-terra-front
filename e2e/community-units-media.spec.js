@@ -5,10 +5,13 @@ test.beforeEach(async({page})=>prepare(page));
 
 test('comunidad abre unidades y mantiene la ficha seleccionada tras recargar',async({page})=>{
  await page.goto('/properties/comunidades');await page.getByRole('button',{name:'Ver unidades de Comunidad Jacarandas'}).click();
+ await expect(page.getByRole('region',{name:'Comunidades'})).toHaveCount(0);
  await expect(page.getByRole('region',{name:'Unidades de Comunidad Jacarandas'})).toBeVisible();
  await page.getByRole('button',{name:'Abrir Departamento 302',exact:true}).click();await expect(page).toHaveURL(/unit=unit/);
  if(page.viewportSize().width<700)await expect.poll(async()=>{const box=await page.locator('#community-unit-detail').boundingBox();return box&&box.y>=0&&box.y<page.viewportSize().height/2;}).toBeTruthy();
  await page.reload();await expect(page.getByRole('complementary',{name:'Detalle de Departamento 302'})).toBeVisible();await expectFits(page);
+ await page.getByRole('button',{name:'← Volver a comunidades'}).click();await expect(page.getByRole('region',{name:'Comunidades',exact:true})).toBeVisible();await expect(page.locator('#community-unit-workspace')).toHaveCount(0);
+ await page.goBack();await expect(page.getByRole('complementary',{name:'Detalle de Departamento 302'})).toBeVisible();
 });
 
 test('crear unidad desde comunidad mantiene el inmueble sin pedirlo otra vez',async({page})=>{
@@ -17,7 +20,7 @@ test('crear unidad desde comunidad mantiene el inmueble sin pedirlo otra vez',as
   if(route.request().method()==='GET')return route.fulfill({json:{items:unitRows,total:unitRows.length}});
   created=route.request().postDataJSON();const row={id:'new-unit',inmueble_id:'estate',...created};unitRows.push(row);await route.fulfill({status:201,json:row});
  });
- await page.goto('/properties/comunidades');await page.getByRole('button',{name:'Agregar unidad',exact:true}).click();const dialog=page.getByRole('dialog',{name:'Agregar unidad a Comunidad Jacarandas'});
+ await page.goto('/properties/comunidades?community=building');await page.getByRole('button',{name:'Agregar unidad',exact:true}).click();const dialog=page.getByRole('dialog',{name:'Agregar unidad a Comunidad Jacarandas'});
  await dialog.getByLabel('Identificador').fill('Casa 8');await dialog.getByLabel('Tipo de unidad').selectOption('house');await dialog.getByRole('button',{name:'Crear unidad'}).click();
  await expect(dialog).toHaveCount(0);expect(created.parent_id).toBe('building');await expect(page).toHaveURL(/unit=new-unit/);await expect(page.getByRole('complementary',{name:'Detalle de Casa 8'})).toBeVisible();await expectFits(page);
 });
@@ -29,7 +32,7 @@ test('elegir foto de images_condos guarda en inmueble y sobrevive recarga',async
  await page.goto('/properties/comunidades');await page.getByRole('button',{name:/Comunidad Jacarandas Condominio/}).click();await page.getByRole('button',{name:'Editar comunidad'}).click();
  const gallery=page.getByRole('region',{name:'Fotos de la comunidad'});await gallery.getByText('Elegir una imagen de images_condos').click();await gallery.getByRole('button',{name:'Agregar 1625338881.jpg a la comunidad'}).click();
  await expect(gallery).toContainText('1 foto en la galería');await expect(gallery.getByRole('img',{name:'1625338881.jpg'})).toBeVisible();expect(uploads).toBe(1);
- await page.getByRole('button',{name:'Cancelar',exact:true}).click();await page.reload();await page.getByRole('button',{name:/Comunidad Jacarandas Condominio/}).click();await expect(page.getByRole('region',{name:'Fotos de Comunidad Jacarandas'}).getByRole('img',{name:'1625338881.jpg'})).toBeVisible();expect(uploads).toBe(1);await expectFits(page);
+ await page.getByRole('button',{name:'Cancelar',exact:true}).click();await page.reload();await page.getByRole('button',{name:'Información de la comunidad'}).click();await expect(page.getByRole('region',{name:'Fotos de Comunidad Jacarandas'}).getByRole('img',{name:'1625338881.jpg'})).toBeVisible();expect(uploads).toBe(1);await expectFits(page);
 });
 
 test('error de lectura de archivos se muestra y permite reintentar',async({page})=>{
@@ -60,7 +63,7 @@ test('vincular contacto existente como inquilino guarda y sobrevive recarga',asy
   if(route.request().method()==='GET')return route.fulfill({json:relations});
   created=route.request().postDataJSON();const row={id:'qa-relation',...created};relations.push(row);return route.fulfill({status:201,json:row});
  });
- await page.goto('/properties/comunidades');await page.getByRole('button',{name:'Abrir Departamento 302',exact:true}).click();await page.getByRole('button',{name:'Agregar la primera persona'}).click();
+ await page.goto('/properties/comunidades?community=building');await page.getByRole('button',{name:'Abrir Departamento 302',exact:true}).click();await page.getByRole('button',{name:'Agregar la primera persona'}).click();
  const dialog=page.getByRole('dialog',{name:'Agregar persona a Departamento 302'});
  await dialog.getByText('Ya está en el directorio',{exact:true}).click();await dialog.getByRole('combobox',{name:'Persona',exact:true}).selectOption('person');await dialog.getByText('Inquilino',{exact:true}).click();
  await dialog.getByRole('button',{name:'Agregar a la unidad'}).click();await expect(dialog).toHaveCount(0);

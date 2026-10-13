@@ -59,7 +59,7 @@ describe("CommunityWorkspace · Detalle y edición", () => {
     expect(screen.queryByRole("region", { name: /Detalle de/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Configuración/ })).not.toBeInTheDocument();
 
-    const card = screen.getByRole("button", { name: /Comunidad Torre Jacarandas/, pressed: true });
+    const card = screen.getByRole("button", { name: "Información de la comunidad" });
     fireEvent.click(card);
     const detail = screen.getByRole("region", { name: "Detalle de Comunidad Torre Jacarandas" });
     fireEvent.click(within(detail).getByRole("button", { name: /Editar comunidad/ }));
@@ -70,7 +70,7 @@ describe("CommunityWorkspace · Detalle y edición", () => {
     await waitFor(() => expect(mocks.showToast).toHaveBeenCalledWith("Comunidad actualizada", "success"));
     expect(screen.getByRole("region", { name: "Detalle de Jacarandas Residencial" })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /Jacarandas Residencial/, pressed: true }));
+    fireEvent.click(screen.getByRole("button", { name: "Información de la comunidad" }));
     expect(screen.queryByRole("region", { name: /Detalle de/ })).not.toBeInTheDocument();
   });
 

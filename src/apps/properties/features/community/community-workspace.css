@@ -108,3 +108,5 @@ button.community-person-unlinked{border:0;cursor:pointer}
   .community-heading-action{justify-self:start;margin-top:12px}
 }
 
+
+.community-catalog-back{display:flex;align-items:center;flex-wrap:wrap;gap:16px}.community-catalog-back button{padding:10px 16px;border:1px solid #ccd5df;border-radius:12px;background:#fff;color:#153457;font-size:13px;font-weight:800}.community-catalog-back span{color:#687789;font-size:12px}.community-card-units{display:block;width:100%;padding:12px 16px;text-align:left;background:#eef3f8;color:#153457;font-size:12px;font-weight:800}.community-card-units:hover{background:#e0e9f2}

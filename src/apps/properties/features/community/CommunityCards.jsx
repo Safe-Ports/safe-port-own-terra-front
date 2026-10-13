@@ -28,7 +28,7 @@ function useCommunityCovers(communities) {
   }));
 }
 
-function CommunityCards({ communities, selectedId, expanded = false, onSelect, onAlert, data }) {
+function CommunityCards({ communities, selectedId, expanded = false, onSelect, onOpenUnits, onAlert, data }) {
   const covers = useCommunityCovers(communities);
   return <section className="community-cards" aria-label="Comunidades">
     {communities.map((community) => {
@@ -50,6 +50,7 @@ function CommunityCards({ communities, selectedId, expanded = false, onSelect, o
           </span>
           {selected ? <b className="community-card-badge">Seleccionada</b> : null}
         </button>
+        <button type="button" className="community-card-units" onClick={() => (onOpenUnits || onSelect)(community.id)} aria-label={`Ver unidades de ${community.name}`}>Ver unidades →</button>
         <footer className="community-card-alerts">
           {alerts.length ? alerts.map((alert) => {
             const Icon = ALERT_ICON[alert.key];
