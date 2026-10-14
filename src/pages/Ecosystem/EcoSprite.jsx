@@ -10,9 +10,9 @@ function EcoSprite() {
       <symbol id="eco-g-neighb" viewBox="0 0 100 100">
         <image href="/brand/properties-mark-color.svg" width="100" height="100" />
       </symbol>
-      {/* CONSTRUCT — logo de grúa (marca a todo color) */}
-      <symbol id="eco-g-construct" viewBox="0 0 247 267">
-        <image href="/icons/app-construction.png" width="247" height="267" />
+      {/* CONSTRUCT — marca oficial (public/brand) */}
+      <symbol id="eco-g-construct" viewBox="0 0 100 100">
+        <image href="/brand/construction-mark-color.svg" width="100" height="100" />
       </symbol>
       {/* nav */}
       <symbol id="eco-n-grid" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></g></symbol>
