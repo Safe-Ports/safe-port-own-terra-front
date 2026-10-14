@@ -29,6 +29,40 @@ describe("permissions catalog", () => {
     expect(defaultPermissionsFor("lands", "seller")).not.toContain("lands.*");
   });
 
+  it("registers Properties as an internal-user vertical", () => {
+    const properties = APP_CATALOG.find((app) => app.key === "properties");
+
+    expect(properties).toMatchObject({
+      vertical: true,
+      live: true,
+      defaultRole: "manager",
+    });
+    expect(properties.roles).toEqual(["manager", "viewer"]);
+  });
+
+  it("accepts the legacy neighb assignment while Properties migrates", () => {
+    const user = { role: "vendor", apps: [{ app_key: "neighb", role: "manager", is_active: true }] };
+
+    expect(canAccessApp(user, "properties")).toBe(true);
+    expect(canUseFeature(user, "properties.owners.read")).toBe(true);
+  });
+
+  it("keeps Properties viewers read-only across the initial catalogs", () => {
+    const user = { role: "vendor", apps: [{ app_key: "properties", role: "viewer", is_active: true }] };
+
+    expect(canUseFeature(user, "properties.owners.read")).toBe(true);
+    expect(canUseFeature(user, "properties.owners.write")).toBe(false);
+    expect(canUseFeature(user, "properties.rent.read")).toBe(true);
+    expect(canUseFeature(user, "properties.rent.write")).toBe(false);
+  });
+
+  it("allows a Properties manager to operate rentals", () => {
+    const user = { role: "vendor", apps: [{ app_key: "properties", role: "manager", is_active: true }] };
+
+    expect(canUseFeature(user, "properties.rent.read")).toBe(true);
+    expect(canUseFeature(user, "properties.rent.write")).toBe(true);
+  });
+
   it("un colaborador sin asignaciones no entra a Lands", () => {
     // Antes se asumía que cualquier "vendor" entraba a Lands aunque nadie se lo
     // hubiera asignado. El backend no lo asume: le daba 403 en todo mientras el

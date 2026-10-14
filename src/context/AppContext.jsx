@@ -673,11 +673,12 @@ export function AppProvider({ children }) {
     }
   };
 
-  const quickPay = async (paymentId, amount, file, paidDate) => {
+  const quickPay = async (paymentId, amount, file, paidDate, paymentMethod = "transfer") => {
     try {
+      let receiptIssue = null;
       await paymentService.markPaid(paymentId, {
         paid_date: paidDate || new Date().toISOString().split("T")[0],
-        payment_method: "transfer",
+        payment_method: paymentMethod,
         amount_paid: amount,
       });
       // El comprobante va aparte y no bloquea: si falla la subida, el cobro ya
@@ -686,24 +687,25 @@ export function AppProvider({ children }) {
         try {
           await paymentService.uploadReceipt(paymentId, file);
         } catch {
-          showToast("Cobro registrado, pero no se pudo subir el comprobante");
+          receiptIssue = { kind: "payment", id: paymentId };
         }
       }
       await queryClient.invalidateQueries({ queryKey: ["payments"] });
       await queryClient.invalidateQueries({ queryKey: ["contracts"] });
-      showToast("Pago registrado correctamente");
-      return true;
+      showToast(receiptIssue ? "Cobro registrado; comprobante pendiente" : "Pago registrado correctamente", receiptIssue ? "warning" : "success");
+      return { success: true, receiptIssue };
     } catch (err) {
       showError(err, "Error al registrar el pago");
     }
   };
 
-  const collectOnContract = async (contractId, { amount, paymentIds, file, paidDate } = {}) => {
+  const collectOnContract = async (contractId, { amount, paymentIds, file, paidDate, paymentMethod = "transfer" } = {}) => {
     try {
+      let receiptIssue = null;
       const data = await paymentService.collect(contractId, {
         amount,
         paid_date: paidDate || new Date().toISOString().split("T")[0],
-        payment_method: "transfer",
+        payment_method: paymentMethod,
         ...(paymentIds?.length ? { payment_ids: paymentIds } : {}),
       });
       await queryClient.invalidateQueries({ queryKey: ["payments"] });
@@ -712,12 +714,12 @@ export function AppProvider({ children }) {
         try {
           await paymentService.uploadCollectReceipt(data.receipt_id, file);
         } catch {
-          showToast("Cobro registrado, pero no se pudo subir el comprobante");
+          receiptIssue = { kind: "receipt", id: data.receipt_id };
         }
       }
       const n = data.installments?.length || 0;
-      showToast(n > 1 ? `Cobro registrado en ${n} cuotas` : "Pago registrado correctamente");
-      return data;
+      showToast(receiptIssue ? "Cobro registrado; comprobante pendiente" : n > 1 ? `Cobro registrado en ${n} cuotas` : "Pago registrado correctamente", receiptIssue ? "warning" : "success");
+      return { ...data, receiptIssue };
     } catch (err) {
       showError(err, "Error al registrar el cobro");
     }

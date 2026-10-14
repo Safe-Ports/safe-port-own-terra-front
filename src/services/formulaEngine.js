@@ -240,6 +240,22 @@ function evalRPN(rpn, variables) {
   return st[0];
 }
 
+/** Comprueba la estructura sin asignar valores ficticios a las variables. */
+export function validateFormula(formula) {
+  const rpn = toRPN(tokenize(formula));
+  let depth = 0;
+  for (const token of rpn) {
+    if (token.type === "num" || token.type === "name") depth += 1;
+    else {
+      const argc = token.type === "op" ? 2 : token.type === "func" ? (token.argc ?? 1) : 1;
+      if (depth < argc) throw new FormulaError("Fórmula inválida: revisa los operadores y sus valores.");
+      depth = depth - argc + 1;
+    }
+  }
+  if (depth !== 1) throw new FormulaError("Fórmula inválida: revisa los operadores y sus valores.");
+  return true;
+}
+
 /** Evalúa la fórmula con los valores dados; devuelve un Number redondeado a 2 decimales. */
 export function evaluate(formula, variables = {}) {
   const rpn = toRPN(tokenize(formula));

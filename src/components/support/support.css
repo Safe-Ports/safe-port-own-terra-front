@@ -1,6 +1,10 @@
 /* ── SupportWidget — OwnTerra ecosistema core ──────────────────────────── */
 
 .sp-btn {
+  --sp-button-start: #355E3B;
+  --sp-button-end: #1E3D2B;
+  --sp-button-ink: #fff;
+  --sp-button-shadow: rgba(30,61,43,.32);
   position: fixed;
   bottom: 28px;
   right: 28px;
@@ -8,17 +12,36 @@
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  background: linear-gradient(140deg, var(--mid, #355E3B), var(--deep, #1E3D2B));
-  color: #fff;
+  background: linear-gradient(140deg, var(--sp-button-start), var(--sp-button-end));
+  color: var(--sp-button-ink);
   border: none;
-  cursor: pointer;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 24px rgba(30,61,43,.32);
+  box-shadow: 0 8px 24px var(--sp-button-shadow);
   transition: transform .18s, box-shadow .18s;
 }
-.sp-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(30,61,43,.4); }
+.sp-btn--lands {
+  --sp-button-start: #4F8154;
+  --sp-button-end: #1E3D2B;
+  --sp-button-shadow: rgba(30,61,43,.32);
+}
+.sp-btn--properties {
+  --sp-button-start: #2A6F9E;
+  --sp-button-end: #0A3D62;
+  --sp-button-shadow: rgba(10,61,98,.32);
+}
+.sp-btn--construction {
+  --sp-button-start: #F4C928;
+  --sp-button-end: #D9A900;
+  --sp-button-ink: #082C49;
+  --sp-button-shadow: rgba(190,142,0,.34);
+}
+.sp-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 28px var(--sp-button-shadow); }
+.sp-btn.is-dragging { cursor: grabbing; transform: scale(1.05); box-shadow: 0 16px 34px var(--sp-button-shadow); transition: box-shadow .12s, transform .12s; }
 .sp-btn svg { width: 20px; height: 20px; }
 
 .sp-btn-dot {
@@ -403,6 +426,5 @@
 .sp-send-btn svg { width: 15px; height: 15px; }
 
 @media (max-width: 480px) {
-  .sp-panel { width: calc(100vw - 24px); right: 12px; bottom: 76px; }
-  .sp-btn { bottom: 18px; right: 14px; }
+  .sp-panel { width: calc(100vw - 24px); }
 }

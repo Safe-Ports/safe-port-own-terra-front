@@ -19,7 +19,7 @@ export const APP_CATALOG = [
   { key: "core", name: "Ecosistema Core", icon: "eco-brand", cls: "ic-lands", roles: ["admin", "manager", "viewer"], defaultRole: "viewer", desc: "Panel central, clientes, equipo y configuración." },
   { key: "lands", name: "OwnTerra Lands", icon: "eco-g-lands", cls: "ic-lands", roles: ["seller", "manager", "collections", "viewer"], defaultRole: "seller", desc: "Lotes, fraccionamientos, ventas y cobranza.", vertical: true, live: true },
   { key: "construct", name: "Ownterra Construct", icon: "eco-g-construct", cls: "ic-construct", roles: ["admin_financiero", "residente_obra", "director_auditor"], defaultRole: "admin_financiero", desc: "Cuantificación física, presupuestos híbridos APU/Alzado y catálogo maestro de obra.", vertical: true, live: true },
-  { key: "neighb", name: "Properties", icon: "eco-g-neighb", cls: "ic-neighb", roles: ["seller", "manager", "viewer"], defaultRole: "seller", desc: "Propiedades y comunidades.", vertical: true, live: false },
+  { key: "properties", name: "OwnTerra Properties", icon: "eco-g-neighb", cls: "ic-neighb", roles: ["manager", "viewer"], defaultRole: "manager", desc: "Condominios, rentas y comercialización de inmuebles.", vertical: true, live: true },
   { key: "vault", name: "OwnTerra Vault", icon: "eco-n-vault", cls: "ic-lands", roles: ["admin", "editor", "viewer"], defaultRole: "viewer", desc: "Documentos, expedientes y permisos de lectura." },
 ];
 
@@ -66,6 +66,17 @@ export const FEATURE_LABEL = {
   "construct.catalog": "Catálogo maestro de obra",
   "construct.budget": "Presupuesto de obra",
   "construct.reports": "Reportes de obra",
+  "properties.read": "OwnTerra Properties",
+  "properties.write": "Edición de Properties",
+  "properties.owners.read": "Propietarios",
+  "properties.properties.read": "Propiedades",
+  "properties.units.read": "Unidades",
+  "properties.rent.read": "Rentas",
+  "properties.rent.write": "Operación de rentas",
+  "properties.providers.read": "Red de proveedores",
+  "properties.providers.manage": "Gestión de proveedores",
+  "properties.providers.approve": "Aprobación de proveedores",
+  "properties.providers.invite": "Invitar proveedores",
 };
 
 // Solo "admin": el CHECK de la tabla `users` admite exactamente 'admin' y
@@ -74,6 +85,32 @@ export const FEATURE_LABEL = {
 const ADMIN_ROLES = new Set(["admin"]);
 
 export function defaultPermissionsFor(appKey, role) {
+  if (appKey === "properties" && role === "manager") {
+    return [
+      "properties.read",
+      "properties.write",
+      "properties.owners.read",
+      "properties.owners.write",
+      "properties.properties.read",
+      "properties.properties.write",
+      "properties.units.read",
+      "properties.units.write",
+      "properties.rent.read",
+      "properties.rent.write",
+      "properties.providers.manage",
+      "properties.providers.approve",
+      "properties.providers.invite",
+    ];
+  }
+  if (appKey === "properties" && role === "viewer") {
+    return [
+      "properties.read",
+      "properties.owners.read",
+      "properties.properties.read",
+      "properties.units.read",
+      "properties.rent.read",
+    ];
+  }
   if (role === "admin") return [`${appKey}.*`];
   if (role === "manager") return [`${appKey}.read`, `${appKey}.write`, `${appKey}.clients`, `${appKey}.sales`, `${appKey}.documents`, `${appKey}.reports`];
   if (role === "seller") return [`${appKey}.read`, `${appKey}.clients`, `${appKey}.sales`, `${appKey}.agenda`, `${appKey}.documents`];
@@ -108,7 +145,8 @@ const getPermissions = (user) => {
   // comprobaba — el filtro faltaba únicamente en este camino.
   const rows = getAppRows(user).filter((row) => row?.is_active !== false);
   const fromRows = rows.flatMap((row) => {
-    const key = row?.app_key || row?.key || row?.app;
+    const rawKey = row?.app_key || row?.key || row?.app;
+    const key = rawKey === "neighb" ? "properties" : rawKey;
     const role = row?.role;
     const explicit = row?.permissions || [];
     return key && role ? [...defaultPermissionsFor(key, role), ...explicit] : explicit;
@@ -138,7 +176,11 @@ export function canAccessApp(user, appKey) {
   if (rows.length > 0) {
     return rows.some((row) => {
       const key = row?.app_key || row?.key || row?.app;
-      return key === appKey && row?.is_active !== false;
+      // `neighb` fue el identificador provisional de Properties en el Core.
+      // Se conserva como alias de lectura mientras las asignaciones existentes
+      // migran al app_key definitivo `properties`.
+      const requestedKeys = appKey === "properties" ? ["properties", "neighb"] : [appKey];
+      return requestedKeys.includes(key) && row?.is_active !== false;
     });
   }
 
@@ -188,6 +230,17 @@ export function canUseFeature(user, feature) {
     "construct.catalog": () => canAccessApp(user, "construct") && hasPermission(user, "construct.catalog"),
     "construct.budget": () => canAccessApp(user, "construct") && hasPermission(user, "construct.budget"),
     "construct.reports": () => canAccessApp(user, "construct") && hasPermission(user, "construct.reports"),
+    "properties.read": () => canAccessApp(user, "properties"),
+    "properties.write": () => canAccessApp(user, "properties") && hasPermission(user, "properties.write"),
+    "properties.owners.read": () => canAccessApp(user, "properties") && hasPermission(user, "properties.owners.read"),
+    "properties.properties.read": () => canAccessApp(user, "properties") && hasPermission(user, "properties.properties.read"),
+    "properties.units.read": () => canAccessApp(user, "properties") && hasPermission(user, "properties.units.read"),
+    "properties.rent.read": () => canAccessApp(user, "properties") && hasPermission(user, "properties.rent.read"),
+    "properties.rent.write": () => canAccessApp(user, "properties") && hasPermission(user, "properties.rent.write"),
+    "properties.providers.read": () => canAccessApp(user, "properties") && hasPermission(user, "properties.providers.read"),
+    "properties.providers.manage": () => canAccessApp(user, "properties") && hasPermission(user, "properties.providers.manage"),
+    "properties.providers.approve": () => canAccessApp(user, "properties") && hasPermission(user, "properties.providers.approve"),
+    "properties.providers.invite": () => canAccessApp(user, "properties") && hasPermission(user, "properties.providers.invite"),
   };
 
   // Si la función existe, su respuesta es la final. Antes esto era

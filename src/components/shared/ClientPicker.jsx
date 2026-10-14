@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { HiMagnifyingGlass, HiPlusCircle } from "react-icons/hi2";
 import { clientService } from "@/services/clientService";
 import { useAppContext } from "@/context/AppContext";
+import useDebouncedValue from "@/hooks/useDebouncedValue";
 import ClientForm, { CLIENT_FIELD_MAP, useClientForm } from "@/components/shared/ClientForm";
 
 function initials(name) {
@@ -50,41 +51,23 @@ function NewClientForm({ initialName, clients, saving, onCreate, onCancel }) {
  * solo el id: quien lo usa (p. ej. "Apartar lote") necesita mostrar el nombre
  * sin tener que ir a buscarlo de nuevo.
  */
-export default function ClientPicker({ value, onSelect, disabled }) {
+export default function ClientPicker({ value, onSelect, disabled, allowCreate = true, inputId }) {
   const queryClient = useQueryClient();
   const { clients = [], showError } = useAppContext();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]);
-  const [searching, setSearching] = useState(false);
-  const [searched, setSearched] = useState(false);
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
-  // Remonta el formulario en cada alta para que arranque limpio (y con el
-  // nombre ya escrito en el buscador precargado).
   const [formKey, setFormKey] = useState(0);
-  const debounceRef = useRef(null);
-
-  useEffect(() => {
-    if (!query.trim()) {
-      setResults([]);
-      setSearched(false);
-      return;
-    }
-    setSearching(true);
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const { items } = await clientService.list({ search: query.trim(), limit: 8 });
-        setResults(items || []);
-      } catch (_) {
-        setResults([]);
-      } finally {
-        setSearching(false);
-        setSearched(true);
-      }
-    }, 300);
-    return () => clearTimeout(debounceRef.current);
-  }, [query]);
+  const debounced = useDebouncedValue(query.trim());
+  const lookup = useQuery({
+    queryKey: ["clients", "lookup", debounced],
+    queryFn: () => clientService.list({ search: debounced, limit: 8 }),
+    enabled: !!debounced && !value && !creating && !disabled,
+    staleTime: 30_000,
+  });
+  const results = lookup.data?.items || [];
+  const searching = query.trim() !== debounced || lookup.isFetching;
+  const searched = lookup.isSuccess;
 
   const startCreate = () => {
     setFormKey((k) => k + 1);
@@ -97,7 +80,7 @@ export default function ClientPicker({ value, onSelect, disabled }) {
         <div className="selected-summary">
           <div className="client-av">{initials(value.name)}</div>
           <div>
-            <div className="client-name">{value.name}</div>
+            {inputId ? <input id={inputId} className="fi" value={value.name} readOnly aria-label="Cliente seleccionado" /> : <div className="client-name">{value.name}</div>}
             {value.phone ? <div className="client-meta">{value.phone}</div> : null}
           </div>
           {!disabled && (
@@ -118,6 +101,9 @@ export default function ClientPicker({ value, onSelect, disabled }) {
           <div className="client-search-wrap">
             <HiMagnifyingGlass className="search-ico" />
             <input
+              id={inputId}
+              aria-label="Buscar cliente por nombre, correo o teléfono"
+              autoComplete="off"
               className="client-search"
               placeholder="Buscar cliente por nombre, correo o teléfono…"
               value={query}
@@ -125,7 +111,7 @@ export default function ClientPicker({ value, onSelect, disabled }) {
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
-          <button
+          {allowCreate && <button
             type="button"
             className="client-new-btn"
             onClick={startCreate}
@@ -133,7 +119,7 @@ export default function ClientPicker({ value, onSelect, disabled }) {
             title="Registrar un cliente nuevo"
           >
             <HiPlusCircle /> Nuevo
-          </button>
+          </button>}
         </div>
       )}
 
@@ -141,21 +127,23 @@ export default function ClientPicker({ value, onSelect, disabled }) {
         <div className="client-results">
           {searching ? (
             <div className="client-row-empty">Buscando…</div>
+          ) : lookup.isError ? (
+            <div role="alert" className="client-row-empty">No se pudo buscar clientes. <button type="button" onClick={() => lookup.refetch()}>Reintentar</button></div>
           ) : results.length > 0 ? (
             results.map((c) => (
-              <div key={c.id} className="client-row" onClick={() => { onSelect(c); setQuery(""); }}>
+              <button type="button" key={c.id} className="client-row" onClick={() => { queryClient.setQueryData(["client", String(c.id)], c); onSelect(c); setQuery(""); }}>
                 <div className="client-av">{initials(c.name)}</div>
                 <div>
                   <div className="client-name">{c.name}</div>
                   <div className="client-meta">{c.phone || c.email || ""}</div>
                 </div>
-              </div>
+              </button>
             ))
-          ) : searched ? (
+          ) : searched && allowCreate ? (
             <button type="button" className="client-row-empty as-cta" onClick={startCreate}>
               Sin coincidencias · <b>registrar «{query.trim()}»</b>
             </button>
-          ) : null}
+          ) : searched ? <div className="client-row-empty">Sin clientes que coincidan.</div> : null}
         </div>
       ) : null}
 
@@ -193,6 +181,7 @@ export default function ClientPicker({ value, onSelect, disabled }) {
               await queryClient.invalidateQueries({ queryKey: ["clients"] });
               setCreating(false);
               setQuery("");
+              queryClient.setQueryData(["client", String(created.id)], created);
               onSelect(created);
             } catch (err) {
               if (!ctl.fe.fromServer(err, CLIENT_FIELD_MAP)) {

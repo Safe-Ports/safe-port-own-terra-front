@@ -2,13 +2,13 @@
 function EcoSprite() {
   return (
     <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden="true">
-      {/* LANDS — logo de hoja */}
-      <symbol id="eco-g-lands" viewBox="0 0 274 297">
-        <image href="/icons/app-lands.png" width="274" height="297" />
+      {/* LANDS — marca oficial (public/brand) */}
+      <symbol id="eco-g-lands" viewBox="0 0 100 100">
+        <image href="/brand/lands-mark-color.svg" width="100" height="100" />
       </symbol>
-      {/* PROPERTIES (internal key: neighb) — logo de casa */}
-      <symbol id="eco-g-neighb" viewBox="0 0 282 303">
-        <image href="/icons/app-properties.png" width="282" height="303" />
+      {/* PROPERTIES (internal key: neighb) — marca oficial */}
+      <symbol id="eco-g-neighb" viewBox="0 0 100 100">
+        <image href="/brand/properties-mark-color.svg" width="100" height="100" />
       </symbol>
       {/* CONSTRUCT — logo de grúa (marca a todo color) */}
       <symbol id="eco-g-construct" viewBox="0 0 247 267">

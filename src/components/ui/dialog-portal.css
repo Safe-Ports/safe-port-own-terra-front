@@ -1,0 +1,7 @@
+/* Tema heredado sin caja: el overlay fijo compite directamente en body. */
+.dialog-theme,.eco-root.dialog-theme,.app-shell.dialog-theme{display:contents;position:static;width:auto;height:auto;overflow:visible}
+.dialog-theme .modal-overlay{z-index:50;padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+.dialog-theme .modal-box{max-height:90dvh;min-width:0}
+.dialog-theme .modal-body{min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.dialog-theme .modal-close{min-width:44px;min-height:44px}
+@media(max-width:640px){.dialog-theme :is(input:not([type=checkbox]):not([type=radio]),select,textarea){font-size:16px}.dialog-theme :is(button,a[role=button]){min-height:44px;min-width:44px}.dialog-theme .modal-hd,.dialog-theme .modal-body,.dialog-theme .modal-foot{padding:16px}.dialog-theme .modal-foot{flex-wrap:wrap}}

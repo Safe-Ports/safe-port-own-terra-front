@@ -17,6 +17,10 @@ function EcosystemHub() {
     ? navigate("/construccion")
     : showToast("Tu usuario no tiene acceso a Ownterra Construct", "warning");
 
+  const openProperties = () => canAccessApp("properties")
+    ? navigate("/properties")
+    : showToast("Tu usuario no tiene acceso a OwnTerra Properties", "warning");
+
   const openVault = () => canUseFeature("core.vault")
     ? navigate("/ecosistema/documentos")
     : showToast("Tu usuario no tiene acceso a OwnTerra Vault", "warning");
@@ -55,18 +59,19 @@ function EcosystemHub() {
           </div>
         </div>
 
-        <div className="app-card is-disabled" style={{ "--tone": "#355E3B", "--foto": "url(/apps/properties.jpg)", userSelect: "none" }} aria-disabled="true" tabIndex={-1}>
+        <div className={`app-card ${!canAccessApp("properties") ? "is-disabled" : ""}`} style={{ "--tone": "#355E3B", "--foto": "url(/apps/properties.jpg)" }} onClick={openProperties} role="button" tabIndex={0}
+          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && openProperties()}>
           <div className="app-top">
-            <div className="app-icon ic-neighb"><svg><use href="#eco-g-neighb" /></svg></div>
-            <span className="app-status st-soon">Próximamente</span>
+            <div className="app-icon ic-properties"><svg><use href="#eco-g-neighb" /></svg></div>
+            <span className="app-status st-active">Activo</span>
           </div>
           <div className="app-name">OwnTerra Properties</div>
           <div className="app-handle">terra.properties</div>
-          <div className="app-desc">Departamentos y fraccionamientos residenciales: cuotas de mantenimiento y normativa de colonos.</div>
-          <div className="app-tags"><span className="atag">Cuotas</span><span className="atag">Amenidades</span><span className="atag">Reglamento</span></div>
+          <div className="app-desc">Administra comunidades, rentas y comercialización de inmuebles desde un portafolio conectado.</div>
+          <div className="app-tags"><span className="atag">Condominios</span><span className="atag">Rentas</span><span className="atag">Venta</span></div>
           <div className="app-cta">
-            <span className="app-open disabled">En desarrollo</span>
-            <span className="app-arrow disabled">→</span>
+            <span className={`app-open ${!canAccessApp("properties") ? "disabled" : ""}`}>{canAccessApp("properties") ? "Ingresar al módulo" : "Sin acceso asignado"}</span>
+            <span className={`app-arrow ${!canAccessApp("properties") ? "disabled" : ""}`}>→</span>
           </div>
         </div>
 
@@ -88,11 +93,11 @@ function EcosystemHub() {
 
       </div>
 
-      {/* APLICACIONES VERTICALES */}
+      {/* APLICACIONES TRANSVERSALES */}
       <div className="section-head" style={{ marginTop: 36 }}>
-        <h3>Aplicaciones Verticales</h3>
+        <h3>Aplicaciones transversales</h3>
       </div>
-      <p className="gallery-section-sub">Servicios compartidos por todas las apps core</p>
+      <p className="gallery-section-sub">Servicios compartidos por Lands, Properties y Construction</p>
       <div className="app-launcher vertical-launcher" data-tour="apps-verticales">
 
         <div className="app-card" data-tour="app-agenda" onClick={() => navigate("/ecosistema/agenda")} role="button" tabIndex={0}
@@ -191,7 +196,9 @@ function EcosystemHub() {
         title="Hub de aplicaciones"
         subtitle="Todas las apps del ecosistema, en un solo lugar."
         steps={[
-          { title: "Aplicaciones Core", text: "Los tres productos principales del ecosistema. OwnTerra Lands y Ownterra Construct están activos; Properties está en desarrollo (próximamente)." },
+          { title: "Aplicaciones Core", text: "Los tres productos principales del ecosistema. OwnTerra Lands, OwnTerra Properties y Ownterra Construct están activos." },
+          { title: "Ingresar a Lands", text: "Haz clic en la tarjeta de OwnTerra Lands para acceder al módulo de gestión de lotes, clientes y cobranza de fraccionamientos." },
+          { title: "Ingresar a Properties", text: "Haz clic en OwnTerra Properties para administrar tus comunidades: unidades, residentes, cuotas, avisos y amenidades." },
           { title: "Aplicaciones Verticales", text: "Servicios compartidos por todas las apps core: Calendario, Mi Día, Formularios, Proveedores y OwnTerra Vault." },
           { title: "Ingresar a una app", text: "Haz clic en cualquier tarjeta activa para entrar. Las que aún no tienes asignadas se marcan como \"Sin acceso\" — pídele a un administrador que te las habilite en Equipo." },
         ]}

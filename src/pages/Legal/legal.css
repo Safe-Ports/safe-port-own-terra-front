@@ -28,7 +28,7 @@
 
 .lg-brand {
   display: inline-block;
-  font-family: "Playfair Display", Georgia, serif;
+  font-family: var(--font-title);
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--deep);
@@ -37,7 +37,7 @@
 }
 
 .lg-card h1 {
-  font-family: "Playfair Display", Georgia, serif;
+  font-family: var(--font-title);
   font-size: 2rem;
   color: var(--deep);
   margin: 0 0 6px;

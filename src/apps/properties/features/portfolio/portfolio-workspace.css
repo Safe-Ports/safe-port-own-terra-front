@@ -1,0 +1,47 @@
+.portfolio-workspace{display:grid;gap:22px;padding:6px 0 42px}.portfolio-heading{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:24px;padding:25px 4px}.portfolio-heading>div>span{color:#304660;font-size:9px;font-weight:850;letter-spacing:.14em;text-transform:uppercase}.portfolio-heading h1{margin:6px 0 5px;color:#0f2742;font-family:var(--font-title);font-size:40px;letter-spacing:-.025em}.portfolio-heading p{margin:0;color:#6e767f;font-size:13px}.portfolio-create,.portfolio-zero button{display:inline-flex;align-items:center;gap:7px;padding:10px 14px;border-radius:10px;background:#153457;color:#fff;cursor:pointer;font-size:11px;font-weight:800}.portfolio-zero{display:grid;justify-items:center;padding:70px 25px;border:1px solid #d3d7db;border-radius:22px;background:#fff;text-align:center}.portfolio-zero>span{display:grid;width:58px;height:58px;place-items:center;border-radius:18px;background:#bcc4ce;color:#304660;font-size:27px}.portfolio-zero h2{margin:18px 0 7px;color:#0f2742;font-family:var(--font-title);font-size:24px}.portfolio-zero p{max-width:510px;margin:0 0 19px;color:#757d86;font-size:12px;line-height:1.6}.portfolio-cell{display:grid;grid-template-columns:270px minmax(0,1fr);min-height:500px;overflow:hidden;border:1px solid #d3d7db;border-radius:22px;background:#fff;box-shadow:0 18px 45px rgba(8,44,73,.07)}.portfolio-index{padding:14px;border-right:1px solid #dbe0e4;background:#f1f3f6}.portfolio-index label{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:10px;border:1px solid #d3d8dc;border-radius:10px;background:#fff;color:#7f868f}.portfolio-index input{min-width:0;width:100%;border:0;outline:0;font-size:10px}.portfolio-index>div{display:grid;gap:4px}.portfolio-index>div button{display:grid;grid-template-columns:1fr auto;align-items:center;padding:12px;border-radius:11px;color:#646b74;cursor:pointer;text-align:left}.portfolio-index>div button.active{background:#0f2742;color:#fff}.portfolio-index strong,.portfolio-index small{display:block}.portfolio-index strong{font-size:11px}.portfolio-index small{margin-top:3px;color:#8c939b;font-size:9px}.portfolio-index button.active small{color:#b9bec4}.portfolio-detail{padding:32px 36px}.portfolio-detail>header{display:flex;align-items:start;justify-content:space-between;gap:20px;padding-bottom:23px}.portfolio-detail>header span{color:#304660;font-size:9px;font-weight:800;text-transform:uppercase}.portfolio-detail h2{margin:5px 0;color:#0f2742;font-family:var(--font-title);font-size:31px}.portfolio-detail>header p{margin:0;color:#7a828b;font-size:10px}.portfolio-detail>header button{padding:7px 10px;border:1px solid #d3d7db;border-radius:9px;color:#5f666d;cursor:pointer;font-size:10px}.portfolio-vitals{display:grid;grid-template-columns:2fr 1fr 1fr;margin-bottom:28px;border-block:1px solid #dee2e6}.portfolio-vitals div{display:grid;gap:5px;padding:16px 4px}.portfolio-vitals div+div{padding-left:18px;border-left:1px solid #dee2e6}.portfolio-vitals small{color:#848b94;font-size:8px;font-weight:800;text-transform:uppercase}.portfolio-vitals strong{color:#2e3a48;font-size:13px}.portfolio-section-title{display:flex;align-items:end;justify-content:space-between;gap:15px;margin-bottom:12px}.portfolio-section-title span{color:#6b727b;font-size:8px;font-weight:800;text-transform:uppercase}.portfolio-section-title h3{margin-top:3px;color:#2c3846;font-size:14px}.portfolio-section-title button{display:inline-flex;align-items:center;gap:5px;color:#304660;cursor:pointer;font-size:10px;font-weight:750}.portfolio-units{border-top:1px solid #dee2e6}.portfolio-units button{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:16px;width:100%;padding:14px 3px;border-bottom:1px solid #e4e8ed;cursor:pointer;text-align:left}.portfolio-units strong,.portfolio-units small{display:block}.portfolio-units strong{color:#2e3b49;font-size:11px}.portfolio-units small{margin-top:3px;color:#848c95;font-size:9px}.portfolio-units em{padding:4px 7px;border-radius:99px;background:#e8ebef;color:#485b71;font-size:8px;font-style:normal;font-weight:800}.portfolio-no-units{padding:20px;border-radius:12px;background:#f1f3f5;color:#767e87;font-size:10px;line-height:1.6}@media(max-width:780px){.portfolio-heading{grid-template-columns:1fr}.portfolio-create{width:max-content}.portfolio-cell{grid-template-columns:1fr}.portfolio-index{border-right:0;border-bottom:1px solid #dbe0e4}.portfolio-index>div{grid-template-columns:repeat(2,1fr)}.portfolio-detail{padding:24px 20px}.portfolio-heading h1{font-size:34px}}
+
+/* --- Portafolio: el encabezado deja lugar al estado de la cartera --- */
+.portfolio-heading{grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;padding:18px 4px 4px}
+.portfolio-heading h1{margin:0;font-size:27px;letter-spacing:-.02em}
+
+/* Lo primero que ve un administrador: cuánto tiene y qué pide atención. */
+.portfolio-pulse{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));overflow:hidden;border:1px solid #d3d7db;border-radius:14px;background:#fff}
+.portfolio-pulse>div{display:grid;gap:2px;padding:14px 18px;border-right:1px solid #e1e6eb}
+.portfolio-pulse>div:last-child{border-right:0}
+.portfolio-pulse strong{color:#0f2742;font-family:var(--font-title);font-size:26px;line-height:1.1;font-variant-numeric:tabular-nums}
+.portfolio-pulse span{color:#788089;font-size:11px}
+.portfolio-pulse>div.needs-attention strong{color:#A2564A}
+.portfolio-pulse>div.needs-attention span{color:#A2564A}
+
+/* El tipo de inmueble es un dato de la ficha, no un rótulo suelto. */
+.portfolio-kind{margin-right:8px;padding:2px 7px;border-radius:99px;background:#eff2f5;color:#304660;font-size:10px;font-style:normal;font-weight:700}
+
+/* Ocupación y propietario: el color dice el estado sin tener que leer. */
+.portfolio-vitals strong.is-full{color:#36506d}
+.portfolio-vitals strong.is-partial{color:#8A6516}
+.portfolio-vitals strong.is-empty{color:#868d95;font-weight:600}
+
+/* Estado de cada unidad, en español y con significado. */
+.portfolio-units em{padding:4px 9px;border-radius:99px;background:#e9edf1;color:#697079;font-size:10px;font-style:normal;font-weight:700}
+.portfolio-units em.ocupada{background:#e7ebef;color:#36506d}
+.portfolio-units em.libre{background:#eff2f5;color:#304660}
+.portfolio-units em.atencion{background:#f7e7e3;color:#A2564A}
+
+@media(max-width:860px){
+  .portfolio-pulse{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .portfolio-pulse>div{border-bottom:1px solid #e1e6eb}
+  .portfolio-pulse>div:nth-child(odd){border-right:1px solid #e1e6eb}
+  .portfolio-pulse>div:nth-child(even){border-right:0}
+  .portfolio-pulse>div:last-child{grid-column:1/-1;border-bottom:0}
+}
+@media(max-width:520px){
+  .portfolio-heading{grid-template-columns:1fr auto;gap:10px}
+  .portfolio-heading h1{grid-column:1/-1;order:2}
+  .portfolio-heading .portfolio-create{order:3;grid-column:1/-1}
+}
+
+/* Las etiquetas de la ficha iban en versalitas de 8px y la barra superior en
+   minúsculas de 11px: dos tratamientos para lo mismo en la misma pantalla.
+   Queda uno solo, legible y sin mayúsculas forzadas. */
+.portfolio-vitals small{font-size:11px;font-weight:500;text-transform:none;letter-spacing:0;color:#788089}
+.portfolio-vitals strong{font-size:15px}

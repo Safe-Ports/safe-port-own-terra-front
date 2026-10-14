@@ -1,5 +1,6 @@
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { render, screen, waitFor, act, fireEvent } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 import SupportWidget from "./SupportWidget.jsx";
 
 // Bug real reportado: cuando soporte responde un ticket desde el panel, el usuario
@@ -13,10 +14,21 @@ vi.mock("@/context/AppContext", () => ({
   useAppContext: () => ({ currentUser: mockCurrentUser }),
 }));
 
+function renderWidget(path = "/dashboard") {
+  return render(<MemoryRouter initialEntries={[path]}><SupportWidget /></MemoryRouter>);
+}
+
 describe("SupportWidget: el punto rojo revisa mensajes no leídos de forma continua", () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     mockCurrentUser = { token: "tok" };
+    const storage = new Map();
+    vi.stubGlobal("localStorage", {
+      getItem: vi.fn(key => storage.get(key) ?? null),
+      setItem: vi.fn((key, value) => storage.set(key, String(value))),
+      removeItem: vi.fn(key => storage.delete(key)),
+      clear: vi.fn(() => storage.clear()),
+    });
     // jsdom no implementa scrollIntoView; ThreadView lo llama al recibir mensajes.
     Element.prototype.scrollIntoView = vi.fn();
   });
@@ -24,6 +36,7 @@ describe("SupportWidget: el punto rojo revisa mensajes no leídos de forma conti
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("con el panel cerrado, revisa más de una vez mientras pasa el tiempo (no solo al montar)", async () => {
@@ -33,7 +46,7 @@ describe("SupportWidget: el punto rojo revisa mensajes no leídos de forma conti
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<SupportWidget />);
+    renderWidget();
 
     // Revisión inicial (2s) + al menos una del intervalo (30s) sin que el usuario
     // haya tocado nada — antes de este fix, jamás pasaba de la primera.
@@ -56,7 +69,7 @@ describe("SupportWidget: el punto rojo revisa mensajes no leídos de forma conti
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<SupportWidget />);
+    renderWidget();
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(2000);
@@ -74,7 +87,7 @@ describe("SupportWidget: el punto rojo revisa mensajes no leídos de forma conti
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<SupportWidget />);
+    renderWidget();
     const toggle = screen.getByRole("button", { name: /soporte/i });
     await act(async () => {
       toggle.click();
@@ -99,7 +112,7 @@ describe("SupportWidget: el punto rojo revisa mensajes no leídos de forma conti
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<SupportWidget />);
+    renderWidget();
     await act(async () => {
       await vi.advanceTimersByTimeAsync(2000); // la revisión de fondo detecta el ticket
     });
@@ -121,7 +134,7 @@ describe("SupportWidget: el punto rojo revisa mensajes no leídos de forma conti
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => tickets });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<SupportWidget />);
+    renderWidget();
     await act(async () => {
       await vi.advanceTimersByTimeAsync(2000);
     });
@@ -134,5 +147,29 @@ describe("SupportWidget: el punto rojo revisa mensajes no leídos de forma conti
     await waitFor(() => expect(screen.queryByText(/¿Cómo podemos ayudarte\?/i)).not.toBeInTheDocument());
     await waitFor(() => expect(screen.getByText("Problema uno")).toBeInTheDocument());
     expect(screen.getByText("Problema dos")).toBeInTheDocument();
+  });
+
+  it("permite arrastrar el botón sin abrir el panel y recuerda su posición", () => {
+    vi.stubGlobal("fetch", vi.fn());
+    renderWidget();
+    const toggle = screen.getByRole("button", { name: /soporte/i });
+
+    fireEvent.pointerDown(toggle, { pointerId: 1, button: 0, clientX: 970, clientY: 720 });
+    fireEvent.pointerMove(toggle, { pointerId: 1, clientX: 180, clientY: 160 });
+    fireEvent.pointerUp(toggle, { pointerId: 1, clientX: 180, clientY: 160 });
+    fireEvent.click(toggle);
+
+    expect(screen.queryByText(/¿Cómo podemos ayudarte\?/i)).not.toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem("sp_support_widget_position"))).toMatchObject({ x: expect.any(Number), y: expect.any(Number) });
+  });
+
+  it("adapta el color del botón a la aplicación activa", () => {
+    vi.stubGlobal("fetch", vi.fn());
+    const { unmount } = renderWidget("/properties/condominios");
+    expect(screen.getByRole("button", { name: /soporte/i })).toHaveClass("sp-btn--properties");
+    unmount();
+
+    renderWidget("/construction");
+    expect(screen.getByRole("button", { name: /soporte/i })).toHaveClass("sp-btn--construction");
   });
 });

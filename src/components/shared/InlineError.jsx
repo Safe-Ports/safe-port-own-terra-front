@@ -1,3 +1,4 @@
+import DialogPortal from "@/components/ui/DialogPortal";
 import { useState } from "react";
 import { errorClipboardText } from "@/errors/parseApiError";
 import useEscapeKey from "@/hooks/useEscapeKey";
@@ -62,9 +63,9 @@ function InlineError({ error, onDismiss, children }) {
 
   if (onDismiss) {
     return (
-      <div className="ie-backdrop" onClick={onDismiss}>
-        {card}
-      </div>
+      <DialogPortal className="ie-backdrop" onClick={onDismiss}>
+        <div role="alert">{card}</div>
+      </DialogPortal>
     );
   }
 

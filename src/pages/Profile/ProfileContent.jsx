@@ -1,3 +1,4 @@
+import WorkflowForm from "@/components/forms/WorkflowForm";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -34,9 +35,9 @@ const LISTED_APPS = APP_CATALOG.filter((a) => a.vertical);
 // Los logos van como <img> y no por el sprite (#eco-g-…): el sprite lo monta
 // EcoLayout, así que en la shell de Lands no existiría y el hueco quedaría vacío.
 const APP_LOGO = {
-  lands: "/icons/app-lands.png",
-  homes: "/icons/app-construction.png",
-  neighb: "/icons/app-properties.png",
+  lands: "/brand/lands-mark-color.svg",
+  homes: "/brand/construction-mark-color.svg",
+  neighb: "/brand/properties-mark-color.svg",
 };
 
 // Paleta para el color personal. Es el que identifica al usuario en la agenda y
@@ -303,7 +304,7 @@ export default function ProfileContent() {
         {meError && <InlineError error={parseApiError(meError, "No pudimos cargar tu perfil")} />}
 
         {editing ? (
-          <form className="pf-form" onSubmit={submit}>
+          <WorkflowForm className="pf-form" onSubmit={submit}>
             <label className="pf-field">
               <span className="pf-lbl">Nombre</span>
               <input
@@ -360,7 +361,7 @@ export default function ProfileContent() {
                 Cancelar
               </button>
             </div>
-          </form>
+          </WorkflowForm>
         ) : (
           <dl className="pf-rows">
             <div className="pf-row"><dt>Nombre</dt><dd>{me?.name || "—"}</dd></div>
@@ -436,7 +437,7 @@ export default function ProfileContent() {
         </div>
 
         {pwOpen ? (
-          <form className="pf-form" onSubmit={submitPw}>
+          <WorkflowForm className="pf-form" onSubmit={submitPw}>
             <label className="pf-field">
               <span className="pf-lbl">Contraseña actual</span>
               <input
@@ -489,7 +490,7 @@ export default function ProfileContent() {
                 Cancelar
               </button>
             </div>
-          </form>
+          </WorkflowForm>
         ) : (
           <dl className="pf-rows">
             <div className="pf-row">

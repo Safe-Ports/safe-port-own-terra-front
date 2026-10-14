@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400&family=Inter:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -42,9 +42,13 @@
   --sh:  0 1px 3px rgba(30, 61, 43, 0.06), 0 4px 12px rgba(30, 61, 43, 0.07);
   --sh2: 0 18px 40px rgba(30, 61, 43, 0.10), 0 20px 40px rgba(30, 61, 43, 0.11);
   /* ── Tipografía homologada: 2 fuentes ──────────────────────────────────────
-     --font-title = Playfair (títulos/nombres) · --font-body = Inter (texto y
-     TODOS los números, con tabular-nums para que las cifras alineen). */
-  --font-title: "Playfair Display", Georgia, serif;
+     --font-title = Source Serif 4 (títulos/nombres) · --font-body = Inter
+     (texto y TODOS los números, con tabular-nums para que las cifras alineen).
+
+     Source Serif reemplazó a Playfair: Playfair es una serif de display de
+     alto contraste, se leía editorial de moda más que producto de
+     administración. Source Serif tiene el mismo peso formal sin el adorno. */
+  --font-title: "Source Serif 4", Georgia, serif;
   --font-body:  "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
@@ -210,6 +214,24 @@ a {
   box-shadow: 0 6px 16px rgba(111, 175, 107, 0.35);
   overflow: hidden;
   padding: 8px 10px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.sb-logo-mark:hover {
+  transform: translateY(-2px);
+  border-color: rgba(167, 203, 161, 0.65);
+  box-shadow: 0 10px 24px rgba(111, 175, 107, 0.42);
+}
+
+.sb-logo-mark:focus-visible {
+  outline: 3px solid rgba(167, 203, 161, 0.78);
+  outline-offset: 4px;
+}
+
+.sb-logo-mark:active {
+  transform: translateY(0);
 }
 
 .sb-logo-mark img {
@@ -721,7 +743,9 @@ a {
   overflow: hidden;
   min-height: 0;
   position: relative;
-  z-index: 1;
+  /* Sin z-index a propósito: darle uno abre un contexto de apilamiento y todo
+     overlay de adentro (modales incluidos) queda por debajo de .topbar, aunque
+     pida z-index 60 o 9999. Ver la regla de z-index en AGENTS.md. */
 }
 
 .view {
@@ -1971,10 +1995,12 @@ textarea.is-invalid {
   box-shadow: 0 22px 40px rgba(30, 61, 43, 0.28);
 }
 
+/* Escala de z-index (AGENTS.md): contenido 0-10 · header sticky 20-30 ·
+   backdrop 40 · modales 50+ · toasts y tooltips 60+. */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: 50;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2762,9 +2788,12 @@ textarea.is-invalid {
   border-radius: 12px;
 }
 
+/* Logotipo vertical (ícono sobre el nombre): se limita por alto para que no
+   empuje el texto del panel hacia abajo. */
 .ll-logo img {
-  width: 100%;
-  height: auto;
+  width: auto;
+  max-width: 100%;
+  height: 132px;
   display: block;
 }
 
@@ -2868,7 +2897,7 @@ textarea.is-invalid {
 .ie-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 600;
+  z-index: 50;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3204,6 +3233,36 @@ textarea.is-invalid {
 
 .lf-btn.loading {
   opacity: 0.7;
+}
+
+.lf-public-catalog {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 10px;
+  padding: 11px 14px;
+  border: 1px solid rgba(44, 102, 110, 0.28);
+  border-radius: 11px;
+  background: rgba(44, 102, 110, 0.06);
+  color: var(--deep);
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  transition: all .25s ease;
+}
+
+.lf-public-catalog:hover {
+  border-color: rgba(44, 102, 110, 0.55);
+  background: rgba(44, 102, 110, 0.1);
+  transform: translateY(-1px);
+}
+
+.lf-public-catalog:focus-visible {
+  outline: 3px solid rgba(44, 102, 110, 0.22);
+  outline-offset: 2px;
 }
 
 .btn-spinner {

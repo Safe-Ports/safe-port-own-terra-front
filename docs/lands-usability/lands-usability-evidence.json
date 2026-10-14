@@ -1,0 +1,36 @@
+{
+  "fixture": {
+    "clients": 30,
+    "contracts": 25,
+    "developments": 2,
+    "lots": 30
+  },
+  "observations": [
+    {
+      "name": "contracts-repository",
+      "searchInputs": 0,
+      "visibleRows": 10
+    },
+    {
+      "name": "contract-new",
+      "client": "Cliente 01",
+      "controls": 15
+    },
+    {
+      "name": "contract-mobile",
+      "dialog": {
+        "clientHeight": 758,
+        "scrollHeight": 758
+      },
+      "page": {
+        "width": 390,
+        "scrollWidth": 390
+      }
+    },
+    {
+      "name": "client-filter-context",
+      "visibleRows": 1,
+      "detail": "Cliente 01"
+    }
+  ]
+}

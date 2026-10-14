@@ -156,16 +156,16 @@ describe("AgendaPage", () => {
         return new HttpResponse(null, { status: 204 });
       })
     );
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     renderAgenda();
     await waitFor(() => expect(screen.getAllByText("Visita con Ana").length).toBeGreaterThan(0));
 
     // Abre el evento (panel/rejilla) y elimina desde el modal.
     fireEvent.click(screen.getAllByRole("button", { name: /10:00.*Visita con Ana/i })[0]);
     fireEvent.click(await screen.findByRole("button", { name: "Eliminar evento" }));
+    expect(deletedId).toBeNull();
+    fireEvent.click(await screen.findByRole("button", { name: "Confirmar", exact: true }));
 
     await waitFor(() => expect(showToast).toHaveBeenCalledWith("Evento eliminado"));
     expect(deletedId).toBe("appt-1");
-    confirmSpy.mockRestore();
   });
 });

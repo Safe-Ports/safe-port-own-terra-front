@@ -1,3 +1,5 @@
+import useConfirmation from "@/hooks/useConfirmation";
+import DialogPortal from "@/components/ui/DialogPortal";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { calendarService } from "@/services/calendarService";
@@ -10,6 +12,7 @@ import useEscapeKey from "@/hooks/useEscapeKey";
  * que cree en OwnTerra aparece solo en su calendario (una vía, refresca c/ horas).
  */
 export default function ConnectCalendarModal({ onClose }) {
+  const { requestConfirmation, confirmationDialog } = useConfirmation();
   const [copied, setCopied] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -85,7 +88,7 @@ export default function ConnectCalendarModal({ onClose }) {
   // se sospecha que se filtró pero se quiere seguir sincronizando; apagarlo es
   // dejar de publicar.
   const cambiarEnlace = async () => {
-    if (!window.confirm(
+    if (!await requestConfirmation(
       "Se generará un enlace nuevo y el actual dejará de funcionar. " +
       "Tendrás que volver a suscribirlo en tu calendario. ¿Continuar?"
     )) return;
@@ -102,7 +105,7 @@ export default function ConnectCalendarModal({ onClose }) {
   };
 
   const dejarDePublicar = async () => {
-    if (!window.confirm(
+    if (!await requestConfirmation(
       "Tu agenda dejará de publicarse y el enlace no funcionará para nadie. " +
       "Podrás volver a generarlo cuando quieras. ¿Continuar?"
     )) return;
@@ -120,7 +123,7 @@ export default function ConnectCalendarModal({ onClose }) {
   };
 
   return (
-    <div className="ag-modal-backdrop" onClick={onClose}>
+    <DialogPortal className="ag-modal-backdrop" onClick={onClose}>{confirmationDialog}
       <div className="ag-modal cc-modal" onClick={(e) => e.stopPropagation()}>
         <div className="ag-modal-head">
           <div>
@@ -211,6 +214,6 @@ export default function ConnectCalendarModal({ onClose }) {
           )}
         </div>
       </div>
-    </div>
+    </DialogPortal>
   );
 }

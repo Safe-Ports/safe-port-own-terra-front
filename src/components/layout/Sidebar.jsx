@@ -1,3 +1,4 @@
+import useConfirmation from "@/hooks/useConfirmation";
 import { NavLink } from "react-router-dom";
 import {
   HiArrowLeftOnRectangle,
@@ -37,22 +38,29 @@ const items = [
   { label: "Configuracion", to: "/configuracion", icon: HiCog6Tooth, section: "Sistema" },
 ];
 
-function Logo() {
+function Logo({ onClick }) {
   return (
     <div className="sb-logo">
-      <div className="sb-logo-mark">
-        <img src="/icons/app-lands.png" alt="" />
-      </div>
+      <NavLink
+        to="/ecosistema"
+        className="sb-logo-mark"
+        aria-label="Ir al Ecosistema OwnTerra"
+        title="Volver al Ecosistema"
+        onClick={onClick}
+      >
+        <img src="/brand/lands-mark-color.svg" alt="OwnTerra Lands" />
+      </NavLink>
     </div>
   );
 }
 
 function Sidebar() {
+  const { requestConfirmation, confirmationDialog } = useConfirmation();
   const { ui, closeSidebar, fracs, clients, payments, documents, notificationCount, logout, currentUser, canAccessApp, canUseFeature, resetFracsView, setDraftProject, sidebarCollapsed, toggleSidebarCollapsed } = useAppContext();
   useEscapeKey(closeSidebar, ui.sidebarOpen);
 
-  const handleLogout = () => {
-    if (window.confirm("¿Cerrar sesión?")) logout();
+  const handleLogout = async () => {
+    if (await requestConfirmation("¿Cerrar sesión?")) logout();
   };
 
   let lastSection = "";
@@ -60,7 +68,7 @@ function Sidebar() {
   return (
     <>
       <div className={`sidebar-backdrop ${ui.sidebarOpen ? "show" : ""}`} onClick={closeSidebar} />
-      <aside className={`sb app-sidebar ${ui.sidebarOpen ? "open" : ""} ${sidebarCollapsed ? "collapsed" : ""}`}>
+      <aside className={`sb app-sidebar ${ui.sidebarOpen ? "open" : ""} ${sidebarCollapsed ? "collapsed" : ""}`}>{confirmationDialog}
         <button
           className="sb-collapse"
           onClick={toggleSidebarCollapsed}
@@ -69,7 +77,7 @@ function Sidebar() {
         >
           {sidebarCollapsed ? <HiChevronDoubleRight /> : <HiChevronDoubleLeft />}
         </button>
-        <Logo />
+        <Logo onClick={closeSidebar} />
         <div className="sb-nav">
           {items.filter((item) => {
             if (item.to.startsWith("/ecosistema")) return true;

@@ -1,3 +1,5 @@
+import WorkflowForm from "@/components/forms/WorkflowForm";
+import DialogPortal from "@/components/ui/DialogPortal";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import EcoLayout from "./EcoLayout";
@@ -281,6 +283,7 @@ function EcosystemEquipo() {
   const setEmployeeDraft = (patch) => setEmployeeModal((m) => ({ ...m, draft: { ...m.draft, ...patch } }));
 
   const saveEmployeeDraft = () => {
+    if (createEmployeeMutation.isPending || updateEmployeeMutation.isPending) return;
     const draft = employeeModal.draft;
     setEmployeeFormError(null);
     efe.clearAll();
@@ -320,6 +323,7 @@ function EcosystemEquipo() {
   const setDraft = (patch) => setModal((m) => ({ ...m, draft: { ...m.draft, ...patch } }));
 
   const saveDraft = () => {
+    if (createMutation.isPending || updateMutation.isPending || createEmployeeMutation.isPending) return;
     const draft = modal.draft;
     const isUserFlow = modal.mode === "edit" || draft.wantsAccess;
     setFormError(null);
@@ -568,8 +572,8 @@ function EcosystemEquipo() {
       </datalist>
 
       {employeeModal && (
-        <div className="usr-modal-overlay" onClick={(e) => e.target === e.currentTarget && setEmployeeModal(null)}>
-          <div className="usr-modal">
+        <DialogPortal className="usr-modal-overlay" onClick={(e) => e.target === e.currentTarget && setEmployeeModal(null)}>
+          <div className="usr-modal" role="dialog" aria-modal="true" aria-label="Editar colaborador">
             <div className="usr-modal-head">
               <div>
                 <div className="usr-modal-title">Editar colaborador</div>
@@ -577,17 +581,17 @@ function EcosystemEquipo() {
               </div>
               <button className="usr-modal-close" onClick={() => setEmployeeModal(null)}>x</button>
             </div>
-            <div className="usr-modal-body">
+            <WorkflowForm id="core-employee-form" busy={createEmployeeMutation.isPending || updateEmployeeMutation.isPending} className="usr-modal-body" onSubmit={event => { event.preventDefault(); saveEmployeeDraft(); }}>
               <InlineError error={employeeFormError} onDismiss={() => setEmployeeFormError(null)} />
               <div className="usr-field-row">
                 <div className="usr-field">
-                  <label className="usr-field-lbl">Nombre</label>
-                  <input {...efe.fieldProps("name", "usr-input")} value={employeeModal.draft.name} onChange={(e) => { setEmployeeDraft({ name: e.target.value }); efe.clear("name"); }} />
+                  <label htmlFor="field-ecosystem-equipo-1" className="usr-field-lbl">Nombre</label>
+                  <input id="field-ecosystem-equipo-1" {...efe.fieldProps("name", "usr-input")} value={employeeModal.draft.name} onChange={(e) => { setEmployeeDraft({ name: e.target.value }); efe.clear("name"); }} />
                   <FieldError msg={efe.errors.name} />
                 </div>
                 <div className="usr-field">
-                  <label className="usr-field-lbl">Puesto</label>
-                  <input className="usr-input" list="job-titles-list" placeholder="Obra, limpieza, colaborador externo..." value={employeeModal.draft.puesto} onChange={(e) => setEmployeeDraft({ puesto: e.target.value })} />
+                  <label htmlFor="field-ecosystem-equipo-2" className="usr-field-lbl">Puesto</label>
+                  <input id="field-ecosystem-equipo-2" className="usr-input" list="job-titles-list" placeholder="Obra, limpieza, colaborador externo..." value={employeeModal.draft.puesto} onChange={(e) => setEmployeeDraft({ puesto: e.target.value })} />
                 </div>
               </div>
               <div className="usr-field">
@@ -595,23 +599,23 @@ function EcosystemEquipo() {
                 <PhoneInput inputClassName="usr-input" value={employeeModal.draft.phone} onChange={(v) => setEmployeeDraft({ phone: v })} />
               </div>
               <div className="usr-field">
-                <label className="usr-field-lbl">Notas</label>
-                <input className="usr-input" value={employeeModal.draft.notes} onChange={(e) => setEmployeeDraft({ notes: e.target.value })} />
+                <label htmlFor="field-ecosystem-equipo-3" className="usr-field-lbl">Notas</label>
+                <input id="field-ecosystem-equipo-3" className="usr-input" value={employeeModal.draft.notes} onChange={(e) => setEmployeeDraft({ notes: e.target.value })} />
               </div>
-            </div>
+            </WorkflowForm>
             <div className="usr-modal-foot">
               <button className="usr-btn-ghost" onClick={() => setEmployeeModal(null)}>Cancelar</button>
-              <button className="usr-btn-primary" onClick={saveEmployeeDraft} disabled={createEmployeeMutation.isPending || updateEmployeeMutation.isPending}>
+              <button className="usr-btn-primary" type="submit" form="core-employee-form" disabled={createEmployeeMutation.isPending || updateEmployeeMutation.isPending}>
                 {createEmployeeMutation.isPending || updateEmployeeMutation.isPending ? "Guardando..." : "Guardar"}
               </button>
             </div>
           </div>
-        </div>
+        </DialogPortal>
       )}
 
       {modal && (
-        <div className="usr-modal-overlay" onClick={(e) => e.target === e.currentTarget && setModal(null)}>
-          <div className="usr-modal">
+        <DialogPortal className="usr-modal-overlay" onClick={(e) => e.target === e.currentTarget && setModal(null)}>
+          <div className="usr-modal" role="dialog" aria-modal="true" aria-label={modal.mode === "create" ? "Nuevo colaborador" : "Editar integrante"}>
             <div className="usr-modal-head">
               <div>
                 <div className="usr-modal-title">{modal.mode === "create" ? "Nuevo colaborador" : "Editar integrante"}</div>
@@ -623,12 +627,12 @@ function EcosystemEquipo() {
               </div>
               <button className="usr-modal-close" onClick={() => setModal(null)}>x</button>
             </div>
-            <div className="usr-modal-body">
+            <WorkflowForm id="core-team-form" busy={createMutation.isPending || updateMutation.isPending || createEmployeeMutation.isPending} className="usr-modal-body" onSubmit={event => { event.preventDefault(); saveDraft(); }}>
               <InlineError error={formError} onDismiss={() => setFormError(null)} />
               <div className="usr-field-row">
                 <div className="usr-field">
-                  <label className="usr-field-lbl">Nombre</label>
-                  <input {...fe.fieldProps("name", "usr-input")} value={modal.draft.name} onChange={(e) => { setDraft({ name: e.target.value }); fe.clear("name"); }} />
+                  <label htmlFor="field-ecosystem-equipo-4" className="usr-field-lbl">Nombre</label>
+                  <input id="field-ecosystem-equipo-4" {...fe.fieldProps("name", "usr-input")} value={modal.draft.name} onChange={(e) => { setDraft({ name: e.target.value }); fe.clear("name"); }} />
                   <FieldError msg={fe.errors.name} />
                 </div>
                 <div className="usr-field">
@@ -647,20 +651,20 @@ function EcosystemEquipo() {
               {(modal.mode === "edit" || modal.draft.wantsAccess) ? (
                 <>
                   <div className="usr-field">
-                    <label className="usr-field-lbl">Rol</label>
-                    <select className="usr-select" value={modal.draft.role} onChange={(e) => setDraft({ role: e.target.value })}>
+                    <label htmlFor="field-ecosystem-equipo-5" className="usr-field-lbl">Rol</label>
+                    <select id="field-ecosystem-equipo-5" className="usr-select" value={modal.draft.role} onChange={(e) => setDraft({ role: e.target.value })}>
                       {Object.entries(GLOBAL_ROLES).map(([key, { label }]) => <option key={key} value={key}>{label}</option>)}
                     </select>
                   </div>
                   <div className="usr-field">
-                    <label className="usr-field-lbl">Correo</label>
-                    <input {...fe.fieldProps("email", "usr-input")} type="email" disabled={modal.mode === "edit"} value={modal.draft.email} onChange={(e) => { setDraft({ email: e.target.value }); fe.clear("email"); }} />
+                    <label htmlFor="field-ecosystem-equipo-6" className="usr-field-lbl">Correo</label>
+                    <input id="field-ecosystem-equipo-6" {...fe.fieldProps("email", "usr-input")} type="email" disabled={modal.mode === "edit"} value={modal.draft.email} onChange={(e) => { setDraft({ email: e.target.value }); fe.clear("email"); }} />
                     <FieldError msg={fe.errors.email} />
                   </div>
                   {modal.mode === "create" && (
                     <div className="usr-field">
-                      <label className="usr-field-lbl">Contraseña temporal</label>
-                      <input {...fe.fieldProps("password", "usr-input")} value={modal.draft.password} onChange={(e) => { setDraft({ password: e.target.value }); fe.clear("password"); }} />
+                      <label htmlFor="field-ecosystem-equipo-7" className="usr-field-lbl">Contraseña temporal</label>
+                      <input id="field-ecosystem-equipo-7" {...fe.fieldProps("password", "usr-input")} value={modal.draft.password} onChange={(e) => { setDraft({ password: e.target.value }); fe.clear("password"); }} />
                       <FieldError msg={fe.errors.password} />
                     </div>
                   )}
@@ -699,28 +703,28 @@ function EcosystemEquipo() {
               ) : (
                 <>
                   <div className="usr-field">
-                    <label className="usr-field-lbl">Puesto</label>
-                    <input className="usr-input" list="job-titles-list" placeholder="Obra, limpieza, colaborador externo..." value={modal.draft.puesto} onChange={(e) => setDraft({ puesto: e.target.value })} />
+                    <label htmlFor="field-ecosystem-equipo-8" className="usr-field-lbl">Puesto</label>
+                    <input id="field-ecosystem-equipo-8" className="usr-input" list="job-titles-list" placeholder="Obra, limpieza, colaborador externo..." value={modal.draft.puesto} onChange={(e) => setDraft({ puesto: e.target.value })} />
                   </div>
                   <div className="usr-field">
-                    <label className="usr-field-lbl">Notas</label>
-                    <input className="usr-input" value={modal.draft.notes} onChange={(e) => setDraft({ notes: e.target.value })} />
+                    <label htmlFor="field-ecosystem-equipo-9" className="usr-field-lbl">Notas</label>
+                    <input id="field-ecosystem-equipo-9" className="usr-input" value={modal.draft.notes} onChange={(e) => setDraft({ notes: e.target.value })} />
                   </div>
                 </>
               )}
-            </div>
+            </WorkflowForm>
             <div className="usr-modal-foot">
               <button className="usr-btn-ghost" onClick={() => setModal(null)}>Cancelar</button>
-              <button className="usr-btn-primary" onClick={saveDraft} disabled={createMutation.isPending || updateMutation.isPending || createEmployeeMutation.isPending}>
+              <button className="usr-btn-primary" type="submit" form="core-team-form" disabled={createMutation.isPending || updateMutation.isPending || createEmployeeMutation.isPending}>
                 {createMutation.isPending || updateMutation.isPending || createEmployeeMutation.isPending ? "Guardando..." : "Guardar"}
               </button>
             </div>
           </div>
-        </div>
+        </DialogPortal>
       )}
 
       {confirmAccessSave && (
-        <div className="usr-modal-overlay" onClick={(e) => e.target === e.currentTarget && setConfirmAccessSave(false)}>
+        <DialogPortal className="usr-modal-overlay" onClick={(e) => e.target === e.currentTarget && setConfirmAccessSave(false)}>
           <div className="usr-modal usr-confirm-modal">
             <div className="usr-modal-head">
               <div>
@@ -749,7 +753,7 @@ function EcosystemEquipo() {
               </button>
             </div>
           </div>
-        </div>
+        </DialogPortal>
       )}
       <GuideModal
         open={showGuide}

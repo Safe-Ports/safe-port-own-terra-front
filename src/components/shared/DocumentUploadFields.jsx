@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { HiOutlineFolderPlus } from "react-icons/hi2";
+import FilePicker from "@/components/shared/FilePicker";
+import InlineError from "@/components/shared/InlineError";
+import { parseApiError } from "@/errors/parseApiError";
 import FieldError from "@/components/shared/FieldError";
 import { useFieldErrors } from "@/hooks/useFieldErrors";
 import { folderService } from "@/services/folderService";
@@ -24,16 +27,20 @@ export const DOCUMENT_CATEGORIES = [
  * @param {object} ctl Resultado de `useDocumentUpload`.
  */
 export default function DocumentUploadFields({ ctl, defaultFolderAppKey }) {
+  const id = useId();
+  const [folderError, setFolderError] = useState(null);
   const { form, setForm, fe, fileName, pickFile } = ctl;
   const queryClient = useQueryClient();
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [newFolder, setNewFolder] = useState("");
   const [savingFolder, setSavingFolder] = useState(false);
 
-  const { data: folders = [] } = useQuery({
+  const folderQuery = useQuery({
     queryKey: ["folders"],
     queryFn: () => folderService.list(),
   });
+
+  const folders = folderQuery.data || [];
 
   // Sugerir la carpeta de la app desde la que se sube (la que se crea sola por
   // vertical). Sólo la primera vez: si el usuario elige otra, se respeta.
@@ -53,6 +60,7 @@ export default function DocumentUploadFields({ ctl, defaultFolderAppKey }) {
     const name = newFolder.trim();
     if (!name || savingFolder) return;
     setSavingFolder(true);
+    setFolderError(null);
     try {
       const created = await folderService.create({ name, parent_id: null });
       await queryClient.invalidateQueries({ queryKey: ["folders"] });
@@ -61,6 +69,8 @@ export default function DocumentUploadFields({ ctl, defaultFolderAppKey }) {
       setForm((p) => ({ ...p, folderId: String(created.id) }));
       setNewFolder("");
       setCreatingFolder(false);
+    } catch (error) {
+      setFolderError(parseApiError(error, "No se pudo crear la carpeta"));
     } finally {
       setSavingFolder(false);
     }
@@ -68,14 +78,11 @@ export default function DocumentUploadFields({ ctl, defaultFolderAppKey }) {
 
   return (
     <div className="space-y-3">
-      <label className={`mobile-input flex cursor-pointer items-center justify-between${fe.errors.file ? " is-invalid" : ""}`}>
-        <span className="truncate text-sm">{fileName || "Seleccionar archivo"}</span>
-        <input type="file" className="hidden" onChange={(e) => pickFile(e.target.files?.[0])} />
-        <span className="text-xs font-semibold text-[#1E3D2B]">Examinar</span>
-      </label>
+      <div><span className="fl">Archivo *</span><FilePicker value={ctl.file} onChange={pickFile} /></div>
       <FieldError msg={fe.errors.file} />
 
-      <input
+      <label className="fl" htmlFor={`${id}-name`}>Nombre del documento *</label>
+      <input id={`${id}-name`} aria-invalid={!!fe.errors.name}
         className={fe.errors.name ? "mobile-input is-invalid" : "mobile-input"}
         value={form.name}
         onChange={set("name")}
@@ -83,7 +90,8 @@ export default function DocumentUploadFields({ ctl, defaultFolderAppKey }) {
       />
       <FieldError msg={fe.errors.name} />
 
-      <select className="mobile-input" value={form.category} onChange={set("category")}>
+      <label className="fl" htmlFor={`${id}-category`}>Categoría</label>
+      <select id={`${id}-category`} className="mobile-input" value={form.category} onChange={set("category")}>
         {DOCUMENT_CATEGORIES.map((c) => (
           <option key={c.value} value={c.value}>{c.label}</option>
         ))}
@@ -91,15 +99,18 @@ export default function DocumentUploadFields({ ctl, defaultFolderAppKey }) {
 
       {/* Dónde queda guardado. Sin esto el archivo caía en la raíz del Vault,
           incluso teniendo la organización una carpeta por app. */}
+      <label className="fl" htmlFor={`${id}-folder`}>{creatingFolder ? "Nombre de la nueva carpeta" : "Carpeta (opcional)"}</label>
+      {folderQuery.isError && <InlineError error={parseApiError(folderQuery.error)}><button type="button" onClick={() => folderQuery.refetch()}>Reintentar carpetas</button></InlineError>}
+      {folderError && <InlineError error={folderError} />}
       {creatingFolder ? (
         <div className="doc-folder-new">
-          <input
+          <input id={`${id}-folder`}
             className="mobile-input"
             value={newFolder}
             onChange={(e) => setNewFolder(e.target.value)}
             placeholder="Nombre de la carpeta"
             autoFocus
-            onKeyDown={(e) => e.key === "Enter" && createFolder()}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); createFolder(); } }}
           />
           <div className="doc-folder-new-actions">
             <button type="button" className="btn-p" disabled={!newFolder.trim() || savingFolder} onClick={createFolder}>
@@ -112,7 +123,7 @@ export default function DocumentUploadFields({ ctl, defaultFolderAppKey }) {
         </div>
       ) : (
         <div className="doc-folder-row">
-          <select
+          <select id={`${id}-folder`}
             className="mobile-input"
             value={form.folderId || ""}
             onChange={(e) => { ctl.setFolderTouched(true); setForm((p) => ({ ...p, folderId: e.target.value })); }}
@@ -133,7 +144,8 @@ export default function DocumentUploadFields({ ctl, defaultFolderAppKey }) {
         </div>
       )}
 
-      <textarea
+      <label className="fl" htmlFor={`${id}-notes`}>Notas (opcional)</label>
+      <textarea id={`${id}-notes`}
         className="mobile-input"
         rows="2"
         value={form.notes}
@@ -152,10 +164,10 @@ export default function DocumentUploadFields({ ctl, defaultFolderAppKey }) {
  */
 export function useDocumentUpload(defaults = {}) {
   const [form, setForm] = useState({
-    name: "",
+    name: defaults.name || "",
     category: defaults.category || "contrato",
     folderId: defaults.folderId || "",
-    notes: "",
+    notes: defaults.notes || "",
   });
   const [file, setFile] = useState(null);
   // Una vez que el usuario elige carpeta, deja de sugerirse la de la app.
@@ -163,8 +175,8 @@ export function useDocumentUpload(defaults = {}) {
   const fe = useFieldErrors();
 
   const pickFile = (f) => {
+    setFile(f || null);
     if (!f) return;
-    setFile(f);
     fe.clear("file");
     // El nombre del archivo sirve de punto de partida, sin la extensión.
     setForm((p) => ({ ...p, name: p.name || f.name.replace(/\.[^.]+$/, "") }));

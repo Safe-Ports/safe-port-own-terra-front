@@ -1,3 +1,4 @@
+import WorkflowForm from "@/components/forms/WorkflowForm";
 import { useEffect, useState } from "react";
 import {
   HiArrowsRightLeft, HiBuildingOffice2, HiCheck, HiCreditCard,
@@ -167,6 +168,7 @@ function SettingsPage() {
   const fe = useFieldErrors();
 
   const handleCreateUser = async () => {
+    if (creating) return;
     const errs = {};
     if (!newUser.name.trim()) errs.name = "El nombre es obligatorio.";
     if (!newUser.email.trim()) errs.email = "El correo es obligatorio.";
@@ -403,34 +405,34 @@ function SettingsPage() {
         </div>
         <div className="card-body">
           {showForm && isAdmin && (
-            <div className="fr-row" style={{ flexWrap: "wrap", gap: 10, marginBottom: 16, padding: "14px", background: "var(--sf2)", borderRadius: 10, border: "1px solid var(--bd)" }}>
+            <WorkflowForm busy={creating} noValidate onSubmit={event => { event.preventDefault(); return handleCreateUser(); }} className="fr-row" style={{ flexWrap: "wrap", gap: 10, marginBottom: 16, padding: "14px", background: "var(--sf2)", borderRadius: 10, border: "1px solid var(--bd)" }}>
               <div className="fg" style={{ flex: 1, minWidth: 160 }}>
-                <label className="fl">Nombre</label>
-                <input {...fe.fieldProps("name", "fi")} value={newUser.name} onChange={(e) => { setNewUser((p) => ({ ...p, name: e.target.value })); fe.clear("name"); }} placeholder="Juan García" />
+                <label className="fl" htmlFor="lands-team-name">Nombre</label>
+                <input id="lands-team-name" {...fe.fieldProps("name", "fi")} value={newUser.name} onChange={(e) => { setNewUser((p) => ({ ...p, name: e.target.value })); fe.clear("name"); }} placeholder="Juan García" />
                 <FieldError msg={fe.errors.name} />
               </div>
               <div className="fg" style={{ flex: 1, minWidth: 160 }}>
-                <label className="fl">Correo</label>
-                <input {...fe.fieldProps("email", "fi")} type="email" value={newUser.email} onChange={(e) => { setNewUser((p) => ({ ...p, email: e.target.value })); fe.clear("email"); }} placeholder="juan@empresa.com" />
+                <label className="fl" htmlFor="lands-team-email">Correo</label>
+                <input id="lands-team-email" {...fe.fieldProps("email", "fi")} type="email" value={newUser.email} onChange={(e) => { setNewUser((p) => ({ ...p, email: e.target.value })); fe.clear("email"); }} placeholder="juan@empresa.com" />
                 <FieldError msg={fe.errors.email} />
               </div>
               <div className="fg" style={{ flex: 1, minWidth: 140 }}>
-                <label className="fl">Contraseña temporal</label>
-                <input {...fe.fieldProps("password", "fi")} type="password" value={newUser.password} onChange={(e) => { setNewUser((p) => ({ ...p, password: e.target.value })); fe.clear("password"); }} />
+                <label className="fl" htmlFor="lands-team-password">Contraseña temporal</label>
+                <input id="lands-team-password" {...fe.fieldProps("password", "fi")} type="password" value={newUser.password} onChange={(e) => { setNewUser((p) => ({ ...p, password: e.target.value })); fe.clear("password"); }} />
                 <FieldError msg={fe.errors.password} />
               </div>
               <div className="fg" style={{ minWidth: 120 }}>
-                <label className="fl">Rol</label>
-                <select className="fi" value={newUser.role} onChange={(e) => setNewUser((p) => ({ ...p, role: e.target.value }))}>
+                <label className="fl" htmlFor="lands-team-role">Rol</label>
+                <select id="lands-team-role" className="fi" value={newUser.role} onChange={(e) => setNewUser((p) => ({ ...p, role: e.target.value }))}>
                   {Object.entries(GLOBAL_ROLES).map(([key, { label }]) => <option key={key} value={key}>{label}</option>)}
                 </select>
               </div>
               <div style={{ display: "flex", alignItems: "flex-end" }}>
-                <button className="btn-p" onClick={handleCreateUser} disabled={creating}>
+                <button type="submit" className="btn-p" disabled={creating}>
                   {creating ? "Creando..." : <><HiCheck /> Crear</>}
                 </button>
               </div>
-            </div>
+            </WorkflowForm>
           )}
 
           {usersLoading ? (

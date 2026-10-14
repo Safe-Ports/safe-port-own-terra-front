@@ -1,6 +1,8 @@
 # OwnTerra Frontend
 
-Frontend de OwnTerra para el ecosistema inmobiliario: Core central, OwnTerra Lands y modulos operativos de clientes, lotes, contratos, pagos, agenda y documentos.
+Frontend compartido del ecosistema Own Terra: Core, Lands, Properties y la vista transversal de Finanzas. Todas las áreas comparten sesión, organización, clientes, permisos y servicios comunes; no son productos aislados con logins independientes.
+
+Actualizado: 2026-09-06. Consulta el mapa completo en [`../README.md`](../README.md) y el estado auditado en [`../own-terra-obsidian/20 - Current Product Status.md`](../own-terra-obsidian/20%20-%20Current%20Product%20Status.md).
 
 > **Pruebas automatizadas** — ver [TESTING.md](./TESTING.md) para el stack completo, comandos y guía de como agregar nuevos tests.
 
@@ -9,20 +11,43 @@ Frontend de OwnTerra para el ecosistema inmobiliario: Core central, OwnTerra Lan
 - Login, registro, recuperacion de contrasena y sesion con tokens API.
 - Entrada principal en `/ecosistema` como hub del Core.
 - Mi Dia: citas, pagos vencidos, tareas y notificaciones consolidadas.
-- Agenda Core compartida entre Core, Lands, Neighborhoods y Homes.
+- Agenda Core compartida entre Core, Lands y Properties.
 - Clientes del ecosistema con identidad unica, apps asignadas, contratos y documentos de identidad.
 - Equipo del Core con usuarios, vendedores, acceso por app, roles, scope y comisiones.
 - OwnTerra Vault para carpetas y documentos centralizados.
 - Finanzas del ecosistema con resumen de ingresos, egresos y cobranza.
 - OwnTerra Lands para dashboard, lotes, fraccionamientos, CRM, contratos, pagos, documentos, calculadora y reportes.
+- OwnTerra Properties para portafolio, propietarios, inmuebles, unidades, comunidades, rentas, publicaciones, hospedaje, tickets, accesos, proveedores y monitoreo por unidad.
+- Finanzas como shell transversal para transacciones, cuentas por cobrar, cuentas por pagar, nómina y reportes.
 - Permisos frontend basados en rol, apps asignadas y permisos enviados por backend cuando existan.
+
+### Estado honesto por área
+
+| Área | Estado en este repositorio |
+|---|---|
+| Core | UI y adaptadores implementados; la profundidad de integración varía por flujo. |
+| Lands | Aplicación web implementada; los recorridos críticos deben verificarse contra el backend objetivo antes de cada release. |
+| Properties | Prototipo frontend funcional. Gran parte de sus módulos usa datos demo, locales o en memoria. |
+| Finanzas | UI operativa en evolución; reglas contables y conciliación requieren definición y auditoría end-to-end. |
+| Construction | No tiene rutas operativas en esta aplicación; cualquier referencia es exploratoria. |
+
+`Neighborhoods` y `Homes` son nombres retirados. Sus casos vigentes forman parte de Properties.
+
+## Producto Y Clientes
+
+- **Lands:** para desarrolladores de tierra, fraccionadores, directores comerciales, cobranza y asesores que gestionan fraccionamientos y lotes desde el inventario hasta el contrato y sus pagos.
+- **Properties:** para administradores de propiedades y comunidades, gestores de renta y propietarios de portafolios. Una propiedad puede ser una casa individual o un complejo con muchas unidades.
+- **Core:** plano compartido para organización, identidad, equipo, clientes, agenda, documentos y permisos.
+- **Finanzas:** lectura y operación financiera transversal sin borrar la procedencia de cada evento en Lands o Properties.
+
+La jerarquía estable de Properties es `Organization → Property → Unit/Space`. Nunca asumir que cada propiedad tiene una sola unidad ni que Properties se limita a departamentos.
 
 ## Roles Y Permisos
 
 El modelo recomendado separa rol global de rol por app:
 
 - Rol global: gobierna acceso al Core y administracion de la organizacion.
-- Rol por app: gobierna lo que el usuario puede hacer dentro de Lands, Vault, Finanzas, Homes o Neighborhoods.
+- Rol por app: gobierna lo que el usuario puede hacer dentro de Lands, Properties, Vault o Finanzas.
 - Permisos explicitos: si backend envia `permissions`, complementan o afinan el rol por app.
 
 Roles globales:
@@ -77,8 +102,8 @@ Flujo de equipo:
 Flujo de cliente:
 
 1. Cliente nace en Core como identidad unica.
-2. Core asigna apps: Lands, Homes, Neighborhoods.
-3. Lands usa esa identidad para pipeline comercial, contratos y pagos.
+2. Core asigna acceso a Lands y/o Properties según la relación del cliente con la organización.
+3. Lands o Properties usan esa identidad en su contexto comercial u operativo sin duplicarla.
 4. Core muestra historial consolidado sin duplicar al cliente.
 
 Flujo de contrato:
@@ -114,9 +139,11 @@ Pendientes de backend para cerrar estos flujos:
 
 - Configuracion completa del Core: empresa, apps activas, permisos base y branding.
 - Gestion real de tenants/empresas cliente.
-- Roadmap visible de apps del ecosistema.
+- Roadmap visible y con estado honesto de las apps del ecosistema.
 - Auditoria de cambios para permisos, documentos, citas y comisiones.
 - Carga CAD automatica de lotes.
+- APIs multiempresa para persistir el dominio de Properties.
+- Reglas financieras aprobadas para conciliación, cancelación, impuestos, depósitos y penalizaciones.
 
 ## Requisitos
 

@@ -1,5 +1,6 @@
+import WorkflowForm from "@/components/forms/WorkflowForm";
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import GuideModal from "@/components/shared/GuideModal";
 import {
@@ -11,9 +12,15 @@ import {
   HiOutlinePaperClip,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
+import PendingReceiptUpload from "@/components/shared/PendingReceiptUpload";
+import usePendingReceipts from "@/hooks/usePendingReceipts";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
+import DialogPortal from "@/components/ui/DialogPortal";
+import ClientPicker from "@/components/shared/ClientPicker";
 import FilePicker from "@/components/shared/FilePicker";
 import IncomesPanel from "./IncomesPanel";
 import { incomeService, INCOME_CAT } from "@/services/incomeService";
+import { clientService } from "@/services/clientService";
 import { paymentService } from "@/services/paymentService";
 import { useLandsGuide } from "@/context/LandsGuideContext";
 import { expenseService, CAT_LABEL, CAT_STYLE } from "@/services/expenseService";
@@ -24,9 +31,10 @@ import FieldError from "@/components/shared/FieldError";
 import { useFieldErrors } from "@/hooks/useFieldErrors";
 import useEscapeKey from "@/hooks/useEscapeKey";
 
+const PAYMENT_METHODS = [{ value: "transfer", label: "Transferencia" }, { value: "cash", label: "Efectivo" }, { value: "card", label: "Tarjeta" }, { value: "check", label: "Cheque" }];
 const reqText = (label) => (v) => (!v || !String(v).trim() ? `${label} es obligatorio.` : "");
 const reqNum = (label) => (v) => (v === "" || v == null || isNaN(Number(v)) || Number(v) <= 0 ? `Ingresa un ${label} válido (> 0).` : "");
-const EGRESO_RULES = { concepto: reqText("El concepto"), monto: reqNum("monto") };
+const EGRESO_RULES = { concepto: reqText("El concepto"), monto: reqNum("monto"), due_date: v => !v || !Number.isFinite(new Date(`${v}T00:00:00`).getTime()) ? "Selecciona una fecha válida." : "" };
 import { currency, relativeDays } from "@/services/formatters";
 import Avatar from "@/components/Avatar";
 import Button from "@/components/Button";
@@ -34,7 +42,7 @@ import Input from "@/components/Input";
 
 /* ── helpers ─────────────────────────────────────────────────── */
 const ESTADO_LABEL = { pending: "Pendiente", paid: "Pagado", overdue: "Vencido", partial: "Parcial", cancelled: "Cancelado" };
-const fmtD = iso => !iso ? "—" : new Date(iso).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
+const fmtD = iso => !iso ? "—" : new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T00:00:00` : iso).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
 
 function badgeCls(iso, status) {
   if (status === "paid") return "paid";
@@ -423,8 +431,8 @@ function PagoTable({ rows, isEgreso, historial, onPagar, onRecordar, onEdit, onD
 }
 
 /* ── Modal egreso ────────────────────────────────────────────── */
-function EgresoModal({ initial, onClose, onSave }) {
-  useEscapeKey(onClose);
+function EgresoModal({ initial, onClose, onSave, busy }) {
+  useEscapeKey(() => { if (!busy) onClose(); });
   const [form, setForm] = useState({
     concepto:    initial?.concepto    || "",
     categoria:   initial?.categoria   || "servicios",
@@ -455,7 +463,7 @@ function EgresoModal({ initial, onClose, onSave }) {
   });
 
   const save = () => {
-    if (!fe.validate(form, EGRESO_RULES)) return;
+    if (busy || !fe.validate(form, EGRESO_RULES)) return;
     onSave({
       ...form,
       employee_id: form.categoria === "nomina" ? (form.employee_id || null) : null,
@@ -467,39 +475,39 @@ function EgresoModal({ initial, onClose, onSave }) {
     });
   };
   return (
-    <div className="modal-overlay">
-      <div className="modal-box" style={{ maxWidth: 440 }}>
+    <DialogPortal className="modal-overlay open lands-payment-dialog">
+      <div role="dialog" aria-modal="true" aria-label="Egreso" className="modal-box" style={{ maxWidth: 440 }}>
         <div className="modal-hd">
           <div className="modal-ico"><HiArrowTrendingDown /></div>
           <div style={{ flex: 1 }}>
             <div className="modal-title" style={{ fontSize: "1.3rem" }}>{initial ? "Editar egreso" : "Nuevo egreso"}</div>
             <div className="modal-sub">Gasto interno de la empresa</div>
           </div>
-          <button className="modal-close" onClick={onClose}><HiOutlineXMark /></button>
+          <button type="button" className="modal-close" aria-label="Cerrar formulario" disabled={busy} onClick={onClose}><HiOutlineXMark /></button>
         </div>
-        <div className="modal-body">
-          <div className="fg"><label className="fl">Concepto</label>
-            <input {...fe.fieldProps("concepto")} value={form.concepto} onChange={set("concepto")} placeholder="Nómina junio, CFE…" />
+        <WorkflowForm id="lands-egresomodal-form" className="modal-body" noValidate onSubmit={event => { event.preventDefault(); if (!busy) save(); }}>
+          <div className="fg"><label className="fl" htmlFor="lands-egresomodal-1">Concepto</label>
+            <input id="lands-egresomodal-1" {...fe.fieldProps("concepto")} value={form.concepto} onChange={set("concepto")} placeholder="Nómina junio, CFE…" />
             <FieldError msg={fe.errors.concepto} /></div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <div className="fg"><label className="fl">Categoría</label>
-              <select className="fi" value={form.categoria} onChange={set("categoria")}>
+            <div className="fg"><label className="fl" htmlFor="lands-egresomodal-2">Categoría</label>
+              <select id="lands-egresomodal-2" className="fi" value={form.categoria} onChange={set("categoria")}>
                 {Object.entries(CAT_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select></div>
-            <div className="fg"><label className="fl">Monto</label>
-              <input {...fe.fieldProps("monto")} type="number" value={form.monto} onChange={set("monto")} placeholder="0" />
+            <div className="fg"><label className="fl" htmlFor="lands-egresomodal-3">Monto</label>
+              <input id="lands-egresomodal-3" {...fe.fieldProps("monto")} type="number" value={form.monto} onChange={set("monto")} placeholder="0" />
               <FieldError msg={fe.errors.monto} /></div>
           </div>
           {form.categoria === "nomina" && (
-            <div className="fg"><label className="fl">Colaborador (opcional)</label>
-              <select className="fi" value={form.employee_id} onChange={set("employee_id")}>
+            <div className="fg"><label className="fl" htmlFor="lands-egresomodal-4">Colaborador (opcional)</label>
+              <select id="lands-egresomodal-4" className="fi" value={form.employee_id} onChange={set("employee_id")}>
                 <option value="">Sin asignar</option>
                 {(employees || []).map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
               </select></div>
           )}
           {form.categoria === "proveedores" && (
-            <div className="fg"><label className="fl">Proveedor (opcional)</label>
-              <select className="fi" value={form.provider_id} onChange={set("provider_id")}>
+            <div className="fg"><label className="fl" htmlFor="lands-egresomodal-5">Proveedor (opcional)</label>
+              <select id="lands-egresomodal-5" className="fi" value={form.provider_id} onChange={set("provider_id")}>
                 <option value="">Sin asignar</option>
                 {(providers || []).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select></div>
@@ -532,10 +540,10 @@ function EgresoModal({ initial, onClose, onSave }) {
             </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <div className="fg"><label className="fl">{cuando === "pagado" ? "Fecha de pago" : "Fecha límite"}</label>
-              <input className="fi" type="date" value={form.due_date} onChange={set("due_date")} /></div>
-            <div className="fg"><label className="fl">Recurrencia</label>
-              <select className="fi" value={form.recurrencia} onChange={set("recurrencia")}>
+            <div className="fg"><label className="fl" htmlFor="lands-egresomodal-6">{cuando === "pagado" ? "Fecha de pago" : "Fecha límite"}</label>
+              <input id="lands-egresomodal-6" {...fe.fieldProps("due_date")} type="date" value={form.due_date} onChange={set("due_date")} /><FieldError msg={fe.errors.due_date} /></div>
+            <div className="fg"><label className="fl" htmlFor="lands-egresomodal-7">Recurrencia</label>
+              <select id="lands-egresomodal-7" className="fi" value={form.recurrencia} onChange={set("recurrencia")}>
                 <option value="">Sin recurrencia</option>
                 <option value="mensual">Mensual</option>
                 <option value="quincenal">Quincenal</option>
@@ -548,17 +556,17 @@ function EgresoModal({ initial, onClose, onSave }) {
               accept="application/pdf,image/jpeg,image/png,image/webp"
               hint="PDF o imagen. Puedes registrarlo ahora y subirlo después." />
           </div>
-          <div className="fg"><label className="fl">Notas (opcional)</label>
-            <input className="fi" value={form.notes} onChange={set("notes")} placeholder="Referencia, proveedor…" /></div>
-        </div>
+          <div className="fg"><label className="fl" htmlFor="lands-egresomodal-8">Notas (opcional)</label>
+            <input id="lands-egresomodal-8" className="fi" value={form.notes} onChange={set("notes")} placeholder="Referencia, proveedor…" /></div>
+        </WorkflowForm>
         <div className="modal-foot">
-          <Button variant="secondary" style={{ flex: 1 }} onClick={onClose}>Cancelar</Button>
-          <Button variant="primary" style={{ flex: 2 }} onClick={save}>
-            {initial ? "Guardar cambios" : "Guardar egreso"}
+          <Button variant="secondary" style={{ flex: 1 }} onClick={onClose} disabled={busy}>Cancelar</Button>
+          <Button variant="primary" style={{ flex: 2 }} type="submit" form="lands-egresomodal-form" disabled={busy}>
+            {busy ? "Guardando…" : initial ? "Guardar cambios" : "Guardar egreso"}
           </Button>
         </div>
       </div>
-    </div>
+    </DialogPortal>
   );
 }
 
@@ -566,47 +574,46 @@ function EgresoModal({ initial, onClose, onSave }) {
    El espejo del de egresos: pide si el dinero ya entró o se espera, porque solo
    lo recibido cuenta en el flujo del mes. */
 function IngresoModal({ onClose, onSave, busy }) {
-  useEscapeKey(onClose);
+  useEscapeKey(() => { if (!busy) onClose(); });
   const [form, setForm] = useState({
     concepto: "", categoria: "otro", monto: "",
     due_date: new Date().toISOString().split("T")[0], notes: "",
   });
   const [cuando, setCuando] = useState("recibido");
   const [file, setFile] = useState(null);
-  const [err, setErr] = useState("");
-  const set = k => e => { const v = e.target.value; setForm(p => ({ ...p, [k]: v })); setErr(""); };
+  const fe = useFieldErrors();
+  const set = k => e => { const v = e.target.value; setForm(p => ({ ...p, [k]: v })); fe.clear(k); };
 
   const guardar = () => {
-    if (!form.concepto.trim()) { setErr("Escribe de qu\u00e9 es el ingreso."); return; }
+    if (busy || !fe.validate(form, EGRESO_RULES)) return;
     const monto = Number(form.monto);
-    if (!form.monto || isNaN(monto) || monto <= 0) { setErr("Ingresa un monto mayor a $0."); return; }
     onSave({ ...form, monto, received: cuando === "recibido", _file: file });
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-box" style={{ maxWidth: 430 }}>
+    <DialogPortal className="modal-overlay open lands-payment-dialog">
+      <div role="dialog" aria-modal="true" aria-label="Registrar ingreso" className="modal-box" style={{ maxWidth: 430 }}>
         <div className="modal-hd">
           <div className="modal-ico"><HiArrowTrendingUp /></div>
           <div style={{ flex: 1 }}>
             <div className="modal-title" style={{ fontSize: "1.3rem" }}>Registrar ingreso</div>
             <div className="modal-sub">Dinero que no viene de la cobranza de un lote</div>
           </div>
-          <button className="modal-close" onClick={onClose}><HiOutlineXMark /></button>
+          <button type="button" className="modal-close" aria-label="Cerrar formulario" disabled={busy} onClick={onClose}><HiOutlineXMark /></button>
         </div>
-        <div className="modal-body">
-          <div className="fg"><label className="fl">Concepto</label>
-            <input className="fi" value={form.concepto} onChange={set("concepto")}
-              placeholder="Renta de bodega, venta de maquinaria\u2026" autoFocus /></div>
+        <WorkflowForm id="lands-ingresomodal-form" className="modal-body" noValidate onSubmit={event => { event.preventDefault(); if (!busy) guardar(); }}>
+          <div className="fg"><label className="fl" htmlFor="lands-ingresomodal-1">Concepto</label>
+            <input id="lands-ingresomodal-1" {...fe.fieldProps("concepto")} value={form.concepto} onChange={set("concepto")}
+              placeholder="Renta de bodega, venta de maquinaria\u2026" autoFocus /><FieldError msg={fe.errors.concepto} /></div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <div className="fg"><label className="fl">Categor\u00eda</label>
-              <select className="fi" value={form.categoria} onChange={set("categoria")}>
+            <div className="fg"><label className="fl" htmlFor="lands-ingresomodal-2">Categor\u00eda</label>
+              <select id="lands-ingresomodal-2" className="fi" value={form.categoria} onChange={set("categoria")}>
                 {Object.entries(INCOME_CAT).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select></div>
-            <div className="fg"><label className="fl">Monto</label>
-              <input className="fi" type="number" min="0" step="0.01" value={form.monto}
-                onChange={set("monto")} placeholder="0.00" /></div>
+            <div className="fg"><label className="fl" htmlFor="lands-ingresomodal-3">Monto</label>
+              <input id="lands-ingresomodal-3" {...fe.fieldProps("monto")} type="number" min="0" step="0.01" value={form.monto}
+                onChange={set("monto")} placeholder="0.00" /><FieldError msg={fe.errors.monto} /></div>
           </div>
 
           <div className="fg">
@@ -636,8 +643,8 @@ function IngresoModal({ onClose, onSave, busy }) {
             </div>
           </div>
 
-          <div className="fg"><label className="fl">{cuando === "recibido" ? "Fecha del ingreso" : "Fecha esperada"}</label>
-            <input className="fi" type="date" value={form.due_date} onChange={set("due_date")} /></div>
+          <div className="fg"><label className="fl" htmlFor="lands-ingresomodal-4">{cuando === "recibido" ? "Fecha del ingreso" : "Fecha esperada"}</label>
+            <input id="lands-ingresomodal-4" {...fe.fieldProps("due_date")} type="date" value={form.due_date} onChange={set("due_date")} /><FieldError msg={fe.errors.due_date} /></div>
 
           <div className="fg">
             <label className="fl">Comprobante (opcional)</label>
@@ -646,22 +653,22 @@ function IngresoModal({ onClose, onSave, busy }) {
               hint="PDF o imagen. Puedes registrarlo ahora y subirlo despu\u00e9s." />
           </div>
 
-          <FieldError msg={err} />
-        </div>
+
+        </WorkflowForm>
         <div className="modal-foot">
           <Button variant="secondary" style={{ flex: 1 }} onClick={onClose} disabled={busy}>Cancelar</Button>
-          <Button variant="primary" style={{ flex: 2 }} onClick={guardar} disabled={busy}>
+          <Button variant="primary" style={{ flex: 2 }} type="submit" form="lands-ingresomodal-form" disabled={busy}>
             {busy ? "Guardando\u2026" : "Registrar ingreso"}
           </Button>
         </div>
       </div>
-    </div>
+    </DialogPortal>
   );
 }
 
 /* ── Modal cobro ─────────────────────────────────────────────── */
 function CobroModal({ clients, contracts, onClose, onSave, busy, contratoInicial }) {
-  useEscapeKey(onClose);
+  useEscapeKey(() => { if (!busy) onClose(); });
   const [form, setForm] = useState({
     // Con `contratoInicial` el modal abre ya apuntando a ese contrato: es el
     // botón de cobro de la tabla de amortización, que antes pasaba la cuota
@@ -670,7 +677,7 @@ function CobroModal({ clients, contracts, onClose, onSave, busy, contratoInicial
     // además es sobre lo que cobra el backend.
     clientId: contratoInicial?.client?.id ? String(contratoInicial.client.id) : "",
     contractId: contratoInicial?.id ? String(contratoInicial.id) : "",
-    paymentId: "", amount: "",
+    paymentId: "", amount: "", paymentMethod: "transfer",
     paid_date: new Date().toISOString().split("T")[0],
   });
   const [modo, setModo] = useState("completa");
@@ -678,7 +685,10 @@ function CobroModal({ clients, contracts, onClose, onSave, busy, contratoInicial
   const [err, setErr] = useState("");
   const set = k => e => { const v = e.target.value; setForm(p => ({ ...p, [k]: v })); setErr(""); };
 
-  const filtContracts = contracts.filter(c => !form.clientId || String(c.client?.id) === form.clientId);
+  const chosenClientQuery = useQuery({ queryKey: ["client", form.clientId], queryFn: () => clientService.get(form.clientId), enabled: !!form.clientId });
+  const chosenClient = chosenClientQuery.data || clients.find(client => String(client.id) === form.clientId);
+  const clientContractsQuery = useQuery({ queryKey: ["contracts", "for-payment", form.clientId], queryFn: () => clientService.contracts(form.clientId), enabled: !!form.clientId });
+  const filtContracts = clientContractsQuery.data?.items || [];
 
   /* Las cuotas reales del contrato, en orden. Antes había que escribir el número
      de cuota a ciegas y el guardado fallaba en silencio si no existía.
@@ -687,7 +697,7 @@ function CobroModal({ clients, contracts, onClose, onSave, busy, contratoInicial
      global de cuotas: ese arreglo llega recortado a 200 filas de TODA la
      organización, así que un contrato con vencimientos fuera de esa muestra
      aparecía sin cuotas aunque sí las tuviera. */
-  const { data: cuotasContrato, isFetching: cargandoCuotas } = useQuery({
+  const { data: cuotasContrato, isFetching: cargandoCuotas, isError: cuotasFailed, refetch: retryCuotas } = useQuery({
     queryKey: ["payments", "byContract", form.contractId],
     queryFn: () => paymentService.list({ contract_id: form.contractId, limit: 200 }).then(r => r.items || []),
     enabled: !!form.contractId,
@@ -749,6 +759,7 @@ function CobroModal({ clients, contracts, onClose, onSave, busy, contratoInicial
     if (!form.contractId) { setErr("Elige el contrato."); return; }
     if (!cuota)           { setErr("Elige la cuota que se está cobrando."); return; }
     if (invalid)          { setErr("Ingresa un monto mayor a $0."); return; }
+    if (!form.paid_date) { setErr("Indica la fecha del cobro."); return; }
     if (modo === "parcial" && val >= saldo - 0.001) {
       setErr(`Un abono parcial debe ser menor a ${currency(saldo)}.`); return;
     }
@@ -761,44 +772,44 @@ function CobroModal({ clients, contracts, onClose, onSave, busy, contratoInicial
       amount: Number(val.toFixed(2)),
       paymentIds: modo === "varias" ? reparto.map(f => f.id) : null,
       paidDate: form.paid_date,
+      paymentMethod: form.paymentMethod,
       file,
     });
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-box" style={{ maxWidth: 460 }}>
+    <DialogPortal className="modal-overlay open lands-payment-dialog">
+      <div className="modal-box" role="dialog" aria-modal="true" aria-label="Registrar cobro" style={{ maxWidth: 460 }}>
         <div className="modal-hd">
           <div className="modal-ico"><HiBanknotes /></div>
           <div style={{ flex: 1 }}>
             <div className="modal-title" style={{ fontSize: "1.3rem" }}>Registrar cobro</div>
             <div className="modal-sub">Pago de cuota de cliente</div>
           </div>
-          <button className="modal-close" onClick={onClose}><HiOutlineXMark /></button>
+          <button type="button" className="modal-close" aria-label="Cerrar formulario" disabled={busy} onClick={onClose}><HiOutlineXMark /></button>
         </div>
-        <div className="modal-body">
+        <WorkflowForm id="lands-cobromodal-form" className="modal-body" noValidate onSubmit={event => { event.preventDefault(); if (!busy) save(); }}>
           <div className="fg"><label className="fl">Cliente</label>
-            <select className="fi" value={form.clientId}
-              onChange={e => { set("clientId")(e); setForm(p => ({ ...p, contractId: "", paymentId: "", amount: "" })); }}>
-              <option value="">— Seleccionar —</option>
-              {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select></div>
-          <div className="fg"><label className="fl">Contrato / Lote</label>
-            <select className="fi" value={form.contractId}
+            <ClientPicker allowCreate={false} value={chosenClient || null} onSelect={client => setForm(previous => ({ ...previous, clientId: client?.id || "", contractId: "", paymentId: "", amount: "" }))} disabled={busy} /></div>
+          <div className="fg"><label className="fl" htmlFor="lands-cobromodal-1">Contrato / Lote</label>
+            <select id="lands-cobromodal-1" className="fi" value={form.contractId}
               onChange={e => { set("contractId")(e); setForm(p => ({ ...p, paymentId: "", amount: "" })); }}>
-              <option value="">— Seleccionar —</option>
-              {filtContracts.map(c => <option key={c.id} value={c.id}>{c.contract_number}</option>)}
+              <option value="">Seleccionar contrato</option>
+              {filtContracts.map(c => <option key={c.id} value={c.id}>{c.contract_number} · {c.lot?.code || "Sin lote"}</option>)}
             </select>
-            {form.clientId && filtContracts.length === 0 && (
+            {form.clientId && clientContractsQuery.isPending && <p role="status">Cargando contratos…</p>}
+            {clientContractsQuery.isError && <p role="alert">No se pudieron consultar los contratos. <button type="button" className="btn-s" onClick={() => clientContractsQuery.refetch()}>Reintentar</button></p>}
+            {form.clientId && clientContractsQuery.isSuccess && filtContracts.length === 0 && (
               <div style={{ marginTop: 6, fontSize: ".76rem", color: "var(--mu)" }}>
                 Este cliente no tiene ningún contrato asociado.
               </div>
             )}
           </div>
 
+          {cuotasFailed && <p role="alert">No se pudieron consultar las cuotas. <button type="button" className="btn-s" onClick={() => retryCuotas()}>Reintentar</button></p>}
           {form.contractId && (
-            <div className="fg"><label className="fl">Cuota</label>
-              <select className="fi" value={form.paymentId} onChange={elegirCuota}>
+            <div className="fg"><label className="fl" htmlFor="lands-cobromodal-2">Cuota</label>
+              <select id="lands-cobromodal-2" className="fi" value={form.paymentId} onChange={elegirCuota}>
                 <option value="">— Seleccionar —</option>
                 {cuotas.map(c => {
                   const pend = Math.max(Number(c.amount || 0) - Number(c.amount_paid || 0), 0);
@@ -856,8 +867,8 @@ function CobroModal({ clients, contracts, onClose, onSave, busy, contratoInicial
               </div>
 
               <div className="fg">
-                <label className="fl">{modo === "varias" ? "Monto total recibido" : "Monto a cobrar ahora"}</label>
-                <input className={`fi ${err ? "is-invalid" : ""}`} type="number" min="0" step="0.01"
+                <label className="fl" htmlFor="lands-cobromodal-3">{modo === "varias" ? "Monto total recibido" : "Monto a cobrar ahora"}</label>
+                <input id="lands-cobromodal-3" className={`fi ${err ? "is-invalid" : ""}`} type="number" min="0" step="0.01"
                   value={form.amount} onChange={set("amount")} />
                 {modo === "varias" && reparto.length > 1 && (
                   <div style={{ marginTop: 10, border: "1px solid rgba(67,69,63,.12)", borderRadius: 10, overflow: "hidden" }}>
@@ -889,9 +900,10 @@ function CobroModal({ clients, contracts, onClose, onSave, busy, contratoInicial
             </div>
           )}
 
+          <div className="fg"><label className="fl" htmlFor="cobro-method">Método de pago</label><select id="cobro-method" className="fi" value={form.paymentMethod} onChange={set("paymentMethod")}>{PAYMENT_METHODS.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select></div>
           <div className="fg">
-            <label className="fl">Fecha del cobro</label>
-            <input className="fi" type="date" value={form.paid_date} onChange={set("paid_date")} />
+            <label className="fl" htmlFor="lands-cobromodal-4">Fecha del cobro</label>
+            <input id="lands-cobromodal-4" className="fi" type="date" value={form.paid_date} onChange={set("paid_date")} />
           </div>
 
           <div className="fg">
@@ -902,21 +914,21 @@ function CobroModal({ clients, contracts, onClose, onSave, busy, contratoInicial
           </div>
 
           <FieldError msg={err} />
-        </div>
+        </WorkflowForm>
         <div className="modal-foot">
           <Button variant="secondary" style={{ flex: 1 }} onClick={onClose} disabled={busy}>Cancelar</Button>
-          <Button variant="primary" style={{ flex: 2 }} onClick={save} disabled={busy}>
+          <Button variant="primary" style={{ flex: 2 }} type="submit" form="lands-cobromodal-form" disabled={busy}>
             {busy ? "Registrando…" : modo === "varias" && reparto.length > 1 ? `Cobrar ${reparto.length} cuotas` : "Registrar cobro"}
           </Button>
         </div>
       </div>
-    </div>
+    </DialogPortal>
   );
 }
 
 /* ── Modal abono / cobro de cuota ────────────────────────────── */
 function AbonoModal({ payment, siguientes = [], onClose, onConfirm, busy }) {
-  useEscapeKey(onClose);
+  useEscapeKey(() => { if (!busy) onClose(); });
   const total   = Number(payment.amount || 0);
   const abonado = Number(payment.amount_paid || 0);
   const saldo   = Math.max(total - abonado, 0);
@@ -926,6 +938,8 @@ function AbonoModal({ payment, siguientes = [], onClose, onConfirm, busy }) {
   // no tenía forma de saber qué iba a pasar hasta después de confirmar.
   const haySiguientes = siguientes.length > 0;
   const [modo, setModo]   = useState("completa");
+  const [paymentMethod, setPaymentMethod] = useState("transfer");
+  const [paidDate, setPaidDate] = useState(new Date().toISOString().split("T")[0]);
   const [monto, setMonto] = useState(saldo ? String(saldo) : "");
   const [file, setFile]   = useState(null);
   const [err, setErr]     = useState("");
@@ -970,6 +984,7 @@ function AbonoModal({ payment, siguientes = [], onClose, onConfirm, busy }) {
   const sobrante = Math.max((isNaN(val) ? 0 : val) - saldo, 0);
 
   const confirm = () => {
+    if (!paidDate) { setErr("Indica la fecha del cobro."); return; }
     if (invalid) { setErr("Ingresa un monto mayor a $0."); return; }
     if (modo === "parcial" && val >= saldo - 0.001) {
       setErr(`Un abono parcial debe ser menor a ${currency(saldo)}. Elige "Saldar la cuota" si va completa.`);
@@ -983,12 +998,13 @@ function AbonoModal({ payment, siguientes = [], onClose, onConfirm, busy }) {
       Number(val.toFixed(2)),
       modo === "varias" ? reparto.map(f => f.id) : null,
       file,
+      { paymentMethod, paidDate },
     );
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-box" style={{ maxWidth: 420 }}>
+    <DialogPortal className="modal-overlay open lands-payment-dialog">
+      <div className="modal-box" role="dialog" aria-modal="true" aria-label="Registrar cobro" style={{ maxWidth: 420 }}>
         <div className="modal-hd">
           <div className="modal-ico"><HiBanknotes /></div>
           <div style={{ flex: 1 }}>
@@ -998,9 +1014,9 @@ function AbonoModal({ payment, siguientes = [], onClose, onConfirm, busy }) {
               {payment.contract?.contract_number ? ` · ${payment.contract.contract_number}` : ""}
             </div>
           </div>
-          <button className="modal-close" onClick={onClose}><HiOutlineXMark /></button>
+          <button type="button" className="modal-close" aria-label="Cerrar formulario" disabled={busy} onClick={onClose}><HiOutlineXMark /></button>
         </div>
-        <div className="modal-body">
+        <WorkflowForm id="lands-abonomodal-form" className="modal-body" noValidate onSubmit={event => { event.preventDefault(); if (!busy) confirm(); }}>
           <div style={{ background: "var(--sf2)", borderRadius: 12, padding: "12px 14px", marginBottom: 14, fontSize: ".82rem" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: abonado > 0 ? 6 : 0 }}>
               <span style={{ color: "var(--mu)" }}>Monto de la cuota</span>
@@ -1051,8 +1067,8 @@ function AbonoModal({ payment, siguientes = [], onClose, onConfirm, busy }) {
           </div>
 
           <div className="fg">
-            <label className="fl">{modo === "varias" ? "Monto total recibido" : "Monto a cobrar ahora"}</label>
-            <input className={`fi ${err ? "is-invalid" : ""}`} type="number" min="0" step="0.01"
+            <label className="fl" htmlFor="lands-abonomodal-1">{modo === "varias" ? "Monto total recibido" : "Monto a cobrar ahora"}</label>
+            <input id="lands-abonomodal-1" className={`fi ${err ? "is-invalid" : ""}`} type="number" min="0" step="0.01"
               value={monto} onChange={e => { setMonto(e.target.value); setErr(""); }} autoFocus />
             <FieldError msg={err} />
             {!err && !invalid && modo === "completa" && (
@@ -1085,21 +1101,23 @@ function AbonoModal({ payment, siguientes = [], onClose, onConfirm, busy }) {
             )}
           </div>
 
+          <div className="fg"><label className="fl" htmlFor="abono-method">Método de pago</label><select id="abono-method" className="fi" value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>{PAYMENT_METHODS.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select></div>
+          <div className="fg"><label className="fl" htmlFor="abono-date">Fecha del cobro</label><input id="abono-date" className="fi" type="date" value={paidDate} onChange={e => setPaidDate(e.target.value)} /></div>
           <div className="fg">
             <label className="fl">Comprobante (opcional)</label>
             <FilePicker value={file} onChange={setFile}
               accept="application/pdf,image/jpeg,image/png,image/webp"
               hint="PDF o imagen. Si no lo tienes a la mano, registra el cobro igual y súbelo después." />
           </div>
-        </div>
+        </WorkflowForm>
         <div className="modal-foot">
           <Button variant="secondary" style={{ flex: 1 }} onClick={onClose} disabled={busy}>Cancelar</Button>
-          <Button variant="primary" style={{ flex: 2 }} onClick={confirm} disabled={busy}>
+          <Button variant="primary" style={{ flex: 2 }} type="submit" form="lands-abonomodal-form" disabled={busy}>
             {busy ? "Registrando…" : modo === "varias" ? `Cobrar ${reparto.length} cuotas` : modo === "parcial" ? "Registrar abono" : "Registrar cobro"}
           </Button>
         </div>
       </div>
-    </div>
+    </DialogPortal>
   );
 }
 
@@ -1107,7 +1125,7 @@ function AbonoModal({ payment, siguientes = [], onClose, onConfirm, busy }) {
 function TipoModal({ onSelect, onClose }) {
   useEscapeKey(onClose);
   return (
-    <div className="modal-overlay">
+    <DialogPortal className="modal-overlay open lands-payment-dialog">
       <div className="modal-box" style={{ maxWidth: 400 }}>
         <div className="modal-hd">
           <div className="modal-ico"><HiCreditCard /></div>
@@ -1136,7 +1154,7 @@ function TipoModal({ onSelect, onClose }) {
           ))}
         </div>
       </div>
-    </div>
+    </DialogPortal>
   );
 }
 
@@ -1149,10 +1167,14 @@ const ESTADO_EG  = [["all","Todos los estados"],["pending","Pendiente"],["overdu
 const ESTADO_AL  = [["all","Todas las alertas"],["roja","Urgentes"],["amarilla","Próximas"]];
 
 export default function PaymentsPage() {
-  const { payments, clients, contracts, datosIncompletos, quickPay, collectOnContract, sendReminder, showToast, showError } = useAppContext();
+  const { payments, clients, contracts, datosIncompletos, quickPay, collectOnContract, sendReminder, showToast, showError, currentUser } = useAppContext();
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const targetPaymentId = params.get("payment");
+  const targetPayment = useQuery({ queryKey: ["payments", "detail", targetPaymentId], queryFn: () => paymentService.get(targetPaymentId), enabled: !!targetPaymentId });
 
+  const [deletingExpenseId, setDeletingExpenseId] = useState(null);
   const [tab,       setTab]       = useState("amort");
   const [amortFilter,  setAmortFilter]  = useState("all");   // all | ok | soon | late
   const [amortSearch,  setAmortSearch]  = useState("");
@@ -1168,6 +1190,7 @@ export default function PaymentsPage() {
   const [limit,   setLimit]   = useState(10);
 
   /* filtros compartidos (se resetean al cambiar tab) */
+  const pendingReceipts = usePendingReceipts(currentUser);
   const [search,  setSearch]  = useState("");
   const [estado,  setEstado]  = useState("all");
   const [periodo, setPeriodo] = useState(INIT_PERIOD);
@@ -1312,15 +1335,15 @@ export default function PaymentsPage() {
 
   /* ── handlers ── */
   const handlePagar = r => isEg ? markPaidExpense.mutate(r.id) : setAbono(r);
-  const confirmAbono = async (amount, paymentIds, file) => {
+  const confirmAbono = async (amount, paymentIds, file, { paymentMethod, paidDate } = {}) => {
     setAbonoBusy(true);
     // Un solo destino sigue por mark-paid; varias cuotas van por el cobro del
     // contrato, que es quien sabe repartir y deja un único recibo.
     const ok = paymentIds?.length
-      ? await collectOnContract(abono.contract?.id, { amount, paymentIds, file })
-      : await quickPay(abono.id, amount, file);
+      ? await collectOnContract(abono.contract?.id, { amount, paymentIds, file, paymentMethod, paidDate })
+      : await quickPay(abono.id, amount, file, paidDate, paymentMethod);
     setAbonoBusy(false);
-    if (ok) setAbono(null);
+    if (ok) { pendingReceipts.add(ok.receiptIssue); setAbono(null); }
   };
 
   /* Cuotas del mismo contrato que siguen a la abierta: son las que puede alcanzar
@@ -1337,13 +1360,13 @@ export default function PaymentsPage() {
   }, [abono, ingresos]);
   /* El modal de arriba antes solo se cerraba: el formulario no guardaba nada.
      Ahora pasa por el mismo cobro que el de la fila. */
-  const guardarCobroManual = async ({ contractId, paymentId, amount, paymentIds, file, paidDate }) => {
+  const guardarCobroManual = async ({ contractId, paymentId, amount, paymentIds, file, paidDate, paymentMethod }) => {
     setAbonoBusy(true);
     const ok = paymentIds?.length
-      ? await collectOnContract(contractId, { amount, paymentIds, file, paidDate })
-      : await quickPay(paymentId, amount, file, paidDate);
+      ? await collectOnContract(contractId, { amount, paymentIds, file, paidDate, paymentMethod })
+      : await quickPay(paymentId, amount, file, paidDate, paymentMethod);
     setAbonoBusy(false);
-    if (ok) setModal(null);
+    if (ok) { pendingReceipts.add(ok.receiptIssue); setModal(null); }
   };
 
   const guardarIngreso = async (form) => {
@@ -1354,14 +1377,15 @@ export default function PaymentsPage() {
         due_date: form.due_date, notes: form.notes || null, received: form.received,
       });
       // El comprobante no bloquea: el ingreso ya quedó registrado.
+      let receiptFailed = false;
       if (form._file) {
         try { await incomeService.receipt(creado.id, form._file); }
-        catch { showToast("Ingreso registrado, pero no se pudo subir el comprobante", "warning"); }
+        catch { receiptFailed = true; pendingReceipts.add({kind: "income", id: creado.id}); }
       }
       qc.invalidateQueries({ queryKey: ["incomes"] });
       qc.invalidateQueries({ queryKey: ["payments"] });
       setModal(null);
-      showToast("Ingreso registrado");
+      showToast(receiptFailed ? "Ingreso registrado. Comprobante pendiente." : "Ingreso registrado", receiptFailed ? "warning" : undefined);
     } catch (e) {
       showError(e, "No se pudo registrar el ingreso");
     } finally {
@@ -1385,7 +1409,15 @@ export default function PaymentsPage() {
       due_date: form.due_date, recurrencia: form.recurrencia || null, notes: form.notes || null,
       employee_id: form.employee_id || null, provider_id: form.provider_id || null };
     if (editing) {
-      updateExpense.mutate({ id: editing.id, data: body });
+      const expenseId = editing.id;
+      updateExpense.mutate({ id: expenseId, data: body }, {
+        onSuccess: async () => {
+          if (!form._file) return;
+          try { await expenseService.receipt(expenseId, form._file); }
+          catch { pendingReceipts.add({kind: "expense", id: expenseId}); showToast("Egreso actualizado. Comprobante pendiente.", "warning"); }
+          qc.invalidateQueries({ queryKey: ["expenses"] });
+        },
+      });
       return;
     }
     // `paid` decide si el egreso nace pagado o programado; el backend pone la
@@ -1398,7 +1430,7 @@ export default function PaymentsPage() {
         onSuccess: async (creado) => {
           if (!form._file || !creado?.id) return;
           try { await expenseService.receipt(creado.id, form._file); }
-          catch { showToast("Egreso registrado, pero no se pudo subir el comprobante", "warning"); }
+          catch { pendingReceipts.add({kind: "expense", id: creado.id}); showToast("Egreso registrado. Comprobante pendiente.", "warning"); }
           qc.invalidateQueries({ queryKey: ["expenses"] });
         },
       },
@@ -1592,6 +1624,8 @@ export default function PaymentsPage() {
           delta={k.expenses.delta} invertido serie={k.expenses.series} color="#C98A2B" id="egr" error={kpiError} cargando={kpiPending} sinPermiso={kpiSinPermiso} />
       </div>
 
+      {targetPaymentId && <section className="lands-found-record" aria-label="Pago encontrado">{targetPayment.isPending ? <p role="status">Cargando pago…</p> : targetPayment.isError ? <p role="alert">No se pudo consultar el pago. <button type="button" className="btn-s" onClick={() => targetPayment.refetch()}>Reintentar</button></p> : targetPayment.data && <><div><strong>{targetPayment.data.client?.name} · Cuota {targetPayment.data.installment_n}</strong><p>{targetPayment.data.contract?.contract_number} · {currency(targetPayment.data.amount)} · {{ paid: "Pagado", partial: "Parcial", pending: "Pendiente", overdue: "Vencido", cancelled: "Cancelado" }[targetPayment.data.status] || targetPayment.data.status}</p></div>{["pending", "partial", "overdue"].includes(targetPayment.data.status) && <button type="button" className="btn-p" onClick={() => setAbono(targetPayment.data)}>Registrar este cobro</button>}</>}</section>}
+      {pendingReceipts.issues.filter(issue => issue.kind !== "reservation").map(issue => <PendingReceiptUpload key={`${issue.kind}-${issue.id}`} issue={issue} onDone={() => pendingReceipts.remove(issue)} />)}
       {datosIncompletos?.payments && (
         <div className="cf-aviso-parcial" role="status">
           <HiOutlineClock aria-hidden="true" />
@@ -1615,8 +1649,8 @@ export default function PaymentsPage() {
         {tab === "amort" && (
           <>
             <div className="cf-toolbar" data-tour="pagos-filtros">
-              <label className="cf-search"><span><HiMagnifyingGlass /></span><input value={amortSearch} onChange={e => setAmortSearch(e.target.value)} placeholder="Buscar cliente o lote…" /></label>
-              <select className="cf-field" value={amortProject} onChange={e => setAmortProject(e.target.value)}>
+              <label  className="cf-search"><span><HiMagnifyingGlass /></span><input value={amortSearch} onChange={e => setAmortSearch(e.target.value)} placeholder="Buscar cliente o lote…" /></label>
+              <select id="field-payments-index-1" className="cf-field" value={amortProject} onChange={e => setAmortProject(e.target.value)}>
                 <option value="">Todos los proyectos</option>
                 {amortProjects.map(pj => <option key={pj} value={pj}>{pj}</option>)}
               </select>
@@ -1649,7 +1683,7 @@ export default function PaymentsPage() {
                             <button className="cf-ico pay" title="Registrar pago" onClick={() => { setCobroContrato(r.contract); setModal("cobro"); }}><HiBanknotes /></button>
                             {link ? <a className="cf-ico wa" href={link} target="_blank" rel="noreferrer" title="Recordatorio por WhatsApp"><HiPhone /></a>
                                   : <button className="cf-ico" title="Sin teléfono del cliente" disabled style={{ opacity: .4, cursor: "default" }}><HiPhone /></button>}
-                            <button className="cf-ico" title="Historial de amortización" onClick={() => navigate("/reportes")}><HiBars3 /></button>
+                            <button className="cf-ico" title="Historial de amortización" onClick={() => navigate(`/reportes?client=${encodeURIComponent(r.contract.client?.id || "")}`)}><HiBars3 /></button>
                           </div></td>
                         </tr>
                       );
@@ -1664,10 +1698,10 @@ export default function PaymentsPage() {
         {tab === "ingresos" && (
           <div className="card-body" style={{ padding: 0 }}>
             <div className="cf-toolbar">
-              <label className="cf-search"><span><HiMagnifyingGlass /></span>
+              <label  className="cf-search"><span><HiMagnifyingGlass /></span>
                 <input value={search} onChange={e => setSearch(e.target.value)}
                   placeholder="Buscar por concepto…" /></label>
-              <select className="cf-field" value={estado} onChange={e => setEstado(e.target.value)}>
+              <select id="field-payments-index-2" className="cf-field" value={estado} onChange={e => setEstado(e.target.value)}>
                 <option value="all">Todos los estados</option>
                 <option value="received">Recibidos</option>
                 <option value="pending">Por recibir</option>
@@ -1686,8 +1720,8 @@ export default function PaymentsPage() {
               <div>Flujo neto<b style={{ color: k.net_flow >= 0 ? "var(--mid)" : "var(--danger)" }}>{currency(k.net_flow)}</b></div>
             </div>
             <div className="cf-toolbar">
-              <label className="cf-search"><span><HiMagnifyingGlass /></span><input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Buscar egreso…" /></label>
-              <select className="cf-field" value={estado} onChange={e => { setEstado(e.target.value); setPage(1); }}>
+              <label  className="cf-search"><span><HiMagnifyingGlass /></span><input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Buscar egreso…" /></label>
+              <select id="field-payments-index-3" className="cf-field" value={estado} onChange={e => { setEstado(e.target.value); setPage(1); }}>
                 {ESTADO_EG.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>
             </div>
@@ -1702,7 +1736,7 @@ export default function PaymentsPage() {
                   onPagar={r => markPaidExpense.mutate(r.id)}
                   onRecordar={() => {}}
                   onEdit={e => { setEditing(e); setModal("egreso"); }}
-                  onDelete={id => window.confirm("¿Eliminar este egreso?") && deleteExpense.mutate(id)}
+                  onDelete={id => setDeletingExpenseId(id)}
                 />
                 <Pagination total={egAll.length} page={page} limit={limit} onPage={setPage} onLimit={v => { setLimit(v); setPage(1); }} />
               </div>
@@ -1713,7 +1747,8 @@ export default function PaymentsPage() {
 
 
       {modal === "tipo"   && <TipoModal onSelect={t => setModal(t)} onClose={() => setModal(null)} />}
-      {modal === "egreso" && <EgresoModal initial={editing} onClose={() => { setModal(null); setEditing(null); }} onSave={handleSaveEgreso} />}
+      <ConfirmDialog open={!!deletingExpenseId} title="¿Eliminar este egreso?" danger busy={deleteExpense.isPending} confirmLabel="Eliminar egreso" onCancel={() => setDeletingExpenseId(null)} onConfirm={() => deleteExpense.mutate(deletingExpenseId, {onSuccess: () => setDeletingExpenseId(null)})}>Revisa el registro antes de confirmar.</ConfirmDialog>
+      {modal === "egreso" && <EgresoModal busy={createExpense.isPending || updateExpense.isPending} initial={editing} onClose={() => { setModal(null); setEditing(null); }} onSave={handleSaveEgreso} />}
       {modal === "cobro"  && (
         <CobroModal clients={clients} contracts={contracts} busy={abonoBusy}
           key={cobroContrato?.id || "nuevo"} contratoInicial={cobroContrato}

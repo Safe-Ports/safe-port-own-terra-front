@@ -1,3 +1,6 @@
+import useConfirmation from "@/hooks/useConfirmation";
+import DialogPortal from "@/components/ui/DialogPortal";
+import WorkflowForm from "@/components/forms/WorkflowForm";
 import { useEffect, useMemo, useState } from "react";
 import GuideModal from "@/components/shared/GuideModal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -44,6 +47,7 @@ const TOTAL_LABEL = {
 };
 
 function AgendaPage() {
+  const { requestConfirmation, confirmationDialog } = useConfirmation();
   const today = new Date();
   const qc = useQueryClient();
   const { showToast, showError, clearCalendarAlerts, clients } = useAppContext();
@@ -108,6 +112,7 @@ function AgendaPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["appointments"] });
       showToast("Evento eliminado");
+      setShowModal(false); setEditingId(null);
     },
     onError: (err) => showError(err, "Error al eliminar el evento"),
   });
@@ -257,7 +262,7 @@ function AgendaPage() {
   }, [view, visibleMonth, selectedDate, visibleRange]);
 
   return (
-    <EcoLayout active="agenda" title="Agenda" subtitle="Agenda general del ecosistema: eventos, recordatorios, reuniones y citas" onGuide={() => setShowGuide(true)}>
+    <EcoLayout active="agenda" title="Agenda" subtitle="Agenda general del ecosistema: eventos, recordatorios, reuniones y citas" onGuide={() => setShowGuide(true)}>{confirmationDialog}
       <div className="ag-hero">
         <div>
           <div className="ag-kicker">Agenda General</div>
@@ -414,8 +419,8 @@ function AgendaPage() {
       </div>
 
       {showModal ? (
-        <div className="ag-modal-backdrop" onClick={() => { setShowModal(false); setEditingId(null); }}>
-          <form className="ag-modal" onSubmit={saveAppointment} onClick={(e) => e.stopPropagation()}>
+        <DialogPortal className="ag-modal-backdrop" onClick={() => { setShowModal(false); setEditingId(null); }}>
+          <WorkflowForm className="ag-modal" onSubmit={saveAppointment} onClick={(e) => e.stopPropagation()}>
             <div className="ag-modal-head">
               <div>
                 <h3>{editingId ? "Editar evento" : "Nuevo evento"}</h3>
@@ -494,7 +499,7 @@ function AgendaPage() {
                   type="button"
                   className="ag-danger"
                   style={{ marginRight: "auto" }}
-                  onClick={() => { if (window.confirm("¿Eliminar este evento del calendario? Si tiene videollamada, también se borra de Google Calendar.")) { cancelMutation.mutate(editingId); setShowModal(false); setEditingId(null); } }}
+                  onClick={async () => { if (await requestConfirmation("¿Eliminar este evento del calendario? Si tiene videollamada, también se borra de Google Calendar.")) { if (!cancelMutation.isPending) cancelMutation.mutate(editingId); } }}
                 >
                   Eliminar evento
                 </button>
@@ -503,8 +508,8 @@ function AgendaPage() {
                 {createMutation.isPending || updateMutation.isPending ? "Guardando…" : editingId ? "Guardar cambios" : "Guardar evento"}
               </button>
             </div>
-          </form>
-        </div>
+          </WorkflowForm>
+        </DialogPortal>
       ) : null}
       <GuideModal
         open={showGuide}

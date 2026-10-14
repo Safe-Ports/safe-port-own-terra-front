@@ -1,0 +1,11 @@
+.rental-photo {
+  overflow: hidden;
+  background-image: url("/properties/rental-catalog-sprite.webp");
+  background-repeat: no-repeat;
+  background-size: 200% 200%;
+}
+.rental-photo--top-left { background-position: left top; }
+.rental-photo--top-right { background-position: right top; }
+.rental-photo--bottom-left { background-position: left bottom; }
+.rental-photo--bottom-right { background-position: right bottom; }
+.rental-photo--custom { background-position: center; background-size: cover; }

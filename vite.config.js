@@ -14,6 +14,9 @@ export default defineConfig(({ mode }) => {
   if (mode === "production" && !env.VITE_API_URL?.trim()) {
     throw new Error("VITE_API_URL es obligatoria para generar el build de producción");
   }
+  if (mode === "production" && !env.VITE_PROPERTIES_API_URL?.trim()) {
+    throw new Error("VITE_PROPERTIES_API_URL es obligatoria para generar el build de producción");
+  }
 
   return {
   // Versión desplegada, congelada en el build. La pasan los scripts de deploy:
@@ -162,7 +165,7 @@ export default defineConfig(({ mode }) => {
         // documentos, actividad, notificaciones, empleados, proveedores,
         // billing, inmuebles, calendario, formularios — estos dos últimos se
         // mudaron de lands-back a core-back el 2026-09-18) es de core-back.
-        "/api/v1": { target: env.VITE_CORE_API_URL || "http://127.0.0.1:8000", changeOrigin: true },
+        "/api/v1": { target: env.VITE_CORE_API_URL || "http://127.0.0.1:8011", changeOrigin: true },
       } : {}),
       // Proxy opcional para probar contra una API remota desde localhost (uso
       // preexistente, sin relación con el split de arriba).

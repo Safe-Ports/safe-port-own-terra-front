@@ -8,6 +8,7 @@ import CoreTopbarActions from "@/components/layout/CoreTopbarActions";
 import Toast from "@/components/shared/Toast";
 import SubscriptionBanner from "@/components/shared/SubscriptionBanner";
 import useEscapeKey from "@/hooks/useEscapeKey";
+import PropertiesQuickNav from "@/apps/properties/components/PropertiesQuickNav";
 
 /* Layout compartido del hub Aurora: sidebar + topbar + área de scroll.
    `active` marca el item activo del menú. */
@@ -47,7 +48,7 @@ function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
   };
 
   return (
-    <div className="eco-root">
+    <div className={`eco-root ${active === "properties" ? "properties-focus" : ""}`}>
       <EcoSprite />
 
       {/* SIDEBAR */}
@@ -59,8 +60,19 @@ function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
       />
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <div className="sidebar-inner">
+          {active === "properties" ? (
+            <PropertiesQuickNav goTo={goTo} />
+          ) : null}
           <div className="brand">
-            <div className="brand-logo"><img src="/ownterra ecosistem.png" alt="OwnTerra Ecosistem" /></div>
+            <button
+              type="button"
+              className="brand-logo"
+              onClick={() => goTo("/ecosistema")}
+              aria-label="Ir al Ecosistema OwnTerra"
+              title="Volver al Ecosistema"
+            >
+              <img src="/brand/ownterra-logo-light.svg" alt="OwnTerra" />
+            </button>
           </div>
 
           {/* Sidebar reducido a 3 destinos: la galería de apps y los dos paneles
@@ -80,7 +92,7 @@ function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
               {currentUser?.organization?.name || currentUser?.organization || "Mi organización"}
             </div>
             <div className="ts-schema">
-              {currentUser?.name ? `Hola, ${currentUser.name.split(" ")[0]} 👋` : "OwnTerra Platform"}
+              {currentUser?.name ? `Hola, ${currentUser.name.split(" ")[0]}` : "OwnTerra Platform"}
             </div>
           </div>
         </div>

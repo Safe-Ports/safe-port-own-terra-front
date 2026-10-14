@@ -1,8 +1,10 @@
+import WorkflowForm from "./WorkflowForm";
 import { useState } from "react";
 import { useAppContext } from "@/context/AppContext";
 import InlineError from "@/components/shared/InlineError";
 import FieldError from "@/components/shared/FieldError";
 import { useFieldErrors } from "@/hooks/useFieldErrors";
+import { PROPERTIES_MVP_SCOPE } from "@/apps/properties/mvpScope";
 import { getFieldErrors } from "@/services/errors";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -43,7 +45,7 @@ export function LeftPanel() {
   return (
     <div className="ll-panel">
       <div className="ll-logo">
-        <img src="/ownterra ecosistem.png" alt="OwnTerra Ecosistem" />
+        <img src="/brand/ownterra-logo-light.svg" alt="OwnTerra" />
       </div>
       {MAP_SVG}
       <div className="ll-hero">
@@ -69,7 +71,7 @@ function LoginView({ onForgot, onRegister }) {
   const [showPass, setShowPass] = useState(false);
 
   const submit = async () => {
-    if (!form.identifier || !form.password) return;
+    if (loading || !form.identifier.trim() || !form.password) return;
     setLoading(true);
     setError(null);
     setUnverifiedEmail("");
@@ -90,7 +92,7 @@ function LoginView({ onForgot, onRegister }) {
   };
 
   return (
-    <div className="lf-wrap">
+    <WorkflowForm busy={loading} onSubmit={event => { event.preventDefault(); return submit(); }} className="lf-wrap">
       <div className="lf-title">Bienvenido</div>
       <div className="lf-sub">Accede a tu sistema de gestión inmobiliaria</div>
 
@@ -106,13 +108,13 @@ function LoginView({ onForgot, onRegister }) {
         <label className="lf-label">Usuario / Correo</label>
         <div className="lf-input-wrap">
           <span className="lf-ico">ID</span>
-          <input
+          <input required
             className={`lf-input${error ? " error" : ""}`}
             type="text"
             placeholder="correo@empresa.mx"
             value={form.identifier}
             onChange={(e) => setForm((p) => ({ ...p, identifier: e.target.value }))}
-            onKeyDown={(e) => e.key === "Enter" && submit()}
+
             autoComplete="username"
           />
         </div>
@@ -122,13 +124,13 @@ function LoginView({ onForgot, onRegister }) {
         <label className="lf-label">Contraseña</label>
         <div className="lf-input-wrap">
           <span className="lf-ico">PW</span>
-          <input
+          <input required
             className={`lf-input${error ? " error" : ""}`}
             type={showPass ? "text" : "password"}
             placeholder="••••••••"
             value={form.password}
             onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
-            onKeyDown={(e) => e.key === "Enter" && submit()}
+
             autoComplete="current-password"
           />
           <button className="lf-eye" type="button" onClick={() => setShowPass((v) => !v)} tabIndex={-1}>
@@ -156,10 +158,18 @@ function LoginView({ onForgot, onRegister }) {
         </button>
       </div>
 
-      <button className={`lf-btn${loading ? " loading" : ""}`} onClick={submit} disabled={loading}>
+      <button type="submit" className={`lf-btn${loading ? " loading" : ""}`}  disabled={loading}>
         {loading ? <span className="btn-spinner" /> : null}
         {loading ? "Ingresando..." : "Iniciar sesión"}
       </button>
+
+      {PROPERTIES_MVP_SCOPE.rentals ? (
+        <a className="lf-public-catalog" href="/rentas">
+          <span aria-hidden="true">⌂</span>
+          Explorar inmuebles en renta
+          <span aria-hidden="true">→</span>
+        </a>
+      ) : null}
 
       <div style={{ textAlign: "center", marginTop: 16, fontSize: ".82rem", color: "#83867C" }}>
         ¿No tienes cuenta?{" "}
@@ -175,7 +185,7 @@ function LoginView({ onForgot, onRegister }) {
       <div className="lf-footer">
         OwnTerra v1.0 &nbsp;·&nbsp; © 2026
       </div>
-    </div>
+    </WorkflowForm>
   );
 }
 
@@ -188,7 +198,7 @@ function ForgotView({ onBack }) {
   const [error, setError]   = useState(null);
 
   const submit = async () => {
-    if (!email.trim()) return;
+    if (loading || !email.trim()) return;
     setLoading(true);
     setError(null);
     const result = await forgotPassword(email.trim());
@@ -216,7 +226,7 @@ function ForgotView({ onBack }) {
   }
 
   return (
-    <div className="lf-wrap">
+    <WorkflowForm busy={loading} onSubmit={event => { event.preventDefault(); return submit(); }} className="lf-wrap">
       <button
         type="button"
         onClick={onBack}
@@ -233,20 +243,20 @@ function ForgotView({ onBack }) {
         <label className="lf-label">Correo electrónico</label>
         <div className="lf-input-wrap">
           <span className="lf-ico">✉️</span>
-          <input
+          <input required
             className="lf-input"
             type="email"
             placeholder="correo@empresa.mx"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && submit()}
+
             autoComplete="email"
             autoFocus
           />
         </div>
       </div>
 
-      <button className={`lf-btn${loading ? " loading" : ""}`} onClick={submit} disabled={loading || !email.trim()}>
+      <button type="submit" className={`lf-btn${loading ? " loading" : ""}`}  disabled={loading || !email.trim()}>
         {loading ? <span className="btn-spinner" /> : null}
         {loading ? "Enviando..." : "Enviar instrucciones"}
       </button>
@@ -254,7 +264,7 @@ function ForgotView({ onBack }) {
       <div className="lf-footer" style={{ marginTop: 24 }}>
         OwnTerra v1.0 &nbsp;·&nbsp; © 2025
       </div>
-    </div>
+    </WorkflowForm>
   );
 }
 
@@ -353,7 +363,7 @@ function RegisterView({ onBack }) {
   ];
 
   return (
-    <div className="lf-wrap">
+    <WorkflowForm busy={loading} noValidate onSubmit={event => { event.preventDefault(); return submit(); }} className="lf-wrap">
       <button
         type="button"
         onClick={onBack}
@@ -380,7 +390,7 @@ function RegisterView({ onBack }) {
               placeholder={f.placeholder}
               value={form[f.key]}
               onChange={set(f.key)}
-              onKeyDown={(e) => e.key === "Enter" && submit()}
+
               autoComplete={f.auto}
             />
           </div>
@@ -401,7 +411,7 @@ function RegisterView({ onBack }) {
             placeholder="Escribe tu contraseña"
             value={form.password}
             onChange={set("password")}
-            onKeyDown={(e) => e.key === "Enter" && submit()}
+
             autoComplete="new-password"
           />
           <button className="lf-eye" type="button" onClick={() => setShowPass((v) => !v)} aria-label={showPass ? "Ocultar contraseña" : "Mostrar contraseña"} aria-pressed={showPass}>
@@ -424,16 +434,16 @@ function RegisterView({ onBack }) {
             placeholder="Repite la contraseña"
             value={form.confirm}
             onChange={set("confirm")}
-            onKeyDown={(e) => e.key === "Enter" && submit()}
+
             autoComplete="new-password"
           />
         </div>
 
       </div>
 
-      <button
+      <button type="submit"
         className={`lf-btn${loading ? " loading" : ""}`}
-        onClick={submit}
+
         disabled={loading || !form.organization_name.trim() || !form.name.trim() || !form.email.trim() || !form.password || !form.confirm}
       >
         {loading ? <span className="btn-spinner" /> : null}
@@ -441,7 +451,7 @@ function RegisterView({ onBack }) {
       </button>
 
       <div className="lf-footer" style={{ marginTop: 16 }}>OwnTerra v1.0 &nbsp;·&nbsp; © 2026</div>
-    </div>
+    </WorkflowForm>
   );
 }
 

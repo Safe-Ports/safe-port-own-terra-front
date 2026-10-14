@@ -1,13 +1,20 @@
+import WorkflowForm from "@/components/forms/WorkflowForm";
 import { useEffect, useMemo, useState } from "react";
 import { HiCalculator, HiTrash, HiMagnifyingGlass, HiCheck } from "react-icons/hi2";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SkeletonRows } from "@/components/ui/Skeleton";
 import { currency } from "@/services/formatters";
 import { calculatorService } from "@/services/calculatorService";
-import { extractVariables, evaluate, buildFlatSchedule, FormulaError } from "@/services/formulaEngine";
+import { extractVariables, validateFormula, evaluate, buildFlatSchedule, FormulaError } from "@/services/formulaEngine";
 
 import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
+import FieldError from "@/components/shared/FieldError";
+import InlineError from "@/components/shared/InlineError";
+import { parseApiError } from "@/errors/parseApiError";
+import { useFieldErrors } from "@/hooks/useFieldErrors";
 import GuideModal from "@/components/shared/GuideModal";
 
 const APP_KEY = "lands";
@@ -34,18 +41,22 @@ function guessPrincipal(vars, vals) {
 }
 
 function CalculatorPage() {
-  const { showToast, showError } = useAppContext();
+  const { showToast, showError, contractDraft, openModal } = useAppContext();
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const [showGuide, setShowGuide] = useState(false);
   useLandsGuide(() => setShowGuide(true));
 
   const LIST_KEY = ["calculators", APP_KEY];
-  const { data: list = [], isLoading } = useQuery({
+  const listQuery = useQuery({
     queryKey: LIST_KEY,
     queryFn: () => calculatorService.list({ app_key: APP_KEY }),
     staleTime: 60_000,
   });
 
+  const { data: list = [], isLoading } = listQuery;
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const fe = useFieldErrors();
   const [open, setOpen]           = useState(false);       // editor visible
   const [editor, setEditor]       = useState(EMPTY);
   const [vars, setVars]           = useState([]);          // nombres detectados
@@ -60,6 +71,7 @@ function CalculatorPage() {
 
   /* ── Cargar una calculadora en el editor ── */
   const loadIntoEditor = (calc) => {
+    fe.clearAll();
     setOpen(true);
     setEditor(calc ? { ...calc } : EMPTY);
     const detected = calc ? extractVariables(calc.formula) : [];
@@ -74,6 +86,8 @@ function CalculatorPage() {
 
   /* ── Analizar la fórmula (genera los campos dinámicos) ── */
   const analyze = () => {
+    try { validateFormula(editor.formula); } catch (error) { fe.setErrors({formula: error.message}); return; }
+    fe.clear("formula");
     const detected = extractVariables(editor.formula);
     if (!detected.length) {
       setEvalError("No se detectaron variables. Revisa la fórmula.");
@@ -113,8 +127,12 @@ function CalculatorPage() {
 
   /* ── Guardar (crear o actualizar) ── */
   const save = async () => {
-    if (!editor.name.trim())   return showToast("Ponle un nombre a la calculadora");
-    if (!editor.formula.trim()) return showToast("La fórmula no puede estar vacía");
+    if (saving) return;
+    const errors = {};
+    if (!editor.name.trim()) errors.name = "Escribe el nombre del plan.";
+    try { validateFormula(editor.formula); } catch (error) { errors.formula = error.message; }
+    fe.setErrors(errors);
+    if (Object.keys(errors).length) return;
     setSaving(true);
     try {
       const body = {
@@ -130,6 +148,7 @@ function CalculatorPage() {
         isEditing ? old.map((c) => (c.id === saved.id ? saved : c)) : [saved, ...old]
       );
       loadIntoEditor(saved);
+      qc.invalidateQueries({ queryKey: ["calculators", "active", APP_KEY] });
       showToast(isEditing ? "Calculadora actualizada" : "Calculadora creada");
     } catch (err) {
       showError(err, "No se pudo guardar la calculadora");
@@ -146,6 +165,7 @@ function CalculatorPage() {
       // Server confirmó: refleja el cambio (una sola activa por módulo).
       qc.setQueryData(LIST_KEY, (old = []) => old.map((c) => ({ ...c, is_active: c.id === calc.id })));
       if (editor.id === calc.id) setEditor((e) => ({ ...e, is_active: true }));
+      qc.invalidateQueries({ queryKey: ["calculators", "active", APP_KEY] });
       showToast(`«${calc.name}» es ahora la calculadora activa`);
     } catch (err) {
       showError(err, "No se pudo activar la calculadora");
@@ -156,12 +176,14 @@ function CalculatorPage() {
 
   const remove = async (calc) => {
     if (pendingId) return;
-    if (!window.confirm(`¿Eliminar la calculadora «${calc.name}»? Las ventas pasadas conservan su fórmula.`)) return;
+
     setPendingId(calc.id);
     try {
       await calculatorService.delete(calc.id);
       qc.setQueryData(LIST_KEY, (old = []) => old.filter((c) => c.id !== calc.id));
       if (editor.id === calc.id) { setOpen(false); setEditor(EMPTY); }
+      qc.invalidateQueries({ queryKey: ["calculators", "active", APP_KEY] });
+      setDeleteTarget(null);
       showToast("Calculadora eliminada");
     } catch (err) {
       showError(err, "No se pudo eliminar la calculadora");
@@ -205,6 +227,7 @@ function CalculatorPage() {
           border-top-color:var(--forest);animation:calc-spin .6s linear infinite;}
         @keyframes calc-spin{to{transform:rotate(360deg);}}
       `}</style>
+      {contractDraft?._resumeContract && <section className="lands-found-record"><div><strong>Tu contrato sigue en borrador</strong><p>Los datos capturados se conservaron mientras configuras el plan.</p></div><button type="button" className="btn-p" onClick={() => { qc.invalidateQueries({ queryKey: ["calculators", "active", APP_KEY] }); navigate("/contratos"); openModal("contractModal"); }}>Volver al contrato</button></section>}
       <div className="flex items-center justify-between">
         <div>
           <div className="text-lg font-semibold" style={{ color: "var(--tx,#1E3D2B)" }}>
@@ -216,15 +239,17 @@ function CalculatorPage() {
         </div>
       </div>
 
-      <div className="grid gap-4" style={{ gridTemplateColumns: "minmax(260px, 340px) 1fr" }}>
+      <ConfirmDialog open={!!deleteTarget} title="¿Eliminar esta calculadora?" confirmLabel="Eliminar calculadora" danger busy={!!pendingId} onCancel={() => setDeleteTarget(null)} onConfirm={() => remove(deleteTarget)}>Las ventas anteriores conservan su fórmula.</ConfirmDialog>
+      <div className="grid gap-4 lands-calculator-grid">
         {/* ── Lista ── */}
         <div className="card" style={{ alignSelf: "start" }} data-tour="calc-lista">
           <div className="card-hd">
             <div className="card-title">Guardadas</div>
           </div>
           <div className="card-body" style={{ padding: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+            {listQuery.isError && <InlineError error={parseApiError(listQuery.error)}><button type="button" onClick={() => listQuery.refetch()}>Reintentar</button></InlineError>}
             {isLoading && <div style={{ padding: 12 }}><SkeletonRows rows={4} /></div>}
-            {!isLoading && !list.length && (
+            {!isLoading && !listQuery.isError && !list.length && (
               <div className="text-xs" style={{ color: "var(--mu)", padding: 12, textAlign: "center" }}>
                 Sin calculadoras. Crea la primera con “+ Nueva”.
               </div>
@@ -234,7 +259,7 @@ function CalculatorPage() {
               return (
                 <div
                   key={calc.id}
-                  className={`calc-item${selected ? " sel" : ""}`}
+                  role="button" tabIndex={0} onKeyDown={event => { if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); loadIntoEditor(calc); } }} className={`calc-item${selected ? " sel" : ""}`}
                   onClick={() => loadIntoEditor(calc)}
                 >
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
@@ -287,16 +312,16 @@ function CalculatorPage() {
             </div>
           </div>
         ) : (
-        <div className="card" data-tour="calc-editor">
+        <WorkflowForm className="card" data-tour="calc-editor" busy={saving} noValidate onSubmit={event => { event.preventDefault(); return save(); }}>
           <div className="card-hd">
             <div className="card-title">{isEditing ? "Editar calculadora" : "Nueva calculadora"}</div>
             <div style={{ display: "flex", gap: 8 }}>
               {isEditing && (
                 <>
-                  <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => remove(editor)}>
+                  <button type="button" className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => setDeleteTarget(editor)}>
                     <HiTrash style={{ display: "inline", verticalAlign: "-2px" }} /> Eliminar
                   </button>
-                  <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={newCalculator}>
+                  <button type="button" className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={newCalculator}>
                     + Nueva
                   </button>
                 </>
@@ -306,14 +331,14 @@ function CalculatorPage() {
           <div className="card-body space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="fg">
-                <label className="fl">Nombre</label>
-                <input className="fi" value={editor.name}
+                <label className="fl" htmlFor="calculator-name">Nombre *</label>
+                <input id="calculator-name" {...fe.fieldProps("name")} value={editor.name}
                   onChange={(e) => setEditor((p) => ({ ...p, name: e.target.value }))}
-                  placeholder="Ej. Plan 12% interés simple" />
+                  placeholder="Ej. Plan 12% interés simple" /><FieldError msg={fe.errors.name} />
               </div>
               <div className="fg">
-                <label className="fl">Descripción</label>
-                <input className="fi" value={editor.description || ""}
+                <label className="fl" htmlFor="calculator-description">Descripción (opcional)</label>
+                <input id="calculator-description" className="fi" value={editor.description || ""}
                   onChange={(e) => setEditor((p) => ({ ...p, description: e.target.value }))}
                   placeholder="Breve descripción del plan" />
               </div>
@@ -321,19 +346,19 @@ function CalculatorPage() {
 
             <div className="fg">
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <label className="fl">Fórmula matemática</label>
+                <label className="fl" htmlFor="calculator-formula">Fórmula matemática *</label>
                 <button type="button" onClick={copyExample}
                   style={{ border: 0, background: "transparent", color: "var(--forest)", fontSize: ".7rem", fontWeight: 700, cursor: "pointer" }}>
                   Usar ejemplo →
                 </button>
               </div>
-              <textarea
-                className="fi"
+              <textarea id="calculator-formula"
+                {...fe.fieldProps("formula")}
                 style={{ fontFamily: "var(--font-body)", minHeight: 80, resize: "vertical" }}
                 value={editor.formula}
                 onChange={(e) => setEditor((p) => ({ ...p, formula: e.target.value }))}
                 placeholder={EXAMPLE}
-              />
+              /><FieldError msg={fe.errors.formula} />
               <div style={{ fontSize: ".68rem", color: "var(--mu)", marginTop: 4 }}>
                 Operadores: <code>+ - * / % ^</code> · funciones: <code>min, max, abs, round, floor, ceil, sqrt, pow</code>.
                 Las variables se detectan solas al analizar.
@@ -342,7 +367,7 @@ function CalculatorPage() {
 
             <div style={{ display: "flex", gap: 10 }}>
               <button type="button" className="btn-s" data-tour="calc-analizar" onClick={analyze}><HiMagnifyingGlass style={{ display: "inline", verticalAlign: "-2px" }} /> Analizar fórmula</button>
-              <button type="button" className="btn-p" data-tour="calc-guardar" onClick={save} disabled={saving}>
+              <button type="submit" className="btn-p" data-tour="calc-guardar" disabled={saving}>
                 {saving ? "Guardando…" : <><HiCheck style={{ display: "inline", verticalAlign: "-2px" }} /> Guardar configuración</>}
               </button>
             </div>
@@ -356,8 +381,8 @@ function CalculatorPage() {
                 <div className="grid gap-3 md:grid-cols-3">
                   {vars.map((v) => (
                     <div className="fg" key={v}>
-                      <label className="fl" style={{ fontFamily: "var(--font-body)", fontSize: ".72rem" }}>{v}</label>
-                      <input className="fi" type="number" value={testValues[v] ?? ""}
+                      <label htmlFor="field-calculator-index-1" className="fl" style={{ fontFamily: "var(--font-body)", fontSize: ".72rem" }}>{v}</label>
+                      <input id="field-calculator-index-1" className="fi" type="number" value={testValues[v] ?? ""}
                         onChange={(e) => setTestValue(v, e.target.value)} placeholder="0" />
                     </div>
                   ))}
@@ -382,13 +407,13 @@ function CalculatorPage() {
                     </div>
                     <div className="grid gap-3 md:grid-cols-2" style={{ marginBottom: 10 }}>
                       <div className="fg">
-                        <label className="fl">Plazo (meses)</label>
-                        <input className="fi" type="number" min="1" value={effMonths}
+                        <label htmlFor="field-calculator-index-2" className="fl">Plazo (meses)</label>
+                        <input id="field-calculator-index-2" className="fi" type="number" min="1" value={effMonths}
                           onChange={(e) => setProj((p) => ({ ...p, months: e.target.value }))} placeholder="Ej. 96" />
                       </div>
                       <div className="fg">
-                        <label className="fl">Monto financiado</label>
-                        <input className="fi" type="number" min="0" value={effPrincipal}
+                        <label htmlFor="field-calculator-index-3" className="fl">Monto financiado</label>
+                        <input id="field-calculator-index-3" className="fi" type="number" min="0" value={effPrincipal}
                           onChange={(e) => setProj((p) => ({ ...p, principal: e.target.value }))} placeholder="Precio − Enganche" />
                       </div>
                     </div>
@@ -435,7 +460,7 @@ function CalculatorPage() {
               </div>
             )}
           </div>
-        </div>
+        </WorkflowForm>
         )}
       </div>
 

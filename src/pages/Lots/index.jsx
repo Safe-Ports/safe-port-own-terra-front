@@ -1,4 +1,8 @@
+import WorkflowForm from "@/components/forms/WorkflowForm";
 import { useEffect, useMemo, useRef, useState } from "react";
+import DialogPortal from "@/components/ui/DialogPortal";
+import FieldError from "@/components/shared/FieldError";
+import { validateLotDraft } from "@/services/lotDraftValidation";
 import MigrationWizard from "./MigrationWizard";
 import { useNavigate } from "react-router-dom";
 import { HiChevronLeft, HiChevronRight, HiCube, HiMap, HiPencil, HiXMark } from "react-icons/hi2";
@@ -276,6 +280,7 @@ function LotsPage() {
   const [sectionTotal, setSectionTotal] = useState("20");
   const [mapFileName, setMapFileName] = useState("");
   const [creatingFrac, setCreatingFrac] = useState(false);
+  const [lotErrors, setLotErrors] = useState({});
   const [lotEditDraft, setLotEditDraft] = useState(null);
   const [loadingEditId, setLoadingEditId] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -468,6 +473,7 @@ function LotsPage() {
     const sec = draftProject.sections.find((s) => s.id === sectionId);
     const lot = sec?.lots.find((l) => l.id === lotId);
     if (!lot) return;
+    setLotErrors({});
     setLotEditDraft({
       sectionId,
       ...lot,
@@ -485,9 +491,14 @@ function LotsPage() {
 
   const saveLotEdit = () => {
     if (!lotEditDraft) return;
+    const errors = validateLotDraft(lotEditDraft, draftProject.sections);
+    setLotErrors(errors);
+    if (Object.keys(errors).length) return;
     const { sectionId, ...lotData } = lotEditDraft;
+    lotData.code = lotData.code.trim();
     updateLot(sectionId, lotData.id, lotData);
     setLotEditDraft(null);
+    showToast("Lote actualizado en el borrador. Guarda los lotes para confirmar los cambios.");
   };
 
   const addSection = () => {
@@ -574,7 +585,7 @@ function LotsPage() {
       } catch (err) {
         showError(err, "No se pudo eliminar el lote");
         setDeletingLot(false);
-        return;
+        return false;
       }
       setDeletingLot(false);
     }
@@ -585,6 +596,7 @@ function LotsPage() {
       ),
     }));
     showToast("Lote eliminado");
+    return true;
   };
 
   const addLotsToSection = (sectionId, count) => {
@@ -696,6 +708,8 @@ function LotsPage() {
             data-tour="frac-guardar"
             onClick={async () => {
               if (saving) return;
+              const invalidLot = draftProject.sections.flatMap(section => section.lots).find(lot => Object.keys(validateLotDraft(lot, draftProject.sections)).length);
+              if (invalidLot) { showToast(`Revisa el lote ${invalidLot.code || "sin código"} antes de guardar.`, "warning"); return; }
               setSaving(true);
               try {
                 if (deletedLotIds.size > 0) {
@@ -703,6 +717,7 @@ function LotsPage() {
                   setDeletedLotIds(new Set());
                 }
                 await saveEditedFrac(draftProject);
+              } catch (error) { showError(error, "No se pudieron guardar los cambios");
               } finally {
                 setSaving(false);
               }
@@ -930,7 +945,7 @@ function LotsPage() {
       {/* Lot edit modal */}
       {lotEditDraft && (() => {
         const d = lotEditDraft;
-        const setField = (key, val) => setLotEditDraft((prev) => ({ ...prev, [key]: val }));
+        const setField = (key, val) => { setLotEditDraft((prev) => ({ ...prev, [key]: val })); setLotErrors(previous => ({ ...previous, [key]: "" })); };
         const setEspecificacion = (key, val) => setLotEditDraft((prev) => ({ ...prev, especificaciones: { ...prev.especificaciones, [key]: val } }));
         // Mismas claves que sembró la migración de especificaciones_catalogo en
         // lands-back — es un catalogo global (tambien tiene recamaras/banos/
@@ -950,8 +965,8 @@ function LotsPage() {
           { key: "bardeado",  label: "Bardeado / cercado" },
         ];
         return (
-          <div className="lot-edit-overlay" onClick={() => setLotEditDraft(null)}>
-            <div className="lot-edit-modal" onClick={(e) => e.stopPropagation()}>
+          <DialogPortal className="lot-edit-overlay" onClick={() => setLotEditDraft(null)}>
+            <div role="dialog" aria-modal="true" aria-label="Editar lote" className="lot-edit-modal" onClick={(e) => e.stopPropagation()}>
 
               {/* Header */}
               <div className="lot-edit-head">
@@ -964,7 +979,7 @@ function LotsPage() {
               </div>
 
               {/* Body */}
-              <div className="lot-edit-body">
+              <WorkflowForm id="lands-lot-draft-form" className="lot-edit-body" noValidate onSubmit={event => { event.preventDefault(); saveLotEdit(); }}>
 
                 {/* Imagen del plano */}
                 <div className="lot-edit-sec">Imagen del plano</div>
@@ -984,7 +999,7 @@ function LotsPage() {
                     <div style={{ fontSize: "0.72rem", color: "#83867C", marginBottom: 6 }}>
                       {draftProject.mapUrl ? "Imagen del plano cargada" : "No hay imagen de plano"}
                     </div>
-                    <button
+                    <button type="button"
                       className="lot-edit-ghost"
                       style={{ fontSize: "0.72rem", padding: "4px 10px" }}
                       onClick={() => changeImageRef.current?.click()}
@@ -998,12 +1013,12 @@ function LotsPage() {
                 <div className="lot-edit-sec">Identificación</div>
                 <div className="lot-edit-row">
                   <div className="lot-edit-field">
-                    <label className="lot-edit-lbl">Codigo / ID Lote</label>
-                    <input className="lot-edit-input" value={d.code} onChange={(e) => setField("code", e.target.value)} />
+                    <label className="lot-edit-lbl" htmlFor="lot-code">Código del lote *</label>
+                    <input id="lot-code" aria-invalid={!!lotErrors.code} className="lot-edit-input" value={d.code} onChange={(e) => setField("code", e.target.value)} /><FieldError msg={lotErrors.code} />
                   </div>
                   <div className="lot-edit-field">
-                    <label className="lot-edit-lbl">Fraccionamiento</label>
-                    <input className="lot-edit-input" value={draftProject.name} onChange={(e) => setDraftProject((prev) => ({ ...prev, name: e.target.value }))} placeholder="Nombre del fraccionamiento" />
+                    <label className="lot-edit-lbl" htmlFor="lot-project">Fraccionamiento</label>
+                    <input id="lot-project" className="lot-edit-input" value={draftProject.name} onChange={(e) => setDraftProject((prev) => ({ ...prev, name: e.target.value }))} placeholder="Nombre del fraccionamiento" />
                   </div>
                 </div>
 
@@ -1018,7 +1033,7 @@ function LotsPage() {
                     const c = LOT_COLORS[value];
                     const active = d.status === value;
                     return (
-                      <button
+                      <button type="button"
                         key={value}
                         className="lot-edit-status-btn"
                         onClick={() => setField("status", value)}
@@ -1036,12 +1051,12 @@ function LotsPage() {
                 <div className="lot-edit-row cols-3">
                   {[{ key: "frente", label: "Frente (ML)" }, { key: "fondo", label: "Fondo (ML)" }, { key: "area", label: "Superficie (m²)" }].map(({ key, label }) => (
                     <div className="lot-edit-field" key={key}>
-                      <label className="lot-edit-lbl">{label}</label>
-                      <input type="number" className="lot-edit-input" value={d[key]} onChange={(e) => setField(key, Number(e.target.value))} />
+                      <label className="lot-edit-lbl" htmlFor={`lot-${key}`}>{label} (opcional)</label>
+                      <input id={`lot-${key}`} aria-invalid={!!lotErrors[key]} type="number" min="0" step="any" className="lot-edit-input" value={d[key]} onChange={(e) => setField(key, e.target.value)} /><FieldError msg={lotErrors[key]} />
                     </div>
                   ))}
                   <div className="lot-edit-field">
-                    <label className="lot-edit-lbl">Orientacion</label>
+                    <label className="lot-edit-lbl" htmlFor="lot-orientacion">Orientacion (opcional)</label>
                     <input type="text" className="lot-edit-input" value={d.orientacion ?? ""} onChange={(e) => setField("orientacion", e.target.value)} />
                   </div>
                 </div>
@@ -1050,19 +1065,19 @@ function LotsPage() {
                 <div className="lot-edit-sec">Financiero</div>
                 <div className="lot-edit-row">
                   <div className="lot-edit-field">
-                    <label className="lot-edit-lbl">Precio Contado ($)</label>
-                    <input type="number" className="lot-edit-input" value={d.price} onChange={(e) => setField("price", Number(e.target.value))} />
+                    <label className="lot-edit-lbl" htmlFor="lot-price">Precio Contado ($) (opcional)</label>
+                    <input type="number" className="lot-edit-input" value={d.price} onChange={(e) => setField("price", e.target.value)} />
                   </div>
                   <div className="lot-edit-field">
-                    <label className="lot-edit-lbl">Precio Financiado ($)</label>
-                    <input type="number" className="lot-edit-input" value={d.priceFinanciado} onChange={(e) => setField("priceFinanciado", Number(e.target.value))} />
+                    <label className="lot-edit-lbl" htmlFor="lot-priceFinanciado">Precio Financiado ($) (opcional)</label>
+                    <input type="number" className="lot-edit-input" value={d.priceFinanciado} onChange={(e) => setField("priceFinanciado", e.target.value)} />
                   </div>
                 </div>
 
                 {/* Gestion */}
                 <div className="lot-edit-sec">Gestion</div>
                 <div className="lot-edit-field">
-                  <label className="lot-edit-lbl">Vendedor Asignado</label>
+                  <label className="lot-edit-lbl" htmlFor="lot-vendedor">Vendedor Asignado (opcional)</label>
                   <input className="lot-edit-input" placeholder="Nombre del vendedor" value={d.vendedor} onChange={(e) => setField("vendedor", e.target.value)} />
                 </div>
 
@@ -1080,7 +1095,7 @@ function LotsPage() {
                     );
                   })}
                 </div>
-              </div>
+              </WorkflowForm>
 
               {/* Footer */}
               <div className="lot-edit-foot">
@@ -1089,17 +1104,17 @@ function LotsPage() {
                   style={{ color: "#C0392B", borderColor: "#fca5a5", marginRight: "auto" }}
                   disabled={deletingLot}
                   onClick={async () => {
-                    await deleteLotFromSection(d.sectionId, d.id);
-                    setLotEditDraft(null);
+                    const deleted = await deleteLotFromSection(d.sectionId, d.id);
+                    if (deleted !== false) setLotEditDraft(null);
                   }}
                 >
                   {deletingLot ? "Eliminando..." : "Eliminar lote"}
                 </button>
-                <button className="lot-edit-primary" onClick={saveLotEdit}>Guardar</button>
+                <button type="submit" form="lands-lot-draft-form" className="lot-edit-primary">Aplicar al borrador</button>
                 <button className="lot-edit-ghost" onClick={() => setLotEditDraft(null)}>Cancelar</button>
               </div>
             </div>
-          </div>
+          </DialogPortal>
         );
       })()}
 
@@ -1118,8 +1133,8 @@ function LotsPage() {
       />
 
       {showDeleteFracConfirm && (
-        <div className="lot-edit-overlay" onClick={() => { setShowDeleteFracConfirm(false); setBlockingContracts(null); }}>
-          <div className="lot-edit-modal" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
+        <DialogPortal className="lot-edit-overlay" onClick={() => { setShowDeleteFracConfirm(false); setBlockingContracts(null); }}>
+          <div role="dialog" aria-modal="true" aria-label="Archivar fraccionamiento" className="lot-edit-modal" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
             <div className="lot-edit-head">
               <div className="lot-edit-badge" style={{ background: "#fee2e2", color: "#991b1b", borderColor: "#fca5a5" }}>!</div>
               <div>
@@ -1202,7 +1217,7 @@ function LotsPage() {
               </div>
             </div>
           </div>
-        </div>
+        </DialogPortal>
       )}
       </>
     );
@@ -1442,7 +1457,7 @@ function LotsPage() {
               <input
                 className="w-full rounded-[8px] border-[1.5px] border-[#E2E7E5] bg-white px-3 py-2 text-[0.84rem] text-[#1E3D2B] outline-none"
                 style={{ width: "100%", borderRadius: 8, border: "1.5px solid #E2E7E5", background: "white", padding: "8px 12px", fontSize: ".84rem", color: "#1E3D2B", outline: "none", fontFamily: "var(--font-body)" }}
-                placeholder="Ej. Residencial Las Palmas"
+                id="lands-project-name" aria-label="Nombre del fraccionamiento" placeholder="Ej. Residencial Las Palmas"
                 data-tour="frac-nombre-inicial"
                 value={draftProject.name === "Nuevo Fraccionamiento" ? "" : draftProject.name}
                 onChange={(e) => setDraftProject((prev) => ({ ...prev, name: e.target.value || "Nuevo Fraccionamiento" }))}

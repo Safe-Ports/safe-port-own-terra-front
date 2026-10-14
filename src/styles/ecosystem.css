@@ -41,10 +41,14 @@
 .eco-root .sidebar-inner::-webkit-scrollbar{display:none}
 .eco-root .brand{display:flex;align-items:center;justify-content:center;margin-bottom:30px;padding-bottom:22px;
   border-bottom:1px solid rgba(233,229,219,.1)}
-.eco-root .brand-logo{width:min(100%,204px);height:109px;border-radius:10px;flex-shrink:0;
+.eco-root .brand-logo{width:min(100%,204px);height:82px;border-radius:10px;flex-shrink:0;
   background:#01161A;
   display:flex;align-items:center;justify-content:center;
-  box-shadow:0 6px 16px rgba(72,169,166,.25);overflow:hidden;padding:0}
+  box-shadow:0 6px 16px rgba(111,175,107,.25);overflow:hidden;padding:8px 10px;cursor:pointer;
+  border:1px solid transparent;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+.eco-root .brand-logo:hover{transform:translateY(-2px);border-color:rgba(167,203,161,.38);box-shadow:0 10px 22px rgba(111,175,107,.32)}
+.eco-root .brand-logo:focus-visible{outline:3px solid rgba(167,203,161,.72);outline-offset:4px}
+.eco-root .brand-logo:active{transform:translateY(0)}
 .eco-root .brand-logo img{width:100%;height:100%;object-fit:contain}
 .eco-root .brand-name{font-family: var(--font-title);font-size:19px;color:#fff;letter-spacing:-.3px;line-height:1.05}
 .eco-root .brand-name span{color:var(--light);font-style:italic}
@@ -104,6 +108,50 @@
 .eco-root .scroll-area::-webkit-scrollbar{width:5px}
 .eco-root .scroll-area::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
 
+/* Properties funciona como un espacio de enfoque: conserva el cambio de app sin
+   competir visualmente con la operación que el usuario está realizando. */
+.eco-root.properties-focus{
+  /* Dirección tipográfica de Properties: serif editorial para los títulos,
+     sans neutra para el texto y las cifras. Manrope es geométrica y moderna,
+     pero no transmite formalidad; administrar un condominio es un encargo
+     fiduciario y la tipografía debería sonar así. */
+  --font-title:"Source Serif 4", Georgia, serif;
+  --font-body:"Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family:var(--font-body);
+}
+.eco-root .properties-focus-rail{display:none}
+@media (min-width:901px){
+  .eco-root.properties-focus{--sidebar-w:76px;--pale:#E9EDF1}
+  .eco-root.properties-focus:has(.properties-focus-rail:hover),.eco-root.properties-focus:has(.properties-focus-rail:focus-within){--sidebar-w:224px}
+  .eco-root.properties-focus .sidebar{overflow:visible;transition:width .24s cubic-bezier(.2,.8,.2,1)}
+  .eco-root.properties-focus .main{min-width:0;transition:width .24s cubic-bezier(.2,.8,.2,1)}
+  .eco-root.properties-focus .sidebar-inner{overflow:visible;padding:0}
+  .eco-root.properties-focus .sidebar-inner>:not(.properties-focus-rail){display:none}
+  .eco-root .properties-focus-rail{position:relative;z-index:4;display:flex;width:76px;height:100%;overflow:hidden;flex-direction:column;align-items:flex-start;justify-content:space-between;padding:18px 15px 20px;background:#1E3A5F;box-shadow:0 0 0 rgba(21,41,63,0);transition:width .24s cubic-bezier(.2,.8,.2,1),box-shadow .24s ease}
+  .eco-root .properties-focus-rail:hover,.eco-root .properties-focus-rail:focus-within{width:224px;box-shadow:10px 0 24px rgba(21,41,63,.12)}
+  .eco-root .focus-brand{display:flex;width:46px;height:46px;min-height:46px;overflow:hidden;align-items:center;flex-shrink:0;border:1px solid rgba(255,255,255,.2);border-radius:14px;background:#F2F5F8;color:#1E3A5F;cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,.12);transition:width .24s ease}
+  .eco-root .properties-focus-rail:hover .focus-brand,.eco-root .properties-focus-rail:focus-within .focus-brand{width:194px}
+  .eco-root .focus-brand .properties-logo img{width:34px;height:34px}
+  .eco-root .focus-brand .properties-logo{display:grid;width:44px;min-width:44px;place-items:center}
+  .eco-root .focus-brand>span:not(.properties-logo){display:grid;min-width:130px;gap:1px;text-align:left;opacity:0;transition:opacity .16s ease .05s}
+  .eco-root .focus-brand strong{font-family:var(--font-title);font-size:16px;line-height:1}
+  .eco-root .focus-brand small{color:#6B7785;font-size:9px}
+  .eco-root .properties-focus-rail:hover .focus-brand>span:not(.properties-logo),.eco-root .properties-focus-rail:focus-within .focus-brand>span:not(.properties-logo){opacity:1}
+  .eco-root .focus-rail-nav{display:grid;width:100%;align-content:center;gap:8px}
+  .eco-root .focus-rail-group{height:0;overflow:hidden;margin:0 10px;color:rgba(237,233,228,.5);font-size:8px;font-weight:850;letter-spacing:.16em;opacity:0;transition:height .2s ease,margin .2s ease,opacity .15s ease}
+  .eco-root .properties-focus-rail:hover .focus-rail-group,.eco-root .properties-focus-rail:focus-within .focus-rail-group{height:12px;margin:8px 10px 2px;opacity:1}
+  .eco-root .focus-rail-nav button,.eco-root .focus-rail-foot button,.eco-root .focus-exit{position:relative;display:flex;width:44px;height:44px;overflow:hidden;align-items:center;flex-shrink:0;gap:13px;padding:0 11px;border:1px solid transparent;border-radius:13px;background:transparent;color:rgba(237,233,228,.68);cursor:pointer;font-size:20px;text-align:left;transition:width .24s ease,background .16s,color .16s,transform .16s}
+  .eco-root .focus-rail-nav button>svg,.eco-root .focus-rail-foot button>svg,.eco-root .focus-exit>svg{min-width:20px}
+  .eco-root .focus-rail-nav button>span,.eco-root .focus-rail-foot button>span,.eco-root .focus-exit>span{min-width:110px;font-size:12px;font-weight:650;letter-spacing:-.01em;white-space:nowrap;opacity:0;transition:opacity .14s ease}
+  .eco-root .properties-focus-rail:hover .focus-rail-nav button,.eco-root .properties-focus-rail:focus-within .focus-rail-nav button,.eco-root .properties-focus-rail:hover .focus-rail-foot button,.eco-root .properties-focus-rail:focus-within .focus-rail-foot button,.eco-root .properties-focus-rail:hover .focus-exit,.eco-root .properties-focus-rail:focus-within .focus-exit{width:194px}
+  .eco-root .properties-focus-rail:hover .focus-rail-nav button>span,.eco-root .properties-focus-rail:focus-within .focus-rail-nav button>span,.eco-root .properties-focus-rail:hover .focus-rail-foot button>span,.eco-root .properties-focus-rail:focus-within .focus-rail-foot button>span,.eco-root .properties-focus-rail:hover .focus-exit>span,.eco-root .properties-focus-rail:focus-within .focus-exit>span{opacity:1}
+  .eco-root .focus-rail-nav button:hover,.eco-root .focus-rail-foot button:hover,.eco-root .focus-exit:hover{background:rgba(255,255,255,.09);color:#fff;transform:translateY(-1px)}
+  .eco-root .focus-rail-nav button.active,.eco-root .focus-rail-foot button.active{border-color:rgba(159,182,204,.38);background:#3D6A99;color:#fff;box-shadow:0 8px 18px rgba(0,0,0,.18)}
+  .eco-root .focus-rail-nav button>i{position:absolute;top:4px;left:32px;display:grid;width:15px;height:15px;place-items:center;border-radius:99px;background:#E9EDF1;color:#1E3A5F;font-size:8px;font-style:normal;font-weight:900;transition:left .24s ease}
+  .eco-root .properties-focus-rail:hover .focus-rail-nav button>i,.eco-root .properties-focus-rail:focus-within .focus-rail-nav button>i{left:170px}
+  .eco-root .focus-exit{border-top:1px solid rgba(255,255,255,.12);border-radius:0;padding-top:2px}
+}
+
 /* ───── APP LAUNCHER ───── */
 .eco-root .section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px}
 .eco-root .section-head h3{font-family: var(--font-title);font-size:clamp(18px,1.8vw,23px);color:var(--deep);letter-spacing:-.2px;line-height:1.1}
@@ -149,12 +197,15 @@
 .eco-root .app-launcher .app-icon svg{width:98px;height:98px;}
 .eco-root .app-icon::before{content:'';position:absolute;inset:0;border-radius:inherit;
   background:linear-gradient(160deg,rgba(255,255,255,.28),transparent 55%)}
-/* Los tres logos son marca a todo color (no line-art blanco): el tile pasa a
+/* Los logos son marca a todo color (no line-art blanco): el tile pasa a
    neutro claro para que se lean con su propio color en vez de competir con un
    fondo de gradiente verde. */
-.eco-root .ic-lands   {background:linear-gradient(150deg,#ffffff,#eef2ea);--shadow:rgba(78,123,67,.25);}
-.eco-root .ic-neighb  {background:linear-gradient(150deg,#ffffff,#eef2ea);--shadow:rgba(7,57,60,.25);}
-.eco-root .ic-construct{background:linear-gradient(150deg,#ffffff,#fbf3e2);--shadow:rgba(217,168,103,.25);}
+.eco-root .ic-lands     {background:linear-gradient(150deg,#ffffff,#eef2ea);--shadow:rgba(78,123,67,.25);}
+.eco-root .ic-neighb    {background:linear-gradient(150deg,#ffffff,#eef2ea);--shadow:rgba(7,57,60,.25);}
+.eco-root .ic-construct {background:linear-gradient(150deg,#ffffff,#fbf3e2);--shadow:rgba(217,168,103,.25);}
+.eco-root .ic-properties{background:linear-gradient(150deg,#ffffff,#EDF1F5);--shadow:rgba(30,58,95,.25);}
+
+.properties-logo{display:inline-flex;align-items:center;gap:9px;color:inherit}.properties-logo img{width:42px;height:42px;flex:none;object-fit:contain}.properties-logo>span{display:grid;line-height:1}.properties-logo strong{font-size:17px;letter-spacing:.04em}.properties-logo strong span{font-weight:400}.properties-logo small{margin-top:5px;font-size:7px;font-weight:800;letter-spacing:.28em}.properties-logo.is-compact{display:grid}
 
 /* Aplicaciones verticales: un solo tratamiento neutro (no un color por
    tarjeta) — se diferencian por ícono y nombre, no por arcoíris. */
@@ -276,8 +327,9 @@
 .eco-root .usr-mail{font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .eco-root .usr-dots{display:flex;gap:4px;flex-shrink:0}
 .eco-root .usr-dot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--border2)}
-.eco-root .usr-dot.on-lands{background:#48A9A6;border-color:#48A9A6}
-.eco-root .usr-dot.on-neighb{background:#2C666E;border-color:#2C666E}
+.eco-root .usr-dot.on-lands{background:#6FAF6B;border-color:#6FAF6B}
+.eco-root .usr-dot.on-properties{background:#1E3A5F;border-color:#1E3A5F}
+.eco-root .usr-dot.on-neighb{background:#0A3D62;border-color:#0A3D62}
 .eco-root .usr-dot.on-construct{background:#f2b900;border-color:#f2b900}
 
 .eco-root .usr-d-head{display:flex;align-items:center;gap:14px;padding:20px;border-bottom:1px solid var(--border)}
@@ -461,7 +513,7 @@
 .eco-root .vlt-d-body{padding:18px 20px}
 
 /* modal de alta (contrato / documento) */
-.eco-root .usr-modal-overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+.eco-root .usr-modal-overlay{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;
   background:rgba(20,30,22,.45);backdrop-filter:blur(6px);padding:18px}
 .eco-root .usr-modal{width:min(100%,520px);max-height:min(90dvh,860px);display:flex;flex-direction:column;overflow:hidden;background:var(--surface);border:1px solid var(--border2);
   border-radius:22px;box-shadow:0 30px 70px rgba(15,25,18,.4);animation:eco-fadeUp .25s ease both}
@@ -1474,6 +1526,10 @@
   font-family: var(--font-body);
   font-weight: 800;
 }
+/* Contadores del menú de Properties: rojo para lo vencido; admite "9+". */
+.focus-rail-nav button>i{width:auto;min-width:15px;padding:0 4px}.focus-rail-nav button>i.danger{background:#E4745F;color:#fff}.focus-rail-nav button.active>i{background:#1E3A5F;color:#fff}
+/* Con más accesos, en pantallas bajas la lista hace scroll en vez de recortarse. */
+.properties-focus-rail .focus-rail-nav{min-height:0;overflow-x:hidden;overflow-y:auto;scrollbar-width:none;align-content:start;margin:16px 0}.properties-focus-rail .focus-rail-nav::-webkit-scrollbar{display:none}
 
 /* ── Foto de fondo por aplicación ─────────────────────────────────────────
    Cada card del lanzador Core trae su `--foto` desde el JSX, igual que ya traía
@@ -1527,3 +1583,85 @@
 /* Deshabilitada: la foto acompaña el estado en vez de pelearse con él. */
 .eco-root .app-card.is-disabled::before{ filter:saturate(.7); opacity:.85 }
 @media (prefers-reduced-motion: reduce){ .eco-root .app-card{ animation:none } }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Properties: el menú deja de esconderse.
+
+   Venía como riel de 76px que solo revelaba las etiquetas al pasar el mouse.
+   En una pantalla táctil no hay hover, así que en el teléfono y en la tablet
+   el menú era diez iconos sin nombre y no había forma de saber qué era cada
+   uno. Además, el resto del ecosistema (Core y Lands) usa un sidebar de 256px
+   con etiquetas y grupos visibles: Properties era la única sección distinta.
+
+   Queda siempre abierto, como las demás. Se conserva la transición por si en
+   el futuro se agrega un botón explícito para plegarlo.
+   ───────────────────────────────────────────────────────────────────────── */
+.eco-root.properties-focus{--sidebar-w:224px}
+.eco-root .properties-focus-rail{width:224px}
+.properties-focus-rail .focus-brand{width:194px}
+.properties-focus-rail .focus-brand>span:not(.properties-logo){opacity:1}
+.properties-focus-rail .focus-rail-group{height:12px;margin:8px 10px 2px;opacity:1}
+.properties-focus-rail .focus-rail-nav button>span,
+.properties-focus-rail .focus-rail-foot button>span,
+.properties-focus-rail .focus-exit>span{opacity:1}
+
+/* En pantalla angosta el menú no cabe al lado del contenido: se pliega a
+   iconos y el nombre vive en el title/aria-label, no en un hover imposible. */
+@media(max-width:860px){
+  .eco-root.properties-focus{--sidebar-w:72px}
+  .eco-root .properties-focus-rail{width:72px;padding-inline:12px}
+  .properties-focus-rail .focus-brand{width:46px}
+  .properties-focus-rail .focus-brand>span:not(.properties-logo),
+  .properties-focus-rail .focus-rail-nav button>span,
+  .properties-focus-rail .focus-rail-foot button>span,
+  .properties-focus-rail .focus-exit>span{opacity:0}
+  .properties-focus-rail .focus-rail-group{height:0;margin:0 10px;opacity:0}
+}
+/* Los botones del menú medían 44px con overflow:hidden y solo crecían a 194px
+   en :hover, así que la etiqueta quedaba recortada aunque fuera visible. */
+.properties-focus-rail .focus-rail-nav button,
+.properties-focus-rail .focus-rail-foot button,
+.properties-focus-rail .focus-exit{width:194px}
+@media(max-width:860px){
+  .properties-focus-rail .focus-rail-nav button,
+  .properties-focus-rail .focus-rail-foot button,
+  .properties-focus-rail .focus-exit{width:44px}
+}
+
+/* ── Properties · paleta Pizarra — azul pizarra sobre gris frío ─────────────
+   Properties redefine los tokens de la marca dentro de su propio espacio de
+   enfoque. Lands conserva el verde bosque: este bloque no lo toca, porque
+   `.eco-root.properties-focus` (0,2,0) solo gana donde esa clase existe.
+
+   Los tokens SEMÁNTICOS no se redefinen. --danger sigue siendo rojo, y los
+   verdes y ámbares de estado viven en el CSS de cada módulo. Comunican
+   estado, no marca, y seguirlos a la paleta los volvería ilegibles. */
+.eco-root.properties-focus {
+  --deep:      #15293F;   /* azul tinta — el más profundo */
+  --mid:       #1E3A5F;   /* azul pizarra — PRIMARIO */
+  --leaf:      #3D6A99;   /* azul medio — accent / hover */
+  --light:     #9FB6CC;   /* azul claro */
+  --bg:        #F5F7F9;   /* gris frío — fondo de página */
+  --bg2:       #E9EDF1;
+  --card:      rgba(255, 255, 255, 0.80);
+  --line:      rgba(30, 58, 95, 0.10);
+  --line-soft: rgba(30, 58, 95, 0.06);
+  --text:      #1B2733;
+  --muted:     #6B7785;
+  --forest:    #1E3A5F;   /* PRIMARIO */
+  --forest-hi: #3D6A99;
+  --earth:     #1E3A5F;
+  --cream:     #FFFFFF;
+  --sf:        #FFFFFF;
+  --sf2:       #EDF1F5;
+  --bd:        rgba(30, 58, 95, 0.12);
+  --tan:       #1E3A5F;
+  --tan-dk:    #15293F;
+  --tan-lt:    rgba(61, 106, 153, 0.14);
+  --navy:      #15293F;   /* sidebar */
+  --tx:        #1B2733;
+  --tx2:       #3C4855;
+  --mu:        #6B7785;
+  --sh:  0 1px 3px rgba(21, 41, 63, 0.06), 0 4px 12px rgba(21, 41, 63, 0.07);
+  --sh2: 0 18px 40px rgba(21, 41, 63, 0.10), 0 20px 40px rgba(21, 41, 63, 0.11);
+}
