@@ -4,7 +4,10 @@ import WorkflowForm from "@/components/forms/WorkflowForm";
 import propertiesPortalService from "@/services/propertiesPortalService";
 import { parseApiError } from "@/errors/parseApiError";
 import "../components/properties-ui.css";
+import { HiShieldCheck } from "react-icons/hi2";
+import PropertiesLogo from "../components/PropertiesLogo";
 import "./service-access.css";
+import "./portal-login.css";
 
 export default function PortalRecovery({ reset = false }) {
   const navigate = useNavigate();
@@ -29,10 +32,10 @@ export default function PortalRecovery({ reset = false }) {
     } catch (requestError) { setError(parseApiError(requestError).message); }
     finally { setBusy(false); }
   };
-  return <main className="service-auth-page"><section className="service-auth-story"><div>
+  return <main className="service-auth-page portal-login"><section className="service-auth-story"><PropertiesLogo/><div>
     <span>Portal de comunidad</span><h1>{reset ? "Recupera tu acceso." : "Volvamos a tu comunidad."}</h1>
     <p>Usa el correo de tu cuenta de propietario, residente o inquilino.</p>
-  </div></section><section className="service-auth-card"><div className="service-auth-box">
+  </div><footer><HiShieldCheck/> Acceso limitado por organización, persona y permisos.</footer></section><section className="service-auth-card"><div className="service-auth-box">
     <h2>{reset ? "Define una nueva contraseña" : "Recuperar contraseña"}</h2>
     {done ? <section role="status"><p>{reset ? "Contraseña actualizada. Inicia sesión con tu nueva contraseña." : "Si el correo tiene una cuenta activa, recibirás instrucciones de recuperación. Revisa también la carpeta de spam."}</p></section>
       : reset && !token ? <p role="alert">Falta el enlace de recuperación. Solicita uno nuevo desde Recuperar contraseña.</p>

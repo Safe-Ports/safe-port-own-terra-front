@@ -1,0 +1,75 @@
+/* Inicio del portal: que se sienta como una extensión de la casa. Tonos cálidos
+   (crema, arena, terracota suave) sobre el azul de Properties. */
+.portal-home{display:grid;gap:24px}
+
+/* Encabezado con cielo según la hora */
+.portal-home-hero{--sky-top:#cfe3f3;--sky-bottom:#f4f1ea;--hill-far:#c9d9c4;--hill-near:#a9c3a6;--tree:#7fa184;--wall:#fdfaf4;--roof:#33567e;--door:#8a5a3c;--hero-ink:#0f2742;--hero-muted:#46607e;
+  position:relative;display:grid;min-height:300px;overflow:hidden;border-radius:28px;background:linear-gradient(180deg,var(--sky-top),var(--sky-bottom));box-shadow:0 24px 40px -24px rgba(15,39,66,.45)}
+.portal-home-hero.is-dawn{--sky-top:#f6d6c0;--sky-bottom:#dfe7f1;--hill-far:#d7c7bd;--hill-near:#b9b0a5;--tree:#8c8f7f}
+.portal-home-hero.is-dusk{--sky-top:#4a5a86;--sky-bottom:#f1b38c;--hill-far:#7d6f86;--hill-near:#5b5470;--tree:#45405a;--wall:#efe3d6;--roof:#2b3555;--door:#5e3d2c;--hero-ink:#fff;--hero-muted:#f3e6dc}
+.portal-home-hero.is-night{--sky-top:#0f1d33;--sky-bottom:#24385c;--hill-far:#1f3150;--hill-near:#172741;--tree:#13213a;--wall:#2a3f63;--roof:#0c172a;--door:#162540;--hero-ink:#fff;--hero-muted:#c9d6e6}
+.portal-home-scene{position:absolute;inset:0;width:100%;height:100%}
+.portal-home-hero-copy{position:relative;display:grid;align-content:center;gap:10px;max-width:min(560px,62%);padding:36px 40px;color:var(--hero-ink)}
+.portal-home-hero-copy small{color:var(--hero-muted);font-size:13px;font-weight:700;letter-spacing:.04em}
+.portal-home-hero-copy small::first-letter{text-transform:uppercase}
+.community-portal-shell .portal-home-hero-copy h2{margin:0;color:var(--hero-ink);font-family:var(--font-title);font-size:clamp(32px,3.6vw,48px);font-weight:500;letter-spacing:-.03em;line-height:1.05}
+.portal-home-hero-copy p{margin:0;color:var(--hero-muted);font-size:16px;line-height:1.5}
+.portal-home-hero-copy em{color:var(--hero-muted);font-size:12px;font-style:normal;opacity:.85}
+.portal-home-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.portal-home-chips span{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:99px;background:rgba(255,255,255,.78);color:#153457;font-size:13px;font-weight:700;backdrop-filter:blur(6px)}
+.portal-home-hero.is-dusk .portal-home-chips span,.portal-home-hero.is-night .portal-home-chips span{background:rgba(255,255,255,.16);color:#fff}
+
+.portal-home-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr);gap:24px;align-items:start}
+
+/* Hoy en tu hogar */
+.portal-home-today,.portal-home-place{padding:24px;border:1px solid #fff;border-radius:22px;background:#fffdf9;box-shadow:0 14px 26px -16px rgba(64,45,25,.28)}
+.portal-home-today>header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.portal-home-today h3,.portal-home-place h3{margin:0;color:#0f2742;font-family:var(--font-title);font-size:24px;font-weight:500}
+.portal-home-today>header span{padding:5px 12px;border-radius:99px;background:#f3e7d3;color:#7a5523;font-size:12px;font-weight:800}
+.portal-home-today ul{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.portal-home-today li button{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:14px;width:100%;padding:16px;border:1px solid #efe6da;border-radius:18px;background:#fff;text-align:left;transition:transform .18s,box-shadow .18s,border-color .18s}
+.portal-home-today li button:hover{transform:translateY(-2px);border-color:#e2d3bf;box-shadow:0 12px 20px -14px rgba(64,45,25,.4)}
+.portal-home-today li i{display:grid;width:46px;height:46px;place-items:center;border-radius:15px;font-size:22px}
+.portal-home-today .is-alert i{background:#fbe5df;color:#a23a2c}
+.portal-home-today .is-warm i{background:#f6ead6;color:#9a6a24}
+.portal-home-today .is-calm i{background:#e5edf6;color:#33567e}
+.portal-home-today li span{display:grid;gap:3px;min-width:0}
+.portal-home-today li small{color:#8a7a66;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.portal-home-today .is-alert small{color:#a23a2c}
+.portal-home-today li strong{color:#15293f;font-size:16px;line-height:1.3}
+.portal-home-today li em{color:#63758a;font-size:13px;font-style:normal;line-height:1.45}
+.portal-home-go{color:#b29b7c;font-size:18px}
+.portal-home-calm{display:grid;justify-items:center;gap:8px;padding:28px 12px;text-align:center}
+.portal-home-calm>svg{color:#4f8a63;font-size:44px}
+.portal-home-calm strong{color:#15293f;font-size:18px}
+.portal-home-calm p{max-width:320px;margin:0;color:#63758a;font-size:14px}
+
+/* Tu hogar y atajos */
+.portal-home-side{display:grid;gap:18px}
+.portal-home-place{background:linear-gradient(160deg,#fffdf9 40%,#f7efe3)}
+.portal-home-place>strong{display:block;margin:10px 0 14px;color:#33567e;font-size:15px}
+.portal-home-place ul{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px;padding:0;list-style:none}
+.portal-home-place li{display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border-radius:12px;background:#fff;color:#15293f;font-size:13px;font-weight:600;box-shadow:inset 0 0 0 1px #efe6da}
+.portal-home-place li svg{color:#b07b3e;font-size:16px}
+.portal-home-place>p{margin:0 0 14px;color:#63758a;font-size:14px}
+.portal-home-place>button{display:inline-flex;align-items:center;gap:8px;padding:11px 16px;border-radius:13px;background:#153457;color:#fff;font-size:14px;font-weight:700}
+.portal-home-place>button:hover{background:#0f2742}
+.portal-home-shortcuts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.portal-home-shortcuts button{display:grid;gap:10px;padding:16px;border:1px solid #fff;border-radius:18px;background:#fffdf9;text-align:left;box-shadow:0 10px 20px -16px rgba(64,45,25,.35);transition:transform .18s}
+.portal-home-shortcuts button:hover{transform:translateY(-2px)}
+.portal-home-shortcuts i{display:grid;width:40px;height:40px;place-items:center;border-radius:13px;background:#eef3f8;color:#33567e;font-size:19px}
+.portal-home-shortcuts button:nth-child(2) i{background:#f6ead6;color:#9a6a24}
+.portal-home-shortcuts button:nth-child(3) i{background:#e7f1e9;color:#3f7a54}
+.portal-home-shortcuts button:nth-child(4) i{background:#efe8f4;color:#6b4f8a}
+.portal-home-shortcuts span{display:grid;gap:2px}
+.portal-home-shortcuts strong{color:#15293f;font-size:14px}
+.portal-home-shortcuts small{color:#63758a;font-size:12px}
+
+@media(max-width:1000px){.portal-home-grid{grid-template-columns:1fr}}
+@media(max-width:650px){
+  .portal-home-hero{min-height:360px;border-radius:24px}
+  .portal-home-hero-copy{align-content:start;max-width:none;padding:26px 22px 150px}
+  .portal-home-scene{top:auto;height:58%}
+  .portal-home-today,.portal-home-place{padding:18px}
+}
+@media(prefers-reduced-motion:reduce){.portal-home *{transition:none!important}.portal-home button:hover{transform:none!important}}

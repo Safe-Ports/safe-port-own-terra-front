@@ -1,0 +1,58 @@
+/* Login del portal de comunidad con el estilo de Comunidades. Todo va bajo .portal-login
+   para no tocar invitación ni recuperación, que comparten .service-auth-*. */
+.portal-login{grid-template-columns:minmax(380px,1fr) minmax(460px,1fr);background:#eef2f6}
+.portal-login .service-auth-story{position:relative;overflow:hidden;padding:44px 56px;background:#15293f url("/properties/community-images/comunidad-1.jpg") center/cover no-repeat}
+.portal-login .service-auth-story::before{content:"";position:absolute;inset:0;background:linear-gradient(160deg,rgba(15,39,66,.94) 0%,rgba(21,52,87,.82) 45%,rgba(21,52,87,.45) 100%)}
+.portal-login .service-auth-story>*{position:relative}
+.portal-login .properties-logo{display:inline-flex;align-items:center;gap:12px;color:#fff}
+.portal-login .properties-logo img{width:52px;height:52px;object-fit:contain}
+.portal-login .properties-logo>span{display:grid;line-height:1}
+.portal-login .properties-logo strong{font-size:19px;letter-spacing:.04em;color:#fff}
+.portal-login .properties-logo strong span{font-weight:400}
+.portal-login .properties-logo small{margin-top:6px;color:#c5d2e0;font-size:10px;font-weight:800;letter-spacing:.28em}
+.portal-login .service-auth-story>div>span{color:#c5d2e0;font-size:12px;letter-spacing:.14em}
+.portal-login .service-auth-story h1{margin:14px 0 18px;font-size:clamp(40px,4.4vw,60px);letter-spacing:-.03em}
+.portal-login .service-auth-story p{max-width:460px;color:#dbe4ee;font-size:16px;line-height:1.6}
+.portal-login .service-auth-story>footer{gap:8px;color:#c5d2e0;font-size:13px}
+.portal-login .service-auth-card{position:relative;z-index:1;padding:40px;background:radial-gradient(640px 380px at 100% 0,rgba(70,102,138,.12),transparent 70%),radial-gradient(520px 420px at 0 100%,rgba(159,182,204,.14),transparent 70%)}
+.portal-login .service-auth-box{width:min(460px,100%);padding:40px;border:1px solid #fff;border-bottom:4px solid #d4deea;border-radius:26px;background:linear-gradient(145deg,#fff 40%,#f1f5fa);box-shadow:0 30px 50px -24px rgba(15,39,66,.4),inset 0 1px 0 #fff}
+.portal-login .service-auth-box>header>span{color:#33567e;font-size:12px;letter-spacing:.08em}
+.portal-login .service-auth-box h2{margin:10px 0 8px;color:#0f2742;font-size:38px;font-weight:500;letter-spacing:-.025em}
+.portal-login .service-auth-box header p{color:#63758a;font-size:14px;line-height:1.5}
+.portal-login .service-auth-box form{gap:18px;margin-top:26px}
+.portal-login .service-auth-box label{gap:8px}
+.portal-login .service-auth-box label>span{color:#3d5068;font-size:12px;letter-spacing:.06em}
+.portal-login .service-auth-box label>div{gap:12px;padding:14px 16px;border-color:#d5dee8;border-radius:14px;background:#fff;color:#33567e;font-size:18px;transition:border-color .18s,box-shadow .18s}
+.portal-login .service-auth-box label>div:focus-within{border-color:#33567e;box-shadow:0 0 0 4px rgba(51,86,126,.14)}
+.portal-login .service-auth-box input{color:#15293f;font-size:15px}
+.portal-login .service-auth-box input::placeholder{color:#97a6b6}
+.portal-login .service-auth-box form>p[role="alert"]{margin:0;padding:12px 14px;border:1px solid #f0cdc6;border-radius:12px;background:#fdf1ee;color:#9b3d30;font-size:14px}
+.portal-login .service-auth-box form>button{gap:8px;padding:15px;border-radius:14px;background:#153457;font-size:15px;box-shadow:0 12px 20px -12px rgba(21,52,87,.7);transition:background .18s,transform .18s}
+.portal-login .service-auth-box form>button:hover:not(:disabled){background:#0f2742;transform:translateY(-1px)}
+.portal-login .service-auth-box form>button:disabled{opacity:.7}
+.portal-login .service-auth-box>footer{margin-top:24px;padding-top:20px;border-color:#e2e8ef;color:#63758a;font-size:13px;line-height:1.9}
+.portal-login .service-auth-box>footer button{color:#153457;text-decoration:underline;text-underline-offset:3px}
+@media(max-width:900px){
+  .portal-login{grid-template-columns:1fr}
+  .portal-login .service-auth-story{min-height:0;gap:28px;padding:28px 24px 88px}
+  .portal-login .service-auth-story h1{font-size:38px}
+  .portal-login .service-auth-story p{font-size:15px}
+  .portal-login .service-auth-card{padding:24px 16px 40px}
+  .portal-login .service-auth-box{margin-top:-56px;padding:28px 22px}
+  .portal-login .service-auth-box h2{font-size:32px}
+}
+@media(prefers-reduced-motion:reduce){.portal-login .service-auth-box form>button{transition:none}.portal-login .service-auth-box form>button:hover:not(:disabled){transform:none}}
+
+/* Recuperación e invitación usan el mismo esquema; sus campos no llevan ícono. */
+.portal-login .service-auth-box label>input{width:100%;padding:14px 16px;border:1px solid #d5dee8;border-radius:14px;outline:0;background:#fff;color:#15293f;font-size:15px;transition:border-color .18s,box-shadow .18s}
+.portal-login .service-auth-box label>input:focus{border-color:#33567e;box-shadow:0 0 0 4px rgba(51,86,126,.14)}
+.portal-login .service-auth-box>h2{margin-top:0}
+.portal-login .service-auth-box>[role="alert"]{padding:12px 14px;border:1px solid #f0cdc6;border-radius:12px;background:#fdf1ee;color:#9b3d30;font-size:14px}
+.portal-login .service-auth-box>section[role="status"]:not(.invitation-success){padding:14px 16px;border-radius:12px;background:#e9f4ec;color:#2f6b45;font-size:14px;line-height:1.5}
+.portal-login .service-auth-box>section[role="status"] p{margin:0}
+.portal-login .service-auth-box>footer{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 16px}
+.portal-login .invitation-success{display:grid;justify-items:center;gap:10px;text-align:center}
+.portal-login .invitation-success>svg{color:#4f8a63;font-size:52px}
+.portal-login .invitation-success h2{margin:0}
+.portal-login .invitation-success p{margin:0 0 8px;color:#63758a;font-size:14px}
+.portal-login .invitation-next{display:inline-flex;align-items:center;gap:8px;padding:14px 22px;border-radius:14px;background:#153457;color:#fff;font-size:15px;font-weight:800}

@@ -26,14 +26,14 @@ for(const role of ['owner','resident','tenant'])test(`portal ${role}: las 24 uni
  // La autorización se certifica en API SQLite; aquí sólo se comprueba la vista del contrato filtrado.
  const units=Array.from({length:24},(_,i)=>({id:`unit-${i}`,label:`QA ${role} Unidad ${i+1}`,attributes:{area:46}}));
  const requests=await portal(page,{units,role});await page.goto('/portal-comunidad');
- await expect(page.getByText('24 unidad(es) visibles conforme a tus relaciones y permisos.')).toBeVisible();
+ await expect(page.getByText('24 unidades visibles según tus relaciones y permisos.')).toBeVisible();
  await page.getByRole('button',{name:'Mi unidad',exact:true}).click();
  for(const unit of units)await expect(page.getByRole('heading',{name:unit.label,exact:true,level:3})).toBeVisible();
  await page.getByRole('button',{name:'Estado de cuenta',exact:true}).click();await expect(page.getByText('QA cuota')).toBeVisible();await expect(page.locator('.community-list b')).toHaveText('$60.00');
  await page.getByRole('button',{name:/Comunicados/}).click();await page.getByRole('button',{name:'Marcar leído'}).click();await expect(page.getByText('Leído',{exact:true})).toBeVisible();
  expect(requests.find(r=>r.path==='/portal/announcements/notice/read')).toMatchObject({method:'POST',body:null});
  await page.getByRole('button',{name:'Paquetería',exact:true}).click();await expect(page.getByText('QA Mensajería')).toBeVisible();
- await page.reload();await expect(page.getByText('24 unidad(es) visibles conforme a tus relaciones y permisos.')).toBeVisible();
+ await page.reload();await expect(page.getByText('24 unidades visibles según tus relaciones y permisos.')).toBeVisible();
 });
 
 for(const status of [201,409,503])test(`portal voto: respuesta ${status} visible y body sin identidad arbitraria`,async({page})=>{
