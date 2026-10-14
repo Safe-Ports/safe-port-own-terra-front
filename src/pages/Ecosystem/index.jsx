@@ -160,6 +160,24 @@ function EcosystemHub() {
           </div>
         </div>
 
+        {/* Oculto por completo hasta que un admin de la org tenga el flag
+            recaudacion_enabled (ver ESPEC_RECAUDACION.md §8). */}
+        {canUseFeature("core.recaudacion") && (
+          <div className="app-card" onClick={() => navigate("/ecosistema/recaudacion")} role="button" tabIndex={0}
+            onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && navigate("/ecosistema/recaudacion")}>
+            <div className="app-top">
+              <div className="app-icon ic-neutral"><svg><use href="#eco-n-card" /></svg></div>
+              <span className="app-status st-active">Activo</span>
+            </div>
+            <div className="app-name">Centro de Recaudación</div>
+            <div className="app-desc">Cuentas bancarias, links de cobro y tablero de pagos (Stripe). El dinero va directo a la inmobiliaria.</div>
+            <div className="app-cta">
+              <span className="app-open">Abrir</span>
+              <span className="app-arrow">→</span>
+            </div>
+          </div>
+        )}
+
       </div>
 
       <GuideModal

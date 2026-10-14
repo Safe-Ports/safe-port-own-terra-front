@@ -49,6 +49,7 @@ export const FEATURE_LABEL = {
   "core.vault": "OwnTerra Vault",
   "core.forms": "Formularios del Core",
   "core.config": "Configuración",
+  "core.recaudacion": "Centro de Recaudación",
   "lands.read": "OwnTerra Lands",
   "lands.write": "Edición de Lands",
   "lands.clients": "Clientes Lands",
@@ -133,6 +134,15 @@ export function canAccessApp(user, appKey) {
 export function canUseFeature(user, feature) {
   if (!user) return false;
   const role = normalizeRole(user.role);
+
+  // El Centro de Recaudación se evalúa ANTES del atajo de admin: es admin-only
+  // Y además está detrás del flag por organización (recaudacion_enabled), que
+  // arranca apagado hasta tener listo el marco legal (ver ESPEC_RECAUDACION.md §8).
+  if (feature === "core.recaudacion") {
+    const enabled = Boolean(user.organization?.recaudacion_enabled);
+    return enabled && ADMIN_ROLES.has(role);
+  }
+
   if (ADMIN_ROLES.has(role)) return true;
 
   const checks = {
