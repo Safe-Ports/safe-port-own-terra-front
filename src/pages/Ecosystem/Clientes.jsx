@@ -12,7 +12,7 @@ import EcoLayout from "./EcoLayout";
 const APPS = [
   { key: "lands", name: "OwnTerra Lands", handle: "terra.lands", icon: "eco-g-lands", cls: "ic-lands", color: "#6FAF6B", live: true, desc: "Lotificación y venta de terrenos." },
   { key: "neighb", name: "OwnTerra Properties", handle: "terra.properties", icon: "eco-g-neighb", cls: "ic-neighb", color: "#355E3B", live: false, desc: "Propiedades y comunidades." },
-  { key: "homes", name: "OwnTerra Construction", handle: "terra.construction", icon: "eco-g-homes", cls: "ic-homes", color: "#A7CBA1", live: false, desc: "Construcción y desarrollos." },
+  { key: "construct", name: "Ownterra Construct", handle: "terra.construct", icon: "eco-g-construct", cls: "ic-construct", color: "#B98C58", live: true, desc: "Cuantificación y presupuestos de obra." },
 ];
 const APP_BY_KEY = Object.fromEntries(APPS.map((a) => [a.key, a]));
 
@@ -235,7 +235,7 @@ function EcosystemClientes() {
           type: "lead",
           pipeline_stage: "new",
           notes: "",
-          apps: { lands: true, neighb: false, homes: false },
+          apps: { lands: true, neighb: false, construct: false },
         },
       });
     } else if (type === "contract") {

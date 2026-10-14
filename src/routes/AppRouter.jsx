@@ -34,6 +34,7 @@ const SettingsPage = lazyWithRetry(() => import("@/pages/Settings"));
 const ReportsPage = lazyWithRetry(() => import("@/pages/Reports"));
 const PricingPage = lazyWithRetry(() => import("@/pages/Pricing"));
 const AccessDenied = lazyWithRetry(() => import("@/pages/AccessDenied"));
+const ConstructPage = lazyWithRetry(() => import("@/pages/Construct"));
 
 function PageLoader() {
   return (
@@ -85,6 +86,7 @@ function AppRouter() {
           {/* Misma página que /perfil, con el shell del Core. El perfil es
               transversal, así que abrirlo no debe mandarte a otra app. */}
           <Route path="/ecosistema/perfil" element={<EcosystemPerfil />} />
+          <Route path="/construccion/*" element={<RequireFeature app="construct"><ConstructPage /></RequireFeature>} />
           <Route element={<AppShell />}>
             <Route path="/dashboard" element={<RequireFeature app="lands"><DashboardPage /></RequireFeature>} />
             {/* Carga de Lotes y Calculadora son pantallas de administración: crean

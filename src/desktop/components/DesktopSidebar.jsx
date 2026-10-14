@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom";
 import { HiArrowLeftOnRectangle } from "react-icons/hi2";
 import { desktopNav } from "@/routes/navigation";
 import { useAppContext } from "@/context/AppContext";
+import { GLOBAL_ROLES } from "@/services/permissions";
 
 function DesktopSidebar() {
   const { currentUser, logout } = useAppContext();
@@ -41,7 +42,7 @@ function DesktopSidebar() {
         <div className="mt-8 rounded-3xl border border-white/10 bg-white/5 p-4">
           <div className="text-xs uppercase tracking-[0.22em] text-white/45">Sesión</div>
           <div className="mt-2 text-base font-semibold">{currentUser?.name}</div>
-          <div className="text-sm text-white/55">{currentUser?.role}</div>
+          <div className="text-sm text-white/55">{GLOBAL_ROLES[currentUser?.role]?.label || currentUser?.role}</div>
           <button
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/14"
             onClick={logout}

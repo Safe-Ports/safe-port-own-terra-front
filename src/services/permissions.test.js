@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { APP_CATALOG, canAccessApp, canUseFeature, defaultPermissionsFor } from "./permissions.js";
+import { APP_CATALOG, canAccessApp, canUseFeature, defaultPermissionsFor, isGlobalAdmin } from "./permissions.js";
 
 describe("permissions catalog", () => {
   it("registers OwnTerra Lands as the deployed assignable vertical", () => {
@@ -109,5 +109,17 @@ describe("permisos: acceso revocado y guards", () => {
     const admin = { role: "admin", apps: [], permissions: [] };
     expect(canAccessApp(admin, "lands")).toBe(true);
     expect(canUseFeature(admin, "lands.write")).toBe(true);
+  });
+});
+
+describe("isGlobalAdmin: única fuente de verdad de \"es admin\" (evita sets duplicados por pantalla)", () => {
+  it("reconoce admin", () => {
+    expect(isGlobalAdmin({ role: "admin" })).toBe(true);
+  });
+
+  it("NO reconoce vendor, owner ni superadmin — el CHECK de `users` solo admite admin/vendor", () => {
+    expect(isGlobalAdmin({ role: "vendor" })).toBe(false);
+    expect(isGlobalAdmin({ role: "owner" })).toBe(false);
+    expect(isGlobalAdmin({ role: "superadmin" })).toBe(false);
   });
 });

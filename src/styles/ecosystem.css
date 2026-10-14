@@ -154,7 +154,7 @@
    fondo de gradiente verde. */
 .eco-root .ic-lands   {background:linear-gradient(150deg,#ffffff,#eef2ea);--shadow:rgba(78,123,67,.25);}
 .eco-root .ic-neighb  {background:linear-gradient(150deg,#ffffff,#eef2ea);--shadow:rgba(7,57,60,.25);}
-.eco-root .ic-homes   {background:linear-gradient(150deg,#ffffff,#eef2ea);--shadow:rgba(72,169,166,.25);}
+.eco-root .ic-construct{background:linear-gradient(150deg,#ffffff,#fbf3e2);--shadow:rgba(217,168,103,.25);}
 
 /* Aplicaciones verticales: un solo tratamiento neutro (no un color por
    tarjeta) — se diferencian por ícono y nombre, no por arcoíris. */
@@ -278,7 +278,7 @@
 .eco-root .usr-dot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--border2)}
 .eco-root .usr-dot.on-lands{background:#48A9A6;border-color:#48A9A6}
 .eco-root .usr-dot.on-neighb{background:#2C666E;border-color:#2C666E}
-.eco-root .usr-dot.on-homes{background:#7FC4C1;border-color:#7FC4C1}
+.eco-root .usr-dot.on-construct{background:#f2b900;border-color:#f2b900}
 
 .eco-root .usr-d-head{display:flex;align-items:center;gap:14px;padding:20px;border-bottom:1px solid var(--border)}
 .eco-root .usr-d-av{width:54px;height:54px;border-radius:16px;background:linear-gradient(145deg,var(--leaf),var(--mid));

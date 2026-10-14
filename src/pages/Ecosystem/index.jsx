@@ -13,6 +13,10 @@ function EcosystemHub() {
     ? navigate("/dashboard")
     : showToast("Tu usuario no tiene acceso a OwnTerra Lands", "warning");
 
+  const openConstruct = () => canAccessApp("construct")
+    ? navigate("/construccion")
+    : showToast("Tu usuario no tiene acceso a Ownterra Construct", "warning");
+
   const openVault = () => canUseFeature("core.vault")
     ? navigate("/ecosistema/documentos")
     : showToast("Tu usuario no tiene acceso a OwnTerra Vault", "warning");
@@ -66,18 +70,19 @@ function EcosystemHub() {
           </div>
         </div>
 
-        <div className="app-card is-disabled" style={{ "--tone": "#A7CBA1", "--foto": "url(/apps/construction.jpg)", userSelect: "none" }} aria-disabled="true" tabIndex={-1}>
+        <div className={`app-card ${!canAccessApp("construct") ? "is-disabled" : ""}`} style={{ "--tone": "#D9A867", "--foto": "url(/apps/construction.jpg)" }} onClick={openConstruct} role="button" tabIndex={0}
+          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && openConstruct()}>
           <div className="app-top">
-            <div className="app-icon ic-homes"><svg><use href="#eco-g-homes" /></svg></div>
-            <span className="app-status st-soon">Próximamente</span>
+            <div className="app-icon ic-construct"><svg><use href="#eco-g-construct" /></svg></div>
+            <span className="app-status st-active">Activo</span>
           </div>
-          <div className="app-name">OwnTerra Construction</div>
-          <div className="app-handle">terra.construction</div>
-          <div className="app-desc">Construcción y desarrollos habitacionales: avance de obra, acabados, garantías y postventa.</div>
-          <div className="app-tags"><span className="atag">Avance de obra</span><span className="atag">Acabados</span><span className="atag">Postventa</span></div>
+          <div className="app-name">Ownterra Construct</div>
+          <div className="app-handle">terra.construct</div>
+          <div className="app-desc">ERP de construcción: cuantificación física con números generadores, presupuestos híbridos APU/Alzado y catálogo maestro de obra.</div>
+          <div className="app-tags"><span className="atag">Números generadores</span><span className="atag">APU / Alzado</span><span className="atag">Catálogo maestro</span></div>
           <div className="app-cta">
-            <span className="app-open disabled">En desarrollo</span>
-            <span className="app-arrow disabled">→</span>
+            <span className={`app-open ${!canAccessApp("construct") ? "disabled" : ""}`}>{canAccessApp("construct") ? "Ingresar al módulo" : "Sin acceso asignado"}</span>
+            <span className={`app-arrow ${!canAccessApp("construct") ? "disabled" : ""}`}>→</span>
           </div>
         </div>
 
@@ -186,7 +191,7 @@ function EcosystemHub() {
         title="Hub de aplicaciones"
         subtitle="Todas las apps del ecosistema, en un solo lugar."
         steps={[
-          { title: "Aplicaciones Core", text: "Los tres productos principales del ecosistema. OwnTerra Lands está activo; Properties y Construction están en desarrollo (próximamente)." },
+          { title: "Aplicaciones Core", text: "Los tres productos principales del ecosistema. OwnTerra Lands y Ownterra Construct están activos; Properties está en desarrollo (próximamente)." },
           { title: "Aplicaciones Verticales", text: "Servicios compartidos por todas las apps core: Calendario, Mi Día, Formularios, Proveedores y OwnTerra Vault." },
           { title: "Ingresar a una app", text: "Haz clic en cualquier tarjeta activa para entrar. Las que aún no tienes asignadas se marcan como \"Sin acceso\" — pídele a un administrador que te las habilite en Equipo." },
         ]}

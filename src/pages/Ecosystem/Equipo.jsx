@@ -139,7 +139,7 @@ function EcosystemEquipo() {
         role: draft.role,
         password: draft.password,
       });
-      if (draft.role === "vendor") {
+      if (draft.role !== "admin") {
         const selectedApps = VERTICAL_APP_CATALOG.filter((app) => draft.apps?.[app.key]);
         await Promise.all(selectedApps.map((app) => {
           const role = app.defaultRole;
@@ -649,8 +649,7 @@ function EcosystemEquipo() {
                   <div className="usr-field">
                     <label className="usr-field-lbl">Rol</label>
                     <select className="usr-select" value={modal.draft.role} onChange={(e) => setDraft({ role: e.target.value })}>
-                      <option value="vendor">Colaborador</option>
-                      <option value="admin">Administrador</option>
+                      {Object.entries(GLOBAL_ROLES).map(([key, { label }]) => <option key={key} value={key}>{label}</option>)}
                     </select>
                   </div>
                   <div className="usr-field">
@@ -665,7 +664,7 @@ function EcosystemEquipo() {
                       <FieldError msg={fe.errors.password} />
                     </div>
                   )}
-                  {modal.mode === "create" && modal.draft.role === "vendor" && (
+                  {modal.mode === "create" && modal.draft.role !== "admin" && (
                     <div className="usr-field">
                       <label className="usr-field-lbl">Apps verticales</label>
                       <div className="usr-app-picks">

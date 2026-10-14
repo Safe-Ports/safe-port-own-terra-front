@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import EcoLayout from "../EcoLayout";
 import { formService } from "@/services/formService";
 import { useAppContext } from "@/context/AppContext";
+import { isGlobalAdmin } from "@/services/permissions";
 
 const PAGE_SIZE = 25;
 
@@ -30,7 +31,7 @@ function EcosystemFormRespuestas() {
   const { showToast, showError, currentUser } = useAppContext();
   const [page, setPage] = useState(1);
 
-  const isAdmin = ["admin", "owner", "superadmin"].includes((currentUser?.role ?? "").toLowerCase());
+  const isAdmin = isGlobalAdmin(currentUser);
 
   const { data: template, isLoading: loadingTemplate } = useQuery({
     queryKey: ["form-template", id],
