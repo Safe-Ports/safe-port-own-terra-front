@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { HiArrowRight, HiBanknotes, HiBolt, HiBuildingOffice2, HiExclamationTriangle, HiHomeModern, HiMagnifyingGlass, HiPencilSquare, HiUserPlus } from "react-icons/hi2";
+import { HiArrowRight, HiBanknotes, HiBolt, HiBuildingOffice2, HiCreditCard, HiExclamationTriangle, HiHomeModern, HiMagnifyingGlass, HiPencilSquare, HiUserPlus, HiUsers } from "react-icons/hi2";
 import { usePropertiesData } from "../../data/PropertiesDataContext";
 import { PROPERTIES_MVP_SCOPE } from "../../mvpScope";
 import { PERSON_UNIT_ROLE_LABEL } from "../community/communityModel";
@@ -17,6 +17,15 @@ function UnitCover({ unitId }) {
   const { images } = useEntityMedia("property", unitId);
   return <span className={images[0] ? "has-photo" : ""}>{images[0] ? <img src={images[0].url} alt="" /> : <HiHomeModern />}</span>;
 }
+// Datos clave de la unidad en el encabezado; sólo los que estén capturados.
+const unitFacts = (unit, row) => [
+  UNIT_TYPE_LABEL[row.type] || "Unidad",
+  UNIT_STATUS_LABEL[row.status],
+  unit?.area ? `${unit.area} m²` : null,
+  unit?.floor != null && unit.floor !== "" ? `Piso ${unit.floor}` : null,
+  unit?.bedrooms ? `${unit.bedrooms} recámara${Number(unit.bedrooms) === 1 ? "" : "s"}` : null,
+  unit?.bathrooms ? `${unit.bathrooms} baño${Number(unit.bathrooms) === 1 ? "" : "s"}` : null,
+].filter(Boolean);
 const initials = (name = "") => name.split(" ").filter(Boolean).slice(0, 2).map((word) => word[0]).join("") || "?";
 
 /* Pestaña Unidades de una comunidad: aquí vive la pieza central de Properties,
@@ -64,36 +73,45 @@ function UnitMonitorPanel({ community, unitId, onSelectUnit, onAddUnit, onEditUn
         })}
         {!visible.length ? <p className="unit-monitor-none">Ninguna unidad o persona coincide con “{query}”.</p> : null}
       </div>}
-      {selected ? <aside id="community-unit-detail" className="unit-monitor-detail" aria-label={`Detalle de ${selected.identifier}`}>
-        <header><UnitCover unitId={selected.id}/><div><small>{community?.name}</small><h2>{selected.identifier}</h2><p>{UNIT_STATUS_LABEL[selected.status]} · {selected.area || 0} m²</p></div>{canWrite && onEditUnit ? <button type="button" className="unit-monitor-edit" onClick={() => onEditUnit(selected.id)} aria-label={`Editar ${selected.identifier}`}><HiPencilSquare/> Editar</button> : null}</header>
-        <MediaGallery entityType="property" entityId={selected.id} label={`Fotos de ${selected.identifier}`} emptyText={canWrite ? "Sin fotos. Agrégalas desde Editar." : "Sin fotos."}/>
+      {selected ? <aside id="community-unit-detail" className="unit-monitor-detail unit-page" aria-label={`Detalle de ${selected.identifier}`}>
+        <header className="unit-page-hero">
+          <UnitCover unitId={selected.id}/>
+          <div><h2>{selected.identifier}</h2><p className="unit-page-facts">{unitFacts(selectedUnit, selected).map((fact) => <span key={fact}>{fact}</span>)}</p></div>
+          {canWrite && onEditUnit ? <button type="button" className="unit-monitor-edit" onClick={() => onEditUnit(selected.id)} aria-label={`Editar ${selected.identifier}`}><HiPencilSquare/> Editar</button> : null}
+        </header>
 
-        <section className="unit-members" aria-label={`Personas de ${selected.identifier}`}>
-          <header><h3>Personas de la unidad</h3>{canWrite && links.length ? <button type="button" className="unit-members-add" onClick={() => onAddMember(selected.id)}><HiUserPlus/> Agregar persona</button> : null}</header>
-          {links.length ? links.map((link) => {
-            const person = peopleById[link.personId];
-            const perms = [link.isPaymentResponsible && "Paga", link.canVote && "Vota", link.amenityAccess && "Amenidades"].filter(Boolean);
-            return <article key={link.id}>
-              <span className="unit-members-avatar">{initials(person?.name)}</span>
-              <span><strong>{person?.name || "Persona archivada"}</strong><small>{PERSON_UNIT_ROLE_LABEL[link.role] || link.role}{link.isPrimary ? " · Contacto principal" : ""}</small><em>{perms.length ? perms.map((perm) => <i key={perm}>{perm}</i>) : <i className="muted">Sin permisos</i>}</em></span>
-              {canWrite ? <button type="button" className="unit-members-unlink" onClick={() => onUnlink(link)} aria-label={`Quitar a ${person?.name || "esta persona"} de ${selected.identifier}`}>Quitar</button> : null}
-            </article>;
-          }) : <div className="unit-members-empty"><p>Nadie está asignado a esta unidad. Sin una persona que pague, no se le pueden generar cuotas ni votar.</p>{canWrite ? <button type="button" onClick={() => onAddMember(selected.id)}><HiUserPlus/> Agregar la primera persona</button> : null}</div>}
-        </section>
-
-        <div className="unit-monitor-cards">
-          <article><HiBanknotes/><span><small>Saldo pendiente</small><strong>{money(selected.openChargeAmount)}</strong><em>{selected.charges.length} movimientos registrados</em></span></article>
+        <div className="unit-page-stats">
+          <article className={selected.openChargeAmount ? "attention" : ""}><HiBanknotes/><span><small>Saldo pendiente</small><strong>{money(selected.openChargeAmount)}</strong><em>{selected.charges.length} movimientos registrados</em></span><button type="button" onClick={onOpenCharges}>Ver cuotas y adeudos <HiArrowRight/></button></article>
+          <article><HiUsers/><span><small>Personas</small><strong>{links.length}</strong><em>{!links.length ? "Nadie asignado" : selected.occupants.length ? `${selected.occupants.length} vive${selected.occupants.length === 1 ? "" : "n"} aquí` : "Nadie vive aquí"}</em></span></article>
+          <article className={selected.responsible.length ? "" : "attention"}><HiCreditCard/><span><small>Paga</small><strong>{selected.responsible.length ? selected.responsible.map((item) => item.name).join(", ") : "Sin responsable"}</strong><em>{selected.responsible.length ? "Responsable de pago" : "No se le pueden generar cuotas"}</em></span></article>
           {withDemoModules ? <><article><HiBolt/><span><small>Servicios pendientes</small><strong>{money(selected.openServiceAmount)}</strong><em>{selected.services.length} servicios vinculados</em></span></article><article><HiExclamationTriangle/><span><small>Atención operativa</small><strong>{selected.openTickets} abiertas</strong><em>{selected.tickets.length} incidencias históricas</em></span></article></> : null}
         </div>
-        <nav className="unit-monitor-actions" aria-label={`Acciones para ${selected.identifier}`}>
-          <button type="button" onClick={onOpenCharges}><HiBanknotes/> Ver cuotas y adeudos <HiArrowRight/></button>
-        </nav>
-        {/* Plegada: al administrador rara vez le hace falta; al residente sí (portal). */}
-        <details className="unit-spec-details">
-          <summary>Ficha técnica <small>{spec.facts.length + spec.features.length ? `${spec.facts.length + spec.features.length} datos` : "Sin datos"}</small></summary>
-          <SpecSheet {...spec} label={`Ficha técnica de ${selected.identifier}`} emptyText={canWrite ? "Sin ficha técnica. Complétala desde Editar." : "Sin ficha técnica."}/>
-        </details>
-        <section><h3>Movimientos recientes</h3>{selected.movements.length ? selected.movements.map((item) => <article key={item.id}><i>{item.type[0]}</i><span><strong>{item.title}</strong><small>{item.type} · {stateLabel(item.state)}</small></span><time>{String(item.date).slice(0, 10)}</time></article>) : <p>Esta unidad aún no tiene movimientos.</p>}</section>
+
+        <div className="unit-page-grid">
+          <div>
+            <section className="unit-members unit-page-card" aria-label={`Personas de ${selected.identifier}`}>
+              <header><h3>Personas de la unidad</h3>{canWrite && links.length ? <button type="button" className="unit-members-add" onClick={() => onAddMember(selected.id)}><HiUserPlus/> Agregar persona</button> : null}</header>
+              {links.length ? links.map((link) => {
+                const person = peopleById[link.personId];
+                const perms = [link.isPaymentResponsible && "Paga", link.canVote && "Vota", link.amenityAccess && "Amenidades"].filter(Boolean);
+                return <article key={link.id}>
+                  <span className="unit-members-avatar">{initials(person?.name)}</span>
+                  <span><strong>{person?.name || "Persona archivada"}</strong><small>{PERSON_UNIT_ROLE_LABEL[link.role] || link.role}{link.isPrimary ? " · Contacto principal" : ""}</small><em>{perms.length ? perms.map((perm) => <i key={perm}>{perm}</i>) : <i className="muted">Sin permisos</i>}</em></span>
+                  {canWrite ? <button type="button" className="unit-members-unlink" onClick={() => onUnlink(link)} aria-label={`Quitar a ${person?.name || "esta persona"} de ${selected.identifier}`}>Quitar</button> : null}
+                </article>;
+              }) : <div className="unit-members-empty"><p>Nadie está asignado a esta unidad. Sin una persona que pague, no se le pueden generar cuotas ni votar.</p>{canWrite ? <button type="button" onClick={() => onAddMember(selected.id)}><HiUserPlus/> Agregar la primera persona</button> : null}</div>}
+            </section>
+            <section className="unit-page-card unit-page-movements"><h3>Movimientos recientes</h3>{selected.movements.length ? selected.movements.map((item) => <article key={item.id}><i>{item.type[0]}</i><span><strong>{item.title}</strong><small>{item.type} · {stateLabel(item.state)}</small></span><time>{String(item.date).slice(0, 10)}</time></article>) : <p>Esta unidad aún no tiene movimientos.</p>}</section>
+          </div>
+          <div>
+            <section className="unit-page-card"><h3>Fotos</h3><MediaGallery entityType="property" entityId={selected.id} label={`Fotos de ${selected.identifier}`} emptyText={canWrite ? "Sin fotos. Agrégalas desde Editar." : "Sin fotos."}/></section>
+            {/* Plegada: al administrador rara vez le hace falta; al residente sí (portal). */}
+            <details className="unit-spec-details unit-page-card">
+              <summary>Ficha técnica <small>{spec.facts.length + spec.features.length ? `${spec.facts.length + spec.features.length} datos` : "Sin datos"}</small></summary>
+              <SpecSheet {...spec} label={`Ficha técnica de ${selected.identifier}`} emptyText={canWrite ? "Sin ficha técnica. Complétala desde Editar." : "Sin ficha técnica."}/>
+            </details>
+          </div>
+        </div>
       </aside> : null}
     </div>
   </section>;

@@ -91,7 +91,8 @@ function MediaGallery({ entityType, entityId, editable = false, label = "Fotos",
     {isError?<InlineError error={parseApiError(error,"No pudimos consultar los archivos guardados.")}><button type="button" onClick={retryRead} disabled={isFetching}>Reintentar galería</button></InlineError>:null}
     {actionError?<InlineError error={actionError}>{pendingFiles.current.length?<button type="button" disabled={busy} onClick={()=>upload.mutate(pendingFiles.current)}>Reintentar archivos pendientes</button>:null}</InlineError>:null}
     {broken.length?<p className="media-gallery-warning" role="alert">El archivo figura en la galería, pero no pudimos abrir su imagen. <button type="button" onClick={retryRead} disabled={isFetching}>Actualizar imágenes</button></p>:null}
-    {!isLoading&&!isError?<p className="media-gallery-status">{images.length?`${images.length} foto${images.length===1?"":"s"} en la galería`:"Aún no hay fotos guardadas."}</p>:null}
+    {/* Sin fotos y en sólo lectura, el aviso vacío de abajo basta: no repetirlo. */}
+    {!isLoading&&!isError&&(editable||images.length)?<p className="media-gallery-status">{images.length?`${images.length} foto${images.length===1?"":"s"} en la galería`:"Aún no hay fotos guardadas."}</p>:null}
     <div className="media-gallery-grid">
       {images.map((asset, index) => <figure key={asset.id} className={index === 0 ? "is-cover" : ""}>
         <img src={asset.url} alt={asset.filename} loading="lazy" onError={()=>setBroken(previous=>previous.includes(asset.id)?previous:[...previous,asset.id])} onLoad={()=>setBroken(previous=>previous.filter(id=>id!==asset.id))} />
