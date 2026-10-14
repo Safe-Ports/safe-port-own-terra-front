@@ -11,11 +11,11 @@ vi.mock("@/context/AppContext", () => ({ useAppContext: () => ({ canUseFeature: 
 vi.mock("@/pages/Ecosystem/EcoLayout", () => ({ default: ({ children }) => <div>{children}</div> }));
 vi.mock("@/services/propertiesService", () => ({ default: { media: { list: async () => [] }, specs: { get: async () => ({ attributos: { elevador: true }, dimensiones: { niveles: 6 } }), save: mocks.saveSpecs } } }));
 
-function renderUnits() {
+function renderUnits(entry = "/properties/comunidades?tab=units&community=community-jacarandas") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/properties/comunidades?tab=units&community=community-jacarandas"]}>
+      <MemoryRouter initialEntries={[entry]}>
         <PropertiesDataProvider><CommunityWorkspace /></PropertiesDataProvider>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -23,6 +23,22 @@ function renderUnits() {
 }
 
 describe("CommunityWorkspace · Unidades", () => {
+  it("from the add-resident quick action, picking a unit opens the person form for it as resident", () => {
+    renderUnits("/properties/comunidades?tab=units&community=community-jacarandas&intent=add-resident");
+    expect(screen.getByRole("status")).toHaveTextContent("Elige la unidad del residente");
+    fireEvent.click(screen.getByRole("button", { name: /Penthouse 501/ }));
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByRole("radio", { name: /Residente/ })).toBeChecked();
+    expect(within(dialog).getByRole("checkbox", { name: /Derecho a voto/ })).not.toBeChecked();
+    expect(screen.queryByText("Elige la unidad del residente", { exact: false })).not.toBeInTheDocument();
+  });
+
+  it("without the quick action, picking a unit only opens its page", () => {
+    renderUnits();
+    fireEvent.click(screen.getByRole("button", { name: /Penthouse 501/ }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
   it("adds a new person to an empty unit in one step", async () => {
     renderUnits();
     fireEvent.click(screen.getByRole("button", { name: /Penthouse 501/ }));

@@ -134,7 +134,7 @@ function PropertiesDashboard() {
             <header><h2>Acciones rápidas</h2></header>
             <div className="pd-quick">
               <button type="button" onClick={() => navigate("/properties/accesos")}><HiInboxStack /> Registrar paquete</button>
-              <button type="button" onClick={() => navigate("/properties/comunidades?tab=units")}><HiBuildingOffice2 /> Agregar residente</button>
+              <button type="button" onClick={() => navigate("/properties/comunidades?tab=units&intent=add-resident")}><HiBuildingOffice2 /> Agregar residente</button>
               <button type="button" onClick={() => navigate("/properties/tickets")}><HiWrenchScrewdriver /> Nuevo ticket</button>
               <button type="button" onClick={() => navigate(`${OPERATIONS}?module=charges`)}><HiBanknotes /> Generar cargo</button>
             </div>
