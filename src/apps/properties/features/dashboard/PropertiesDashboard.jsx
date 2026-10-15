@@ -1,9 +1,13 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { HiArrowRight, HiBanknotes, HiBuildingOffice2, HiCheck, HiInboxStack, HiWrenchScrewdriver } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 import EcoLayout from "@/pages/Ecosystem/EcoLayout";
+import SkyScene, { greeting, skyPeriod } from "../../components/SkyScene";
 import { usePropertiesData } from "../../data/PropertiesDataContext";
+import { COLLECTIONS_API_READY, onPreviewChange, staffPayments } from "../collections/collectionsApi";
+import { paymentReportsKey } from "../collections/PaymentReviewPanel";
 import "./properties-dashboard.css";
 
 const money = (value) => new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(value || 0);
@@ -28,16 +32,22 @@ function PropertiesDashboard() {
   const requestedReservations = reservations.filter((item) => item.status === "requested");
   const openTickets = tickets.filter((item) => item.status !== "resolved" && item.status !== "cancelled");
   const urgentTickets = openTickets.filter((item) => ["urgent", "high"].includes(item.priority));
+  // Comprobantes que los residentes reportaron y esperan confirmación.
+  const queryClient = useQueryClient();
+  const reportsQuery = useQuery({ queryKey: [...paymentReportsKey(null), "submitted"], queryFn: () => staffPayments.list({ status: "submitted" }) });
+  useEffect(() => (COLLECTIONS_API_READY ? undefined : onPreviewChange(() => queryClient.invalidateQueries({ queryKey: ["payment-reports"] }))), [queryClient]);
+  const reportsToReview = (reportsQuery.data || []).filter((report) => report.status === "submitted");
 
   // Lo que requiere una decisión del administrador. Sólo aparece lo que existe:
   // una bandeja vacía es una buena noticia, no una fila que rellenar.
   const decisions = useMemo(() => [
+    reportsToReview.length && { key: "payment-reports", tone: "warning", title: `${reportsToReview.length} ${reportsToReview.length === 1 ? "pago reportado por revisar" : "pagos reportados por revisar"}`, detail: `${money(reportsToReview.reduce((sum, report) => sum + Number(report.amount || 0), 0))} con comprobante`, cta: "Revisar comprobantes", to: `${OPERATIONS}?module=charges` },
     overdue.length && { key: "charges", tone: "danger", title: `${overdue.length} ${overdue.length === 1 ? "cuota vencida" : "cuotas vencidas"}`, detail: `${money(overdueAmount)} por cobrar`, cta: "Revisar cobranza", to: `${OPERATIONS}?module=charges` },
     urgentTickets.length && { key: "tickets", tone: "warning", title: `${urgentTickets.length} ${urgentTickets.length === 1 ? "ticket de prioridad alta" : "tickets de prioridad alta"}`, detail: `${openTickets.length} abiertos en total`, cta: "Asignar", to: "/properties/tickets" },
     pendingPackages.length && { key: "packages", tone: "info", title: `${pendingPackages.length} ${pendingPackages.length === 1 ? "paquete en recepción" : "paquetes en recepción"}`, detail: "Esperan entrega al residente", cta: "Entregar", to: "/properties/accesos" },
     requestedReservations.length && { key: "amenities", tone: "info", title: `${requestedReservations.length} ${requestedReservations.length === 1 ? "reserva por aprobar" : "reservas por aprobar"}`, detail: "Amenidades de la comunidad", cta: "Aprobar", to: `${OPERATIONS}?module=amenities` },
     openVotes.length && { key: "votes", tone: "info", title: `${openVotes.length} ${openVotes.length === 1 ? "votación abierta" : "votaciones abiertas"}`, detail: "Da seguimiento a la participación", cta: "Ver", to: `${OPERATIONS}?module=committee` },
-  ].filter(Boolean), [overdue.length, overdueAmount, urgentTickets.length, openTickets.length, pendingPackages.length, requestedReservations.length, openVotes.length]);
+  ].filter(Boolean), [reportsToReview, overdue.length, overdueAmount, urgentTickets.length, openTickets.length, pendingPackages.length, requestedReservations.length, openVotes.length]);
 
   // Progreso real de configuración: cada paso se marca con un dato que existe,
   // no con una casilla que alguien palomeó.
@@ -57,13 +67,18 @@ function PropertiesDashboard() {
     { label: "tickets resueltos", count: tickets.filter((item) => item.status === "resolved").length },
   ].filter((row) => row.count > 0);
 
+  // Antes decía "Buen día" a cualquier hora: el saludo y el cielo siguen la hora local.
+  const now = new Date();
+  const period = skyPeriod(now.getHours());
+
   return <EcoLayout active="properties" title="Properties" subtitle={organizationName}>
     <main className="pd-page">
 
       <section className="pd-hero">
-        <div className="pd-hero-copy">
-          <p className="pd-date">{today.format(new Date()).toUpperCase()}</p>
-          <h1>Buen día, {firstName}.</h1>
+        <div className={`pd-hero-copy sky-host is-${period}`}>
+          <SkyScene period={period} kind="community"/>
+          <p className="pd-date">{today.format(now).toUpperCase()}</p>
+          <h1>{greeting(now.getHours())}, {firstName}.</h1>
           <p className="pd-lede">
             {decisions.length
               ? <>Hay <strong>{decisions.length} {decisions.length === 1 ? "cosa" : "cosas"}</strong> que requieren tu decisión. El resto de la operación está al corriente.</>

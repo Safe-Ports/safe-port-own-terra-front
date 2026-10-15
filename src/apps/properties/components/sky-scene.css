@@ -1,0 +1,24 @@
+/* Cielo según la hora (SkyScene). El contenedor lleva `sky-host is-<periodo>` y
+   expone --sky-ink / --sky-muted para el texto que va encima. */
+.sky-host{--sky-top:#cfe3f3;--sky-bottom:#f4f1ea;--sky-hill-far:#c9d9c4;--sky-hill-near:#a9c3a6;--sky-tree:#7fa184;--sky-wall:#fdfaf4;--sky-roof:#33567e;--sky-door:#8a5a3c;--sky-ink:#0f2742;--sky-muted:#46607e;
+  position:relative;overflow:hidden;background:linear-gradient(180deg,var(--sky-top),var(--sky-bottom))}
+.sky-host.is-dawn{--sky-top:#f6d6c0;--sky-bottom:#dfe7f1;--sky-hill-far:#d7c7bd;--sky-hill-near:#b9b0a5;--sky-tree:#8c8f7f}
+.sky-host.is-dusk{--sky-top:#4a5a86;--sky-bottom:#f1b38c;--sky-hill-far:#7d6f86;--sky-hill-near:#5b5470;--sky-tree:#45405a;--sky-wall:#efe3d6;--sky-roof:#2b3555;--sky-door:#5e3d2c;--sky-ink:#fff;--sky-muted:#f3e6dc}
+.sky-host.is-night{--sky-top:#0f1d33;--sky-bottom:#24385c;--sky-hill-far:#1f3150;--sky-hill-near:#172741;--sky-tree:#13213a;--sky-wall:#2a3f63;--sky-roof:#0c172a;--sky-door:#162540;--sky-ink:#fff;--sky-muted:#c9d6e6}
+.sky-host>*:not(.sky-scene){position:relative}
+.sky-scene{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+
+/* Movimiento sutil: la escena respira, no distrae. */
+.sky-orb{transform-box:fill-box;transform-origin:center;animation:sky-float 7s ease-in-out infinite}
+.sky-star{transform-box:fill-box;transform-origin:center;animation:sky-twinkle 3.6s ease-in-out infinite}
+.sky-cloud{animation:sky-drift 38s linear infinite}
+.sky-cloud.is-slow{animation-duration:56s;animation-delay:-20s}
+.sky-host.is-dusk .sky-window,.sky-host.is-night .sky-window{animation:sky-glow 5s ease-in-out infinite}
+.sky-window.is-dim{opacity:.45}
+.sky-host .sky-scene{animation:sky-rise .9s ease-out both}
+@keyframes sky-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes sky-twinkle{0%,100%{opacity:.85;transform:scale(1)}50%{opacity:.25;transform:scale(.6)}}
+@keyframes sky-drift{from{transform:translateX(-140px)}to{transform:translateX(260px)}}
+@keyframes sky-glow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.12)}}
+@keyframes sky-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.sky-host .sky-scene,.sky-orb,.sky-star,.sky-cloud,.sky-window{animation:none!important}}
