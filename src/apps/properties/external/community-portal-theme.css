@@ -120,3 +120,9 @@
   .community-portal-shell .community-vote{grid-template-columns:1fr;margin:16px}
 }
 @media(prefers-reduced-motion:reduce){.community-portal-shell *{transition:none!important}}
+/* Con Mantenimiento y Visitas la barra móvil ya no cabe: se desliza y la sección activa se centra. */
+@media(max-width:650px){
+  .community-portal-shell .community-portal-nav nav{justify-content:flex-start;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .community-portal-shell .community-portal-nav nav::-webkit-scrollbar{display:none}
+  .community-portal-shell .community-portal-nav nav button{flex:none;scroll-snap-align:center}
+}

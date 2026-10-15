@@ -68,9 +68,31 @@ export const propertiesService = {
   votes: {
     list: (communityId) => data(propertiesApi.get(`/communities/${communityId}/votes`)),
     create: (communityId, body) => data(propertiesApi.post(`/communities/${communityId}/votes`, body)),
-    open: (id) => data(propertiesApi.post(`/votes/${id}/open`)),
+    // `closesAt` (ISO) fija la fecha límite al abrir; sin ella la votación no cierra sola.
+    open: (id, closesAt = null) => data(propertiesApi.post(`/votes/${id}/open`, { closes_at: closesAt })),
     ballot: (id, relationId, optionId) => data(propertiesApi.post(`/votes/${id}/ballots`, { relation_id: relationId, option_id: optionId })),
     close: (id) => data(propertiesApi.post(`/votes/${id}/close`)),
+  },
+  tickets: {
+    list: (communityId, params = {}) => data(propertiesApi.get(`/communities/${communityId}/tickets`, { params })),
+    create: (communityId, body) => data(propertiesApi.post(`/communities/${communityId}/tickets`, body)),
+    get: (id) => data(propertiesApi.get(`/tickets/${id}`)),
+    update: (id, body) => data(propertiesApi.patch(`/tickets/${id}`, body)),
+    assign: (id, body) => data(propertiesApi.post(`/tickets/${id}/assign`, body)),
+    comment: (id, body, visibility = "participants") => data(propertiesApi.post(`/tickets/${id}/comments`, { body, visibility })),
+    resolve: (id) => data(propertiesApi.post(`/tickets/${id}/resolve`)),
+    cancel: (id) => data(propertiesApi.post(`/tickets/${id}/cancel`)),
+  },
+  workOrders: {
+    setStatus: (id, body) => data(propertiesApi.patch(`/work-orders/${id}/status`, body)),
+  },
+  access: {
+    points: (communityId) => data(propertiesApi.get(`/communities/${communityId}/access-points`)),
+    createPoint: (communityId, body) => data(propertiesApi.post(`/communities/${communityId}/access-points`, body)),
+    createVisitor: (communityId, body) => data(propertiesApi.post(`/communities/${communityId}/visitors`, body)),
+    revoke: (credentialId, reason = null) => data(propertiesApi.post(`/access-credentials/${credentialId}/revoke`, { reason })),
+    validate: (body) => data(propertiesApi.post("/access/validate", body)),
+    events: (communityId, params = {}) => data(propertiesApi.get(`/communities/${communityId}/access-events`, { params })),
   },
   packages: {
     list: (communityId, params = {}) => data(propertiesApi.get(`/communities/${communityId}/packages`, { params })),

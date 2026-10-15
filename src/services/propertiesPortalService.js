@@ -115,5 +115,8 @@ export const propertiesPortalService = {
   vote: (id, optionId) => data(portalApi.post(`/portal/votes/${id}/ballot`, { option_id: optionId })),
   reserve: body => data(portalApi.post("/portal/reservations", body)),
   packages: () => data(portalApi.get("/portal/packages")),
+  tickets: () => data(portalApi.get("/portal/tickets")),
+  createTicket: body => data(portalApi.post("/portal/tickets", body)),
+  createVisitor: body => data(portalApi.post("/portal/visitors", body)),
 };
 export default propertiesPortalService;

@@ -1,0 +1,71 @@
+/* Visitas con QR (administración): caseta, pases, bitácora y entradas */
+.va-panel{display:grid;gap:14px;margin-bottom:16px}
+.va-head{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:16px;padding:4px 2px}
+.va-head>div>span{color:#304660;font-size:9px;font-weight:850;letter-spacing:.13em;text-transform:uppercase}
+.va-head h2{margin:4px 0 3px;color:#283340;font-family:var(--font-title);font-size:24px}
+.va-head p{margin:0;color:#6e767f;font-size:12px}
+.va-head label,.va-gate-controls label,.va-form label{display:grid;gap:5px}
+.va-panel small{color:#7c848e;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.03em}
+.va-panel :is(input,select){width:100%;padding:10px 11px;border:1px solid #d2d6da;border-radius:10px;background:#fff;color:#2f3b49;font:inherit;font-size:12px}
+.va-panel :is(input,select):focus{outline:2px solid #9fb6cc;outline-offset:1px}
+.va-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+.va-card{display:grid;gap:14px;padding:18px;border:1px solid #d3d7db;border-radius:18px;background:#fff}
+.va-card>header{display:flex;align-items:center;gap:10px}
+.va-card>header>svg{flex:none;width:34px;height:34px;padding:8px;border-radius:10px;background:#e5e9ee;color:#4d6178}
+.va-card>header div{display:grid;gap:2px}
+.va-card>header strong{color:#283340;font-size:14px}
+.va-card>header small{font-weight:700;text-transform:none;letter-spacing:0;font-size:11px}
+.va-hint{margin:0;color:#7c848e;font-size:12px}
+.va-gate{border-color:#c9d6e4;background:linear-gradient(170deg,#fff 55%,#f1f5fa)}
+.va-gate-controls{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px}
+.va-direction{display:flex;padding:3px;border:1px solid #d2d6da;border-radius:11px;background:#f4f6f8}
+.va-direction button{display:inline-flex;align-items:center;gap:5px;padding:8px 11px;border-radius:8px;color:#5a6673;font-size:11px;font-weight:800;cursor:pointer}
+.va-direction button[aria-checked="true"]{background:#153457;color:#fff}
+.va-direction svg{width:15px;height:15px}
+.va-scan{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px}
+.va-scan input{padding:13px 14px;font-size:14px;letter-spacing:.02em}
+.va-panel .va-scan>button,.eco-root.properties-focus .va-scan>button[type="submit"]{justify-self:auto;width:auto;min-width:0;padding:0 18px;border-radius:10px;background:#153457;color:#fff;font-size:13px;font-weight:800;cursor:pointer}
+.va-scan>button:disabled{opacity:.5;cursor:not-allowed}
+.va-panel .va-scan>.va-camera-open{display:grid;width:46px;padding:0;place-items:center;border:1px solid #d2d6da;background:#fff;color:#153457}
+.va-camera-open svg{width:20px;height:20px}
+.va-camera{display:grid;gap:8px}
+.va-camera video{width:100%;max-height:260px;border-radius:14px;background:#0f2742;object-fit:cover}
+.va-camera p{margin:0;color:#5a6673;font-size:12px}
+.va-camera button{justify-self:start;padding:8px 12px;border:1px solid #d2d6da;border-radius:10px;background:#fff;color:#153457;font-size:12px;font-weight:800;cursor:pointer}
+.va-result{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:16px;animation:va-in .25s ease-out}
+.va-result>svg{flex:none;width:44px;height:44px}
+.va-result div{display:grid;gap:3px}
+.va-result strong{font-size:20px;font-family:var(--font-title)}
+.va-result span{font-size:13px}
+.va-result.is-granted{background:#e6f3ea;color:#1f5a35}
+.va-result.is-denied{background:#fdecea;color:#8a2a1c}
+@keyframes va-in{from{opacity:0;transform:translateY(4px) scale(.98)}to{opacity:1;transform:none}}
+.va-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.va-form .wide{grid-column:1/-1}
+.va-form em{color:#a3401f;font-size:11px;font-style:normal}
+.va-panel .va-form>.va-primary,.eco-root.properties-focus .va-form>button[type="submit"]{grid-column:1/-1;justify-self:start;display:inline-flex;align-items:center;gap:7px;width:auto;padding:10px 16px;border-radius:10px;background:#153457;color:#fff;font-size:12px;font-weight:800;cursor:pointer}
+.va-form>.va-primary:disabled{opacity:.5;cursor:not-allowed}
+.va-form>.va-primary svg{width:15px;height:15px}
+.va-created,.va-log,.va-points{display:grid;gap:0;margin:0;padding:0;list-style:none}
+.va-created li,.va-log li,.va-points li{display:flex;align-items:center;gap:10px;padding:10px 2px;border-top:1px solid #edf0f3}
+.va-created li>div,.va-log li>div,.va-points li{flex:1;display:grid;gap:2px;min-width:0}
+.va-created strong,.va-log strong,.va-points strong{color:#2f3b49;font-size:12px}
+.va-created small,.va-log small,.va-points small{font-weight:600;text-transform:none;letter-spacing:0;font-size:11px}
+.va-created button{display:inline-flex;align-items:center;gap:5px;padding:7px 10px;border:1px solid #e3c2bb;border-radius:9px;background:#fff;color:#8a2a1c;font-size:11px;font-weight:800;cursor:pointer}
+.va-created button svg{width:14px;height:14px}
+.va-created i{color:#7c848e;font-size:11px;font-style:normal;font-weight:800}
+.va-log i{flex:none;display:grid;place-items:center}
+.va-log i svg{width:20px;height:20px}
+.va-log li.is-granted i{color:#2f7a4c}
+.va-log li.is-denied i{color:#b0402b}
+.va-log time{flex:none;color:#7c848e;font-size:11px}
+.va-point-form{display:grid;grid-template-columns:minmax(0,1fr) 130px auto;gap:8px}
+.va-panel .va-point-form>button,.eco-root.properties-focus .va-point-form>button[type="submit"]{justify-self:auto;width:auto;min-width:0;padding:0 14px;border-radius:10px;background:#153457;color:#fff;font-size:12px;font-weight:800;cursor:pointer}
+.va-point-form>button:disabled{opacity:.5;cursor:not-allowed}
+@media (max-width:900px){.va-grid{grid-template-columns:1fr}}
+@media (max-width:560px){
+  .va-gate-controls,.va-form,.va-point-form{grid-template-columns:1fr}
+  .va-scan{grid-template-columns:minmax(0,1fr) auto}
+  .va-scan>button[type="submit"]{order:2;grid-column:1/-1;padding:12px}
+  .va-head h2{font-size:21px}
+}
