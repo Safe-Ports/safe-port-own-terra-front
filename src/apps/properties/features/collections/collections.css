@@ -1,0 +1,138 @@
+/* Cobranza con comprobante: reportar pago (residente), revisar pagos y reglas de
+   cobranza (administración). Ventanas en DialogPortal, sobre document.body. */
+
+/* ── Ventanas ─────────────────────────────────────────────────────────── */
+.payment-sheet-backdrop,.payment-review-backdrop{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:20px;background:rgba(15,29,51,.55);backdrop-filter:blur(4px)}
+.payment-sheet,.payment-review{width:min(560px,100%);max-height:calc(100dvh - 40px);overflow:auto;border-radius:24px;background:#fffdf9;color:#15293f;font-family:var(--font-body);box-shadow:0 40px 80px -30px rgba(15,29,51,.6)}
+.payment-review{width:min(980px,100%)}
+.payment-sheet>header,.payment-review>header{position:sticky;top:0;z-index:1;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:22px 24px 16px;border-bottom:1px solid #efe6da;background:#fffdf9}
+.payment-sheet small,.payment-review>header small{color:#8a7a66;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.payment-sheet h2,.payment-review h2{margin:4px 0 0;color:#0f2742;font-family:var(--font-title);font-size:26px;font-weight:500;letter-spacing:-.02em}
+.payment-sheet-close{display:grid;width:38px;height:38px;flex:none;place-items:center;border:1px solid #e6dccd;border-radius:12px;background:#fff;color:#33567e;font-size:18px}
+.payment-sheet form{display:grid;gap:18px;padding:20px 24px 24px}
+.payment-sheet fieldset{display:grid;gap:8px;margin:0;padding:0;border:0}
+.payment-sheet legend,.payment-sheet label>span,.payment-sheet-file>span{margin-bottom:6px;color:#3d5068;font-size:13px;font-weight:700}
+.payment-sheet label>span small{color:#8a99a9;font-size:11px;font-weight:600;letter-spacing:0;text-transform:none}
+.payment-sheet-charges label{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;padding:12px 14px;border:1px solid #efe6da;border-radius:14px;background:#fff;cursor:pointer}
+.payment-sheet-charges label.active{border-color:#33567e;box-shadow:0 0 0 3px rgba(51,86,126,.12)}
+.payment-sheet-charges input{width:18px;height:18px;accent-color:#153457}
+.payment-sheet-charges span{display:grid;gap:2px}
+.payment-sheet-charges strong{font-size:14px}
+.payment-sheet-charges label small{font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:#63758a}
+.payment-sheet-charges b{font-size:15px}
+.payment-sheet-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.payment-sheet label,.payment-review-field{display:grid}
+.payment-sheet :is(input,select,textarea),.payment-review-field :is(input,textarea),.collection-fee input,.collection-inline input{width:100%;padding:12px 14px;border:1px solid #dcd2c4;border-radius:12px;outline:0;background:#fff;color:#15293f;font:inherit;font-size:15px}
+.payment-sheet :is(input,select,textarea):focus,.payment-review-field :is(input,textarea):focus,.collection-fee input:focus{border-color:#33567e;box-shadow:0 0 0 4px rgba(51,86,126,.14)}
+.payment-sheet [aria-invalid="true"]{border-color:#c4554a}
+.payment-sheet-error{display:block;margin:6px 0 0;color:#a23a2c;font-size:13px;font-style:normal}
+.payment-sheet-alert{margin:0;padding:12px 14px;border:1px solid #f0cdc6;border-radius:12px;background:#fdf1ee;color:#9b3d30;font-size:14px}
+.payment-sheet-alert button{margin-left:6px;color:#153457;font-weight:700;text-decoration:underline}
+.payment-sheet-drop{display:grid;justify-items:center;gap:6px;width:100%;padding:22px;border:1.5px dashed #d4c3ab;border-radius:16px;background:#fbf6ee;color:#7a5523;text-align:center}
+.payment-sheet-drop svg{font-size:26px}
+.payment-sheet-drop strong{font-size:14px;color:#15293f}
+.payment-sheet-drop small{font-size:12px;font-weight:600;letter-spacing:0;text-transform:none}
+.payment-sheet-file.has-error .payment-sheet-drop{border-color:#c4554a}
+.payment-sheet-file-chosen{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;padding:10px;border:1px solid #efe6da;border-radius:14px;background:#fff}
+.payment-sheet-file-chosen img,.payment-sheet-file-chosen>svg{width:56px;height:56px;border-radius:10px;object-fit:cover;background:#f3e7d3;color:#8a6430;padding:0}
+.payment-sheet-file-chosen>svg{padding:14px}
+.payment-sheet-file-chosen span{display:grid;gap:2px;min-width:0}
+.payment-sheet-file-chosen strong{overflow:hidden;font-size:14px;text-overflow:ellipsis;white-space:nowrap}
+.payment-sheet-file-chosen button{padding:8px 12px;border:1px solid #dcd2c4;border-radius:10px;background:#fff;color:#153457;font-size:13px;font-weight:700}
+.payment-sheet footer,.payment-review-facts footer,.collection-policy-grid>footer{display:flex;justify-content:flex-end;gap:10px}
+.payment-sheet footer button,.payment-review-facts footer button,.collection-policy-grid>footer button{padding:12px 18px;border:1px solid #dcd2c4;border-radius:13px;background:#fff;color:#15293f;font-size:14px;font-weight:700}
+.payment-sheet-primary{display:inline-flex;align-items:center;gap:8px;border:0!important;background:#153457!important;color:#fff!important;box-shadow:0 12px 20px -12px rgba(21,52,87,.7)}
+.payment-sheet-primary:disabled{opacity:.55;box-shadow:none}
+.payment-sheet-fineprint{margin:0;color:#7b8794;font-size:12.5px;text-align:center}
+.payment-sheet-done{display:grid;justify-items:center;gap:12px;padding:30px 24px 28px;text-align:center}
+.payment-sheet-done>svg{color:#4f8a63;font-size:54px}
+.payment-sheet-done p{max-width:380px;margin:0;color:#3d5068;font-size:15px;line-height:1.5}
+
+/* Revisión (administración) */
+.payment-review-body{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,1fr);gap:22px;padding:20px 24px 24px}
+.payment-evidence{display:grid;gap:10px;align-content:start}
+.payment-evidence img,.payment-evidence object{width:100%;max-height:62vh;min-height:320px;border:1px solid #efe6da;border-radius:16px;background:#f4efe7;object-fit:contain}
+.payment-evidence a{display:inline-flex;align-items:center;gap:6px;justify-self:start;color:#153457;font-size:13px;font-weight:700}
+.payment-evidence.is-empty{place-items:center;min-height:240px;border:1.5px dashed #dcd2c4;border-radius:16px;color:#8a7a66}
+.payment-review-facts{display:grid;gap:16px;align-content:start}
+.payment-review-facts dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0}
+.payment-review-facts dl div{padding:12px;border-radius:12px;background:#fff;box-shadow:inset 0 0 0 1px #efe6da}
+.payment-review-facts dt{color:#8a7a66;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.payment-review-facts dd{margin:4px 0 0;color:#15293f;font-size:15px;font-weight:700}
+.payment-review-charges h3{margin:0 0 6px;font-size:14px}
+.payment-review-charges p{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0;padding:8px 0;border-top:1px solid #efe6da;font-size:14px}
+.payment-review-charges span{display:grid}
+.payment-review-charges small{color:#63758a;font-size:12px}
+.payment-review-facts blockquote{margin:0;padding:12px 14px;border-left:3px solid #d4c3ab;border-radius:0 12px 12px 0;background:#fbf6ee;color:#5c4a33;font-size:14px}
+.payment-review-field{gap:6px}
+.payment-review-field>span{color:#3d5068;font-size:13px;font-weight:700}
+.payment-review-field small{color:#7b8794;font-size:12px}
+.payment-review-reject-link{display:inline-flex;align-items:center;gap:6px;margin-right:auto;color:#a23a2c!important;border-color:#f0cdc6!important}
+.payment-review-reject{border:0!important;background:#a23a2c!important;color:#fff!important}
+.payment-review-outcome{margin:0;padding:12px 14px;border-radius:12px;font-size:14px;font-weight:700}
+.payment-review-outcome.is-approved{background:#e9f4ec;color:#2f6b45}
+.payment-review-outcome.is-rejected{background:#fdf1ee;color:#9b3d30}
+
+/* ── Paneles de la administración (dentro de Cobranza) ─────────────────── */
+.payment-review-panel>header,.collection-policy>header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.payment-review-panel>header p,.collection-policy>header p{margin:4px 0 0;max-width:640px;color:#63758a;font-size:13px}
+.payment-count{display:inline-grid;min-width:24px;height:24px;margin-left:6px;padding:0 7px;place-items:center;border-radius:99px;background:#c9a968;color:#0f2742;font-family:var(--font-body);font-size:12px;font-style:normal;font-weight:800;vertical-align:middle}
+.collections-preview-badge{flex:none;padding:5px 11px;border:1px dashed #c9a968;border-radius:99px;background:#fbf6ee;color:#8a6430;font-size:11px;font-style:normal;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.payment-review-list{display:grid;gap:10px;margin:14px 0 0;padding:0;list-style:none}
+.payment-review-list button{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;align-items:center;gap:14px;width:100%;padding:12px 14px;border:1px solid #e3e9ef;border-radius:16px;background:#fff;text-align:left;transition:transform .18s,box-shadow .18s}
+.payment-review-list button:hover{transform:translateY(-1px);box-shadow:0 12px 20px -16px rgba(15,39,66,.5)}
+.payment-review-avatar{display:grid;width:40px;height:40px;place-items:center;border-radius:12px;background:#e6edf5;color:#33567e;font-size:13px;font-weight:800}
+.payment-review-who{display:grid;gap:2px;min-width:0}
+.payment-review-who strong{color:#15293f;font-size:15px}
+.payment-review-who small{overflow:hidden;color:#63758a;font-size:12.5px;text-overflow:ellipsis;white-space:nowrap}
+.payment-review-list b{color:#0f2742;font-size:16px}
+.payment-review-thumb{width:48px;height:48px;border-radius:10px;object-fit:cover;box-shadow:inset 0 0 0 1px #e3e9ef}
+.payment-review-thumb.is-file{display:grid;place-items:center;background:#f3e7d3;color:#8a6430;font-size:20px}
+.payment-status{padding:5px 11px;border-radius:99px;font-size:11px;font-style:normal;font-weight:800;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.payment-status.is-progress{background:#e6edf5;color:#33567e}
+.payment-status.is-ok{background:#e6f3ea;color:#2f6b45}
+.payment-status.is-due{background:#fdecea;color:#a23a2c}
+.payment-status.is-muted{background:#eef0f2;color:#6b7785}
+.payment-review-empty{display:grid;justify-items:center;gap:6px;margin:14px 0 0;padding:26px;border:1.5px dashed #dce3ea;border-radius:16px;color:#63758a;font-size:14px;text-align:center}
+.payment-review-empty svg{color:#8fa3ba;font-size:28px}
+.payment-review-empty p{margin:0}
+
+/* Reglas de cobranza */
+.collection-policy-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:16px;margin-top:14px}
+.collection-policy-grid fieldset{display:grid;align-content:start;gap:12px;margin:0;padding:18px;border:1px solid #e3e9ef;border-radius:18px;background:#fff}
+.collection-policy-grid legend{display:inline-flex;align-items:center;gap:8px;padding:0 6px;color:#0f2742;font-size:15px;font-weight:700}
+.collection-policy-grid legend svg{color:#b07b3e}
+.collection-policy-grid>footer,.collection-policy-grid>.payment-sheet-alert{grid-column:1/-1}
+.collection-switch{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:start;gap:10px;cursor:pointer}
+.collection-switch input{width:20px;height:20px;margin-top:2px;accent-color:#153457}
+.collection-switch span{display:grid;gap:3px}
+.collection-switch strong{color:#15293f;font-size:14px}
+.collection-switch small{color:#63758a;font-size:12.5px;line-height:1.4}
+.collection-switch.is-compact strong{font-weight:600}
+.collection-inline{display:flex;align-items:center;gap:8px;color:#3d5068;font-size:14px}
+.collection-inline input{width:72px;padding:8px 10px}
+.collection-hint{margin:0;color:#7b8794;font-size:13px}
+.collection-chips{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.collection-chips small,.collection-channels small{width:100%;color:#8a99a9;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.collection-chips button{padding:7px 12px;border:1px solid #dce3ea;border-radius:99px;background:#fff;color:#3d5068;font-size:13px;font-weight:600}
+.collection-chips button[aria-pressed="true"]{border-color:#153457;background:#153457;color:#fff}
+.collection-channels{display:grid;gap:6px}
+.collection-channels label{display:flex;align-items:center;gap:8px;color:#3d5068;font-size:14px}
+.collection-channels input{accent-color:#153457}
+.collection-channels .is-soon{color:#9aa6b2}
+.collection-channels em{padding:2px 8px;border-radius:99px;background:#eef0f2;font-size:11px;font-style:normal;font-weight:700}
+.collection-summary{margin:0;padding:10px 12px;border-radius:12px;background:#f5f8fb;color:#33567e;font-size:13px;line-height:1.45}
+.collection-fee{display:grid;gap:10px}
+.collection-fee label{display:grid;gap:6px;color:#3d5068;font-size:13px;font-weight:700}
+.collection-segment{display:inline-flex;padding:3px;border-radius:12px;background:#eef2f6}
+.collection-segment button{padding:8px 14px;border-radius:10px;color:#63758a;font-size:13px;font-weight:700}
+.collection-segment button[aria-checked="true"]{background:#fff;color:#153457;box-shadow:0 2px 6px rgba(15,39,66,.12)}
+
+@media(max-width:760px){
+  .payment-review-body,.payment-sheet-grid{grid-template-columns:1fr}
+  .payment-review-list button{grid-template-columns:auto minmax(0,1fr) auto}
+  .payment-review-list .payment-status,.payment-review-list .payment-review-thumb{display:none}
+  .payment-sheet-backdrop,.payment-review-backdrop{align-items:end;padding:0}
+  .payment-sheet,.payment-review{max-height:92dvh;border-radius:24px 24px 0 0}
+}
+@media(prefers-reduced-motion:reduce){.payment-review-list button{transition:none}.payment-review-list button:hover{transform:none}}

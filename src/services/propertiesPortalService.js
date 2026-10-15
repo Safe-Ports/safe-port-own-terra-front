@@ -118,5 +118,13 @@ export const propertiesPortalService = {
   tickets: () => data(portalApi.get("/portal/tickets")),
   createTicket: body => data(portalApi.post("/portal/tickets", body)),
   createVisitor: body => data(portalApi.post("/portal/visitors", body)),
+  // Reportes de pago con comprobante (contrato propuesto; ver collectionsApi.js).
+  paymentReports: () => data(portalApi.get("/portal/payment-reports")),
+  reportPayment: formData => data(portalApi.post("/portal/payment-reports", formData)),
+  cancelPaymentReport: id => data(portalApi.post(`/portal/payment-reports/${id}/cancel`)),
+  // Muro de la comunidad (contrato propuesto): reacciones y comentarios del residente.
+  reactToAnnouncement: (id, type) => data(portalApi.put(`/portal/announcements/${id}/reaction`, { type })),
+  removeAnnouncementReaction: id => data(portalApi.delete(`/portal/announcements/${id}/reaction`)),
+  commentAnnouncement: (id, body) => data(portalApi.post(`/portal/announcements/${id}/comments`, { body })),
 };
 export default propertiesPortalService;

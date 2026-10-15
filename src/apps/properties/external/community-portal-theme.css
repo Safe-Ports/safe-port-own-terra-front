@@ -126,3 +126,17 @@
   .community-portal-shell .community-portal-nav nav::-webkit-scrollbar{display:none}
   .community-portal-shell .community-portal-nav nav button{flex:none;scroll-snap-align:center}
 }
+
+/* Reportar pago (cobranza con comprobante) */
+.community-portal-shell .portal-report-cta{flex:none;padding:11px 16px;border-radius:13px;background:#153457;color:#fff;font-size:14px;font-weight:700;box-shadow:0 12px 20px -12px rgba(21,52,87,.7)}
+.community-portal-shell .portal-report-cta:hover{background:#0f2742}
+.community-portal-shell .community-list i.progress{background:#e6edf5;color:#33567e}
+.community-portal-shell .community-list i.ok-chip{background:#e6f3ea;color:#2f6b45}
+.community-portal-shell .portal-report-note{margin:4px 0 0;color:#9b3d30;font-size:13px}
+@media(max-width:650px){.community-portal-shell .community-list article>button{grid-column:2/-1;justify-self:start}}
+.community-portal-shell .community-section+.community-section{margin-top:18px}
+
+/* Muro de la comunidad: las publicaciones son las tarjetas, sin contenedor alrededor. */
+.community-portal-shell .portal-feed{max-width:720px;overflow:visible;border:0;background:transparent;box-shadow:none}
+.community-portal-shell .portal-feed>header{padding:0 4px 16px;border:0}
+.community-portal-shell .portal-feed .feed-post-body h3{font-size:22px}

@@ -41,6 +41,9 @@ export const propertiesService = {
     quotaPlans: (id) => data(propertiesApi.get(`/communities/${id}/quota-plans`)),
     createQuotaPlan: (id, body) => data(propertiesApi.post(`/communities/${id}/quota-plans`, body)),
     generateQuota: (communityId, planId, body) => data(propertiesApi.post(`/communities/${communityId}/quota-plans/${planId}/generate`, body)),
+    // Recordatorios, recargos y generación automática (contrato propuesto).
+    collectionPolicy: (id) => data(propertiesApi.get(`/communities/${id}/collection-policy`)),
+    saveCollectionPolicy: (id, body) => data(propertiesApi.put(`/communities/${id}/collection-policy`, body)),
   },
   charges: {
     list: (params = {}) => data(propertiesApi.get("/ledger/charges", { params: { limit: 2000, ...params } })),
@@ -54,6 +57,9 @@ export const propertiesService = {
     create: (communityId, body) => data(propertiesApi.post(`/communities/${communityId}/announcements`, body)),
     publish: (id) => data(propertiesApi.post(`/announcements/${id}/publish`)),
     receipts: (id) => data(propertiesApi.get(`/announcements/${id}/receipts`)),
+    // Muro de la comunidad (contrato propuesto): respuesta oficial y moderación.
+    comment: (id, body) => data(propertiesApi.post(`/announcements/${id}/comments`, { body })),
+    hideComment: (id, commentId, hidden) => data(propertiesApi.patch(`/announcements/${id}/comments/${commentId}`, { hidden })),
   },
   amenities: {
     list: (communityId) => data(propertiesApi.get(`/communities/${communityId}/amenities`)),
@@ -148,6 +154,12 @@ export const propertiesService = {
       info: (token) => data(propertiesApi.get(`/public/service-enrollment/${token}`)),
       apply: (token, body) => data(propertiesApi.post(`/public/service-enrollment/${token}/applications`, body)),
     },
+  },
+  // Reportes de pago que envían los residentes (contrato propuesto).
+  paymentReports: {
+    list: (params = {}) => data(propertiesApi.get("/ledger/payment-reports", { params })),
+    approve: (id, body) => data(propertiesApi.post(`/ledger/payment-reports/${id}/approve`, body)),
+    reject: (id, reason) => data(propertiesApi.post(`/ledger/payment-reports/${id}/reject`, { reason })),
   },
   media: {
     list: (entityType, entityId) => data(propertiesApi.get(`/media/${entityType}/${entityId}`)),

@@ -3,18 +3,13 @@
 .portal-home{display:grid;gap:24px}
 
 /* Encabezado con cielo según la hora */
-.portal-home-hero{--sky-top:#cfe3f3;--sky-bottom:#f4f1ea;--hill-far:#c9d9c4;--hill-near:#a9c3a6;--tree:#7fa184;--wall:#fdfaf4;--roof:#33567e;--door:#8a5a3c;--hero-ink:#0f2742;--hero-muted:#46607e;
-  position:relative;display:grid;min-height:300px;overflow:hidden;border-radius:28px;background:linear-gradient(180deg,var(--sky-top),var(--sky-bottom));box-shadow:0 24px 40px -24px rgba(15,39,66,.45)}
-.portal-home-hero.is-dawn{--sky-top:#f6d6c0;--sky-bottom:#dfe7f1;--hill-far:#d7c7bd;--hill-near:#b9b0a5;--tree:#8c8f7f}
-.portal-home-hero.is-dusk{--sky-top:#4a5a86;--sky-bottom:#f1b38c;--hill-far:#7d6f86;--hill-near:#5b5470;--tree:#45405a;--wall:#efe3d6;--roof:#2b3555;--door:#5e3d2c;--hero-ink:#fff;--hero-muted:#f3e6dc}
-.portal-home-hero.is-night{--sky-top:#0f1d33;--sky-bottom:#24385c;--hill-far:#1f3150;--hill-near:#172741;--tree:#13213a;--wall:#2a3f63;--roof:#0c172a;--door:#162540;--hero-ink:#fff;--hero-muted:#c9d6e6}
-.portal-home-scene{position:absolute;inset:0;width:100%;height:100%}
-.portal-home-hero-copy{position:relative;display:grid;align-content:center;gap:10px;max-width:min(560px,62%);padding:36px 40px;color:var(--hero-ink)}
-.portal-home-hero-copy small{color:var(--hero-muted);font-size:13px;font-weight:700;letter-spacing:.04em}
+.portal-home-hero{display:grid;min-height:300px;border-radius:28px;box-shadow:0 24px 40px -24px rgba(15,39,66,.45)}
+.portal-home-hero-copy{position:relative;display:grid;align-content:center;gap:10px;max-width:min(560px,62%);padding:36px 40px;color:var(--sky-ink)}
+.portal-home-hero-copy small{color:var(--sky-muted);font-size:13px;font-weight:700;letter-spacing:.04em}
 .portal-home-hero-copy small::first-letter{text-transform:uppercase}
-.community-portal-shell .portal-home-hero-copy h2{margin:0;color:var(--hero-ink);font-family:var(--font-title);font-size:clamp(32px,3.6vw,48px);font-weight:500;letter-spacing:-.03em;line-height:1.05}
-.portal-home-hero-copy p{margin:0;color:var(--hero-muted);font-size:16px;line-height:1.5}
-.portal-home-hero-copy em{color:var(--hero-muted);font-size:12px;font-style:normal;opacity:.85}
+.community-portal-shell .portal-home-hero-copy h2{margin:0;color:var(--sky-ink);font-family:var(--font-title);font-size:clamp(32px,3.6vw,48px);font-weight:500;letter-spacing:-.03em;line-height:1.05}
+.portal-home-hero-copy p{margin:0;color:var(--sky-muted);font-size:16px;line-height:1.5}
+.portal-home-hero-copy em{color:var(--sky-muted);font-size:12px;font-style:normal;opacity:.85}
 .portal-home-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
 .portal-home-chips span{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:99px;background:rgba(255,255,255,.78);color:#153457;font-size:13px;font-weight:700;backdrop-filter:blur(6px)}
 .portal-home-hero.is-dusk .portal-home-chips span,.portal-home-hero.is-night .portal-home-chips span{background:rgba(255,255,255,.16);color:#fff}
@@ -33,6 +28,8 @@
 .portal-home-today .is-alert i{background:#fbe5df;color:#a23a2c}
 .portal-home-today .is-warm i{background:#f6ead6;color:#9a6a24}
 .portal-home-today .is-calm i{background:#e5edf6;color:#33567e}
+.portal-home-today .is-ok i{background:#e6f3ea;color:#3f7a54}
+.portal-home-today .is-ok small{color:#3f7a54}
 .portal-home-today li span{display:grid;gap:3px;min-width:0}
 .portal-home-today li small{color:#8a7a66;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
 .portal-home-today .is-alert small{color:#a23a2c}
@@ -68,8 +65,8 @@
 @media(max-width:1000px){.portal-home-grid{grid-template-columns:1fr}}
 @media(max-width:650px){
   .portal-home-hero{min-height:360px;border-radius:24px}
-  .portal-home-hero-copy{align-content:start;max-width:none;padding:26px 22px 150px}
-  .portal-home-scene{top:auto;height:58%}
+  .portal-home-hero-copy{align-content:start;max-width:none;padding:26px 22px 180px}
+  .portal-home-hero .sky-scene{top:auto;height:170px}
   .portal-home-today,.portal-home-place{padding:18px}
 }
 @media(prefers-reduced-motion:reduce){.portal-home *{transition:none!important}.portal-home button:hover{transform:none!important}}
