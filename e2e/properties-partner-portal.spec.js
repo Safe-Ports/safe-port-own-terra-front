@@ -1,0 +1,27 @@
+import { test, expect } from "@playwright/test";
+import { prepare } from "./helpers/properties.js";
+test("portal de servicio: confirmar, terminar con evidencia y ver en móvil", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-10-17T15:20:00"));
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await prepare(page);
+  await page.goto("/portal-servicio");
+  await expect(page.getByRole("heading", { name: /Buenas tardes, equipo Díaz/ })).toBeVisible();
+  await page.getByRole("button", { name: /Revisar minisplit/ }).click();
+  await page.getByRole("button", { name: "Confirmar visita" }).click();
+  await expect(page.getByRole("article", { name: "Orden OT-000127" }).getByText("Confirmada").first()).toBeVisible();
+  await page.getByRole("button", { name: /Fuga debajo del lavabo/ }).click();
+  await page.getByRole("button", { name: "Terminar trabajo" }).click();
+  await expect(page.getByText("Agrega al menos una foto del trabajo terminado.")).toBeVisible();
+  await page.locator('.sp-photos input[type=file]').setInputFiles({ name: "valvula.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64") });
+  await page.getByLabel("¿Qué se hizo?").fill("Se cambió la válvula angular y se probó sin fugas.");
+  await page.getByRole("button", { name: "Terminar trabajo" }).click();
+  await expect(page.getByText(/Trabajo terminado/)).toBeVisible();
+  await page.getByRole("navigation", { name: "Secciones del portal" }).getByRole("button", { name: /Historial/ }).click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+  await page.getByRole("navigation", { name: "Secciones del portal" }).getByRole("button", { name: /Hoy/ }).click();
+  await page.getByRole("navigation", { name: "Secciones del portal" }).getByRole("button", { name: /Agenda/ }).click();
+  await page.getByRole("button", { name: /Revisar minisplit/ }).click();
+  await page.getByRole("button", { name: "Mis órdenes" }).click();
+  await expect(page.getByRole("heading", { name: "Próximas visitas" })).toBeVisible();
+});

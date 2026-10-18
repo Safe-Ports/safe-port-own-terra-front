@@ -56,3 +56,5 @@
 .portal-login .invitation-success h2{margin:0}
 .portal-login .invitation-success p{margin:0 0 8px;color:#63758a;font-size:14px}
 .portal-login .invitation-next{display:inline-flex;align-items:center;gap:8px;padding:14px 22px;border-radius:14px;background:#153457;color:#fff;font-size:15px;font-weight:800}
+/* El recuadro con ícono ya marca el foco (focus-within): sin esto el input dibujaba un segundo anillo adentro. */
+.portal-login .service-auth-box label>div input:focus-visible,:is(.service-auth-page,.service-invitation-page,.service-registration-page) label>div:focus-within input:focus-visible{outline:0;box-shadow:none}
