@@ -152,7 +152,10 @@ export function readRentalInquiries() {
   return Array.isArray(rows) ? rows : [];
 }
 
-export function recordRentalInquiry({ listing, name, phone, email, message }) {
+export function recordRentalInquiry({
+  listing, name, phone, email, message,
+  privacy_version, terms_accepted_at, financial_consent_accepted_at, secondary_use_optout_at,
+}) {
   if (!clean(name)) throw new Error("Escribe tu nombre.");
   if (!clean(phone) && !clean(email)) throw new Error("Comparte teléfono o correo.");
   const inquiry = {
@@ -168,6 +171,12 @@ export function recordRentalInquiry({ listing, name, phone, email, message }) {
     status: "new",
     notes: clean(message) || `Interés en: ${listing.title}`,
     createdAt: new Date().toISOString(),
+    // Consentimiento del Aviso de Privacidad (Anexo B) — persistido al mismo
+    // nivel mock (localStorage) que el resto de esta feature de catálogo.
+    privacy_version,
+    terms_accepted_at,
+    financial_consent_accepted_at,
+    secondary_use_optout_at,
   };
   const current = readRentalInquiries();
   try { globalThis.localStorage?.setItem(RENTAL_INQUIRY_STORAGE_KEY, JSON.stringify([inquiry, ...current])); } catch { /* almacenamiento opcional */ }

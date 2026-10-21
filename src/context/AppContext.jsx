@@ -429,9 +429,18 @@ export function AppProvider({ children }) {
     }
   };
 
-  const register = async ({ organization_name, name, email, password }) => {
+  const register = async ({ organization_name, name, email, password, privacy_version, terms_accepted_at, financial_consent_accepted_at, secondary_use_optout_at }) => {
     try {
-      const { data } = await api.post("/auth/register", { organization_name, name, email, password });
+      const { data } = await api.post("/auth/register", {
+        organization_name,
+        name,
+        email,
+        password,
+        privacy_version,
+        terms_accepted_at,
+        financial_consent_accepted_at,
+        secondary_use_optout_at,
+      });
       // Flujo bloqueante: el backend no devuelve tokens, el usuario debe confirmar su correo.
       return { ok: true, pendingVerification: true, email: data.email || email };
     } catch (err) {

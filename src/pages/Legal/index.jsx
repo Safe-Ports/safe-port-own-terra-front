@@ -1,80 +1,35 @@
 import "./legal.css";
+import Checkbox from "@/components/ui/Checkbox";
+import PrivacyNoticeBody, { PRIVACY_UPDATED, PRIVACY_NOTICE_VERSION } from "./PrivacyNoticeBody";
 
 /**
  * Páginas legales públicas (sin sesión): Aviso de Privacidad y Términos.
- * Se renderizan desde App.jsx según la ruta (/privacidad, /terminos). El aviso
- * incluye la divulgación del uso de datos de Google (requisito para el OAuth con
- * Google Calendar).
+ * Se renderizan desde App.jsx según la ruta (/privacidad, /terminos).
  */
 const UPDATED = "12 de agosto de 2026";
+export { PRIVACY_UPDATED, PRIVACY_NOTICE_VERSION };
 
-function Privacidad() {
+/**
+ * El checkbox de aceptación vive aquí, en el propio Aviso de Privacidad, no
+ * duplicado en otro componente — `PrivacyConsent` (el overlay que se abre al
+ * registrarse) renderiza este mismo `Privacidad` con `showAccept`. En la ruta
+ * pública /privacidad (sin flujo que aceptar) se omite.
+ */
+export function Privacidad({ showAccept = false, accepted = false, onAcceptChange, idPrefix = "privacy" }) {
   return (
     <>
-      <h1>Aviso de Privacidad</h1>
-      <p className="lg-upd">Última actualización: {UPDATED}</p>
-
-      <p>
-        En <strong>OwnTerra</strong> (operado por Safe Ports) protegemos la información de nuestros
-        usuarios y de sus clientes. Este aviso explica qué datos tratamos, con qué fin y cómo los
-        cuidamos.
-      </p>
-
-      <h2>1. Datos que tratamos</h2>
-      <ul>
-        <li><strong>De tu cuenta:</strong> nombre, correo, organización y rol dentro de la plataforma.</li>
-        <li><strong>Operativos:</strong> fraccionamientos, lotes, clientes, contratos, pagos y citas que registras en la app.</li>
-        <li><strong>Técnicos:</strong> registros de acceso y de errores para operar y dar soporte.</li>
-      </ul>
-
-      <h2>2. Uso de datos de Google (Google Calendar)</h2>
-      <p>
-        Si decides conectar tu cuenta de Google, OwnTerra solicita el permiso
-        <code> Google Calendar API — ver y editar eventos</code> con un único fin:
-        <strong> crear y gestionar los eventos que tú agendas en OwnTerra</strong> (incluyendo generar
-        un enlace de Google Meet cuando lo pides).
-      </p>
-      <ul>
-        <li>Solo creamos, editamos o eliminamos eventos <strong>a partir de acciones que tú realizas</strong> en la app.</li>
-        <li><strong>No</strong> leemos, vendemos ni compartimos el contenido de tu calendario con terceros.</li>
-        <li><strong>No</strong> usamos estos datos para publicidad ni para entrenar modelos de inteligencia artificial.</li>
-        <li>El acceso se limita estrictamente a esa función y se ajusta a la
-          <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer"> Política de Datos de Usuario de los Servicios API de Google</a>,
-          incluidos sus requisitos de Uso Limitado.</li>
-        <li>Guardamos de forma <strong>cifrada</strong> únicamente el token necesario para mantener la conexión.</li>
-      </ul>
-
-      <h2>3. Cómo revocar el acceso</h2>
-      <p>
-        Puedes desconectar tu cuenta de Google cuando quieras desde <em>Agenda → Conectar Google
-        Calendar → Desconectar</em>, o directamente en la
-        <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer"> configuración de permisos de tu cuenta de Google</a>.
-        Al hacerlo eliminamos el token guardado.
-      </p>
-
-      <h2>4. Con quién compartimos datos</h2>
-      <p>
-        No vendemos tus datos. Solo los procesamos con proveedores de infraestructura necesarios para
-        operar el servicio (alojamiento, base de datos, correo y pagos), bajo obligaciones de
-        confidencialidad.
-      </p>
-
-      <h2>5. Conservación y seguridad</h2>
-      <p>
-        Conservamos la información mientras tu cuenta esté activa o según lo exija la ley. Aplicamos
-        cifrado en tránsito y en reposo para los datos sensibles, y controles de acceso por rol.
-      </p>
-
-      <h2>6. Tus derechos</h2>
-      <p>
-        Puedes solicitar acceso, rectificación o eliminación de tus datos escribiéndonos al correo de
-        contacto. Atenderemos tu solicitud conforme a la legislación aplicable.
-      </p>
-
-      <h2>7. Contacto</h2>
-      <p>
-        Dudas sobre este aviso o sobre tus datos: <a href="mailto:soporte@own-terra.com">soporte@own-terra.com</a>.
-      </p>
+      <h1>Aviso de Privacidad Integral</h1>
+      <p className="lg-upd">Versión {PRIVACY_NOTICE_VERSION} · Última actualización: {PRIVACY_UPDATED}</p>
+      <PrivacyNoticeBody />
+      {showAccept ? (
+        <div className="lg-accept-row">
+          <Checkbox id={`${idPrefix}-accept`} checked={accepted} onChange={onAcceptChange} required>
+            <strong>He leído y acepto</strong> el Aviso de Privacidad y los{" "}
+            <a href="/terminos" target="_blank" rel="noopener noreferrer">términos y condiciones</a>, incluido el
+            consentimiento expreso para mis datos patrimoniales y financieros (sección 15).
+          </Checkbox>
+        </div>
+      ) : null}
     </>
   );
 }
@@ -123,7 +78,9 @@ export default function LegalPage() {
     <div className="lg-root">
       <div className="lg-card">
         <a className="lg-brand" href="/">OwnTerra</a>
-        {isTerms ? <Terminos /> : <Privacidad />}
+        <div className="legal-doc">
+          {isTerms ? <Terminos /> : <Privacidad />}
+        </div>
         <div className="lg-foot">
           <a href="/privacidad">Aviso de Privacidad</a>
           <span>·</span>

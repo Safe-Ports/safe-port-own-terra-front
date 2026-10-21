@@ -5,6 +5,7 @@ import { formService } from "@/services/formService";
 import { parseApiError } from "@/errors/parseApiError";
 import InlineError from "@/components/shared/InlineError";
 import { HiLockClosed } from "react-icons/hi2";
+import PrivacyConsent, { emptyConsent, isConsentValid, buildConsentFields } from "@/components/legal/PrivacyConsent";
 import "./FormPublico.css";
 
 function FormPublico() {
@@ -18,6 +19,7 @@ function FormPublico() {
   const [values, setValues] = useState({});
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [consent, setConsent] = useState(emptyConsent());
 
   useEffect(() => {
     if (!slug) { setPhase("unavailable"); return; }
@@ -53,10 +55,14 @@ function FormPublico() {
     if (submitting) return;
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); document.getElementById(`fp-${Object.keys(errs)[0]}`)?.focus(); return; }
+    if (!isConsentValid(consent)) {
+      setErrors({ __global: { message: "Acepta el Aviso de Privacidad y los términos y condiciones para continuar." } });
+      return;
+    }
     setSubmitting(true);
     setErrors({});
     try {
-      await formService.publicSubmit(slug, { data: values });
+      await formService.publicSubmit(slug, { data: values, ...buildConsentFields(consent) });
       setPhase("success");
     } catch (err) {
       const parsed = parseApiError(err, "No fue posible enviar el formulario.");
@@ -171,7 +177,9 @@ function FormPublico() {
               ))}
             </div>
 
-            <button className="fp-submit" type="submit" disabled={submitting}>
+            <PrivacyConsent value={consent} onChange={setConsent} idPrefix="form-publico-consent" />
+
+            <button className="fp-submit" type="submit" disabled={submitting || !isConsentValid(consent)}>
               {submitting ? "Enviando…" : "Enviar información"}
             </button>
           </WorkflowForm>

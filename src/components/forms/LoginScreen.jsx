@@ -6,6 +6,7 @@ import FieldError from "@/components/shared/FieldError";
 import { useFieldErrors } from "@/hooks/useFieldErrors";
 import { PROPERTIES_MVP_SCOPE } from "@/apps/properties/mvpScope";
 import { getFieldErrors } from "@/services/errors";
+import PrivacyConsent, { emptyConsent, isConsentValid, buildConsentFields } from "@/components/legal/PrivacyConsent";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const REGISTER_RULES = {
@@ -184,6 +185,8 @@ function LoginView({ onForgot, onRegister }) {
 
       <div className="lf-footer">
         OwnTerra v1.0 &nbsp;·&nbsp; © 2026
+        &nbsp;·&nbsp; <a href="/privacidad">Aviso de Privacidad</a>
+        &nbsp;·&nbsp; <a href="/terminos">Términos</a>
       </div>
     </WorkflowForm>
   );
@@ -263,6 +266,8 @@ function ForgotView({ onBack }) {
 
       <div className="lf-footer" style={{ marginTop: 24 }}>
         OwnTerra v1.0 &nbsp;·&nbsp; © 2025
+        &nbsp;·&nbsp; <a href="/privacidad">Aviso de Privacidad</a>
+        &nbsp;·&nbsp; <a href="/terminos">Términos</a>
       </div>
     </WorkflowForm>
   );
@@ -283,6 +288,7 @@ function RegisterView({ onBack }) {
   const [error, setError]     = useState(null);
   const [showPass, setShowPass] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
+  const [consent, setConsent] = useState(emptyConsent());
   const fe = useFieldErrors();
 
   const set = (key) => (e) => { const v = e.target.value; setForm((p) => ({ ...p, [key]: v })); fe.clear(key); setError(null); };
@@ -301,12 +307,17 @@ function RegisterView({ onBack }) {
       setError({ severity: "warning", message: Object.values(fieldErrors).join(" ") });
       return;
     }
+    if (!isConsentValid(consent)) {
+      setError({ severity: "warning", message: "Acepta el Aviso de Privacidad y los términos y condiciones para continuar." });
+      return;
+    }
     setLoading(true);
     const result = await register({
       organization_name: form.organization_name.trim(),
       name: form.name.trim(),
       email: form.email.trim().toLowerCase(),
       password: form.password,
+      ...buildConsentFields(consent),
     });
     setLoading(false);
     if (result.ok && result.pendingVerification) {
@@ -441,16 +452,22 @@ function RegisterView({ onBack }) {
 
       </div>
 
+      <PrivacyConsent value={consent} onChange={setConsent} idPrefix="register-consent" />
+
       <button type="submit"
         className={`lf-btn${loading ? " loading" : ""}`}
-
-        disabled={loading || !form.organization_name.trim() || !form.name.trim() || !form.email.trim() || !form.password || !form.confirm}
+        style={{ marginTop: 14 }}
+        disabled={loading || !form.organization_name.trim() || !form.name.trim() || !form.email.trim() || !form.password || !form.confirm || !isConsentValid(consent)}
       >
         {loading ? <span className="btn-spinner" /> : null}
         {loading ? "Creando cuenta..." : "🚀 Crear cuenta"}
       </button>
 
-      <div className="lf-footer" style={{ marginTop: 16 }}>OwnTerra v1.0 &nbsp;·&nbsp; © 2026</div>
+      <div className="lf-footer" style={{ marginTop: 16 }}>
+        OwnTerra v1.0 &nbsp;·&nbsp; © 2026
+        &nbsp;·&nbsp; <a href="/privacidad">Aviso de Privacidad</a>
+        &nbsp;·&nbsp; <a href="/terminos">Términos</a>
+      </div>
     </WorkflowForm>
   );
 }
