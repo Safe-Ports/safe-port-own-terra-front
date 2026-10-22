@@ -1,0 +1,55 @@
+.condo-suite{display:grid;gap:20px;padding:8px 0 48px;color:#2e3a48}.condo-suite-heading{display:flex;align-items:end;justify-content:space-between;gap:24px;padding:12px 5px}.condo-suite-heading span,.condo-module>header span{color:#33567e;font-size:9px;font-weight:900;letter-spacing:.14em;text-transform:uppercase}.condo-suite-heading h1{margin:7px 0 0;color:#0f2742;font-family:var(--font-title);font-size:clamp(34px,4vw,48px)}.condo-suite-heading label{display:grid;gap:5px;min-width:260px}.condo-suite-heading small{color:#7f8790;font-size:8px;text-transform:uppercase}.condo-suite-heading select{height:42px;border:1px solid #d3d7db;border-radius:11px;background:#fff;padding:0 11px;color:#0f2742;font-weight:750}.condo-module-tabs{display:grid;grid-template-columns:repeat(6,1fr);gap:9px}.condo-module-tabs button{display:flex;align-items:center;gap:8px;padding:13px;border:1px solid #d3d7db;border-radius:12px;background:#fff;color:#636a72;font-size:10px;font-weight:800;text-align:left}.condo-module-tabs button svg{font-size:18px}.condo-module-tabs button.active{border-color:#153457;background:#153457;color:#fff;box-shadow:0 9px 24px rgba(10,61,98,.16)}.condo-module{overflow:hidden;border:1px solid #d3d7db;border-radius:20px;background:#fff;box-shadow:0 18px 45px rgba(8,44,73,.06)}.condo-module>header{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:23px 25px;border-bottom:1px solid #dce1e6;background:#f7f8fa}.condo-module h2{margin:6px 0 0;color:#0f2742;font-family:var(--font-title);font-size:26px}.condo-kpis{display:flex;gap:8px}.condo-kpis span{display:grid;gap:3px;min-width:105px;padding:9px 12px;border:1px solid #d6dadf;border-radius:10px;color:#7f8790;font-size:7px;text-transform:uppercase}.condo-kpis b{color:#2a3542;font-size:13px}.condo-split{display:grid;grid-template-columns:310px 1fr;min-height:420px}.condo-split form{display:grid;align-content:start;gap:12px;padding:22px;border-right:1px solid #dce1e6;background:#f1f3f6}.condo-split form h3{display:flex;align-items:center;gap:7px;margin:0 0 5px;color:#0f2742;font-size:12px}.condo-split form label{display:grid;gap:5px;color:#727a84;font-size:8px;font-weight:800;text-transform:uppercase}.condo-split input,.condo-split select,.condo-split textarea{width:100%;border:1px solid #d3d7db;border-radius:9px;outline:0;background:#fff;padding:9px;color:#27313c;font:inherit;font-size:11px;text-transform:none}.condo-split form>button{padding:11px;border-radius:9px;background:#153457;color:#fff;font-size:10px;font-weight:850}.condo-records{display:grid;align-content:start;padding:8px 20px}.condo-records article{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:13px;padding:17px 4px;border-bottom:1px solid #e1e5ea}.condo-records strong,.condo-records small,.condo-records em{display:block}.condo-records strong{font-size:11px}.condo-records small{margin-top:4px;color:#7e868f;font-size:9px}.condo-records em{margin-top:5px;color:#33567e;font-size:7px;font-style:normal;font-weight:750}.condo-records article>b{color:#0f2742;font-size:12px}.condo-records button{padding:7px 9px;border:1px solid #ced2d6;border-radius:8px;color:#415266;font-size:8px;font-weight:800}.record-icon{color:#33567e;font-size:22px}.condo-state{padding:5px 7px;border-radius:99px;background:#f4ead8;color:#8a6728;font-size:7px;font-weight:850;text-transform:uppercase}.condo-state.paid{background:#e7efe6;color:#405368}.condo-state.overdue{background:#f5e2df;color:#9b4c42}.condo-report-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:24px}.condo-report-grid article{padding:20px;border:1px solid #d5d9de;border-radius:15px;background:#f7f8fa}.condo-report-grid svg{color:#33567e;font-size:24px}.condo-report-grid span,.condo-report-grid strong,.condo-report-grid p{display:block}.condo-report-grid span{margin-top:16px;color:#767e88;font-size:8px;font-weight:800;text-transform:uppercase}.condo-report-grid strong{margin-top:6px;color:#0f2742;font-family:var(--font-title);font-size:31px}.condo-report-grid p{margin:3px 0 0;color:#7f8790;font-size:9px}@media(max-width:900px){.condo-module-tabs{grid-template-columns:repeat(2,1fr)}.condo-split{grid-template-columns:1fr}.condo-split form{border-right:0;border-bottom:1px solid #dce1e6}.condo-report-grid{grid-template-columns:repeat(2,1fr)}.condo-suite-heading,.condo-module>header{align-items:start;flex-direction:column}.condo-suite-heading label{width:100%}}@media(max-width:600px){.condo-module-tabs{grid-template-columns:1fr}.condo-kpis{width:100%;overflow:auto}.condo-records article{grid-template-columns:auto 1fr}.condo-records article>b,.condo-records article>button{grid-column:2}.condo-report-grid{grid-template-columns:1fr}}
+
+.condo-field-shortcuts{display:grid;grid-template-columns:minmax(180px,.72fr) repeat(2,minmax(0,1fr));align-items:stretch;gap:9px;padding:10px;border:1px solid #d3d7db;border-radius:14px;background:rgba(255,255,255,.66)}
+.condo-field-shortcuts>header{display:grid;align-content:center;gap:4px;padding:4px 10px}
+.condo-field-shortcuts>header span{color:#33567e;font-size:8px;font-weight:850;letter-spacing:.13em;text-transform:uppercase}
+.condo-field-shortcuts>header strong{color:#0f2742;font-size:12px}
+.condo-field-shortcuts>button{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;padding:11px 12px;border:1px solid #d8dbdf;border-radius:10px;background:#fff;color:#334151;text-align:left;transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease}
+.condo-field-shortcuts>button:hover{border-color:#a0aebf;box-shadow:0 7px 18px rgba(8,44,73,.07);transform:translateY(-1px)}
+.condo-field-shortcuts>button>span:first-child{display:grid;width:35px;height:35px;place-items:center;border-radius:9px;background:#e9edf1;color:#153457;font-size:18px}
+.condo-field-shortcuts>button>span:nth-child(2){display:grid;gap:3px}
+.condo-field-shortcuts>button strong{color:#1d344e;font-size:10px}
+.condo-field-shortcuts>button small{color:#7d858e;font-size:8px}
+.condo-field-shortcuts>button>svg{color:#33567e;font-size:14px}
+@media(max-width:900px){.condo-field-shortcuts{grid-template-columns:1fr 1fr}.condo-field-shortcuts>header{grid-column:1/-1}}
+@media(max-width:600px){.condo-field-shortcuts{grid-template-columns:1fr}.condo-field-shortcuts>header{grid-column:auto}}
+
+.condo-charge-filters{display:flex;align-items:center;gap:7px;overflow-x:auto;padding:11px 20px;border-bottom:1px solid #dce1e6;background:#fff}
+.condo-charge-filters button{flex:0 0 auto;padding:7px 10px;border:1px solid #d9dadc;border-radius:999px;background:#fff;color:#636a71;font-size:8px;font-weight:850}
+.condo-charge-filters button.active{border-color:#153457;background:#153457;color:#fff}
+.condo-charge-filters .condo-contract-link{display:inline-flex;align-items:center;gap:5px;margin-left:auto;border-radius:9px;color:#153457}
+.condo-penalty-note{display:block;padding:10px;border-radius:8px;background:#eceff2;color:#4c6077;font-size:8px;line-height:1.5}
+.condo-charge-empty{margin:28px auto;color:#7f8790;font-size:10px}
+@media(max-width:600px){.condo-charge-filters .condo-contract-link{margin-left:0}.condo-charge-filters{padding-inline:12px}}
+.condo-unit-link{padding:0;border:0;background:none;color:#33567e;font:inherit;font-weight:800;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+
+/* ── Botones: compactos y del tamaño de su texto ─────────────────────────
+   Los botones de formulario eran hijos directos de un grid, así que se
+   estiraban a los 310px de la columna. Un botón del ancho de su contenedor
+   no comunica jerarquía: parece una barra, no una acción. */
+.condo-split form>button{justify-self:start;width:max-content;min-width:132px;padding:9px 16px}
+
+/* El encabezado deja de ser un eslogan de 42px. */
+.condo-suite-heading h1{font-size:26px;letter-spacing:-.02em;margin:0}
+
+/* Planes de cuota sin planes: una franja, no una tarjeta vacía.
+   Antes esta vista apilaba dos cajas grandes diciendo "no hay nada", una
+   encima de la otra, y el texto del encabezado repetía casi palabra por
+   palabra el del estado vacío. Queda una sola línea con su acción. */
+.quota-panel:has(.quota-zero){display:flex;align-items:center;gap:20px;padding:14px 20px}
+.quota-panel:has(.quota-zero)>header{display:flex;flex:1;align-items:baseline;gap:12px;padding:0;border:0;background:none}
+.quota-panel:has(.quota-zero)>header>div{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.quota-panel:has(.quota-zero) h2,
+.quota-panel:has(.quota-zero) h3{margin:0;font-size:14px;white-space:nowrap}
+.quota-panel:has(.quota-zero)>header p{margin:0;font-size:11px;color:#788089}
+.quota-panel:has(.quota-zero)>header>span{display:none}
+/* El estado vacío repetía el texto del encabezado: sobra. */
+.quota-panel:has(.quota-zero) .quota-zero{display:none}
+.quota-panel:has(.quota-zero) button{flex:none;width:max-content;padding:9px 16px}
+
+/* El menú cuenta los vencidos de toda la organización; esta vista muestra los
+   de una comunidad. Cuando no coinciden, se dice dónde están y se salta. */
+.condo-overdue-elsewhere{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 14px;padding:11px 14px;border:1px solid #d1d7de;border-radius:11px;background:#fdf8f1;color:#3a5573;font-size:11px}
+.condo-overdue-elsewhere strong{color:#A2564A}
+.condo-overdue-elsewhere button{padding:5px 11px;border:1px solid #c2c9d2;border-radius:99px;background:#fff;color:#3a5573;font-size:11px;font-weight:700;cursor:pointer}
+.condo-overdue-elsewhere button:hover{border-color:#A2564A;color:#A2564A}

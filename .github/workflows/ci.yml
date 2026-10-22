@@ -39,4 +39,5 @@ jobs:
         # modo producción (ver vite.config.js); aquí solo necesita ser válida.
         env:
           VITE_API_URL: https://ci.invalid/api/v1
+          VITE_PROPERTIES_API_URL: https://ci.invalid/api/v1
         run: npm run build

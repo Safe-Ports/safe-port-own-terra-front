@@ -1,18 +1,19 @@
 import { createPortal } from "react-dom";
 import { useState } from "react";
+import { HiCheck, HiClipboard, HiExclamationTriangle, HiXMark } from "react-icons/hi2";
 import useEscapeKey from "@/hooks/useEscapeKey";
 
 const G = "#355E3B";
 const OK = "#16a34a";
 const ERR = "#dc2626";
-const BG = "#FBFAF6";
-const BD = "#E7E4DB";
+const BG = "#FFFFFF";
+const BD = "#EBEFED";
 
 const Check = () => (
-  <span style={{ color: OK, fontWeight: 800, fontSize: "0.8rem" }}>✓</span>
+  <HiCheck style={{ color: OK, fontWeight: 800 }} className="inline h-[0.9rem] w-[0.9rem]" />
 );
 const Cross = () => (
-  <span style={{ color: ERR, fontWeight: 800, fontSize: "0.8rem" }}>✕</span>
+  <HiXMark style={{ color: ERR, fontWeight: 800 }} className="inline h-[0.9rem] w-[0.9rem]" />
 );
 
 function Badge({ type }) {
@@ -38,7 +39,7 @@ function Section({ id, title, type, open, onToggle, children }) {
         onClick={() => onToggle(id)}
         style={{
           width: "100%", padding: "11px 16px", display: "flex", alignItems: "center",
-          gap: 10, background: open ? "#F1EEE6" : "white", border: "none", cursor: "pointer",
+          gap: 10, background: open ? "#EEF1F1" : "white", border: "none", cursor: "pointer",
           textAlign: "left",
         }}
       >
@@ -63,7 +64,7 @@ function MiniTable({ headers, rows }) {
           <tr>
             {headers.map((h) => (
               <th key={h} style={{
-                padding: "6px 10px", background: "#F1EEE6", color: "#43453F",
+                padding: "6px 10px", background: "#EEF1F1", color: "#43453F",
                 fontWeight: 700, textAlign: "left", borderBottom: `1px solid ${BD}`,
                 whiteSpace: "nowrap",
               }}>{h}</th>
@@ -106,7 +107,7 @@ function Note({ children }) {
       marginTop: 10, padding: "8px 12px", background: "#FFFBEB",
       border: "1px solid #fcd34d", borderRadius: 10, fontSize: "0.74rem", color: "#92400e",
     }}>
-      ⚠ {children}
+      <HiExclamationTriangle className="mr-1 inline h-[0.9em] w-[0.9em] align-[-0.1em]" /> {children}
     </div>
   );
 }
@@ -118,7 +119,7 @@ export default function LotImportFormatModal({ open, onClose }) {
     medidas: false,
     precios: false,
     estados: false,
-    servicios: false,
+    especificaciones: false,
     ejemplo: false,
   });
   useEscapeKey(onClose, open);
@@ -143,7 +144,7 @@ export default function LotImportFormatModal({ open, onClose }) {
             className="guide-icon"
             style={{ background: G, color: "white", fontSize: "1rem", minWidth: 40, height: 40 }}
           >
-            📋
+            <HiClipboard className="h-5 w-5" />
           </div>
           <div className="guide-head-text">
             <div className="guide-title">Campos requeridos y formato del archivo</div>
@@ -217,6 +218,7 @@ export default function LotImportFormatModal({ open, onClose }) {
                 ["Superficie (m2)", "m²", <><Check /> 120 / 120.5</>, <><Cross /> "120 m2"</>],
                 ["Frente (ML)", "metros lineales", <><Check /> 8 / 8.5</>, <><Cross /> "8ml"</>],
                 ["Fondo (ML)", "metros lineales", <><Check /> 15</>, <><Cross /> "quince"</>],
+                ["Orientación", "texto libre", <><Check /> Norte / Sur / Oriente / Poniente</>, "—"],
               ]}
             />
             <Note>Deja la celda vacía si no tienes el dato. No pongas cero (0) a menos que sea el valor real.</Note>
@@ -261,10 +263,10 @@ export default function LotImportFormatModal({ open, onClose }) {
             </Note>
           </Section>
 
-          {/* ── 6. Servicios ────────────────────────────────────────────── */}
-          <Section id="servicios" title="Servicios disponibles" type="optional" open={sections.servicios} onToggle={toggle}>
+          {/* ── 6. Especificaciones ─────────────────────────────────────── */}
+          <Section id="especificaciones" title="Especificaciones de lote" type="optional" open={sections.especificaciones} onToggle={toggle}>
             <p style={{ fontSize: "0.8rem", color: "#43453F", marginBottom: 10 }}>
-              Agrega una columna por cada servicio. Para indicar que el lote <em>sí</em> tiene el servicio usa alguno de los valores válidos.
+              Servicios disponibles y otros atributos sí/no de un terreno (no de una construcción — recámaras/baños/alberca no aplican aquí). Agrega una columna por cada uno.
             </p>
             <MiniTable
               headers={["Columna (encabezado)", "Valores → ✓ (sí tiene)", "Valores → ✕ (no tiene)"]}
@@ -275,6 +277,8 @@ export default function LotImportFormatModal({ open, onClose }) {
                 ["Gas Natural", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
                 ["Internet/Fibra", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
                 ["Pavimento", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
+                ["Lote de Esquina", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
+                ["Bardeado", "sí, si, 1, true, yes, x", "no, 0, false, (vacío)"],
               ]}
             />
           </Section>
@@ -297,8 +301,8 @@ export default function LotImportFormatModal({ open, onClose }) {
               marginTop: 14, padding: "10px 14px", background: "#F0FDF4",
               border: "1px solid #86efac", borderRadius: 10,
             }}>
-              <div style={{ fontSize: "0.74rem", fontWeight: 700, color: G, marginBottom: 6 }}>
-                ✓ Descarga la plantilla oficial desde el tablero para tener el formato exacto
+              <div style={{ fontSize: "0.74rem", fontWeight: 700, color: G, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                <HiCheck className="h-[0.9em] w-[0.9em] shrink-0" /> Descarga la plantilla oficial desde el tablero para tener el formato exacto
               </div>
               <div style={{ fontSize: "0.72rem", color: "#43453F" }}>
                 La primera fila debe tener los encabezados. Una fila por lote. Sin celdas combinadas. Archivos aceptados: <strong>XLSX, XLS, CSV</strong> (máx. 10 MB).

@@ -68,6 +68,30 @@ export const ERROR_CATALOG = {
     "name": "AUTH_INVALID_RESET_TOKEN",
     "severity": "warning"
   },
+  "OT-AUTH-2013": {
+    "action": "Vuelve a escribirla; si no la recuerdas, usa \"Olvidé mi contraseña\".",
+    "domain": "AUTH",
+    "http_status": 400,
+    "message": "Tu contraseña actual no es correcta.",
+    "name": "AUTH_WRONG_CURRENT_PASSWORD",
+    "severity": "warning"
+  },
+  "OT-AUTH-2014": {
+    "action": "Elige una distinta.",
+    "domain": "AUTH",
+    "http_status": 400,
+    "message": "La nueva contraseña es igual a la actual.",
+    "name": "AUTH_SAME_PASSWORD",
+    "severity": "warning"
+  },
+  "OT-AUTH-2015": {
+    "action": "Espera unos minutos antes de volver a intentar.",
+    "domain": "AUTH",
+    "http_status": 401,
+    "message": "Demasiados intentos fallidos.",
+    "name": "AUTH_TOO_MANY_ATTEMPTS",
+    "severity": "warning"
+  },
   "OT-CALC-1001": {
     "action": "Revisa la sintaxis: solo se permiten números, variables, + - * / % ^, paréntesis y funciones (min, max, abs, round, floor, ceil, sqrt, pow).",
     "domain": "CALC",
@@ -172,6 +196,22 @@ export const ERROR_CATALOG = {
     "name": "CON_SELLER_INACTIVE",
     "severity": "warning"
   },
+  "OT-CON-3005": {
+    "action": "Rechaza el contrato y arma uno nuevo sobre otro lote.",
+    "domain": "CON",
+    "http_status": 409,
+    "message": "El lote ya se vendió mientras este contrato esperaba aprobación.",
+    "name": "CON_LOT_TAKEN_MEANWHILE",
+    "severity": "warning"
+  },
+  "OT-CON-3006": {
+    "action": "Actualiza la lista: alguien más pudo haberlo resuelto.",
+    "domain": "CON",
+    "http_status": 409,
+    "message": "Este contrato ya no está esperando aprobación.",
+    "name": "CON_NOT_PENDING",
+    "severity": "warning"
+  },
   "OT-DOC-1010": {
     "action": "Sube uno más pequeño.",
     "domain": "DOC",
@@ -236,12 +276,12 @@ export const ERROR_CATALOG = {
     "name": "DOC_DUPLICATE_FOLDER",
     "severity": "warning"
   },
-  "OT-INM-3001": {
-    "action": "Cierra o transfiere las ventas antes de archivarlo.",
-    "domain": "INM",
-    "http_status": 409,
-    "message": "No se puede archivar el inmueble: tiene ventas activas.",
-    "name": "INM_HAS_SOLD_LOTS",
+  "OT-DOC-3002": {
+    "action": "Las carpetas creadas automáticamente por app no se pueden eliminar.",
+    "domain": "DOC",
+    "http_status": 403,
+    "message": "Esta es una carpeta de sistema.",
+    "name": "DOC_SYSTEM_FOLDER",
     "severity": "warning"
   },
   "OT-LOT-1001": {
@@ -260,6 +300,14 @@ export const ERROR_CATALOG = {
     "name": "LOT_RESERVATION_INVALID",
     "severity": "warning"
   },
+  "OT-LOT-1003": {
+    "action": "Busca o crea el cliente antes de confirmar el apartado.",
+    "domain": "LOT",
+    "http_status": 400,
+    "message": "Falta indicar el cliente interesado.",
+    "name": "LOT_CLIENT_REQUIRED",
+    "severity": "warning"
+  },
   "OT-LOT-3002": {
     "action": "Elige otro lote disponible.",
     "domain": "LOT",
@@ -274,6 +322,14 @@ export const ERROR_CATALOG = {
     "http_status": 409,
     "message": "El lote ya fue vendido.",
     "name": "LOT_SOLD",
+    "severity": "warning"
+  },
+  "OT-LOT-3004": {
+    "action": "Cancela el contrato para liberarlo: ahí se define qué pasa con lo ya cobrado.",
+    "domain": "LOT",
+    "http_status": 409,
+    "message": "El lote tiene un contrato vigente.",
+    "name": "LOT_HAS_LIVE_CONTRACT",
     "severity": "warning"
   },
   "OT-LOT-3010": {
@@ -322,6 +378,14 @@ export const ERROR_CATALOG = {
     "http_status": 409,
     "message": "Este pago no se puede modificar.",
     "name": "PAY_INVALID_STATUS",
+    "severity": "warning"
+  },
+  "OT-PAY-3003": {
+    "action": "Revisa el monto: no puede exceder lo que falta por cobrar.",
+    "domain": "PAY",
+    "http_status": 409,
+    "message": "El abono supera el saldo de la cuota.",
+    "name": "PAY_OVERPAYMENT",
     "severity": "warning"
   },
   "OT-RPT-1010": {
@@ -394,6 +458,14 @@ export const ERROR_CATALOG = {
     "http_status": 400,
     "message": "El archivo tiene demasiadas filas.",
     "name": "RPT_TOO_MANY_ROWS",
+    "severity": "warning"
+  },
+  "OT-RPT-1035": {
+    "action": "En Excel presiona Ctrl+Fin para ver hasta dónde llega el rango usado, selecciona esas filas y columnas vacías, elimínalas (clic derecho → Eliminar, no solo Suprimir contenido), guarda y vuelve a subirlo.",
+    "domain": "RPT",
+    "http_status": 400,
+    "message": "El archivo tiene formato (bordes, colores) aplicado mucho más allá de tus datos reales.",
+    "name": "RPT_PHANTOM_RANGE",
     "severity": "warning"
   },
   "OT-SUB-2001": {

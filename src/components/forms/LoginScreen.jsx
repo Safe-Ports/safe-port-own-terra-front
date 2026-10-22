@@ -1,15 +1,18 @@
+import WorkflowForm from "./WorkflowForm";
 import { useState } from "react";
 import { useAppContext } from "@/context/AppContext";
 import InlineError from "@/components/shared/InlineError";
 import FieldError from "@/components/shared/FieldError";
 import { useFieldErrors } from "@/hooks/useFieldErrors";
+import { PROPERTIES_MVP_SCOPE } from "@/apps/properties/mvpScope";
+import { getFieldErrors } from "@/services/errors";
+import PrivacyConsent, { emptyConsent, isConsentValid, buildConsentFields } from "@/components/legal/PrivacyConsent";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const REGISTER_RULES = {
   organization_name: (v) => (!v || v.trim().length < 3 ? "El nombre de la empresa debe tener al menos 3 caracteres." : ""),
   name: (v) => (!v || v.trim().length < 2 ? "Tu nombre debe tener al menos 2 caracteres." : ""),
   email: (v) => (!EMAIL_RE.test((v || "").trim()) ? "Escribe un correo electrónico válido." : ""),
-  password: (v) => ((v || "").length < 8 ? "La contraseña debe tener al menos 8 caracteres." : ""),
   confirm: (v, form) => (v !== form.password ? "Las contraseñas no coinciden." : ""),
 };
 
@@ -43,7 +46,7 @@ export function LeftPanel() {
   return (
     <div className="ll-panel">
       <div className="ll-logo">
-        <img src="/ownterra ecosistem.png" alt="OwnTerra Ecosistem" />
+        <img src="/brand/ownterra-logo-light.svg" alt="OwnTerra" />
       </div>
       {MAP_SVG}
       <div className="ll-hero">
@@ -69,7 +72,7 @@ function LoginView({ onForgot, onRegister }) {
   const [showPass, setShowPass] = useState(false);
 
   const submit = async () => {
-    if (!form.identifier || !form.password) return;
+    if (loading || !form.identifier.trim() || !form.password) return;
     setLoading(true);
     setError(null);
     setUnverifiedEmail("");
@@ -90,7 +93,7 @@ function LoginView({ onForgot, onRegister }) {
   };
 
   return (
-    <div className="lf-wrap">
+    <WorkflowForm busy={loading} onSubmit={event => { event.preventDefault(); return submit(); }} className="lf-wrap">
       <div className="lf-title">Bienvenido</div>
       <div className="lf-sub">Accede a tu sistema de gestión inmobiliaria</div>
 
@@ -106,13 +109,13 @@ function LoginView({ onForgot, onRegister }) {
         <label className="lf-label">Usuario / Correo</label>
         <div className="lf-input-wrap">
           <span className="lf-ico">ID</span>
-          <input
+          <input required
             className={`lf-input${error ? " error" : ""}`}
             type="text"
             placeholder="correo@empresa.mx"
             value={form.identifier}
             onChange={(e) => setForm((p) => ({ ...p, identifier: e.target.value }))}
-            onKeyDown={(e) => e.key === "Enter" && submit()}
+
             autoComplete="username"
           />
         </div>
@@ -122,13 +125,13 @@ function LoginView({ onForgot, onRegister }) {
         <label className="lf-label">Contraseña</label>
         <div className="lf-input-wrap">
           <span className="lf-ico">PW</span>
-          <input
+          <input required
             className={`lf-input${error ? " error" : ""}`}
             type={showPass ? "text" : "password"}
             placeholder="••••••••"
             value={form.password}
             onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
-            onKeyDown={(e) => e.key === "Enter" && submit()}
+
             autoComplete="current-password"
           />
           <button className="lf-eye" type="button" onClick={() => setShowPass((v) => !v)} tabIndex={-1}>
@@ -156,10 +159,18 @@ function LoginView({ onForgot, onRegister }) {
         </button>
       </div>
 
-      <button className={`lf-btn${loading ? " loading" : ""}`} onClick={submit} disabled={loading}>
+      <button type="submit" className={`lf-btn${loading ? " loading" : ""}`}  disabled={loading}>
         {loading ? <span className="btn-spinner" /> : null}
         {loading ? "Ingresando..." : "Iniciar sesión"}
       </button>
+
+      {PROPERTIES_MVP_SCOPE.rentals ? (
+        <a className="lf-public-catalog" href="/rentas">
+          <span aria-hidden="true">⌂</span>
+          Explorar inmuebles en renta
+          <span aria-hidden="true">→</span>
+        </a>
+      ) : null}
 
       <div style={{ textAlign: "center", marginTop: 16, fontSize: ".82rem", color: "#83867C" }}>
         ¿No tienes cuenta?{" "}
@@ -174,8 +185,10 @@ function LoginView({ onForgot, onRegister }) {
 
       <div className="lf-footer">
         OwnTerra v1.0 &nbsp;·&nbsp; © 2026
+        &nbsp;·&nbsp; <a href="/privacidad">Aviso de Privacidad</a>
+        &nbsp;·&nbsp; <a href="/terminos">Términos</a>
       </div>
-    </div>
+    </WorkflowForm>
   );
 }
 
@@ -188,7 +201,7 @@ function ForgotView({ onBack }) {
   const [error, setError]   = useState(null);
 
   const submit = async () => {
-    if (!email.trim()) return;
+    if (loading || !email.trim()) return;
     setLoading(true);
     setError(null);
     const result = await forgotPassword(email.trim());
@@ -216,7 +229,7 @@ function ForgotView({ onBack }) {
   }
 
   return (
-    <div className="lf-wrap">
+    <WorkflowForm busy={loading} onSubmit={event => { event.preventDefault(); return submit(); }} className="lf-wrap">
       <button
         type="button"
         onClick={onBack}
@@ -233,28 +246,30 @@ function ForgotView({ onBack }) {
         <label className="lf-label">Correo electrónico</label>
         <div className="lf-input-wrap">
           <span className="lf-ico">✉️</span>
-          <input
+          <input required
             className="lf-input"
             type="email"
             placeholder="correo@empresa.mx"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && submit()}
+
             autoComplete="email"
             autoFocus
           />
         </div>
       </div>
 
-      <button className={`lf-btn${loading ? " loading" : ""}`} onClick={submit} disabled={loading || !email.trim()}>
+      <button type="submit" className={`lf-btn${loading ? " loading" : ""}`}  disabled={loading || !email.trim()}>
         {loading ? <span className="btn-spinner" /> : null}
         {loading ? "Enviando..." : "Enviar instrucciones"}
       </button>
 
       <div className="lf-footer" style={{ marginTop: 24 }}>
         OwnTerra v1.0 &nbsp;·&nbsp; © 2025
+        &nbsp;·&nbsp; <a href="/privacidad">Aviso de Privacidad</a>
+        &nbsp;·&nbsp; <a href="/terminos">Términos</a>
       </div>
-    </div>
+    </WorkflowForm>
   );
 }
 
@@ -273,27 +288,52 @@ function RegisterView({ onBack }) {
   const [error, setError]     = useState(null);
   const [showPass, setShowPass] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
+  const [consent, setConsent] = useState(emptyConsent());
   const fe = useFieldErrors();
 
-  const set = (key) => (e) => { const v = e.target.value; setForm((p) => ({ ...p, [key]: v })); fe.clear(key); };
+  const set = (key) => (e) => { const v = e.target.value; setForm((p) => ({ ...p, [key]: v })); fe.clear(key); setError(null); };
 
   const submit = async () => {
-    // Validación de llenado: por campo (rojo bajo el input), no en la caja general.
-    if (!fe.validate(form, REGISTER_RULES)) return;
-    setLoading(true);
+    // Mostrar la explicación únicamente al intentar crear la cuenta.
+    if (loading) return;
     setError(null);
+    const fieldErrors = Object.fromEntries(
+      Object.entries(REGISTER_RULES)
+        .map(([key, rule]) => [key, rule(form[key], form)])
+        .filter(([, message]) => message)
+    );
+    fe.setErrors(fieldErrors);
+    if (Object.keys(fieldErrors).length) {
+      setError({ severity: "warning", message: Object.values(fieldErrors).join(" ") });
+      return;
+    }
+    if (!isConsentValid(consent)) {
+      setError({ severity: "warning", message: "Acepta el Aviso de Privacidad y los términos y condiciones para continuar." });
+      return;
+    }
+    setLoading(true);
     const result = await register({
       organization_name: form.organization_name.trim(),
       name: form.name.trim(),
       email: form.email.trim().toLowerCase(),
       password: form.password,
+      ...buildConsentFields(consent),
     });
     setLoading(false);
     if (result.ok && result.pendingVerification) {
       setRegisteredEmail(result.email || form.email.trim());
       return;
     }
-    if (!result.ok) setError(result.error || { message: result.msg || "Error al crear la cuenta. Verifica los datos." });
+    if (!result.ok) {
+      // El contexto conserva los detalles del 422 en el error normalizado.
+      const serverFields = getFieldErrors(result.error);
+      if (serverFields) {
+        fe.setErrors(serverFields);
+        setError({ severity: "warning", message: Object.values(serverFields).join(" ") });
+        return;
+      }
+      setError(result.error || { message: result.msg || "Error al crear la cuenta. Verifica los datos." });
+    }
   };
 
   if (registeredEmail) {
@@ -334,7 +374,7 @@ function RegisterView({ onBack }) {
   ];
 
   return (
-    <div className="lf-wrap">
+    <WorkflowForm busy={loading} noValidate onSubmit={event => { event.preventDefault(); return submit(); }} className="lf-wrap">
       <button
         type="button"
         onClick={onBack}
@@ -345,75 +385,90 @@ function RegisterView({ onBack }) {
       <div className="lf-title">Crear cuenta nueva</div>
       <div className="lf-sub">Registra tu empresa y comienza a gestionar tu fraccionamiento.</div>
 
-      <InlineError error={error} />
+      <div id="register-error"><InlineError error={error} /></div>
 
       {fields.map((f) => (
         <div className="lf-field" key={f.key}>
-          <label className="lf-label">{f.label}</label>
+          <label className="lf-label" htmlFor={`register-${f.key}`}>{f.label}</label>
           <div className="lf-input-wrap">
             <span className="lf-ico">{f.ico}</span>
             <input
+              id={`register-${f.key}`}
+              aria-invalid={Boolean(fe.errors[f.key])}
+              aria-describedby={fe.errors[f.key] ? "register-error" : undefined}
               className={fe.errors[f.key] ? "lf-input is-invalid" : "lf-input"}
               type={f.type}
               placeholder={f.placeholder}
               value={form[f.key]}
               onChange={set(f.key)}
-              onKeyDown={(e) => e.key === "Enter" && submit()}
+
               autoComplete={f.auto}
             />
           </div>
-          <FieldError msg={fe.errors[f.key]} />
+
         </div>
       ))}
 
       <div className="lf-field">
-        <label className="lf-label">Contraseña</label>
+        <label className="lf-label" htmlFor="register-password">Contraseña</label>
         <div className="lf-input-wrap">
           <span className="lf-ico">🔒</span>
           <input
+            id="register-password"
+            aria-invalid={Boolean(fe.errors.password)}
+            aria-describedby={fe.errors.password && error ? "register-password-help register-error" : "register-password-help"}
             className={fe.errors.password ? "lf-input is-invalid" : "lf-input"}
             type={showPass ? "text" : "password"}
-            placeholder="Mínimo 8 caracteres"
+            placeholder="Escribe tu contraseña"
             value={form.password}
             onChange={set("password")}
-            onKeyDown={(e) => e.key === "Enter" && submit()}
+
             autoComplete="new-password"
           />
-          <button className="lf-eye" type="button" onClick={() => setShowPass((v) => !v)} tabIndex={-1}>
+          <button className="lf-eye" type="button" onClick={() => setShowPass((v) => !v)} aria-label={showPass ? "Ocultar contraseña" : "Mostrar contraseña"} aria-pressed={showPass}>
             {showPass ? "🙈" : "👁"}
           </button>
         </div>
-        <FieldError msg={fe.errors.password} />
+        <div id="register-password-help" className="lf-password-help">Elige la contraseña que quieras.</div>
       </div>
 
       <div className="lf-field">
-        <label className="lf-label">Confirmar contraseña</label>
+        <label className="lf-label" htmlFor="register-confirm">Confirmar contraseña</label>
         <div className="lf-input-wrap">
           <span className="lf-ico">🔒</span>
           <input
+            id="register-confirm"
+            aria-invalid={Boolean(fe.errors.confirm)}
+            aria-describedby={fe.errors.confirm && error ? "register-error" : undefined}
             className={fe.errors.confirm ? "lf-input is-invalid" : "lf-input"}
             type={showPass ? "text" : "password"}
             placeholder="Repite la contraseña"
             value={form.confirm}
             onChange={set("confirm")}
-            onKeyDown={(e) => e.key === "Enter" && submit()}
+
             autoComplete="new-password"
           />
         </div>
-        <FieldError msg={fe.errors.confirm} />
+
       </div>
 
-      <button
+      <PrivacyConsent value={consent} onChange={setConsent} idPrefix="register-consent" />
+
+      <button type="submit"
         className={`lf-btn${loading ? " loading" : ""}`}
-        onClick={submit}
-        disabled={loading || !form.organization_name.trim() || !form.name.trim() || !form.email.trim() || !form.password || !form.confirm}
+        style={{ marginTop: 14 }}
+        disabled={loading || !form.organization_name.trim() || !form.name.trim() || !form.email.trim() || !form.password || !form.confirm || !isConsentValid(consent)}
       >
         {loading ? <span className="btn-spinner" /> : null}
         {loading ? "Creando cuenta..." : "🚀 Crear cuenta"}
       </button>
 
-      <div className="lf-footer" style={{ marginTop: 16 }}>OwnTerra v1.0 &nbsp;·&nbsp; © 2026</div>
-    </div>
+      <div className="lf-footer" style={{ marginTop: 16 }}>
+        OwnTerra v1.0 &nbsp;·&nbsp; © 2026
+        &nbsp;·&nbsp; <a href="/privacidad">Aviso de Privacidad</a>
+        &nbsp;·&nbsp; <a href="/terminos">Términos</a>
+      </div>
+    </WorkflowForm>
   );
 }
 

@@ -8,6 +8,7 @@ import CoreTopbarActions from "@/components/layout/CoreTopbarActions";
 import Toast from "@/components/shared/Toast";
 import SubscriptionBanner from "@/components/shared/SubscriptionBanner";
 import useEscapeKey from "@/hooks/useEscapeKey";
+import PropertiesQuickNav from "@/apps/properties/components/PropertiesQuickNav";
 
 /* Layout compartido del hub Aurora: sidebar + topbar + área de scroll.
    `active` marca el item activo del menú. */
@@ -23,19 +24,31 @@ function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
     navigate(path);
   };
 
-  const navItem = (key, label, icon, onClick, disabled) => (
-    <button
-      className={`nav-item ${active === key ? "active" : ""}`}
-      onClick={disabled ? () => showToast("Tu usuario no tiene acceso a esta sección", "warning") : onClick}
-      style={disabled ? { opacity: 0.5, cursor: "default" } : undefined}
-      title={disabled ? "Sin acceso para tu rol actual" : undefined}
-    >
-      <span className="ni-ico"><svg><use href={`#${icon}`} /></svg></span> {label}
-    </button>
-  );
+  // Todas las pantallas que se abren desde una tarjeta de la galería (Vault,
+  // Formularios, Clientes, Proveedores, Agenda, Mi Día) resaltan el mismo ítem
+  // "Hub de aplicaciones": son destinos de la galería, no secciones propias del
+  // sidebar.
+  const HUB_ACTIVE_KEYS = ["panel", "vault", "formularios", "users", "providers", "agenda", "miday"];
+
+  const navItem = (key, label, icon, onClick, disabled) => {
+    const isActive = key === "panel" ? HUB_ACTIVE_KEYS.includes(active) : active === key;
+    return (
+      <button
+        // Ancla para el tutorial guiado (src/tours/definitions.js): se apoya en esta
+        // clave, no en las clases CSS, que cambian con cualquier rediseño.
+        data-tour={`nav-${key}`}
+        className={`nav-item ${isActive ? "active" : ""}`}
+        onClick={disabled ? () => showToast("Tu usuario no tiene acceso a esta sección", "warning") : onClick}
+        style={disabled ? { opacity: 0.5, cursor: "default" } : undefined}
+        title={disabled ? "Sin acceso para tu rol actual" : undefined}
+      >
+        <span className="ni-ico"><svg><use href={`#${icon}`} /></svg></span> {label}
+      </button>
+    );
+  };
 
   return (
-    <div className="eco-root">
+    <div className={`eco-root ${active === "properties" ? "properties-focus" : ""}`}>
       <EcoSprite />
 
       {/* SIDEBAR */}
@@ -47,26 +60,28 @@ function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
       />
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <div className="sidebar-inner">
+          {active === "properties" ? (
+            <PropertiesQuickNav goTo={goTo} />
+          ) : null}
           <div className="brand">
-            <div className="brand-logo"><img src="/ownterra ecosistem.png" alt="OwnTerra Ecosistem" /></div>
+            <button
+              type="button"
+              className="brand-logo"
+              onClick={() => goTo("/ecosistema")}
+              aria-label="Ir al Ecosistema OwnTerra"
+              title="Volver al Ecosistema"
+            >
+              <img src="/brand/ownterra-logo-light.svg" alt="OwnTerra" />
+            </button>
           </div>
 
+          {/* Sidebar reducido a 3 destinos: la galería de apps y los dos paneles
+              de administración. Vault, Formularios, Clientes, Proveedores,
+              Agenda y Mi Día viven ahora como tarjetas dentro del Hub, no como
+              renglones fijos aquí. */}
           <div className="nav-group">
-            <div className="nav-label">Núcleo central</div>
-            {navItem("miday", "Mi Día", "eco-n-sun", () => goTo("/ecosistema/mi-dia"))}
-            {navItem("agenda", "Agenda", "eco-n-calendar", () => goTo("/ecosistema/agenda"))}
-            {navItem("panel", "Panel General", "eco-n-grid", () => goTo("/ecosistema"))}
-            {navItem("vault", "OwnTerra Vault", "eco-n-vault", () => goTo("/ecosistema/documentos"), !canUseFeature("core.vault"))}
-            {navItem("formularios", "Formularios", "eco-n-forms", () => goTo("/ecosistema/formularios"))}
-            {navItem("users", "Clientes del core", "eco-n-users", () => goTo("/ecosistema/clientes"), !canUseFeature("core.clients"))}
+            {navItem("panel", "Hub de aplicaciones", "eco-n-grid", () => goTo("/ecosistema"))}
             {navItem("team", "Equipo", "eco-n-shield", () => goTo("/ecosistema/equipo"), !canUseFeature("core.team"))}
-            {navItem("fin", "Estados Financieros", "eco-n-chart", () => goTo("/ecosistema/finanzas"), !canUseFeature("core.finance"))}
-          </div>
-
-          {/* Las apps (Lands / Properties / Homes) se acceden desde el Panel General. */}
-
-          <div className="nav-group">
-            <div className="nav-label">Sistema</div>
             {navItem("config", "Configuración", "eco-n-gear", () => goTo("/ecosistema/configuracion"), !canUseFeature("core.config"))}
           </div>
 
@@ -77,7 +92,7 @@ function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
               {currentUser?.organization?.name || currentUser?.organization || "Mi organización"}
             </div>
             <div className="ts-schema">
-              {currentUser?.name ? `Hola, ${currentUser.name.split(" ")[0]} 👋` : "OwnTerra Platform"}
+              {currentUser?.name ? `Hola, ${currentUser.name.split(" ")[0]}` : "OwnTerra Platform"}
             </div>
           </div>
         </div>

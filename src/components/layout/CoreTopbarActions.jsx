@@ -6,26 +6,40 @@ import {
   HiUserCircle,
 } from "react-icons/hi2";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import Avatar from "@/components/Avatar";
+import Modal from "@/components/ui/Modal";
+import AppLauncher from "@/components/layout/AppLauncher";
 import { useAppContext } from "@/context/AppContext";
 
 function CoreTopbarActions({ onGuide, className = "" }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser, logout, notificationCount } = useAppContext();
+  const [logoutOpen, setLogoutOpen] = useState(false);
 
-  const handleLogout = () => {
-    if (window.confirm("¿Cerrar sesión?")) logout();
+  const handleLogout = (event) => {
+    event.currentTarget.focus();
+    setLogoutOpen(true);
   };
 
   const isActive = (path) => location.pathname === path;
 
+  // El perfil es la misma página servida por dos shells (ver Ecosystem/Perfil.jsx).
+  // Esta barra la comparten Lands y el Core, así que se elige la versión
+  // de la shell en la que ya está el usuario: abrir tu perfil no debería cambiarte
+  // la de otra vertical.
+  const inLands = !/^\/ecosistema\b/.test(location.pathname);
+  const profilePath = inLands ? "/perfil" : "/ecosistema/perfil";
+
   return (
+    <>
     <nav className={`core-topbar-actions ${className}`} aria-label="Acciones del ecosistema">
       {onGuide && (
         <button
           type="button"
           className="core-topbar-action"
+          data-tour="topbar-help"
           onClick={onGuide}
           aria-label="Abrir guías de esta sección"
           aria-haspopup="dialog"
@@ -59,11 +73,11 @@ function CoreTopbarActions({ onGuide, className = "" }) {
 
       <button
         type="button"
-        className={`core-topbar-action core-profile-action ${isActive("/perfil") ? "is-active" : ""}`}
-        onClick={() => navigate("/perfil")}
+        className={`core-topbar-action core-profile-action ${isActive(profilePath) ? "is-active" : ""}`}
+        onClick={() => navigate(profilePath)}
         aria-label={`Ver perfil de ${currentUser?.name || "usuario"}`}
       >
-        <Avatar name={currentUser?.name || "Usuario"} size={28} />
+        <Avatar name={currentUser?.name || "Usuario"} src={currentUser?.avatar_url} size={28} />
         <span className="core-profile-copy">
           <strong>Perfil</strong>
           <small>{currentUser?.name?.split(" ")[0] || "Usuario"}</small>
@@ -75,12 +89,29 @@ function CoreTopbarActions({ onGuide, className = "" }) {
         type="button"
         className="core-topbar-action core-logout-action"
         onClick={handleLogout}
+        aria-label="Cerrar sesión"
         title="Cerrar sesión"
       >
         <HiArrowLeftOnRectangle aria-hidden="true" />
         <span className="core-logout-label">Cerrar sesión</span>
       </button>
+
+      {/* Último de la fila: es el salto FUERA de esta app, no una acción de
+          ella, así que no se mezcla con las demás. */}
+      <AppLauncher />
     </nav>
+    <Modal
+      open={logoutOpen}
+      title="¿Cerrar sesión?"
+      onClose={() => setLogoutOpen(false)}
+      footer={<>
+        <button type="button" onClick={() => setLogoutOpen(false)}>Cancelar</button>
+        <button type="button" onClick={() => { setLogoutOpen(false); logout(); }}>Cerrar sesión</button>
+      </>}
+    >
+      <p>Podrás volver a entrar con tu cuenta de Own Terra.</p>
+    </Modal>
+    </>
   );
 }
 

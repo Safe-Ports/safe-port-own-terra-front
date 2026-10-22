@@ -1,6 +1,10 @@
 /* ── SupportWidget — OwnTerra ecosistema core ──────────────────────────── */
 
 .sp-btn {
+  --sp-button-start: #355E3B;
+  --sp-button-end: #1E3D2B;
+  --sp-button-ink: #fff;
+  --sp-button-shadow: rgba(30,61,43,.32);
   position: fixed;
   bottom: 28px;
   right: 28px;
@@ -8,17 +12,36 @@
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  background: linear-gradient(140deg, var(--mid, #355E3B), var(--deep, #1E3D2B));
-  color: #fff;
+  background: linear-gradient(140deg, var(--sp-button-start), var(--sp-button-end));
+  color: var(--sp-button-ink);
   border: none;
-  cursor: pointer;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 24px rgba(30,61,43,.32);
+  box-shadow: 0 8px 24px var(--sp-button-shadow);
   transition: transform .18s, box-shadow .18s;
 }
-.sp-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(30,61,43,.4); }
+.sp-btn--lands {
+  --sp-button-start: #4F8154;
+  --sp-button-end: #1E3D2B;
+  --sp-button-shadow: rgba(30,61,43,.32);
+}
+.sp-btn--properties {
+  --sp-button-start: #2A6F9E;
+  --sp-button-end: #0A3D62;
+  --sp-button-shadow: rgba(10,61,98,.32);
+}
+.sp-btn--construction {
+  --sp-button-start: #F4C928;
+  --sp-button-end: #D9A900;
+  --sp-button-ink: #082C49;
+  --sp-button-shadow: rgba(190,142,0,.34);
+}
+.sp-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 28px var(--sp-button-shadow); }
+.sp-btn.is-dragging { cursor: grabbing; transform: scale(1.05); box-shadow: 0 16px 34px var(--sp-button-shadow); transition: box-shadow .12s, transform .12s; }
 .sp-btn svg { width: 20px; height: 20px; }
 
 .sp-btn-dot {
@@ -28,6 +51,25 @@
   border-radius: 50%;
   background: #C0392B;
   border: 2px solid #fff;
+  z-index: 1;
+}
+/* Anillo que se expande y se desvanece detrás del punto sólido — el "ping" que
+   pidió el usuario, para que la notificación se note aunque el botón esté quieto
+   en una esquina de la pantalla. */
+.sp-btn-dot::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: #C0392B;
+  animation: sp-ping 1.6s cubic-bezier(0, 0, .2, 1) infinite;
+}
+@keyframes sp-ping {
+  0%   { transform: scale(1); opacity: .7; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sp-btn-dot::after { animation: none; display: none; }
 }
 
 /* Panel */
@@ -39,7 +81,7 @@
   width: 355px;
   max-height: 560px;
   border-radius: var(--radius, 22px);
-  background: var(--surface, #FBFAF6);
+  background: var(--surface, #FFFFFF);
   border: 1px solid var(--border2, rgba(67,69,63,.18));
   box-shadow: 0 24px 56px rgba(30,61,43,.18);
   display: flex;
@@ -60,19 +102,19 @@
   padding: 15px 16px 13px;
   border-bottom: 1px solid var(--border, rgba(67,69,63,.10));
   flex-shrink: 0;
-  background: var(--surface, #FBFAF6);
+  background: var(--surface, #FFFFFF);
 }
 .sp-head-back {
   width: 28px; height: 28px;
   border-radius: 9px;
   border: 1px solid var(--border2, rgba(67,69,63,.18));
-  background: var(--bg2, #EDE9DF);
+  background: var(--bg2, #E9EDEC);
   color: var(--deep, #1E3D2B);
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0; transition: background .14s;
 }
-.sp-head-back:hover { background: var(--surface2, #F1EEE6); }
+.sp-head-back:hover { background: var(--surface2, #EEF1F1); }
 .sp-head-back svg { width: 14px; height: 14px; }
 .sp-head-title {
   flex: 1;
@@ -169,7 +211,7 @@
 .sp-input, .sp-textarea {
   width: 100%;
   border: 1px solid var(--border2, rgba(67,69,63,.18));
-  background: var(--bg2, #EDE9DF);
+  background: var(--bg2, #E9EDEC);
   border-radius: 11px;
   padding: 9px 11px;
   font-size: 13px;
@@ -181,7 +223,7 @@
 }
 .sp-input:focus, .sp-textarea:focus {
   border-color: var(--leaf, #6FAF6B);
-  background: var(--surface, #FBFAF6);
+  background: var(--surface, #FFFFFF);
   box-shadow: 0 0 0 3px rgba(111,175,107,.1);
 }
 .sp-textarea { resize: vertical; min-height: 88px; }
@@ -235,7 +277,7 @@
   width: 100%; text-align: left;
   font-family: var(--font-body);
 }
-.sp-ticket-row:hover { background: var(--surface2, #F1EEE6); }
+.sp-ticket-row:hover { background: var(--surface2, #EEF1F1); }
 .sp-ticket-row.has-unread { border-left-color: var(--leaf, #6FAF6B); }
 .sp-ticket-info { flex: 1; min-width: 0; }
 .sp-ticket-id { font-size: 9.5px; font-family: var(--font-body); color: var(--text3, #83867C); margin-bottom: 3px; }
@@ -253,7 +295,7 @@
 .sp-badge--open        { background: rgba(201,154,59,.14); color: #9D6B18; border: 1px solid rgba(201,154,59,.3); }
 .sp-badge--in_progress { background: rgba(53,130,220,.12); color: #1A5FAB; border: 1px solid rgba(53,130,220,.28); }
 .sp-badge--resolved    { background: rgba(111,175,107,.14); color: #2F6A38; border: 1px solid rgba(111,175,107,.3); }
-.sp-badge--closed      { background: var(--bg2, #EDE9DF); color: var(--text3, #83867C); border: 1px solid var(--border2, rgba(67,69,63,.18)); }
+.sp-badge--closed      { background: var(--bg2, #E9EDEC); color: var(--text3, #83867C); border: 1px solid var(--border2, rgba(67,69,63,.18)); }
 
 /* ── Hilo de mensajes ── */
 .sp-thread { display: flex; flex-direction: column; flex: 1; min-height: 0; }
@@ -281,7 +323,7 @@
   border-radius: 14px 14px 4px 14px;
 }
 .sp-msg--support .sp-msg-bubble {
-  background: var(--bg2, #EDE9DF);
+  background: var(--bg2, #E9EDEC);
   color: var(--text, #1E3D2B);
   border-radius: 14px 14px 14px 4px;
   border: 1px solid var(--border, rgba(67,69,63,.10));
@@ -295,7 +337,7 @@
 }
 .sp-closed-banner {
   padding: 11px 14px;
-  background: var(--bg2, #EDE9DF);
+  background: var(--bg2, #E9EDEC);
   border-top: 1px solid var(--border, rgba(67,69,63,.10));
   font-size: 12px; color: var(--text3, #83867C);
   text-align: center; flex-shrink: 0;
@@ -306,7 +348,7 @@
   display: flex; align-items: center; gap: 8px;
   padding: 8px 12px;
   border-top: 1px solid var(--border, rgba(67,69,63,.10));
-  background: var(--bg2, #EDE9DF);
+  background: var(--bg2, #E9EDEC);
   flex-shrink: 0;
 }
 .sp-img-preview-thumb {
@@ -340,13 +382,13 @@
 /* ── Botón de adjuntar imagen ── */
 .sp-img-btn {
   width: 36px; height: 36px; border-radius: 11px; border: none;
-  background: var(--bg2, #EDE9DF);
+  background: var(--bg2, #E9EDEC);
   color: var(--text3, #83867C); cursor: pointer; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   align-self: flex-end; transition: background .14s, color .14s;
   border: 1px solid var(--border2, rgba(67,69,63,.18));
 }
-.sp-img-btn:hover:not(:disabled) { background: var(--surface2, #F1EEE6); color: var(--mid, #355E3B); }
+.sp-img-btn:hover:not(:disabled) { background: var(--surface2, #EEF1F1); color: var(--mid, #355E3B); }
 .sp-img-btn:disabled { opacity: .4; cursor: not-allowed; }
 .sp-img-btn svg { width: 15px; height: 15px; }
 
@@ -354,12 +396,12 @@
   display: flex; gap: 8px; padding: 10px 12px;
   border-top: 1px solid var(--border, rgba(67,69,63,.10));
   flex-shrink: 0;
-  background: var(--surface, #FBFAF6);
+  background: var(--surface, #FFFFFF);
 }
 .sp-msg-input {
   flex: 1;
   border: 1px solid var(--border2, rgba(67,69,63,.18));
-  background: var(--bg2, #EDE9DF);
+  background: var(--bg2, #E9EDEC);
   border-radius: 11px;
   padding: 8px 11px; font-size: 13px;
   color: var(--text, #1E3D2B); outline: none;
@@ -368,7 +410,7 @@
 }
 .sp-msg-input:focus {
   border-color: var(--leaf, #6FAF6B);
-  background: var(--surface, #FBFAF6);
+  background: var(--surface, #FFFFFF);
   box-shadow: 0 0 0 3px rgba(111,175,107,.1);
 }
 .sp-send-btn {
@@ -384,6 +426,5 @@
 .sp-send-btn svg { width: 15px; height: 15px; }
 
 @media (max-width: 480px) {
-  .sp-panel { width: calc(100vw - 24px); right: 12px; bottom: 76px; }
-  .sp-btn { bottom: 18px; right: 14px; }
+  .sp-panel { width: calc(100vw - 24px); }
 }

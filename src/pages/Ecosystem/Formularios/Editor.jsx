@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import WorkflowForm from "@/components/forms/WorkflowForm";
+import DialogPortal from "@/components/ui/DialogPortal";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import EcoLayout from "../EcoLayout";
@@ -6,8 +8,7 @@ import { formService } from "@/services/formService";
 import { useAppContext } from "@/context/AppContext";
 import useEscapeKey from "@/hooks/useEscapeKey";
 
-let _fieldCounter = 0;
-const makeFieldId = () => `f${++_fieldCounter}`;
+const makeFieldId = () => `f-${crypto.randomUUID()}`;
 
 function FieldModal({ field, onSave, onClose }) {
   useEscapeKey(onClose);
@@ -16,6 +17,7 @@ function FieldModal({ field, onSave, onClose }) {
   const [required, setRequired] = useState(field?.required ?? false);
 
   const save = () => {
+    if (false) return;
     if (!label.trim()) return;
     onSave({ id: field?.id ?? makeFieldId(), label: label.trim(), description: description.trim(), required });
   };
@@ -23,7 +25,7 @@ function FieldModal({ field, onSave, onClose }) {
   const handleKey = (e) => { if (e.key === "Enter" && label.trim()) save(); };
 
   return (
-    <div className="usr-modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <DialogPortal className="usr-modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="usr-modal" style={{ maxWidth: 460 }}>
         <div className="usr-modal-head">
           <div>
@@ -32,25 +34,23 @@ function FieldModal({ field, onSave, onClose }) {
           </div>
           <button className="usr-modal-close" onClick={onClose}>×</button>
         </div>
-        <div className="usr-modal-body">
+        <WorkflowForm id="core-field-form" busy={false} className="usr-modal-body" onSubmit={event => { event.preventDefault(); save(); }}>
           <div className="usr-field">
-            <label className="usr-field-lbl">Nombre del campo *</label>
-            <input
+            <label htmlFor="field-formularios-editor-1" className="usr-field-lbl">Nombre del campo *</label>
+            <input id="field-formularios-editor-1"
               className="usr-input"
-              value={label}
+              required value={label}
               onChange={(e) => setLabel(e.target.value)}
-              onKeyDown={handleKey}
               placeholder="Ej. Nombre completo"
               autoFocus
             />
           </div>
           <div className="usr-field">
-            <label className="usr-field-lbl">Descripción / ayuda (opcional)</label>
-            <input
+            <label htmlFor="field-formularios-editor-2" className="usr-field-lbl">Descripción / ayuda (opcional)</label>
+            <input id="field-formularios-editor-2"
               className="usr-input"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              onKeyDown={handleKey}
               placeholder="Ej. Tal como aparece en su identificación oficial"
             />
           </div>
@@ -58,15 +58,15 @@ function FieldModal({ field, onSave, onClose }) {
             <input type="checkbox" checked={required} onChange={(e) => setRequired(e.target.checked)} />
             Campo obligatorio
           </label>
-        </div>
+        </WorkflowForm>
         <div className="usr-modal-foot">
           <button className="usr-btn-ghost" onClick={onClose}>Cancelar</button>
-          <button className="usr-btn-primary" onClick={save} disabled={!label.trim()}>
+          <button className="usr-btn-primary" type="submit" form="core-field-form" disabled={!label.trim()}>
             ✓ {field?.id ? "Guardar cambios" : "Agregar campo"}
           </button>
         </div>
       </div>
-    </div>
+    </DialogPortal>
   );
 }
 
@@ -76,7 +76,7 @@ function Preview({ name, description, fields, logoUrl }) {
       {logoUrl ? (
         <img src={logoUrl} alt="Logo" style={{ height: 44, maxWidth: 160, objectFit: "contain", marginBottom: 16, borderRadius: 8 }} />
       ) : (
-        <img src="/ownterra ecosistem.png" alt="OwnTerra" style={{ height: 36, maxWidth: 140, objectFit: "contain", marginBottom: 16, opacity: .55 }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
+        <img src="/brand/ownterra-mark-color.svg" alt="OwnTerra" style={{ height: 36, maxWidth: 140, objectFit: "contain", marginBottom: 16, opacity: .55 }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
       )}
       <div className="fom-prev-name">
         {name || <span style={{ color: "var(--text3)", fontStyle: "italic" }}>Nombre del formulario</span>}
@@ -109,6 +109,7 @@ function EcosystemFormEditor() {
   const qc = useQueryClient();
   const { id } = useParams();
   const isEdit = !!id;
+  const savedTemplateId = useRef(null);
   const { showToast, showError } = useAppContext();
 
   const [name, setName] = useState("");
@@ -145,7 +146,7 @@ function EcosystemFormEditor() {
   const goBack = () => navigate("/ecosistema/formularios");
 
   const saveMutation = useMutation({
-    mutationFn: (payload) => isEdit ? formService.update(id, payload) : formService.create(payload),
+    mutationFn: (payload) => (id || savedTemplateId.current) ? formService.update(id || savedTemplateId.current, payload) : formService.create(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["form-templates"] });
       if (isEdit) qc.invalidateQueries({ queryKey: ["form-template", id] });
@@ -157,14 +158,12 @@ function EcosystemFormEditor() {
 
   const publishMutation = useMutation({
     mutationFn: async (payload) => {
-      let result;
-      if (isEdit) {
-        result = await formService.update(id, payload);
-        if (!existing?.is_published) await formService.togglePublish(result.id);
-      } else {
-        result = await formService.create(payload);
-        await formService.togglePublish(result.id);
-      }
+      const targetId = id || savedTemplateId.current;
+      const result = targetId ? await formService.update(targetId, payload) : await formService.create(payload);
+      savedTemplateId.current = result.id;
+      // Si crear funcionó pero publicar falló, el siguiente intento actualiza
+      // el mismo borrador. No crea una segunda plantilla.
+      if (!result.is_published) await formService.togglePublish(result.id);
       return result;
     },
     onSuccess: () => {
@@ -201,8 +200,9 @@ function EcosystemFormEditor() {
     return true;
   };
 
-  const handleDraft = () => { if (validate()) saveMutation.mutate(getPayload()); };
+  const handleDraft = () => { if (isBusy) return; if (validate()) saveMutation.mutate(getPayload()); };
   const handlePublish = () => {
+    if (isBusy) return;
     if (!validate()) return;
     if (isEdit && existing?.is_published) { saveMutation.mutate(getPayload()); return; }
     publishMutation.mutate(getPayload());
@@ -225,10 +225,10 @@ function EcosystemFormEditor() {
       <div className="fom-editor">
 
         {/* CONSTRUCTOR */}
-        <div className="fom-builder">
+        <WorkflowForm className="fom-builder" busy={isBusy} onSubmit={event=>{event.preventDefault();handleDraft()}}>
           <div className="usr-field">
-            <label className="usr-field-lbl">Nombre del formulario *</label>
-            <input
+            <label htmlFor="field-formularios-editor-3" className="usr-field-lbl">Nombre del formulario *</label>
+            <input required id="field-formularios-editor-3"
               className="usr-input"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -236,8 +236,8 @@ function EcosystemFormEditor() {
             />
           </div>
           <div className="usr-field" style={{ marginBottom: 22 }}>
-            <label className="usr-field-lbl">Descripción (opcional)</label>
-            <textarea
+            <label htmlFor="field-formularios-editor-4" className="usr-field-lbl">Descripción (opcional)</label>
+            <textarea id="field-formularios-editor-4"
               className="usr-input"
               rows={2}
               value={description}
@@ -252,7 +252,7 @@ function EcosystemFormEditor() {
             {logoUrl ? (
               <div className="fom-logo-preview">
                 <img src={logoUrl} alt="Logo" className="fom-logo-img" />
-                <button className="fom-logo-remove" onClick={() => setLogoUrl("")} title="Quitar logo">×</button>
+                <button type="button" className="fom-logo-remove" onClick={() => setLogoUrl("")} title="Quitar logo">×</button>
               </div>
             ) : (
               <label className="fom-logo-upload">
@@ -285,30 +285,30 @@ function EcosystemFormEditor() {
                     {f.description && <div className="fom-field-hint">{f.description}</div>}
                   </div>
                   <div className="fom-field-btns">
-                    <button className="fom-icon-btn" onClick={() => moveField(i, -1)} disabled={i === 0} title="Subir">↑</button>
-                    <button className="fom-icon-btn" onClick={() => moveField(i, 1)} disabled={i === fields.length - 1} title="Bajar">↓</button>
-                    <button className="fom-icon-btn" onClick={() => setFieldModal({ field: f })} title="Editar">✏️</button>
-                    <button className="fom-icon-btn danger" onClick={() => removeField(f.id)} title="Eliminar">🗑</button>
+                    <button type="button" className="fom-icon-btn" onClick={() => moveField(i, -1)} disabled={i === 0} title="Subir">↑</button>
+                    <button type="button" className="fom-icon-btn" onClick={() => moveField(i, 1)} disabled={i === fields.length - 1} title="Bajar">↓</button>
+                    <button type="button" className="fom-icon-btn" onClick={() => setFieldModal({ field: f })} title="Editar">✏️</button>
+                    <button type="button" className="fom-icon-btn danger" onClick={() => removeField(f.id)} title="Eliminar">🗑</button>
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          <button className="fom-add-field" onClick={() => setFieldModal({})}>
+          <button type="button" className="fom-add-field" onClick={() => setFieldModal({})}>
             + Agregar campo
           </button>
 
           <div className="fom-editor-foot">
-            <button className="usr-btn-ghost" onClick={goBack}>Cancelar</button>
-            <button className="usr-btn-ghost" onClick={handleDraft} disabled={isBusy}>
+            <button type="button" className="usr-btn-ghost" onClick={goBack}>Cancelar</button>
+            <button type="submit" className="usr-btn-ghost" disabled={isBusy}>
               {saveMutation.isPending ? "Guardando…" : "Guardar borrador"}
             </button>
-            <button className="usr-btn-primary" onClick={handlePublish} disabled={isBusy}>
+            <button type="button" className="usr-btn-primary" onClick={handlePublish} disabled={isBusy}>
               {publishMutation.isPending ? "Publicando…" : publishLabel}
             </button>
           </div>
-        </div>
+        </WorkflowForm>
 
         {/* PREVIEW */}
         <div className="fom-preview-col">

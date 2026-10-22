@@ -1,0 +1,8 @@
+.workflow-form .workflow-form-errors{grid-column:1/-1;border:1px solid var(--danger,#c0392b);border-radius:12px;padding:12px 16px;margin:0 0 16px;background:var(--sf,#fff);color:var(--danger,#c0392b);font-size:14px;line-height:1.5}
+.workflow-form .workflow-form-errors ul{margin:8px 0 0;padding-left:18px}
+.workflow-form .workflow-form-errors button{background:transparent;border:0;color:inherit;font:inherit;text-align:left;text-decoration:underline;padding:4px 0;cursor:pointer}
+.workflow-form .workflow-form-errors button:focus-visible{outline:2px solid currentColor;outline-offset:3px}
+@media(max-width:640px){.workflow-form input:not([type="checkbox"]):not([type="radio"]),.workflow-form select,.workflow-form textarea{font-size:16px}.workflow-form .workflow-form-errors button{min-height:44px}}
+.workflow-form .lf-error{grid-column:1/-1;min-width:0;max-width:100%}
+.workflow-form .lf-error .ie-card{width:100%;max-width:100%;box-sizing:border-box}
+.workflow-form .ie-body,.workflow-form .ie-meta-left{min-width:0;overflow-wrap:anywhere}

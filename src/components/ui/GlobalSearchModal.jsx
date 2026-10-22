@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
+import { HiMagnifyingGlass } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
 import { searchService } from "@/services/searchService";
+import useDebouncedValue from "@/hooks/useDebouncedValue";
 import Modal from "@/components/ui/Modal";
 
 function GlobalSearchModal() {
@@ -20,15 +22,18 @@ function GlobalSearchModal() {
     setSelectedFracId,
     openContractCreate,
     openDocumentUpload,
-    startNewProject
+    openDocumentPreview,
+    startNewProject,
+    canUseFeature
   } = useAppContext();
   const [query, setQuery] = useState("");
   const trimmedQuery = query.trim();
+  const debounced = useDebouncedValue(trimmedQuery);
 
-  const { data: backendSearch, isFetching: searching } = useQuery({
-    queryKey: ["global-search", trimmedQuery],
-    queryFn: () => searchService.search(trimmedQuery, { limit: 5 }),
-    enabled: trimmedQuery.length >= 2,
+  const { data: backendSearch, isFetching: searching, isError: searchFailed, refetch: retrySearch } = useQuery({
+    queryKey: ["global-search", debounced],
+    queryFn: () => searchService.search(debounced, { limit: 5 }),
+    enabled: ui.globalSearch && debounced.length >= 2,
     staleTime: 30_000,
   });
 
@@ -56,6 +61,7 @@ function GlobalSearchModal() {
       },
       {
         id: "qa_lotes",
+        gate: "lands.write",
         title: "Cargar nuevos lotes",
         subtitle: "Nuevo plano o matriz",
         type: "Acción",
@@ -66,6 +72,7 @@ function GlobalSearchModal() {
       },
       {
         id: "qa_client",
+        gate: "lands.clients",
         title: "Nuevo cliente",
         subtitle: "Alta rápida en CRM",
         type: "Acción",
@@ -77,6 +84,7 @@ function GlobalSearchModal() {
       },
       {
         id: "qa_contract",
+        gate: "lands.sales",
         title: "Generar contrato",
         subtitle: "Crear compraventa, renta o reserva",
         type: "Acción",
@@ -88,6 +96,7 @@ function GlobalSearchModal() {
       },
       {
         id: "qa_payment",
+        gate: "lands.payments",
         title: "Ver pagos",
         subtitle: "Cobranza y seguimiento",
         type: "Acción",
@@ -98,6 +107,7 @@ function GlobalSearchModal() {
       },
       {
         id: "qa_docs",
+        gate: "lands.documents",
         title: "Subir documento",
         subtitle: "Contrato, identificación o comprobante",
         type: "Acción",
@@ -109,6 +119,7 @@ function GlobalSearchModal() {
       },
       {
         id: "qa_calc",
+        gate: "lands.write",
         title: "Abrir calculadora",
         subtitle: "Amortización y pagos",
         type: "Acción",
@@ -117,8 +128,10 @@ function GlobalSearchModal() {
           navigate("/calculadora");
         }
       }
-    ],
-    [closeModal, navigate, openContractCreate, openDocumentUpload, openModal, startNewProject]
+    // Ofrecer un atajo que termina en "sin acceso" es peor que no ofrecerlo: el
+    // usuario cree que puede y descubre que no recién al llegar.
+    ].filter((a) => !a.gate || canUseFeature(a.gate)),
+    [canUseFeature, closeModal, navigate, openContractCreate, openDocumentUpload, openModal, startNewProject]
   );
 
   const backendResults = useMemo(() => {
@@ -130,21 +143,21 @@ function GlobalSearchModal() {
         title: c.name,
         subtitle: c.subtitle,
         type: "Cliente",
-        action: () => { setSelectedClientId(c.id); closeModal("globalSearch"); navigate("/clientes"); },
+        action: () => { setSelectedClientId(c.id); closeModal("globalSearch"); navigate(`/clientes?client=${encodeURIComponent(c.id)}`); },
       })),
       ...(r.contracts || []).map((c) => ({
         id: c.id,
         title: c.number,
         subtitle: c.subtitle,
         type: "Contrato",
-        action: () => { closeModal("globalSearch"); navigate("/contratos"); },
+        action: () => { closeModal("globalSearch"); navigate(`/contratos?contract=${encodeURIComponent(c.id)}`); },
       })),
       ...(r.lots || []).map((l) => ({
         id: l.id,
         title: l.name,
         subtitle: l.subtitle,
         type: "Lote",
-        action: () => { closeModal("globalSearch"); navigate("/fraccionamientos"); },
+        action: () => { closeModal("globalSearch"); navigate(`/fraccionamientos?lot=${encodeURIComponent(l.id)}`); },
       })),
       ...(r.fraccionamientos || []).map((f) => ({
         id: f.id,
@@ -158,22 +171,23 @@ function GlobalSearchModal() {
         title: p.name,
         subtitle: p.subtitle,
         type: "Pago",
-        action: () => { closeModal("globalSearch"); navigate("/pagos"); },
+        action: () => { closeModal("globalSearch"); navigate(`/pagos?payment=${encodeURIComponent(p.id)}`); },
       })),
       ...(r.documents || []).map((d) => ({
         id: d.id,
         title: d.name,
         subtitle: d.subtitle,
         type: "Documento",
-        action: () => { closeModal("globalSearch"); navigate("/documentos"); },
+        action: () => { closeModal("globalSearch"); openDocumentPreview(d.id); },
       })),
     ];
     return mapped.slice(0, 16);
-  }, [backendSearch, closeModal, navigate, setSelectedClientId, setSelectedFracId]);
+  }, [backendSearch, closeModal, navigate, openDocumentPreview, setSelectedClientId, setSelectedFracId]);
 
   const results = useMemo(() => {
     const term = trimmedQuery.toLowerCase();
     if (!term) return quickActions;
+    if (trimmedQuery !== debounced || searching) return [];
     if (backendResults) return backendResults;
 
     const clientResults = clients
@@ -186,7 +200,7 @@ function GlobalSearchModal() {
         action: () => {
           setSelectedClientId(client.id);
           closeModal("globalSearch");
-          navigate("/clientes");
+          navigate(`/clientes?client=${encodeURIComponent(client.id)}`);
         }
       }));
 
@@ -202,7 +216,7 @@ function GlobalSearchModal() {
         type: "Contrato",
         action: () => {
           closeModal("globalSearch");
-          navigate("/contratos");
+          navigate(`/contratos?contract=${encodeURIComponent(contract.id)}`);
         }
       }));
 
@@ -218,7 +232,7 @@ function GlobalSearchModal() {
         type: "Pago",
         action: () => {
           closeModal("globalSearch");
-          navigate("/pagos");
+          navigate(`/pagos?payment=${encodeURIComponent(payment.id)}`);
         }
       }));
 
@@ -233,7 +247,7 @@ function GlobalSearchModal() {
         type: "Documento",
         action: () => {
           closeModal("globalSearch");
-          navigate("/documentos");
+          openDocumentPreview(document.id);
         }
       }));
 
@@ -255,6 +269,9 @@ function GlobalSearchModal() {
 
     return [...clientResults, ...contractResults, ...lotResults, ...fracResults, ...paymentResults, ...documentResults].slice(0, 16);
   }, [
+    debounced,
+    searching,
+    openDocumentPreview,
     backendResults,
     clients,
     closeModal,
@@ -272,7 +289,7 @@ function GlobalSearchModal() {
   return (
     <Modal
       open={ui.globalSearch}
-      icon="🔍"
+      icon={<HiMagnifyingGlass />}
       title="Búsqueda global"
       subtitle="Busca registros o ejecuta acciones rápidas."
       onClose={() => closeModal("globalSearch")}
@@ -294,12 +311,13 @@ function GlobalSearchModal() {
         {searching && (
           <div className="text-xs text-[#83867C] text-center">Buscando...</div>
         )}
+        {searchFailed && <p role="alert">No se pudo consultar la búsqueda completa. Se muestran coincidencias de los registros cargados. <button type="button" className="btn-s" onClick={() => retrySearch()}>Reintentar</button></p>}
         <div className="space-y-2">
           {results.length ? (
             results.map((item) => (
               <button
-                key={item.id}
-                className="flex w-full items-center justify-between rounded-xl border border-line bg-[#FBFAF6] px-4 py-3 text-left transition hover:border-[#355E3B] hover:bg-[#F1EEE6]"
+                key={`${item.type}-${item.id}`}
+                className="flex w-full items-center justify-between rounded-xl border border-line bg-[#FFFFFF] px-4 py-3 text-left transition hover:border-[#355E3B] hover:bg-[#EEF1F1]"
                 onClick={item.action}
               >
                 <div>
@@ -312,8 +330,8 @@ function GlobalSearchModal() {
               </button>
             ))
           ) : (
-            <div className="rounded-2xl border border-dashed border-line bg-[#F1EEE6] px-5 py-8 text-center text-sm text-[#83867C]">
-              No hay resultados con ese criterio.
+            <div className="rounded-2xl border border-dashed border-line bg-[#EEF1F1] px-5 py-8 text-center text-sm text-[#83867C]">
+              {searching || trimmedQuery !== debounced ? "Buscando…" : "No hay resultados con ese criterio."}
             </div>
           )}
         </div>

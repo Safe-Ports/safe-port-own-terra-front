@@ -21,7 +21,7 @@ vi.mock("@/context/AppContext", () => ({
 }));
 
 const USERS = [
-  { id: "admin-1", name: "Admin", email: "admin@x.com", role: "admin", is_active: true, app_keys: ["lands", "homes", "neighb"] },
+  { id: "admin-1", name: "Admin", email: "admin@x.com", role: "admin", is_active: true, app_keys: ["lands", "properties"] },
   { id: "u-2", name: "E2E Debug", email: "e2e@x.com", role: "vendor", is_active: true, app_keys: ["lands"] },
   { id: "u-3", name: "Ana Vendedora", email: "ana@x.com", role: "vendor", is_active: true, app_keys: ["lands"] },
   { id: "u-4", name: "Sin Lands", email: "sin@x.com", role: "vendor", is_active: true, app_keys: [] },

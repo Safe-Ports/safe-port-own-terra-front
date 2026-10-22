@@ -56,7 +56,7 @@ function PricingPage() {
     <div className="pricing-page">
       <div className="pricing-topbar">
         <div className="pricing-brand">
-          <img src="/ownterra ecosistem.png" alt="OwnTerra" onError={(e) => (e.currentTarget.style.display = "none")} />
+          <img src="/brand/ownterra-mark-color.svg" alt="" onError={(e) => (e.currentTarget.style.display = "none")} />
           <span>OwnTerra</span>
         </div>
         <button type="button" className="pricing-close" onClick={close} aria-label="Cerrar">✕</button>

@@ -1,16 +1,29 @@
+import WorkflowForm from "@/components/forms/WorkflowForm";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { HiMap, HiBookmark, HiSquares2X2, HiXMark } from "react-icons/hi2";
 import GuideModal from "@/components/shared/GuideModal";
 import PhoneInput from "@/components/shared/PhoneInput";
-import { Link, useNavigate } from "react-router-dom";
+import FieldError from "@/components/shared/FieldError";
+import usePendingReceipts from "@/hooks/usePendingReceipts";
+import PendingReceiptUpload from "@/components/shared/PendingReceiptUpload";
+import ClientPicker from "@/components/shared/ClientPicker";
+import FilePicker from "@/components/shared/FilePicker";
+import DocumentUploadFields, { useDocumentUpload } from "@/components/shared/DocumentUploadFields";
+import MatrixSheet from "./MatrixSheet";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
 import EmptyState from "@/components/ui/EmptyState";
 import InlineDocumentsPanel from "@/components/shared/InlineDocumentsPanel";
 import Button from "@/components/Button";
+import { calculatorService } from "@/services/calculatorService";
+import { calculateQuote, guessVarValue } from "@/services/financingQuote";
+import DialogPortal from "@/components/ui/DialogPortal";
 import { lotService } from "@/services/lotService";
 import { appointmentService } from "@/services/appointmentService";
-import { currency } from "@/services/formatters";
+import { currency, measure } from "@/services/formatters";
 import useEscapeKey from "@/hooks/useEscapeKey";
 import "./fracs.css";
 
@@ -20,13 +33,17 @@ const LOT_COLORS = {
   sold: { label: "Vendido", className: "sold", color: "#C0392B" },
 };
 
-const SERVICES = [
+// Especificaciones booleanas de lote — incluye lo que antes era "servicios"
+// (agua, luz, …): ya no es un sistema aparte, es el mismo catálogo.
+const ESPECIFICACIONES_CHIPS = [
   { k: "agua", lbl: "Agua potable" },
   { k: "luz", lbl: "Energia electrica" },
   { k: "drenaje", lbl: "Drenaje" },
   { k: "gas", lbl: "Gas natural" },
   { k: "internet", lbl: "Internet/Fibra" },
   { k: "pavimento", lbl: "Pavimento" },
+  { k: "esquina", lbl: "Lote de esquina" },
+  { k: "bardeado", lbl: "Bardeado" },
 ];
 
 const LOT_CODE_COLLATOR = new Intl.Collator("es-MX", { numeric: true, sensitivity: "base" });
@@ -34,32 +51,6 @@ const LOT_CODE_COLLATOR = new Intl.Collator("es-MX", { numeric: true, sensitivit
 function compareLotsByCode(a, b) {
   return LOT_CODE_COLLATOR.compare(String(a.code || ""), String(b.code || ""));
 }
-
-function calcMonthly(priceF, enganche, tasaAnual, plazo) {
-  const pv = Number(priceF) - Number(enganche);
-  if (pv <= 0 || plazo <= 0) return 0;
-  if (Number(tasaAnual) === 0) return pv / plazo;
-  const r = Number(tasaAnual) / 100 / 12;
-  return (pv * r) / (1 - Math.pow(1 + r, -plazo));
-}
-
-function generateAmort(priceF, enganche, tasaAnual, plazo) {
-  const pv = Number(priceF) - Number(enganche);
-  if (pv <= 0 || plazo <= 0) return [];
-  const r = Number(tasaAnual) / 100 / 12;
-  const payment = r === 0 ? pv / plazo : (pv * r) / (1 - Math.pow(1 + r, -plazo));
-  const rows = [];
-  let balance = pv;
-  for (let i = 1; i <= plazo; i += 1) {
-    const interest = balance * r;
-    const capital = payment - interest;
-    const newBalance = Math.max(0, balance - capital);
-    rows.push({ n: i, saldoInicial: balance, capital, interes: interest, cuota: payment, saldoFinal: newBalance });
-    balance = newBalance;
-  }
-  return rows;
-}
-
 
 async function fetchAllFracLots(inmuebleId) {
   const limit = 200;
@@ -77,6 +68,53 @@ async function fetchAllFracLots(inmuebleId) {
   );
 
   return [...(firstPage.items || []), ...remainingPages.flat()];
+}
+
+/**
+ * Texto corto para la marca del encabezado. Los códigos vienen como "MZ2-L05":
+ * se queda con lo de antes del guion ("MZ2"), que identifica la manzana. Sin
+ * guion, corta a 3 caracteres para que no se desborde el cuadro.
+ */
+function lotMark(code) {
+  const head = String(code || "").split("-")[0];
+  return head.slice(0, 4) || "—";
+}
+
+/**
+ * Fila de la ficha técnica. Todas las cifras van alineadas a la derecha sobre
+ * la misma columna y la unidad en un carril propio: así "312 m²" y "12 ml"
+ * comparten el punto de fuga y dejan de verse disparejas entre sí.
+ */
+function SpecRow({ label, value, unit, money }) {
+  if (value === null || value === undefined) return null;
+  return (
+    <div className="lotp-spec">
+      <span className="lotp-spec-k">{label}</span>
+      <span className="lotp-spec-n">
+        <span className={`lotp-spec-v${money ? " money" : ""}`}>{value}</span>
+        <span className="lotp-spec-u">{unit || ""}</span>
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Grilla de 2 columnas para especificaciones sí/no: mismo lenguaje visual que
+ * Ficha técnica (tarjeta con borde, fila con separador) pero en 2 columnas —
+ * la mitad de alto para la misma cantidad de datos, así un catálogo que crezca
+ * no empuja el resto de la ficha hacia abajo tan rápido.
+ */
+function SpecGrid2Bool({ items }) {
+  return (
+    <div className="lotp-grid2">
+      {items.map(({ key, label, on }) => (
+        <div className="lotp-grid2-cell" key={key}>
+          <span className="lotp-spec-k">{label}</span>
+          <span className={`lotp-spec-bool${on ? " on" : ""}`}>{on ? "Sí" : "No"}</span>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function StatusBadge({ status }) {
@@ -173,6 +211,7 @@ function MapViewer({ src, onClose }) {
 
 function FracsPage() {
   const {
+    currentUser,
     fracs,
     selectedFracId,
     setSelectedFracId,
@@ -181,7 +220,11 @@ function FracsPage() {
     showError,
     setDraftProject,
     fracsResetKey,
+    openContractCreate,
+    saveDocument,
   } = useAppContext();
+  const pendingReceipts = usePendingReceipts(currentUser);
+  const [reservationError, setReservationError] = useState("");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -191,7 +234,9 @@ function FracsPage() {
   // Qué proyecto está ABIERTO en esta vista (galería vs. detalle). Es local a la
   // página: el `selectedFracId` global se auto-reselecciona en el contexto (lo usan
   // los contratos), así que no sirve para "sin selección". null = galería.
-  const [openFracId, setOpenFracId] = useState(null);
+  const [openFracId, setOpenFracId] = useState(
+    () => new URLSearchParams(window.location.search).get("frac") || null,
+  );
 
   const openFrac = (id) => { setOpenFracId(id); setSelectedFracId(id); };
 
@@ -207,19 +252,33 @@ function FracsPage() {
   const [selectedLotId, setSelectedLotId] = useState(null);
   const [showLotModal, setShowLotModal] = useState(false);
   const [activeTab, setActiveTab] = useState("ficha");
+  // Vista del fraccionamiento: "plano" (plano + grilla) o "matriz" (hoja tipo plantilla).
+  const [fracView, setFracView] = useState("plano");
   const [showMapViewer, setShowMapViewer] = useState(false);
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [showCotizador, setShowCotizador] = useState(false);
+  const [quoteOverrides, setQuoteOverrides] = useState({});
   const [cotPrecioF, setCotPrecioF] = useState(0);
   const [cotEnganche, setCotEnganche] = useState(0);
   const [cotTasa, setCotTasa] = useState(12);
   const [cotPlazo, setCotPlazo] = useState(96);
-  const [showApptForm, setShowApptForm] = useState(false);
-  const [apptDraft, setApptDraft] = useState({ contact_name: "", contact_phone: "", date: "", time: "", notes: "" });
+  // Una acción a la vez: null | "apartar" | "cita" | "venta". Mientras hay una
+  // abierta, el panel muestra SOLO su formulario — la ficha y los servicios
+  // distraían de la tarea y empujaban el botón de guardar fuera de la vista.
+  const [panelMode, setPanelMode] = useState(null);
+  const [apptDraft, setApptDraft] = useState({ client: null, date: "", time: "", notes: "" });
   const [apptSaving, setApptSaving] = useState(false);
-  const [apartarOpen, setApartarOpen] = useState(false);
+  const docUpload = useDocumentUpload({ category: "plano" });
+  const [docSaving, setDocSaving] = useState(false);
+  const apartarOpen = panelMode === "apartar";
+  const showApptForm = panelMode === "cita";
+  const setApartarOpen = (v) => setPanelMode((m) => ((typeof v === "function" ? v(m === "apartar") : v) ? "apartar" : null));
   const [apartarUntil, setApartarUntil] = useState("");   // datetime-local
+  const [apartarMonto, setApartarMonto] = useState("");   // opcional: hay apartados de palabra
+  const [apartarFiles, setApartarFiles] = useState([]);  // comprobantes, pueden llegar después
   const [apartarBusy, setApartarBusy] = useState(false);
+  const [apartarClient, setApartarClient] = useState(null); // {id, name, phone, email} | null
+  const [ventaClient, setVentaClient] = useState(null);     // comprador elegido para el contrato
   useEscapeKey(() => {
     if (showCotizador) setShowCotizador(false);
     else if (showLotModal) setShowLotModal(false);
@@ -240,6 +299,12 @@ function FracsPage() {
     enabled: !!selectedLotId,
   });
 
+  const [params, setParams] = useSearchParams();
+  const targetLotId = params.get("lot");
+  const targetLot = useQuery({ queryKey: ["lots", "detail", targetLotId], queryFn: () => lotService.get(targetLotId), enabled: !!targetLotId });
+  useEffect(() => {
+    if (targetLot.data?.inmueble_id && openFracId !== targetLot.data.inmueble_id) setOpenFracId(targetLot.data.inmueble_id);
+  }, [targetLot.data, openFracId]);
   const selectedLot = lots.find((lot) => lot.id === selectedLotId) || null;
   const resLeft = selectedLot?.status === "reserved" ? reservationLeft(selectedLot.reserved_until) : null;
   const sections = useMemo(() => [...new Set(lots.map((lot) => lot.section || "General"))], [lots]);
@@ -271,12 +336,30 @@ function FracsPage() {
     sold: lots.filter((lot) => lot.status === "sold").length,
   }), [lots]);
 
-  const monthly = calcMonthly(cotPrecioF, cotEnganche, cotTasa, cotPlazo);
+  // Dona de inventario: paleta monocromática (claro→profundo = disponible→vendido,
+  // se lee como una progresión hacia "resuelto") en vez de 4 cajas sueltas.
+  const inventoryDonut = useMemo(() => {
+    const total = stats.total || 1;
+    const availablePct = (stats.available / total) * 100;
+    const reservedPct = (stats.reserved / total) * 100;
+    const availableEnd = availablePct;
+    const reservedEnd = availableEnd + reservedPct;
+    return {
+      gradient: `conic-gradient(var(--frac-donut-available) 0% ${availableEnd}%, var(--frac-donut-reserved) ${availableEnd}% ${reservedEnd}%, var(--frac-donut-sold) ${reservedEnd}% 100%)`,
+      availablePct: Math.round(availablePct),
+    };
+  }, [stats]);
+
+  const calculator = useQuery({ queryKey: ["calculators", "active", "lands"], queryFn: () => calculatorService.getActive("lands"), enabled: !!selectedFrac });
+  const quoteForm = { amount: cotPrecioF, down_payment: cotEnganche, interest_rate: Number(cotTasa) / 100, totalM: cotPlazo };
+  const quote = calculateQuote(calculator.data, quoteForm, quoteOverrides);
+  const monthly = quote.value || 0;
   const financed = Math.max(0, Number(cotPrecioF) - Number(cotEnganche));
   const quoteTotal = monthly > 0 ? monthly * Number(cotPlazo) + Number(cotEnganche) : 0;
 
   useEffect(() => {
     setSelectedLotId(null);
+    setQuoteOverrides({});
     setStatusFilter("all");
     setSearch("");
     setSectionFilter("");
@@ -285,8 +368,11 @@ function FracsPage() {
   }, [selectedFrac?.id]);
 
   useEffect(() => {
-    if (!selectedLotId && lots[0]) setSelectedLotId(lots[0].id);
-  }, [lots, selectedLotId]);
+    if (targetLotId && targetLot.data && openFracId === targetLot.data.inmueble_id && lots.some(lot => lot.id === targetLotId)) { setSelectedLotId(targetLotId); setShowLotModal(true); }
+  }, [targetLotId, targetLot.data, openFracId, lots]);
+  useEffect(() => {
+    if (!targetLotId && !selectedLotId && lots[0]) setSelectedLotId(lots[0].id);
+  }, [lots, selectedLotId, targetLotId]);
 
   useEffect(() => {
     if (!selectedLot) return;
@@ -308,7 +394,7 @@ function FracsPage() {
   if (!fracs.length) {
     return (
       <EmptyState
-        icon="▦"
+        icon={<HiSquares2X2 />}
         title="Sin fraccionamientos creados"
         description="Carga un plano, arma la matriz de lotes y crea tu primer proyecto desde la seccion Carga de Lotes."
         action={<Link className="mobile-primary-button" to="/lotes">Ir a Carga de Lotes</Link>}
@@ -319,6 +405,7 @@ function FracsPage() {
   if (!selectedFrac) {
     return (
       <div className="frac-gallery-page">
+        {pendingReceipts.issues.filter(issue => issue.kind === "reservation").map(issue => <PendingReceiptUpload key={issue.id} issue={issue} onDone={() => pendingReceipts.remove(issue)} />)}
         <header className="frac-gallery-head">
           <div className="frac-gallery-heading">
             <div className="frac-eyebrow">OwnTerra Lands</div>
@@ -342,7 +429,7 @@ function FracsPage() {
                 <span className="frac-gallery-thumb">
                   {frac.image_url
                     ? <img src={frac.image_url} alt={`Plano de ${frac.name}`} loading="lazy" />
-                    : <span className="frac-gallery-thumb-empty">🗺️</span>}
+                    : <span className="frac-gallery-thumb-empty"><HiMap /></span>}
                 </span>
                 <span className="frac-gallery-body">
                   <span className="frac-gallery-name">{frac.name}</span>
@@ -368,7 +455,7 @@ function FracsPage() {
           { title: "Plano interactivo", text: "Usa el scroll o pinch para hacer zoom. Haz clic en el plano para ver los lotes superpuestos con su estado (disponible, apartado, vendido)." },
           { title: "Filtrar lotes", text: "Los botones de estado en la barra superior filtran los lotes visibles en el plano. Combínalos con la búsqueda por sección o código." },
           { title: "Ficha de lote", text: "Selecciona un lote para ver su ficha completa: medidas, servicios disponibles, precio de contado y financiado, y vendedor asignado." },
-          { title: "Cotizador integrado", text: "Desde la ficha del lote puedes abrir el cotizador para simular el plan de pagos con amortización francesa o alemana." },
+          { title: "Cotizador integrado", text: "Desde la ficha del lote puedes abrir el cotizador para simular la mensualidad con la fórmula activa de la organización." },
           { title: "Agendar visita", text: "El botón 'Agendar' en la ficha del lote crea una cita en la agenda central vinculada al lote y al contacto del prospecto." },
         ]}
       />
@@ -380,6 +467,12 @@ function FracsPage() {
     setSelectedLotId(lot.id);
     setShowLotModal(true);
     setActiveTab("ficha");
+    // Cada lote arranca en su ficha, sin arrastrar el formulario a medio
+    // llenar del lote anterior.
+    setPanelMode(null);
+    setApartarClient(null);
+    setVentaClient(null);
+    setApptDraft({ client: null, date: "", time: "", notes: "" });
   };
 
   const openEditor = () => {
@@ -398,7 +491,8 @@ function FracsPage() {
           priceFinanciado: lot.price_financiado ?? "",
           frente: lot.frente_ml ?? "",
           fondo: lot.fondo_ml ?? "",
-          servicios: JSON.stringify(lot.services || {}),
+          orientacion: lot.orientacion ?? "",
+          especificaciones: JSON.stringify(lot.especificaciones || {}),
         },
         code: lot.code,
         status: lot.status || "available",
@@ -407,7 +501,8 @@ function FracsPage() {
         priceFinanciado: lot.price_financiado ?? "",
         frente: lot.frente_ml ?? "",
         fondo: lot.fondo_ml ?? "",
-        servicios: lot.services || {},
+        orientacion: lot.orientacion ?? "",
+        especificaciones: lot.especificaciones || {},
       });
     });
     setDraftProject({
@@ -423,19 +518,22 @@ function FracsPage() {
 
 
   const saveAppointment = async () => {
-    if (!selectedLot || !apptDraft.contact_name.trim() || !apptDraft.date || !apptDraft.time) return;
+    if (apptSaving || !selectedLot || !apptDraft.client || !apptDraft.date || !apptDraft.time) return;
     setApptSaving(true);
     try {
       await appointmentService.create({
         lot_id: selectedLot.id,
-        contact_name: apptDraft.contact_name.trim(),
-        contact_phone: apptDraft.contact_phone.trim() || undefined,
+        // La cita queda ligada al cliente del CRM, no a un contacto suelto:
+        // así aparece en su ficha y se puede dar seguimiento.
+        client_id: apptDraft.client.id,
+        contact_name: apptDraft.client.name,
+        contact_phone: apptDraft.client.phone || undefined,
         scheduled_at: new Date(`${apptDraft.date}T${apptDraft.time}`).toISOString(),
         notes: apptDraft.notes.trim() || undefined,
       });
       await refetchAppts();
-      setApptDraft({ contact_name: "", contact_phone: "", date: "", time: "", notes: "" });
-      setShowApptForm(false);
+      setApptDraft({ client: null, date: "", time: "", notes: "" });
+      setPanelMode(null);
       showToast("Cita agendada");
     } catch (err) {
       showError(err, "Error al agendar la cita");
@@ -445,17 +543,46 @@ function FracsPage() {
   };
 
   // ── Apartado con expiración ──────────────────────────────────────────────
+  /* El comprobante no bloquea el apartado: si su subida falla, la reserva ya
+     quedó hecha y el papel se puede adjuntar después. */
+  const subirComprobantes = async (lotId) => {
+    if (apartarFiles.length === 0) return true;
+    try {
+      await lotService.reservationReceipt(lotId, apartarFiles);
+      // La ficha y la matriz leen documentos: sin esto el archivo recién subido
+      // no aparece hasta recargar. Son dos claves distintas —la global del
+      // contexto y la del expediente de la entidad—, así que no basta con una.
+      await queryClient.invalidateQueries({ queryKey: ["documents"] });
+      await queryClient.invalidateQueries({ queryKey: ["documents-entity"] });
+      return true;
+    } catch {
+      pendingReceipts.add({kind: "reservation", id: lotId});
+      return false;
+    }
+  };
+
+  const validReservation = () => {
+    const date = new Date(apartarUntil);
+    const amount = Number(apartarMonto);
+    const error = !apartarUntil || !Number.isFinite(date.getTime()) || date <= new Date() ? "Elige un vencimiento posterior a este momento." : apartarMonto !== "" && (!Number.isFinite(amount) || amount < 0) ? "El monto del apartado debe ser mayor o igual a cero." : "";
+    setReservationError(error);
+    return !error;
+  };
   const reserveLot = async () => {
-    if (!selectedLot || !apartarUntil) return;
+    if (apartarBusy || !selectedLot || !apartarUntil || !apartarClient || !validReservation()) return;
     setApartarBusy(true);
     try {
       await lotService.update(selectedLot.id, {
         status: "reserved",
         reserved_until: new Date(apartarUntil).toISOString(),
+        client_id: apartarClient.id,
+        // Opcional: se puede apartar de palabra y cargar el monto después.
+        ...(apartarMonto ? { reserved_amount: Number(apartarMonto) } : {}),
       });
+      const receiptSaved = await subirComprobantes(selectedLot.id);
       await queryClient.invalidateQueries({ queryKey: ["lots"] });
-      setApartarOpen(false); setApartarUntil("");
-      showToast("Lote apartado");
+      setApartarOpen(false); setApartarUntil(""); setApartarClient(null); setApartarMonto(""); setApartarFiles([]);
+      showToast(receiptSaved ? "Lote apartado" : "Apartado registrado. Comprobante pendiente.", receiptSaved ? undefined : "warning");
     } catch (err) {
       showError(err, "No se pudo apartar el lote");
     } finally {
@@ -464,15 +591,18 @@ function FracsPage() {
   };
 
   const extendReservation = async () => {
-    if (!selectedLot || !apartarUntil) return;
+    if (apartarBusy || !selectedLot || !apartarUntil || !validReservation()) return;
     setApartarBusy(true);
     try {
       await lotService.update(selectedLot.id, {
         reserved_until: new Date(apartarUntil).toISOString(),
+        ...(apartarClient?.id ? { client_id: apartarClient.id } : {}),
+        ...(apartarMonto ? { reserved_amount: Number(apartarMonto) } : {}),
       });
+      const receiptSaved = await subirComprobantes(selectedLot.id);
       await queryClient.invalidateQueries({ queryKey: ["lots"] });
-      setApartarOpen(false); setApartarUntil("");
-      showToast("Vencimiento actualizado");
+      setApartarOpen(false); setApartarUntil(""); setApartarClient(null); setApartarMonto(""); setApartarFiles([]);
+      showToast(receiptSaved ? "Vencimiento actualizado" : "Apartado registrado. Comprobante pendiente.", receiptSaved ? undefined : "warning");
     } catch (err) {
       showError(err, "No se pudo extender el apartado");
     } finally {
@@ -506,9 +636,10 @@ function FracsPage() {
 
   return (
     <div className="frac-page frac-page-detail">
+      {pendingReceipts.issues.filter(issue => issue.kind === "reservation").map(issue => <PendingReceiptUpload key={issue.id} issue={issue} onDone={() => pendingReceipts.remove(issue)} />)}
       <section className="frac-workspace">
         <div className="frac-detail-bar">
-          <button className="frac-back" onClick={() => setOpenFracId(null)}>
+          <button className="frac-back" onClick={() => { setParams({}); setOpenFracId(null); }}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10 3 5 8l5 5"/></svg>
             Proyectos
           </button>
@@ -523,11 +654,31 @@ function FracsPage() {
           </div>
         </div>
 
-        <div className="frac-kpis">
-          <article className="frac-kpi deep"><span>Total lotes</span><strong>{stats.total}</strong><small>{sections.length} secciones</small></article>
-          <article className="frac-kpi available"><span>Disponibles</span><strong>{stats.available}</strong><small>{stats.total ? Math.round((stats.available / stats.total) * 100) : 0}% inventario</small></article>
-          <article className="frac-kpi reserved"><span>Apartados</span><strong>{stats.reserved}</strong><small>seguimiento activo</small></article>
-          <article className="frac-kpi sold"><span>Vendidos</span><strong>{stats.sold}</strong><small>cerrados</small></article>
+        <div className="frac-donut-card">
+          <div className="frac-donut" style={{ background: inventoryDonut.gradient }}>
+            <div className="frac-donut-center">
+              <strong>{stats.total}</strong>
+              <small>Total lotes</small>
+            </div>
+          </div>
+          <div className="frac-donut-legend">
+            <div className="frac-donut-row">
+              <span className="frac-donut-dot" style={{ background: "var(--frac-donut-available)" }} />
+              <span className="frac-donut-label">Disponibles<small>{inventoryDonut.availablePct}% del inventario</small></span>
+              <span className="frac-donut-val">{stats.available}</span>
+            </div>
+            <div className="frac-donut-row">
+              <span className="frac-donut-dot" style={{ background: "var(--frac-donut-reserved)" }} />
+              <span className="frac-donut-label">Apartados<small>Seguimiento activo</small></span>
+              <span className="frac-donut-val">{stats.reserved}</span>
+            </div>
+            <div className="frac-donut-row">
+              <span className="frac-donut-dot" style={{ background: "var(--frac-donut-sold)" }} />
+              <span className="frac-donut-label">Vendidos<small>Cerrados</small></span>
+              <span className="frac-donut-val">{stats.sold}</span>
+            </div>
+            <div className="frac-donut-foot">{sections.length} secciones</div>
+          </div>
         </div>
 
         <div className="frac-filters">
@@ -557,6 +708,30 @@ function FracsPage() {
           )}
         </div>
 
+        <div className="frac-views">
+          <button
+            className={fracView === "plano" ? "on" : ""}
+            onClick={() => setFracView("plano")}
+          >
+            Plano y matriz
+          </button>
+          <button
+            className={fracView === "matriz" ? "on" : ""}
+            onClick={() => setFracView("matriz")}
+          >
+            Vista matriz
+          </button>
+        </div>
+
+        {fracView === "matriz" ? (
+          <MatrixSheet
+            lots={filteredLots}
+            fracId={selectedFrac.id}
+            fracName={selectedFrac.name}
+            loading={lotsLoading}
+            showError={showError}
+          />
+        ) : (
         <div className="frac-matrix-grid">
           <article className="frac-panel frac-plan-panel">
             <div className="frac-panel-head">
@@ -620,7 +795,7 @@ function FracsPage() {
                               >
                                 <i />
                                 <strong>{lot.code}</strong>
-                                <span>{lot.area_m2 ? `${lot.area_m2} m2` : "Sin area"}</span>
+                                <span>{measure(lot.area_m2) ? `${measure(lot.area_m2)} m²` : "Sin área"}</span>
                                 {precio ? <em className="frac-lot-price">{currency(precio)}</em> : null}
                               </button>
                             );
@@ -635,6 +810,7 @@ function FracsPage() {
             </div>
           </article>
         </div>
+        )}
       </section>
 
       <article className={`frac-quote ${quoteOpen ? "open" : "collapsed"}`}>
@@ -658,149 +834,265 @@ function FracsPage() {
             <span>A financiar <strong>{currency(Math.round(financed))}</strong></span>
             <span>Total estimado <strong>{currency(Math.round(quoteTotal || 0))}</strong></span>
           </div>
+          <p className="lands-list-note">{calculator.isPending ? "Cargando plan…" : calculator.isError ? "No se pudo consultar el plan." : quote.error || `Plan: ${calculator.data?.name}. La venta conservará la fórmula vigente al registrarse.`}</p>
+          {calculator.isError && <button type="button" className="btn-s" onClick={() => calculator.refetch()}>Reintentar</button>}
           <button className="frac-quote-full" onClick={() => setShowCotizador(true)} disabled={!selectedLot}>Abrir cotizador completo</button>
         </div>
       </article>
 
-      {showLotModal && selectedLot ? (
-        <div className="frac-modal-overlay" onClick={(event) => event.target === event.currentTarget && setShowLotModal(false)}>
-          <article className="frac-lot-modal">
-            <div className="frac-modal-head">
-              <div className="frac-modal-id">{selectedLot.code}</div>
-              <div>
-                <h2>Detalle del lote</h2>
-                <p>{selectedFrac.name} / {selectedLot.section || "General"} / {selectedLot.area_m2 || 0} m2</p>
+      {/* Portal a body: el contenedor de la página crea un stacking context propio
+          y ahí la barra superior queda por encima del panel, robándole los clicks. */}
+      {showLotModal && selectedLot ? createPortal(
+        <div className="lotp-overlay" onClick={(event) => event.target === event.currentTarget && setShowLotModal(false)}>
+          <aside className="lotp" aria-label={`Detalle del lote ${selectedLot.code}`}>
+            {/* ── Encabezado: el código manda, el estado aparece UNA sola vez ── */}
+            <header className="lotp-hd">
+              <div className={`lotp-mark${selectedLot.status === "reserved" ? " reserved" : selectedLot.status === "sold" ? " sold" : ""}`}>
+                <span>{lotMark(selectedLot.code)}</span>
               </div>
-              <StatusBadge status={selectedLot.status} />
-              {resLeft ? <span className={`frac-countdown ${resLeft.tone}`}>{resLeft.text}</span> : null}
-              <button className="frac-modal-close" onClick={() => setShowLotModal(false)}>×</button>
-            </div>
-            <div className="frac-modal-body">
-              <div className="frac-tabs">
-                {["ficha", "gestion", "documentos"].map((tab) => (
-                  <button key={tab} className={activeTab === tab ? "on" : ""} onClick={() => setActiveTab(tab)}>
-                    {tab[0].toUpperCase() + tab.slice(1)}
-                  </button>
-                ))}
+              <div className="lotp-id">
+                <div className="lotp-kicker">Lote</div>
+                <div className="lotp-code">{selectedLot.code}</div>
+                <div className="lotp-where">
+                  {selectedFrac.name}
+                  <i />
+                  {selectedLot.section || "General"}
+                </div>
               </div>
+              <div className="lotp-hd-end">
+                <StatusBadge status={selectedLot.status} />
+                {resLeft ? <span className={`frac-countdown ${resLeft.tone}`}>{resLeft.text}</span> : null}
+                <button className="lotp-x" onClick={() => setShowLotModal(false)} aria-label="Cerrar">
+                  <HiXMark />
+                </button>
+              </div>
+            </header>
 
-              {activeTab === "ficha" ? (
-                <>
-                  <div className="frac-detail-grid">
-                    <div><strong>{selectedLot.frente_ml || "--"}</strong><span>Frente ML</span></div>
-                    <div><strong>{selectedLot.fondo_ml || "--"}</strong><span>Fondo ML</span></div>
-                    <div><strong>{selectedLot.area_m2 || "--"}</strong><span>Superficie m2</span></div>
-                    {selectedLot.price_contado
-                      ? <div className="frac-detail-price"><strong>{currency(selectedLot.price_contado)}</strong><span>Precio Contado</span></div>
-                      : null}
-                    {selectedLot.price_financiado
-                      ? <div className="frac-detail-price"><strong>{currency(selectedLot.price_financiado)}</strong><span>Precio Financiado</span></div>
-                      : null}
-                  </div>
-
-                  <div className="frac-services">
-                    {SERVICES.map((service) => {
-                      const on = !!(selectedLot.services?.[service.k]);
-                      return (
-                        <label key={service.k} className="frac-service">
-                          <span>{service.lbl}</span>
-                          <input type="checkbox" checked={on} readOnly disabled />
-                          <i className={on ? "on" : ""} />
-                        </label>
-                      );
-                    })}
-                  </div>
-                </>
-              ) : null}
-
-              {activeTab === "gestion" ? (
-                <div className="frac-management">
-                  <div className="frac-section-label">Estado actual</div>
-                  <div style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                    <StatusBadge status={selectedLot.status} />
-                    {resLeft ? <span className={`frac-countdown ${resLeft.tone}`}>{resLeft.text}</span> : null}
-                  </div>
-
-                  {/* Apartado con expiración */}
-                  {selectedLot.status === "reserved" ? (
-                    <div className="frac-apartar">
-                      <div className="frac-apartar-meta">
-                        Apartado desde {selectedLot.reserved_at ? new Date(selectedLot.reserved_at).toLocaleDateString("es-MX") : "—"}
-                        {" · "}vence {selectedLot.reserved_until ? new Date(selectedLot.reserved_until).toLocaleString("es-MX") : "—"}
-                      </div>
-                      <div className="frac-apartar-btns">
-                        <button onClick={() => { setApartarOpen((v) => !v); setApartarUntil(selectedLot.reserved_until ? toLocalInput(new Date(selectedLot.reserved_until)) : ""); }}>
-                          {apartarOpen ? "Cancelar" : "Extender vencimiento"}
-                        </button>
-                        <button className="frac-apartar-release" onClick={releaseLot} disabled={apartarBusy}>Liberar lote</button>
-                      </div>
-                    </div>
-                  ) : selectedLot.status === "available" ? (
-                    <div className="frac-apartar">
-                      <button className="frac-apartar-cta" onClick={() => { setApartarOpen((v) => !v); if (!apartarOpen) setApartarUntil(toLocalInput(new Date(Date.now() + 7 * 86400000))); }}>
-                        {apartarOpen ? "Cancelar" : "🔖 Apartar lote"}
+            <div className="lotp-body">
+              {/* ── Columna de datos ──
+                  Con una acción abierta muestra SOLO su formulario; si no, la
+                  ficha completa del lote. */}
+              <div className="lotp-data">
+                {panelMode ? (
+                  <div className="lotp-form">
+                    <div className="lotp-form-hd">
+                      <button className="lotp-back" onClick={() => setPanelMode(null)}>
+                        ← Volver
                       </button>
-                    </div>
-                  ) : null}
-
-                  {apartarOpen && selectedLot.status !== "sold" ? (
-                    <div className="frac-apartar-form">
-                      <label className="frac-appt-lbl">Vence el</label>
-                      <div className="frac-apartar-presets">
-                        {[[3, "3 días"], [7, "7 días"], [15, "15 días"], [30, "30 días"]].map(([n, l]) => (
-                          <button type="button" key={n} onClick={() => setApartarUntil(toLocalInput(new Date(Date.now() + n * 86400000)))}>{l}</button>
-                        ))}
+                      <div className="lotp-form-t">
+                        {panelMode === "apartar"
+                          ? (selectedLot.status === "reserved" ? "Extender apartado" : "Apartar lote")
+                          : panelMode === "cita" ? "Agendar cita"
+                          : panelMode === "documento" ? "Subir documento"
+                          : "Registrar venta"}
                       </div>
-                      <input
-                        type="datetime-local"
-                        className="frac-apartar-input"
-                        value={apartarUntil}
-                        min={toLocalInput(new Date())}
-                        onChange={(e) => setApartarUntil(e.target.value)}
-                      />
-                      <Button
-                        variant="primary"
-                        onClick={selectedLot.status === "reserved" ? extendReservation : reserveLot}
-                        disabled={apartarBusy || !apartarUntil}
-                      >
-                        {apartarBusy ? "Guardando..." : selectedLot.status === "reserved" ? "Guardar vencimiento" : "Confirmar apartado"}
-                      </Button>
                     </div>
-                  ) : null}
 
-                  <div className="frac-actions-list">
-                    {selectedLot.status !== "sold" ? <button onClick={() => navigate("/contratos")}>Registrar venta</button> : null}
-                    <button onClick={() => setShowApptForm((value) => !value)}>Agendar cita</button>
-                    <button onClick={openEditor}>Editar en Carga de Lotes</button>
+                    {panelMode === "apartar" ? (
+                      <WorkflowForm noValidate busy={apartarBusy} onSubmit={event=>{event.preventDefault();return (selectedLot.status === "reserved" ? extendReservation : reserveLot)();}} className="frac-apartar-form">
+                        <label className="frac-appt-lbl">Cliente interesado</label>
+                        <ClientPicker value={apartarClient} onSelect={setApartarClient} disabled={apartarBusy} />
+
+                        <label className="frac-appt-lbl" htmlFor="reservation-until">Vence el *</label>
+                        <div className="frac-apartar-presets">
+                          {[[3, "3 días"], [7, "7 días"], [15, "15 días"], [30, "30 días"]].map(([n, l]) => (
+                            <button type="button" key={n} onClick={() => setApartarUntil(toLocalInput(new Date(Date.now() + n * 86400000)))}>{l}</button>
+                          ))}
+                        </div>
+                        <input
+                          id="reservation-until" type="datetime-local"
+                          className="frac-apartar-input"
+                          value={apartarUntil}
+                          min={toLocalInput(new Date())}
+                          onChange={(e) => setApartarUntil(e.target.value)}
+                        />
+                        <label className="frac-appt-lbl" htmlFor="reservation-amount">Monto del apartado (opcional)</label>
+                        <input
+                          id="reservation-amount" type="number" min="0" step="0.01" placeholder="0.00"
+                          className="frac-apartar-input"
+                          value={apartarMonto}
+                          onChange={(e) => setApartarMonto(e.target.value)}
+                        />
+                        <div style={{ fontSize: ".72rem", color: "var(--mu)", marginTop: -4, lineHeight: 1.4 }}>
+                          Se propondrá como enganche al generar el contrato, así que baja el capital a financiar.
+                        </div>
+
+                        <label className="frac-appt-lbl">Comprobantes (opcional)</label>
+                        <FilePicker
+                          multiple
+                          value={apartarFiles}
+                          onChange={setApartarFiles}
+                          accept="application/pdf,image/jpeg,image/png,image/webp"
+                          hint="PDF o imagen. Puedes subir varios —transferencia, identificación—. Quedan en los documentos del lote."
+                        />
+
+                        <FieldError msg={reservationError} />
+                        <Button
+                          variant="primary"
+                          type="submit"
+                          disabled={apartarBusy || !apartarUntil || !apartarClient}
+                        >
+                          {apartarBusy ? "Guardando..." : selectedLot.status === "reserved" ? "Guardar vencimiento" : "Confirmar apartado"}
+                        </Button>
+                      </WorkflowForm>
+                    ) : null}
+
+                    {panelMode === "cita" ? (
+                      <WorkflowForm noValidate busy={apptSaving} onSubmit={event=>{event.preventDefault();return (saveAppointment)();}} className="frac-appointment-form">
+                        <label className="frac-appt-lbl">Cliente</label>
+                        <ClientPicker
+                          value={apptDraft.client}
+                          onSelect={(c) => setApptDraft((p) => ({ ...p, client: c }))}
+                          disabled={apptSaving}
+                        />
+                        <div className="frac-appt-field">
+                          <label className="frac-appt-lbl" htmlFor="lot-appointment-date">Fecha</label>
+                          <input id="lot-appointment-date" type="date" value={apptDraft.date} onChange={(event) => setApptDraft((p) => ({ ...p, date: event.target.value }))} />
+                        </div>
+                        <div className="frac-appt-field">
+                          <label className="frac-appt-lbl" htmlFor="lot-appointment-time">Hora</label>
+                          <input id="lot-appointment-time" type="time" value={apptDraft.time} onChange={(event) => setApptDraft((p) => ({ ...p, time: event.target.value }))} />
+                        </div>
+                        <div className="frac-appt-field">
+                          <label className="frac-appt-lbl" htmlFor="lot-appointment-notes">Notas</label>
+                          <textarea id="lot-appointment-notes" rows="2" value={apptDraft.notes} onChange={(event) => setApptDraft((p) => ({ ...p, notes: event.target.value }))} placeholder="Contexto de la visita" />
+                        </div>
+                        <Button variant="primary" type="submit" disabled={apptSaving || !apptDraft.client || !apptDraft.date || !apptDraft.time}>
+                          {apptSaving ? "Guardando..." : "Guardar cita"}
+                        </Button>
+                      </WorkflowForm>
+                    ) : null}
+
+                    {panelMode === "documento" ? (
+                      <WorkflowForm noValidate busy={docSaving} onSubmit={event=>{event.preventDefault();return (async () => {
+                            if (!docUpload.validate() || docSaving) return;
+                            setDocSaving(true);
+                            try {
+                              // El lote ya está decidido por el contexto: se vincula
+                              // solo, sin preguntar a qué se adjunta.
+                              const ok = await saveDocument(
+                                {
+                                  ...docUpload.form,
+                                  folderId: docUpload.form.folderId || undefined,
+                                  linkType: "lot",
+                                  linkedId: selectedLot.id,
+                                },
+                                docUpload.file
+                              );
+                              if (ok !== false) {
+                                docUpload.reset();
+                                setPanelMode(null);
+                              }
+                            } finally {
+                              setDocSaving(false);
+                            }
+                          })();}} className="frac-appointment-form">
+                        <DocumentUploadFields ctl={docUpload} defaultFolderAppKey="lands" />
+                        <Button
+                          variant="primary"
+                          disabled={docSaving}
+                          type="submit"
+                        >
+                          {docSaving ? "Subiendo..." : "Guardar documento"}
+                        </Button>
+                      </WorkflowForm>
+                    ) : null}
+
+                    {panelMode === "venta" ? (
+                      <WorkflowForm noValidate busy={docSaving} onSubmit={event=>{event.preventDefault();return (() => {
+                            setShowLotModal(false);
+                            setPanelMode(null);
+                            // El modal de contrato espera `lot` (el id de la unidad)
+                            // e `inmuebleId`, no `lotId`.
+                            openContractCreate({
+                              clientId: ventaClient.id,
+                              lot: selectedLot.id,
+                              amount: Number(cotPrecioF),
+                              down_payment: Number(cotEnganche),
+                              totalM: Number(cotPlazo),
+                              interest_rate: Number(cotTasa) / 100,
+                              _calcVars: quote.variables,
+                              _calcEdited: Object.fromEntries(Object.keys(quoteOverrides).map(key => [key, true])),
+                              inmuebleId: selectedFrac.id,
+                            });
+                          })();}} className="frac-appointment-form">
+                        <label className="frac-appt-lbl">Comprador</label>
+                        <ClientPicker value={ventaClient} onSelect={setVentaClient} />
+                        <p className="lotp-form-help">
+                          Al continuar se abre el contrato con este comprador y el lote ya cargados.
+                        </p>
+                        <Button
+                          variant="primary"
+                          disabled={!ventaClient}
+                          type="submit"
+                        >
+                          Continuar al contrato →
+                        </Button>
+                      </WorkflowForm>
+                    ) : null}
                   </div>
-                  {showApptForm ? (
-                    <div className="frac-appointment-form">
-                      <div className="frac-appt-field">
-                        <label className="frac-appt-lbl">Contacto</label>
-                        <input value={apptDraft.contact_name} onChange={(event) => setApptDraft((p) => ({ ...p, contact_name: event.target.value }))} placeholder="Nombre del contacto" />
+                ) : (
+                <>
+                {/* Apartado vigente: quién y hasta cuándo */}
+                {selectedLot.status === "reserved" ? (
+                  <div className="lotp-sec">
+                    <div className="lotp-sh"><b>Apartado</b></div>
+                    <div className="lotp-resv">
+                      {selectedLot.client_name ? (
+                        <div className="lotp-resv-row">
+                          <span className="lotp-resv-k">Cliente</span>
+                          <span className="lotp-resv-v">{selectedLot.client_name}</span>
+                        </div>
+                      ) : null}
+                      {selectedLot.reserved_by_name ? (
+                        <div className="lotp-resv-row">
+                          <span className="lotp-resv-k">Apartó</span>
+                          <span className="lotp-resv-v">{selectedLot.reserved_by_name}</span>
+                        </div>
+                      ) : null}
+                      <div className="lotp-resv-row">
+                        <span className="lotp-resv-k">Vence</span>
+                        <span className="lotp-resv-v">
+                          {selectedLot.reserved_until ? new Date(selectedLot.reserved_until).toLocaleString("es-MX") : "—"}
+                        </span>
                       </div>
-                      <div className="frac-appt-field">
-                        <label className="frac-appt-lbl">Telefono</label>
-                        <PhoneInput value={apptDraft.contact_phone} onChange={(v) => setApptDraft((p) => ({ ...p, contact_phone: v }))} placeholder="Opcional" />
-                      </div>
-                      <div className="frac-appt-field">
-                        <label className="frac-appt-lbl">Fecha</label>
-                        <input type="date" value={apptDraft.date} onChange={(event) => setApptDraft((p) => ({ ...p, date: event.target.value }))} />
-                      </div>
-                      <div className="frac-appt-field">
-                        <label className="frac-appt-lbl">Hora</label>
-                        <input type="time" value={apptDraft.time} onChange={(event) => setApptDraft((p) => ({ ...p, time: event.target.value }))} />
-                      </div>
-                      <div className="frac-appt-field">
-                        <label className="frac-appt-lbl">Notas</label>
-                        <textarea rows="2" value={apptDraft.notes} onChange={(event) => setApptDraft((p) => ({ ...p, notes: event.target.value }))} placeholder="Contexto de la visita" />
-                      </div>
-                      <Button variant="primary" onClick={saveAppointment} disabled={apptSaving || !apptDraft.contact_name.trim() || !apptDraft.date || !apptDraft.time}>
-                        {apptSaving ? "Guardando..." : "Guardar cita"}
-                      </Button>
                     </div>
-                  ) : null}
-                  {apptData.length ? (
+                  </div>
+                ) : null}
+
+                {/* ── Ficha técnica: cifras alineadas a la derecha, unidad en carril fijo ── */}
+                <div className="lotp-sec">
+                  <div className="lotp-sh"><b>Ficha técnica</b></div>
+                  <div className="lotp-specs">
+                    <SpecRow label="Superficie" value={measure(selectedLot.area_m2)} unit="m²" />
+                    <SpecRow label="Frente" value={measure(selectedLot.frente_ml)} unit="ml" />
+                    <SpecRow label="Fondo" value={measure(selectedLot.fondo_ml)} unit="ml" />
+                    {selectedLot.orientacion ? (
+                      <SpecRow label="Orientacion" value={selectedLot.orientacion} />
+                    ) : null}
+                    {selectedLot.price_contado ? (
+                      <SpecRow label="Precio de contado" value={currency(selectedLot.price_contado)} money />
+                    ) : null}
+                    {selectedLot.price_financiado ? (
+                      <SpecRow label="Precio financiado" value={currency(selectedLot.price_financiado)} money />
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="lotp-sec">
+                  <div className="lotp-sh"><b>Especificaciones</b></div>
+                  <SpecGrid2Bool
+                    items={ESPECIFICACIONES_CHIPS.map((esp) => ({
+                      key: esp.k,
+                      label: esp.lbl,
+                      on: selectedLot.especificaciones?.[esp.k] === "true",
+                    }))}
+                  />
+                </div>
+
+                {apptData.length ? (
+                  <div className="lotp-sec">
+                    <div className="lotp-sh"><b>Citas próximas</b></div>
                     <div className="frac-appointments">
                       {apptData.map((appt) => (
                         <div key={appt.id}>
@@ -810,21 +1102,105 @@ function FracsPage() {
                         </div>
                       ))}
                     </div>
-                  ) : null}
-                </div>
-              ) : null}
+                  </div>
+                ) : null}
 
-              {activeTab === "documentos" ? (
-                <InlineDocumentsPanel entityType="lot" entityId={selectedLot.id} entityLabel={`${selectedFrac.name} / ${selectedLot.code}`} />
-              ) : null}
+                <div className="lotp-sec">
+                  <div className="lotp-sh"><b>Documentos</b></div>
+                  <InlineDocumentsPanel
+                    entityType="lot"
+                    entityId={selectedLot.id}
+                    entityLabel={`${selectedFrac.name} / ${selectedLot.code}`}
+                    /* Sin esto abriría el modal global, que queda por debajo de
+                       este panel; acá la subida es una sección más. */
+                    onUpload={() => { docUpload.reset(); setPanelMode("documento"); }}
+                  />
+                </div>
+                </>
+                )}
+              </div>
+
+              {/* ── Columna de acciones (fija, no scrollea) ── */}
+              <div className="lotp-acts">
+                <div className="lotp-acts-lbl">Acciones</div>
+
+                {selectedLot.status === "available" ? (
+                  <button
+                    className={`lotp-btn${apartarOpen ? " on" : " primary"}`}
+                    onClick={() => {
+                      if (apartarOpen) { setPanelMode(null); return; }
+                      setApartarUntil(toLocalInput(new Date(Date.now() + 7 * 86400000)));
+                      setApartarClient(null);
+                      setPanelMode("apartar");
+                    }}
+                  >
+                    <HiBookmark /> Apartar lote
+                  </button>
+                ) : null}
+
+                {selectedLot.status === "reserved" ? (
+                  <button
+                    className={`lotp-btn${apartarOpen ? " on" : ""}`}
+                    onClick={() => {
+                      if (apartarOpen) { setPanelMode(null); return; }
+                      setApartarUntil(selectedLot.reserved_until ? toLocalInput(new Date(selectedLot.reserved_until)) : "");
+                      setApartarClient(selectedLot.client_id ? { id: selectedLot.client_id, name: selectedLot.client_name } : null);
+                      setPanelMode("apartar");
+                    }}
+                  >
+                    Extender vencimiento
+                  </button>
+                ) : null}
+
+                {/* La venta es la acción principal en un lote ya apartado. */}
+                {selectedLot.status !== "sold" ? (
+                  <button
+                    className={`lotp-btn${panelMode === "venta" ? " on" : selectedLot.status === "reserved" ? " primary" : ""}`}
+                    onClick={() => {
+                      if (panelMode === "venta") { setPanelMode(null); return; }
+                      // El interesado del lote ya es el candidato natural a comprador.
+                      setVentaClient(selectedLot.client_id
+                        ? { id: selectedLot.client_id, name: selectedLot.client_name }
+                        : null);
+                      setPanelMode("venta");
+                    }}
+                  >
+                    Registrar venta
+                  </button>
+                ) : null}
+
+                <button
+                  className={`lotp-btn${showApptForm ? " on" : ""}`}
+                  onClick={() => {
+                    if (showApptForm) { setPanelMode(null); return; }
+                    // Se precarga el interesado del lote: casi siempre la cita es con él.
+                    const known = apartarClient
+                      || (selectedLot.client_id ? { id: selectedLot.client_id, name: selectedLot.client_name } : null);
+                    setApptDraft((p) => ({ ...p, client: known }));
+                    setPanelMode("cita");
+                  }}
+                >
+                  Agendar cita
+                </button>
+
+                {selectedLot.status === "reserved" ? (
+                  <>
+                    <div className="lotp-acts-sep" />
+                    <button className="lotp-btn sm danger" onClick={releaseLot} disabled={apartarBusy}>
+                      Liberar lote
+                    </button>
+                  </>
+                ) : null}
+              </div>
             </div>
-          </article>
-        </div>
+          </aside>
+        </div>,
+        document.body
       ) : null}
 
       {showCotizador && selectedLot ? (
-        <div className="frac-modal-overlay" onClick={(event) => event.target === event.currentTarget && setShowCotizador(false)}>
-          <article className="frac-calculator-modal">
+        <DialogPortal className="frac-modal-overlay lands-quote-dialog" onClick={(event) => event.target === event.currentTarget && setShowCotizador(false)}>
+          <article className="frac-calculator-modal" role="dialog" aria-modal="true" aria-label="Cotizador">
             <div className="frac-modal-head">
               <div className="frac-modal-id">$</div>
               <div>
@@ -858,30 +1234,10 @@ function FracsPage() {
                   <small>A financiar {currency(Math.round(financed))}</small>
                 </div>
               </aside>
-              <div className="frac-amort-table">
-                <table>
-                  <thead>
-                    <tr>
-                      {["#", "Saldo inicial", "Capital", "Interes", "Cuota", "Saldo final"].map((head) => <th key={head}>{head}</th>)}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {generateAmort(cotPrecioF, cotEnganche, cotTasa, cotPlazo).map((row) => (
-                      <tr key={row.n}>
-                        <td>{row.n}</td>
-                        <td>{currency(Math.round(row.saldoInicial))}</td>
-                        <td>{currency(Math.round(row.capital))}</td>
-                        <td>{currency(Math.round(row.interes))}</td>
-                        <td>{currency(Math.round(row.cuota))}</td>
-                        <td>{currency(Math.round(row.saldoFinal))}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <div className="lands-quote-explanation"><h3>{calculator.data?.name || "Plan de financiamiento"}</h3><p>{quote.error || "Mensualidad calculada con la misma fórmula activa que usa el contrato."}</p>{calculator.data?.variables?.filter(key => guessVarValue(key, quoteForm) === "").map(key => <label key={key}>{key}<input className="fi" type="number" value={quoteOverrides[key] ?? ""} onChange={event => setQuoteOverrides(previous => ({ ...previous, [key]: event.target.value }))} /></label>)}<p>El calendario definitivo de pagos se genera al registrar el contrato. Revisa el plan y las condiciones antes de confirmar la venta.</p></div>
             </div>
           </article>
-        </div>
+        </DialogPortal>
       ) : null}
 
 
@@ -897,7 +1253,7 @@ function FracsPage() {
           { title: "Plano interactivo", text: "Usa el scroll o pinch para hacer zoom. Haz clic en el plano para ver los lotes superpuestos con su estado (disponible, apartado, vendido)." },
           { title: "Filtrar lotes", text: "Los botones de estado en la barra superior filtran los lotes visibles en el plano. Combínalos con la búsqueda por sección o código." },
           { title: "Ficha de lote", text: "Selecciona un lote para ver su ficha completa: medidas, servicios disponibles, precio de contado y financiado, y vendedor asignado." },
-          { title: "Cotizador integrado", text: "Desde la ficha del lote puedes abrir el cotizador para simular el plan de pagos con amortización francesa o alemana." },
+          { title: "Cotizador integrado", text: "Desde la ficha del lote puedes abrir el cotizador para simular la mensualidad con la fórmula activa de la organización." },
           { title: "Agendar visita", text: "El botón 'Agendar' en la ficha del lote crea una cita en la agenda central vinculada al lote y al contacto del prospecto." },
         ]}
       />

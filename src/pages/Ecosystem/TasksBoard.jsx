@@ -1,3 +1,4 @@
+import WorkflowForm from "@/components/forms/WorkflowForm";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { HiOutlinePlus, HiOutlineTrash } from "react-icons/hi2";
@@ -90,6 +91,7 @@ export default function TasksBoard() {
   });
 
   const submitNew = () => {
+    if (createMut.isPending) return;
     const title = draft.trim();
     if (!title) { setAdding(false); return; }
     createMut.mutate({ title, status: "todo" });  // siempre entra en "Por hacer"
@@ -117,21 +119,20 @@ export default function TasksBoard() {
       </div>
 
       {adding && (
-        <div className="tb-add-bar">
+        <WorkflowForm className="tb-add-bar" busy={createMut.isPending} onSubmit={event => { event.preventDefault(); submitNew(); }}>
           <input
-            autoFocus
+            autoFocus required aria-label="Título de la tarea"
             value={draft}
             placeholder="¿Qué hay que hacer? — Enter para agregarla a Por hacer"
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") { e.preventDefault(); submitNew(); }
-              if (e.key === "Escape") { setAdding(false); setDraft(""); }
+              if (e.key === "Escape" && !createMut.isPending) { setAdding(false); setDraft(""); }
             }}
           />
-          <button className="tb-add-confirm" onClick={submitNew} disabled={!draft.trim() || createMut.isPending}>
+          <button type="submit" className="tb-add-confirm" disabled={!draft.trim() || createMut.isPending}>
             Agregar
           </button>
-        </div>
+        </WorkflowForm>
       )}
 
       {isLoading ? (

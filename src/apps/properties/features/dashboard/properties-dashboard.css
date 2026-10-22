@@ -1,0 +1,142 @@
+/* ── Inicio de Properties ──────────────────────────────────────────────────
+   La portada no es un catálogo de módulos: es la lista de lo que hoy espera
+   una decisión del administrador. Lo que ya está resuelto se resume y se
+   quita de enmedio. Nada en esta pantalla es decorativo: cada número sale
+   de un dato real, y lo que no existe no se dibuja. */
+
+.pd-page{
+  display:flex;
+  flex-direction:column;
+  gap:28px;
+  max-width:1240px;
+  padding:14px 2px 48px;
+  color:#18233a;
+}
+
+/* ── Encabezado ─────────────────────────────────────────────────────────── */
+.pd-hero{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:24px;align-items:stretch}
+.pd-hero-copy{display:flex;flex-direction:column;gap:14px;justify-content:center}
+.pd-date{margin:0;color:#4a5872;font-size:12px;font-weight:700;letter-spacing:.1em}
+.pd-hero-copy h1{
+  margin:0;
+  color:#18233a;
+  font-family:var(--font-title);
+  font-size:48px;
+  font-weight:600;
+  line-height:1.05;
+  letter-spacing:-.02em;
+}
+.pd-lede{margin:0;max-width:560px;color:#3a475e;font-size:16px;line-height:1.55}
+.pd-lede strong{color:#18233a}
+.pd-hero-actions{display:flex;flex-wrap:wrap;gap:12px;padding-top:6px}
+.pd-primary{
+  min-height:46px;padding:0 22px;border:0;border-radius:10px;
+  background:#1f6b5c;color:#fff;font-size:15px;font-weight:650;
+  transition:background .15s ease;
+}
+.pd-primary:hover{background:#164f44}
+.pd-ghost{
+  min-height:46px;padding:0 20px;border:1px solid #c9d2de;border-radius:10px;
+  background:#fff;color:#18233a;font-size:15px;font-weight:650;
+  transition:border-color .15s ease,background .15s ease;
+}
+.pd-ghost:hover{border-color:#9fb0c9;background:#f7f9fb}
+
+/* ── Tarjeta de configuración ───────────────────────────────────────────── */
+.pd-setup{
+  display:flex;flex-direction:column;gap:14px;
+  padding:24px;border:1px solid #e1e6ee;border-radius:16px;background:#fff;
+}
+.pd-setup>header{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.pd-setup h2{margin:0;font-size:15px;font-weight:700}
+.pd-setup>header span{color:#4a5872;font-size:13px;font-weight:650}
+.pd-bar{height:8px;overflow:hidden;border-radius:999px;background:#e6ebf2}
+.pd-bar>i{display:block;height:100%;background:#1f6b5c;transition:width .3s ease}
+.pd-setup ul{display:flex;flex-direction:column;gap:9px;margin:0;padding:0;list-style:none}
+.pd-setup li{display:flex;align-items:center;gap:10px;color:#18233a;font-size:13px;font-weight:650}
+.pd-setup li.is-done{color:#6a768b;font-weight:400;text-decoration:line-through}
+.pd-tick{
+  display:grid;width:18px;height:18px;flex:none;place-items:center;
+  box-sizing:border-box;border:2px solid #1f6b5c;border-radius:999px;color:#1f6b5c;font-size:11px;
+}
+.is-done .pd-tick{border-color:#1f6b5c;background:#1f6b5c;color:#fff}
+.pd-link{
+  display:inline-flex;align-items:center;gap:6px;width:max-content;
+  color:#1f6b5c;font-size:13px;font-weight:700;
+}
+.pd-link:hover{color:#164f44;text-decoration:underline}
+
+/* ── Indicadores ────────────────────────────────────────────────────────── */
+.pd-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.pd-kpis>button{
+  display:flex;flex-direction:column;gap:6px;
+  padding:20px;border:1px solid #e1e6ee;border-radius:14px;background:#fff;
+  color:#18233a;text-align:left;
+  transition:border-color .15s ease,transform .15s ease,box-shadow .15s ease;
+}
+.pd-kpis>button:hover{border-color:#c0cbda;transform:translateY(-1px);box-shadow:0 10px 24px rgba(21,41,63,.07)}
+.pd-kpis small{color:#4a5872;font-size:12px;font-weight:650}
+.pd-kpis strong{font-family:var(--font-title);font-size:36px;font-weight:600;line-height:1}
+.pd-kpis span{color:#4a5872;font-size:12px}
+.pd-kpis .is-alert{border-color:#f2cfc4;background:#fff6f3}
+.pd-kpis .is-alert small,.pd-kpis .is-alert strong{color:#9a3a24}
+.pd-kpis .is-alert span{color:#7a3424}
+.pd-mini-bar{display:block;height:6px;margin-top:4px;overflow:hidden;border-radius:999px;background:#e6ebf2}
+.pd-mini-bar>i{display:block;height:100%;background:#1f6b5c}
+
+/* ── Dos columnas ───────────────────────────────────────────────────────── */
+.pd-cols{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:24px;align-items:start}
+.pd-side{display:flex;flex-direction:column;gap:24px}
+.pd-card{
+  display:flex;flex-direction:column;
+  padding:24px;border:1px solid #e1e6ee;border-radius:16px;background:#fff;
+}
+.pd-card>header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-bottom:12px}
+.pd-card h2{margin:0;font-size:15px;font-weight:700}
+.pd-decisions h2{font-family:var(--font-title);font-size:23px;font-weight:600}
+
+.pd-decisions article{
+  display:flex;align-items:center;gap:16px;
+  padding:14px 0;border-top:1px solid #edf0f5;
+}
+.pd-decisions article>div{display:grid;gap:2px;min-width:0;flex:1}
+.pd-decisions strong{font-size:15px;font-weight:650}
+.pd-decisions small{color:#4a5872;font-size:13px}
+.pd-decisions article>button{
+  min-height:44px;padding:0 16px;flex:none;border-radius:10px;
+  background:#e6f1ee;color:#164f44;font-size:13px;font-weight:700;
+  transition:background .15s ease;
+}
+.pd-decisions article>button:hover{background:#d4e7e2}
+.pd-dot{width:10px;height:10px;flex:none;border-radius:999px;background:#3c6db4}
+.pd-dot.danger{background:#c2492f}
+.pd-dot.warning{background:#c98a1b}
+
+.pd-empty{margin:0;padding:10px 0 2px;color:#6a768b;font-size:13px}
+.pd-done-row{
+  display:flex;align-items:center;gap:10px;margin:0;
+  padding:9px 0;border-top:1px solid #edf0f5;color:#3a475e;font-size:13px;
+}
+.pd-done-row>svg{flex:none;color:#1f6b5c;font-size:16px}
+.pd-done-row strong{color:#18233a}
+
+.pd-quick{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pd-quick>button{
+  display:flex;align-items:center;gap:8px;
+  min-height:52px;padding:12px;border:1px solid #e1e6ee;border-radius:12px;
+  background:#f7f9fb;color:#18233a;font-size:13px;font-weight:650;text-align:left;
+  transition:border-color .15s ease,background .15s ease;
+}
+.pd-quick>button:hover{border-color:#c0cbda;background:#fff}
+.pd-quick svg{flex:none;color:#4a5872;font-size:17px}
+
+@media(max-width:1100px){
+  .pd-hero,.pd-cols{grid-template-columns:1fr}
+  .pd-kpis{grid-template-columns:1fr 1fr}
+}
+@media(max-width:620px){
+  .pd-hero-copy h1{font-size:34px}
+  .pd-kpis{grid-template-columns:1fr}
+  .pd-quick{grid-template-columns:1fr}
+  .pd-hero-actions>button{width:100%}
+}

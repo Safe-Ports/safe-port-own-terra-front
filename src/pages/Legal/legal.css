@@ -1,11 +1,13 @@
 /* Páginas legales públicas — identidad OwnTerra (verde bosque + crema). */
+@import url("https://fonts.googleapis.com/css2?family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&display=swap");
+
 .lg-root {
   --deep: #1E3D2B;
   --mid: #355E3B;
   --leaf: #6FAF6B;
-  --bg: #F4F1EA;
-  --sf: #FBFAF6;
-  --bd: #DCDAD2;
+  --bg: #F4F6F6;
+  --sf: #FFFFFF;
+  --bd: #E2E7E5;
   --tx: #2B3A2E;
   --mut: #6B7167;
   min-height: 100vh;
@@ -17,18 +19,18 @@
 }
 
 .lg-card {
-  max-width: 760px;
+  max-width: 1180px;
   margin: 0 auto;
   background: var(--sf);
   border: 1px solid var(--bd);
   border-radius: 18px;
-  padding: 40px 44px 32px;
+  padding: 48px 72px 36px;
   box-shadow: 0 1px 3px rgba(30, 61, 43, .06), 0 12px 32px rgba(30, 61, 43, .08);
 }
 
 .lg-brand {
   display: inline-block;
-  font-family: "Playfair Display", Georgia, serif;
+  font-family: var(--font-title);
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--deep);
@@ -36,31 +38,101 @@
   margin-bottom: 22px;
 }
 
-.lg-card h1 {
-  font-family: "Playfair Display", Georgia, serif;
-  font-size: 2rem;
+/* ── Cuerpo del documento legal: tipografía serif de principio a fin, como un
+   aviso redactado por abogados, no como el resto de la UI de producto.
+   Se usa tanto en /privacidad (.lg-card) como en el modal de consentimiento
+   (.legal-doc solo). ── */
+.legal-doc {
+  font-family: var(--legal-font, "PT Serif", Georgia, serif);
+}
+
+.legal-doc h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
   color: var(--deep);
   margin: 0 0 6px;
-  line-height: 1.15;
+  line-height: 1.2;
 }
-.lg-upd { font-size: .82rem; color: var(--mut); margin: 0 0 26px; }
+.lg-upd {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: .74rem;
+  color: var(--mut);
+  margin: 0 0 24px;
+  letter-spacing: .01em;
+}
 
-.lg-card h2 {
-  font-size: 1.05rem;
-  color: var(--mid);
-  margin: 28px 0 8px;
+.legal-doc h2 {
+  font-size: .92rem;
+  font-weight: 700;
+  color: var(--deep);
+  margin: 24px 0 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--bd);
+  letter-spacing: .01em;
 }
-.lg-card p { font-size: .95rem; line-height: 1.65; margin: 0 0 12px; }
-.lg-card ul { margin: 0 0 12px; padding-left: 20px; }
-.lg-card li { font-size: .95rem; line-height: 1.6; margin-bottom: 6px; }
-.lg-card a { color: var(--mid); font-weight: 600; }
-.lg-card code {
+.legal-doc h2:first-of-type { padding-top: 0; border-top: none; margin-top: 8px; }
+
+.legal-doc p {
+  font-size: .82rem;
+  line-height: 1.65;
+  margin: 0 0 11px;
+  text-align: justify;
+  hyphens: auto;
+}
+.legal-doc ul { margin: 0 0 11px; padding-left: 20px; }
+.legal-doc li {
+  font-size: .82rem;
+  line-height: 1.6;
+  margin-bottom: 6px;
+  text-align: justify;
+  hyphens: auto;
+}
+.legal-doc a { color: var(--mid); font-weight: 600; text-decoration: underline; }
+.legal-doc strong { font-weight: 700; color: var(--deep); }
+.legal-doc code {
+  font-family: "Inter", monospace;
   background: rgba(111, 175, 107, .14);
   color: var(--deep);
   padding: 1px 6px;
   border-radius: 6px;
   font-size: .88em;
 }
+
+.lg-table-wrap {
+  overflow-x: auto;
+  margin: 0 0 20px;
+  border: 1px solid var(--bd);
+  border-radius: 10px;
+}
+.legal-doc table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .82rem;
+}
+.legal-doc th {
+  text-align: left;
+  background: var(--bg);
+  color: var(--tx);
+  font-weight: 700;
+  padding: 10px 12px;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--bd);
+}
+.legal-doc td {
+  padding: 10px 12px;
+  border-top: 1px solid var(--bd);
+  vertical-align: top;
+}
+
+.lg-accept-row {
+  margin-top: 26px;
+  padding: 16px;
+  border-top: 2px solid var(--bd);
+  background: var(--bg);
+  border-radius: 0 0 10px 10px;
+  font-family: "Inter", system-ui, sans-serif;
+}
+.lg-accept-row a { font-family: inherit; }
 
 .lg-foot {
   display: flex;

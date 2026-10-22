@@ -26,6 +26,7 @@ export const routeMeta = {
   "/documentos": { title: "Documentos", icon: HiDocumentDuplicate },
   "/alertas": { title: "Alertas", icon: HiBellAlert },
   "/pagos": { title: "Pagos", icon: HiBellAlert },
+  "/ecosistema/recaudacion": { title: "Centro de Recaudación", icon: HiWallet },
   "/calculadora": { title: "Calculadora", icon: HiCalculator },
   "/perfil": { title: "Perfil", icon: HiUserCircle },
   "/configuracion": { title: "Configuración", icon: HiCog6Tooth },

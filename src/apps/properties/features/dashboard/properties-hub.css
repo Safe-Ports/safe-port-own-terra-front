@@ -1,0 +1,105 @@
+/* ── Todas las herramientas ────────────────────────────────────────────────
+   Antes era un selector de tres áreas con la lista dentro: dos clics para
+   llegar a cualquier destino y catorce entradas escondidas tras una pestaña.
+   Ahora es un solo nivel agrupado por el momento en que se usa cada cosa.
+
+   Arriba, la única acción que resuelve la operación completa de un golpe:
+   generar el periodo de un plan de cuota. Debajo, siempre, la salida manual. */
+
+.hub-page{
+  display:flex;
+  flex-direction:column;
+  gap:32px;
+  max-width:1240px;
+  padding:14px 2px 48px;
+  color:#18233a;
+}
+
+/* ── Operación del mes ──────────────────────────────────────────────────── */
+.hub-run{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:28px;
+  padding:26px 28px;
+  border:1px solid #d3e0da;
+  border-radius:18px;
+  background:linear-gradient(180deg,#f3f9f6,#fff);
+}
+.hub-run-period{margin:0 0 8px;color:#1f6b5c;font-size:11px;font-weight:800;letter-spacing:.12em}
+.hub-run h1{
+  margin:0 0 6px;
+  color:#18233a;
+  font-family:var(--font-title);
+  font-size:30px;
+  font-weight:600;
+  line-height:1.1;
+}
+.hub-run-copy>p{margin:0;max-width:62ch;color:#3a475e;font-size:14px;line-height:1.5}
+.hub-run-actions{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.hub-run-primary{
+  display:inline-flex;align-items:center;gap:8px;
+  min-height:48px;padding:0 24px;border-radius:11px;
+  background:#1f6b5c;color:#fff;font-size:15px;font-weight:700;white-space:nowrap;
+  transition:background .15s ease;
+}
+.hub-run-primary:hover{background:#164f44}
+.hub-run-manual{margin:0;color:#5b6880;font-size:12px;text-align:right}
+.hub-run-manual button{color:#1f6b5c;font-size:12px;font-weight:700}
+.hub-run-manual button:hover{text-decoration:underline}
+.hub-run-note{margin:0;color:#8a6a1c;font-size:12px;text-align:right}
+
+/* ── Grupos ─────────────────────────────────────────────────────────────── */
+.hub-group{display:flex;flex-direction:column;gap:14px}
+.hub-group>header{display:flex;flex-direction:column;gap:2px}
+.hub-group h2{
+  margin:0;
+  color:#18233a;
+  font-family:var(--font-title);
+  font-size:21px;
+  font-weight:600;
+}
+.hub-group>header>p{margin:0;color:#5b6880;font-size:13px}
+
+.hub-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.hub-grid>button{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:14px;
+  min-height:76px;
+  padding:16px 18px;
+  border:1px solid #e1e6ee;
+  border-radius:14px;
+  background:#fff;
+  color:#18233a;
+  text-align:left;
+  transition:border-color .15s ease,transform .15s ease,box-shadow .15s ease;
+}
+.hub-grid>button:hover{
+  border-color:#c0cbda;
+  transform:translateY(-1px);
+  box-shadow:0 10px 24px rgba(21,41,63,.07);
+}
+.hub-grid>button:focus-visible{outline:3px solid rgba(61,106,153,.35);outline-offset:2px}
+.hub-tile-icon{
+  display:grid;width:38px;height:38px;flex:none;place-items:center;
+  border-radius:11px;background:#eef2f7;color:#2f567f;font-size:19px;
+}
+.hub-tile-copy{display:grid;gap:3px;min-width:0}
+.hub-tile-copy strong{font-size:14px;font-weight:650}
+.hub-tile-copy small{color:#5b6880;font-size:12px;line-height:1.4}
+.hub-tile-arrow{flex:none;color:#9fadc0;font-size:14px;transition:color .15s ease,transform .15s ease}
+.hub-grid>button:hover .hub-tile-arrow{color:#2f567f;transform:translateX(2px)}
+
+@media(max-width:1080px){
+  .hub-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:720px){
+  .hub-run{grid-template-columns:1fr;gap:18px}
+  .hub-run-actions{align-items:stretch}
+  .hub-run-primary{justify-content:center}
+  .hub-run-manual,.hub-run-note{text-align:left}
+  .hub-grid{grid-template-columns:1fr}
+  .hub-run h1{font-size:24px}
+}

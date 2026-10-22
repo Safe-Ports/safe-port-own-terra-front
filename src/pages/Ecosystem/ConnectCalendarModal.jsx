@@ -1,3 +1,5 @@
+import useConfirmation from "@/hooks/useConfirmation";
+import DialogPortal from "@/components/ui/DialogPortal";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { calendarService } from "@/services/calendarService";
@@ -10,8 +12,10 @@ import useEscapeKey from "@/hooks/useEscapeKey";
  * que cree en OwnTerra aparece solo en su calendario (una vía, refresca c/ horas).
  */
 export default function ConnectCalendarModal({ onClose }) {
+  const { requestConfirmation, confirmationDialog } = useConfirmation();
   const [copied, setCopied] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [busy, setBusy] = useState(false);
   const qc = useQueryClient();
   const { showToast, showError } = useAppContext();
   useEscapeKey(onClose, true);
@@ -78,8 +82,48 @@ export default function ConnectCalendarModal({ onClose }) {
     }
   };
 
+  // El enlace da acceso a la agenda —nombre, teléfono y notas de cada cita— a
+  // quien lo tenga, sin sesión. Hasta ahora el modal advertía de eso pero no
+  // ofrecía forma de cortarlo. Son dos acciones distintas: cambiarlo sirve cuando
+  // se sospecha que se filtró pero se quiere seguir sincronizando; apagarlo es
+  // dejar de publicar.
+  const cambiarEnlace = async () => {
+    if (!await requestConfirmation(
+      "Se generará un enlace nuevo y el actual dejará de funcionar. " +
+      "Tendrás que volver a suscribirlo en tu calendario. ¿Continuar?"
+    )) return;
+    setBusy(true);
+    try {
+      await calendarService.rotate();
+      await qc.invalidateQueries({ queryKey: ["calendar-subscription"] });
+      showToast("Enlace cambiado. Vuelve a suscribirlo en tu calendario.");
+    } catch (e) {
+      showError(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const dejarDePublicar = async () => {
+    if (!await requestConfirmation(
+      "Tu agenda dejará de publicarse y el enlace no funcionará para nadie. " +
+      "Podrás volver a generarlo cuando quieras. ¿Continuar?"
+    )) return;
+    setBusy(true);
+    try {
+      await calendarService.revoke();
+      await qc.invalidateQueries({ queryKey: ["calendar-subscription"] });
+      showToast("Tu agenda ya no se publica.");
+      onClose();
+    } catch (e) {
+      showError(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
-    <div className="ag-modal-backdrop" onClick={onClose}>
+    <DialogPortal className="ag-modal-backdrop" onClick={onClose}>{confirmationDialog}
       <div className="ag-modal cc-modal" onClick={(e) => e.stopPropagation()}>
         <div className="ag-modal-head">
           <div>
@@ -135,6 +179,15 @@ export default function ConnectCalendarModal({ onClose }) {
               </div>
               <p className="cc-hint">🔒 Es un enlace privado y solo de lectura. No lo compartas: quien lo tenga puede ver tu agenda.</p>
 
+              <div className="cc-acciones">
+                <button type="button" className="cc-link-btn" onClick={cambiarEnlace} disabled={busy}>
+                  Cambiar enlace
+                </button>
+                <button type="button" className="cc-link-btn cc-danger" onClick={dejarDePublicar} disabled={busy}>
+                  Dejar de publicar mi agenda
+                </button>
+              </div>
+
               <div className="cc-steps">
                 <div className="cc-step">
                   <span className="cc-num">1</span>
@@ -161,6 +214,6 @@ export default function ConnectCalendarModal({ onClose }) {
           )}
         </div>
       </div>
-    </div>
+    </DialogPortal>
   );
 }

@@ -1,0 +1,255 @@
+/* ════════════════════════════════════════════════════════════════════
+   Centro de Recaudación (Stripe Connect) — estilos del mock.
+   Aislado bajo .eco-root .rec-* : hereda los tokens Aurora del Core
+   (--surface / --border / --deep / --leaf / --radius…). Sin colores nuevos.
+   ════════════════════════════════════════════════════════════════════ */
+
+.eco-root .rec-wrap { animation: eco-fadeUp .5s ease both; }
+
+/* ── Cabecera + badge de modo prueba ─────────────────────────────── */
+.eco-root .rec-hero {
+  display: flex; align-items: center; justify-content: space-between; gap: 18px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px; margin-bottom: 16px;
+  position: relative; overflow: hidden;
+}
+.eco-root .rec-hero::before {
+  content: ''; position: absolute; right: -70px; top: -90px; width: 280px; height: 280px;
+  border-radius: 50%; background: radial-gradient(circle, rgba(72,169,166,.14), transparent 70%);
+  pointer-events: none;
+}
+.eco-root .rec-hero > div { position: relative; z-index: 1; }
+.eco-root .rec-kicker {
+  font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--text3); font-weight: 700; margin-bottom: 8px;
+}
+.eco-root .rec-hero h2 {
+  font-family: var(--font-title); font-size: 27px; color: var(--deep);
+  line-height: 1.05; letter-spacing: -.2px;
+}
+.eco-root .rec-hero p { font-size: 13px; color: var(--text3); max-width: 620px; margin-top: 8px; }
+
+.eco-root .rec-testbadge {
+  display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0;
+  padding: 7px 13px; border-radius: 999px; font-size: 11.5px; font-weight: 700;
+  color: #8a6d1d; background: rgba(242,185,0,.13); border: 1px solid rgba(242,185,0,.34);
+}
+.eco-root .rec-testbadge::before {
+  content: ''; width: 7px; height: 7px; border-radius: 50%; background: #d9a400;
+}
+
+/* ── Tabs ───────────────────────────────────────────────────────── */
+.eco-root .rec-tabs {
+  display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border);
+}
+.eco-root .rec-tab {
+  appearance: none; border: 0; background: none; cursor: pointer;
+  font-family: var(--font-body); font-size: 13.5px; font-weight: 600;
+  color: var(--text3); padding: 12px 16px; position: relative; white-space: nowrap;
+  transition: color .15s;
+}
+.eco-root .rec-tab:hover { color: var(--text2); }
+.eco-root .rec-tab.is-active { color: var(--deep); }
+.eco-root .rec-tab.is-active::after {
+  content: ''; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 2.5px;
+  border-radius: 2px; background: var(--leaf);
+}
+
+/* ── Cards genéricas ────────────────────────────────────────────── */
+.eco-root .rec-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 22px;
+}
+.eco-root .rec-card + .rec-card { margin-top: 16px; }
+.eco-root .rec-card-head { margin-bottom: 4px; }
+.eco-root .rec-card-title {
+  font-family: var(--font-title); font-size: 19px; color: var(--deep); letter-spacing: -.2px;
+}
+.eco-root .rec-card-sub { font-size: 12.5px; color: var(--text3); margin-top: 4px; }
+
+.eco-root .rec-split {
+  display: grid; grid-template-columns: 360px 1fr; gap: 16px; align-items: start;
+}
+@media (max-width: 1040px) { .eco-root .rec-split { grid-template-columns: 1fr; } }
+
+/* ── Botones ────────────────────────────────────────────────────── */
+.eco-root .rec-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 38px; padding: 0 16px; border-radius: 11px; cursor: pointer;
+  font-family: var(--font-body); font-size: 12.5px; font-weight: 700; white-space: nowrap;
+  border: 1px solid var(--border2); background: var(--surface); color: var(--text2);
+  transition: all .15s;
+}
+.eco-root .rec-btn:hover { background: var(--surface2); transform: translateY(-1px); }
+.eco-root .rec-btn-primary {
+  border: 0; color: var(--cream);
+  background: linear-gradient(140deg, var(--mid), var(--deep));
+  box-shadow: 0 6px 16px rgba(7,57,60,.22);
+}
+.eco-root .rec-btn-primary:hover { filter: brightness(1.08); }
+.eco-root .rec-btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+.eco-root .rec-btn-sm { min-height: 32px; padding: 0 12px; font-size: 11.5px; }
+
+/* ── Segmented control (tipo de link) ──────────────────────────── */
+.eco-root .rec-seg {
+  display: flex; gap: 4px; padding: 4px; border-radius: 12px;
+  background: var(--surface2); border: 1px solid var(--border);
+}
+.eco-root .rec-seg-btn {
+  flex: 1; appearance: none; border: 0; cursor: pointer; padding: 8px 10px;
+  border-radius: 9px; font-family: var(--font-body); font-size: 12.5px; font-weight: 700;
+  color: var(--text3); background: none; transition: all .15s;
+}
+.eco-root .rec-seg-btn.is-on { background: var(--surface); color: var(--deep); box-shadow: 0 2px 8px rgba(7,57,60,.10); }
+
+/* ── Tag de tipo en la lista ───────────────────────────────────── */
+.eco-root .rec-tag {
+  display: inline-block; margin-right: 8px; padding: 2px 8px; border-radius: 6px;
+  font-family: var(--font-body); font-size: 10px; font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase; vertical-align: middle;
+}
+.eco-root .rec-tag.is-reusable { color: var(--mid); background: rgba(44,102,110,.12); }
+.eco-root .rec-tag.is-unico { color: var(--deep); background: rgba(72,169,166,.16); }
+
+/* ── Formulario ─────────────────────────────────────────────────── */
+.eco-root .rec-field-row { display: flex; gap: 10px; }
+.eco-root .rec-field-row .rec-field { flex: 1; }
+.eco-root .rec-field { margin-bottom: 14px; }
+.eco-root .rec-label {
+  display: block; font-size: 10px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--text3); margin-bottom: 6px;
+}
+.eco-root .rec-input, .eco-root .rec-select, .eco-root .rec-textarea {
+  width: 100%; border: 1px solid var(--border2); background: var(--surface);
+  border-radius: 11px; padding: 10px 12px; font-family: var(--font-body);
+  font-size: 13px; color: var(--text); outline: none; transition: border-color .15s;
+}
+.eco-root .rec-input:focus, .eco-root .rec-select:focus, .eco-root .rec-textarea:focus {
+  border-color: var(--leaf);
+}
+.eco-root .rec-textarea { resize: vertical; min-height: 74px; }
+.eco-root .rec-hint { font-size: 11.5px; color: var(--text3); margin-top: 6px; }
+.eco-root .rec-check { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text2); white-space: nowrap; }
+.eco-root .rec-check input { width: 15px; height: 15px; accent-color: var(--leaf); flex-shrink: 0; }
+.eco-root .rec-methods { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: 4px; }
+
+/* ── Tabla ──────────────────────────────────────────────────────── */
+.eco-root .rec-tablewrap { overflow-x: auto; }
+.eco-root .rec-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.eco-root .rec-table thead th {
+  text-align: left; font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--text3); font-weight: 700; padding: 0 14px 10px; border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.eco-root .rec-table tbody td {
+  padding: 14px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle;
+}
+.eco-root .rec-table tbody tr:last-child td { border-bottom: 0; }
+.eco-root .rec-table tbody tr:hover td { background: var(--surface2); }
+.eco-root .rec-num { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.eco-root .rec-th-num { text-align: right; }
+.eco-root .rec-sub { font-size: 11.5px; color: var(--text3); }
+.eco-root .rec-strong { font-weight: 600; color: var(--text); }
+
+/* ── Pills de estado ────────────────────────────────────────────── */
+.eco-root .rec-pill {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px;
+  border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap;
+}
+.eco-root .rec-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.eco-root .rec-pill.is-ok      { color: #1f7a3d; background: rgba(31,122,61,.12); }
+.eco-root .rec-pill.is-wait    { color: #8a6d1d; background: rgba(242,185,0,.15); }
+.eco-root .rec-pill.is-fail    { color: var(--danger); background: rgba(192,57,43,.12); }
+.eco-root .rec-pill.is-muted   { color: var(--text3); background: var(--surface2); }
+
+/* ── Cuentas ────────────────────────────────────────────────────── */
+.eco-root .rec-acct {
+  display: flex; align-items: center; gap: 14px; padding: 16px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface);
+}
+.eco-root .rec-acct + .rec-acct { margin-top: 10px; }
+.eco-root .rec-acct-ico {
+  width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0; display: flex;
+  align-items: center; justify-content: center; color: var(--deep);
+  background: linear-gradient(150deg, #fff, #eef2ea); box-shadow: 0 8px 18px rgba(7,57,60,.10);
+}
+.eco-root .rec-acct-ico svg { width: 22px; height: 22px; }
+.eco-root .rec-acct-body { flex: 1; min-width: 0; }
+.eco-root .rec-acct-name { font-weight: 600; color: var(--text); }
+.eco-root .rec-acct-meta { font-size: 11.5px; color: var(--text3); font-variant-numeric: tabular-nums; }
+
+/* ── Link de cobro (lista) ──────────────────────────────────────── */
+.eco-root .rec-link {
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 18px; background: var(--surface);
+}
+.eco-root .rec-link + .rec-link { margin-top: 12px; }
+.eco-root .rec-link-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.eco-root .rec-link-name { font-family: var(--font-title); font-size: 17px; color: var(--deep); }
+.eco-root .rec-link-desc { font-size: 12.5px; color: var(--text3); margin-top: 3px; }
+.eco-root .rec-link-route {
+  font-size: 12px; color: var(--text2); margin-top: 10px; display: flex; align-items: center; gap: 6px;
+}
+.eco-root .rec-link-route b { color: var(--deep); }
+.eco-root .rec-urlrow { display: flex; gap: 8px; margin-top: 12px; }
+.eco-root .rec-url {
+  flex: 1; min-width: 0; border: 1px solid var(--border2); background: var(--surface2);
+  border-radius: 10px; padding: 9px 12px; font-size: 12px; color: var(--text2);
+  font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ── KPIs ───────────────────────────────────────────────────────── */
+.eco-root .rec-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 16px; }
+.eco-root .rec-kpi {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 20px; display: flex; align-items: center; gap: 14px;
+}
+.eco-root .rec-kpi-ico {
+  width: 46px; height: 46px; border-radius: 13px; flex-shrink: 0; display: flex;
+  align-items: center; justify-content: center; color: var(--deep);
+  background: linear-gradient(150deg, #fff, #EEF1F1); box-shadow: 0 8px 18px rgba(7,57,60,.10);
+}
+.eco-root .rec-kpi-ico svg { width: 22px; height: 22px; }
+.eco-root .rec-kpi-label { font-size: 12px; color: var(--text3); }
+.eco-root .rec-kpi-value { font-family: var(--font-title); font-size: 24px; color: var(--deep); font-variant-numeric: tabular-nums; }
+.eco-root .rec-kpi-value small { font-family: var(--font-body); font-size: 12px; color: var(--text3); font-weight: 600; margin-left: 4px; }
+.eco-root .rec-delta { font-size: 12px; font-weight: 700; color: #1f7a3d; }
+
+/* ── Estado vacío ──────────────────────────────────────────────── */
+.eco-root .rec-empty {
+  padding: 48px 20px; text-align: center; color: var(--text3); font-size: 13px;
+  border: 1px dashed var(--border2); border-radius: var(--radius-sm);
+}
+.eco-root .rec-empty b { display: block; color: var(--text2); font-size: 14px; margin-bottom: 4px; }
+
+/* ── Nota legal ────────────────────────────────────────────────── */
+.eco-root .rec-legal {
+  margin-top: 14px; font-size: 11.5px; color: var(--text3); line-height: 1.5;
+  padding: 12px 14px; border-radius: 12px; background: var(--surface2);
+  border: 1px solid var(--border);
+}
+
+/* ── Modal ─────────────────────────────────────────────────────── */
+.eco-root .rec-overlay {
+  position: fixed; inset: 0; z-index: 120; display: flex; align-items: center; justify-content: center;
+  background: rgba(7,57,60,.32); backdrop-filter: blur(3px); padding: 20px;
+}
+.eco-root .rec-modal {
+  width: min(100%, 520px); background: var(--surface); border: 1px solid var(--border2);
+  border-radius: var(--radius); overflow: hidden; box-shadow: 0 30px 80px rgba(7,57,60,.28);
+}
+.eco-root .rec-modal-head {
+  display: flex; align-items: flex-start; gap: 12px; padding: 20px 22px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.eco-root .rec-modal-title { font-family: var(--font-title); font-size: 18px; color: var(--deep); }
+.eco-root .rec-modal-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.eco-root .rec-modal-close {
+  margin-left: auto; width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+  border: 1px solid var(--border2); background: var(--surface); color: var(--text3);
+}
+.eco-root .rec-modal-body { padding: 18px 22px; }
+.eco-root .rec-modal-foot {
+  display: flex; gap: 10px; justify-content: flex-end; padding: 14px 22px 20px;
+  border-top: 1px solid var(--border);
+}

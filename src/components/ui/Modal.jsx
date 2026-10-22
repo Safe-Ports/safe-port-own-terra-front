@@ -1,15 +1,7 @@
+import { useRef } from "react";
+import DialogPortal from "./DialogPortal";
+import { HiXMark } from "react-icons/hi2";
 import useEscapeKey from "@/hooks/useEscapeKey";
-
-const ICON_LABELS = {
-  "🔍": "SE",
-  "👤": "CL",
-  "💳": "PG",
-  "👁": "PV",
-  "🖨": "RP",
-  "📁": "DC",
-  "📄": "CT",
-  "▦": "LT",
-};
 
 function Modal({
   open,
@@ -22,14 +14,17 @@ function Modal({
   footer,
   overlayClassName = "",
 }) {
-  useEscapeKey(onClose, open);
+  const box = useRef(null);
+  const isSaving = () => Boolean(box.current?.querySelector('form[aria-busy="true"]'));
+  const close = () => { if (!isSaving()) onClose?.(); };
+  useEscapeKey(close, open);
 
   if (!open) return null;
-  const visualIcon = typeof icon === "string" ? ICON_LABELS[icon] || icon : icon;
 
   return (
-    <div className={`modal-overlay open ${overlayClassName}`.trim()} onClick={onClose}>
+    <DialogPortal className={`modal-overlay open ${overlayClassName}`.trim()} onClick={close}>
       <div
+        ref={box}
         className={`modal-box ${width}`}
         role="dialog"
         aria-modal="true"
@@ -37,19 +32,21 @@ function Modal({
         onClick={(event) => event.stopPropagation()}
       >
         <div className="modal-hd">
-          <div className="modal-ico">{visualIcon}</div>
+          <div className="modal-ico">{icon}</div>
           <div>
             <div className="modal-title">{title}</div>
             {subtitle ? <div className="modal-sub">{subtitle}</div> : null}
           </div>
-          <button className="modal-close" onClick={onClose} aria-label="Cerrar">
-            ✕
+          <button className="modal-close" onClick={close} aria-label="Cerrar">
+            <HiXMark />
           </button>
         </div>
         <div className="modal-body">{children}</div>
-        {footer ? <div className="modal-foot">{footer}</div> : null}
+        {footer ? <div className="modal-foot" onClickCapture={event => {
+          if (isSaving()) { event.preventDefault(); event.stopPropagation(); }
+        }}>{footer}</div> : null}
       </div>
-    </div>
+    </DialogPortal>
   );
 }
 

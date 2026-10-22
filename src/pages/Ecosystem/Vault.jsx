@@ -1,8 +1,11 @@
+import useConfirmation from "@/hooks/useConfirmation";
+import WorkflowForm from "@/components/forms/WorkflowForm";
+import DialogPortal from "@/components/ui/DialogPortal";
 import { Fragment, useEffect, useRef, useState } from "react";
 import GuideModal from "@/components/shared/GuideModal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { SkeletonRows } from "@/components/ui/Skeleton";
-import { HiOutlineEllipsisVertical, HiOutlineFolderPlus, HiOutlinePencil, HiOutlineTrash } from "react-icons/hi2";
+import { HiOutlineEllipsisVertical, HiOutlineFolderPlus, HiOutlineLockClosed, HiOutlinePencil, HiOutlineTrash } from "react-icons/hi2";
 import { documentService, filenameForDocument } from "@/services/documentService";
 import { folderService } from "@/services/folderService";
 import { useAppContext } from "@/context/AppContext";
@@ -30,6 +33,7 @@ const DownloadIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="current
 const SearchIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>);
 
 function EcosystemVault() {
+  const { requestConfirmation, confirmationDialog } = useConfirmation();
   const qc = useQueryClient();
   const { downloadDocument, showToast, showError } = useAppContext();
   const [activeId, setActiveId] = useState(null);
@@ -45,6 +49,7 @@ function EcosystemVault() {
   const [uploadFile, setUploadFile] = useState(null);
   const menuRef = useRef(null);
   useEscapeKey(() => {
+    if (uploadMutation.isPending) return;
     setModal(null);
     setUploadFile(null);
   }, Boolean(modal));
@@ -81,6 +86,7 @@ function EcosystemVault() {
     onSuccess: (created) => {
       qc.invalidateQueries({ queryKey: ["folders"] });
       setActiveId(String(created.id));
+      setNewIn(null); setNewName("");
       showToast("Carpeta creada");
     },
     onError: (err) => showError(err, "Error al crear la carpeta"),
@@ -88,7 +94,7 @@ function EcosystemVault() {
 
   const renameFolderMutation = useMutation({
     mutationFn: ({ id, name }) => folderService.update(id, { name }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["folders"] }); showToast("Carpeta renombrada"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["folders"] }); setEditingId(null); showToast("Carpeta renombrada"); },
     onError: (err) => showError(err, "Error al renombrar la carpeta"),
   });
 
@@ -137,25 +143,26 @@ function EcosystemVault() {
 
   const startCreate = (parentId) => { setNewIn(parentId); setNewName(""); setMenuFor(null); if (parentId !== "__root__") setExpanded((p) => new Set(p).add(parentId)); };
   const commitCreate = () => {
+    if (createFolderMutation.isPending) return;
     if (!newName.trim()) { setNewIn(null); return; }
     const parent_id = newIn === "__root__" ? undefined : newIn;
     createFolderMutation.mutate({ name: newName.trim(), parent_id });
-    setNewIn(null); setNewName("");
   };
 
   const startRename = (f) => { setEditingId(String(f.id)); setEditName(f.name); setMenuFor(null); };
   const commitRename = () => {
+    if (renameFolderMutation.isPending) return;
     if (editName.trim()) renameFolderMutation.mutate({ id: editingId, name: editName.trim() });
-    setEditingId(null);
   };
 
-  const deleteFolder = (id) => {
+  const deleteFolder = async (id) => {
     setMenuFor(null);
-    if (!window.confirm("¿Eliminar esta carpeta? Los documentos dentro se conservarán sin carpeta.")) return;
+    if (!await requestConfirmation("¿Eliminar esta carpeta? Los documentos dentro se conservarán sin carpeta.")) return;
     deleteFolderMutation.mutate(id);
   };
 
   const saveDoc = () => {
+    if (uploadMutation.isPending) return;
     if (!uploadFile) {
       showToast("Selecciona un archivo para subir");
       return;
@@ -189,7 +196,10 @@ function EcosystemVault() {
               onKeyDown={(e) => { if (e.key === "Enter") commitRename(); if (e.key === "Escape") setEditingId(null); }} />
           ) : (
             <span className="vlt-finfo">
-              <span className="vlt-fname" style={{ display: "flex" }}>{f.name}</span>
+              <span className="vlt-fname" style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                {f.name}
+                {f.app_key && <HiOutlineLockClosed title="Carpeta de sistema: no se puede eliminar" style={{ opacity: 0.5, fontSize: "0.85em" }} />}
+              </span>
             </span>
           )}
           <span className="vlt-fcnt">{f.document_count || 0}</span>
@@ -200,7 +210,9 @@ function EcosystemVault() {
             <div ref={menuRef} className="vlt-menu" onClick={(e) => e.stopPropagation()}>
               <button onClick={() => startCreate(fid)}><HiOutlineFolderPlus /> Nueva subcarpeta</button>
               <button onClick={() => startRename(f)}><HiOutlinePencil /> Renombrar</button>
-              <button className="danger" onClick={() => deleteFolder(fid)}><HiOutlineTrash /> Eliminar</button>
+              {!f.app_key && (
+                <button className="danger" onClick={() => deleteFolder(fid)}><HiOutlineTrash /> Eliminar</button>
+              )}
             </div>
           )}
         </div>
@@ -220,7 +232,7 @@ function EcosystemVault() {
   };
 
   return (
-    <EcoLayout active="vault" title="OwnTerra Vault" subtitle="Bóveda de documentos del ecosistema" onGuide={() => setShowGuide(true)}>
+    <EcoLayout active="vault" title="OwnTerra Vault" subtitle="Bóveda de documentos del ecosistema" onGuide={() => setShowGuide(true)}>{confirmationDialog}
 
       <div className="section-head">
         <h3>Bóveda de documentos</h3>
@@ -307,7 +319,7 @@ function EcosystemVault() {
                           className="usr-dl"
                           style={{ color: "var(--danger)", marginLeft: 4 }}
                           title="Eliminar"
-                          onClick={() => window.confirm(`¿Eliminar "${d.name}"?`) && deleteDocMutation.mutate(d.id)}
+                          onClick={async () => await requestConfirmation(`¿Eliminar "${d.name}"?`) && deleteDocMutation.mutate(d.id)}
                         >
                           <HiOutlineTrash />
                         </button>
@@ -327,47 +339,47 @@ function EcosystemVault() {
 
       {/* MODAL subir documento */}
       {modal && active && (
-        <div className="usr-modal-overlay" onClick={(e) => {
-          if (e.target === e.currentTarget) {
+        <DialogPortal className="usr-modal-overlay" onClick={(e) => {
+          if (e.target === e.currentTarget && !uploadMutation.isPending) {
             setModal(null);
             setUploadFile(null);
           }
         }}>
-          <div className="usr-modal">
+          <div className="usr-modal" role="dialog" aria-modal="true" aria-label="Subir documento">
             <div className="usr-modal-head">
               <div>
                 <div className="usr-modal-title">Subir documento</div>
                 <div className="usr-modal-sub">{ancestors(activeId).map((a) => a.name).join(" › ")} · bóveda del ecosistema</div>
               </div>
-              <button className="usr-modal-close" onClick={() => { setModal(null); setUploadFile(null); }}>×</button>
+              <button disabled={uploadMutation.isPending} className="usr-modal-close" onClick={() => { setModal(null); setUploadFile(null); }}>×</button>
             </div>
-            <div className="usr-modal-body">
+            <WorkflowForm id="core-vault-form" busy={uploadMutation.isPending} className="usr-modal-body" onSubmit={event => { event.preventDefault(); saveDoc(); }}>
               <div className="usr-field">
-                <label className="usr-field-lbl">Archivo</label>
-                <input className="usr-input" type="file" onChange={(e) => {
+                <label htmlFor="field-ecosystem-vault-1" className="usr-field-lbl">Archivo</label>
+                <input id="field-ecosystem-vault-1" className="usr-input" type="file" onChange={(e) => {
                   const f = e.target.files?.[0];
                   if (f) { setUploadFile(f); setModal((m) => ({ ...m, name: m.name || f.name })); }
                 }} />
               </div>
               <div className="usr-field">
-                <label className="usr-field-lbl">Nombre del documento</label>
-                <input className="usr-input" placeholder="Ej. Plantilla_pagare.docx" value={modal.name} onChange={(e) => setModal((m) => ({ ...m, name: e.target.value }))} />
+                <label htmlFor="field-ecosystem-vault-2" className="usr-field-lbl">Nombre del documento</label>
+                <input id="field-ecosystem-vault-2" className="usr-input" placeholder="Ej. Plantilla_pagare.docx" value={modal.name} onChange={(e) => setModal((m) => ({ ...m, name: e.target.value }))} />
               </div>
               <div className="usr-field">
-                <label className="usr-field-lbl">Categoría</label>
-                <select className="usr-select" value={modal.category} onChange={(e) => setModal((m) => ({ ...m, category: e.target.value }))}>
+                <label htmlFor="field-ecosystem-vault-3" className="usr-field-lbl">Categoría</label>
+                <select id="field-ecosystem-vault-3" className="usr-select" value={modal.category} onChange={(e) => setModal((m) => ({ ...m, category: e.target.value }))}>
                   {CATEGORIES.map((c) => <option key={c} value={c}>{CAT_LABEL[c]}</option>)}
                 </select>
               </div>
-            </div>
+            </WorkflowForm>
             <div className="usr-modal-foot">
-              <button className="usr-btn-ghost" onClick={() => { setModal(null); setUploadFile(null); }}>Cancelar</button>
-              <button className="usr-btn-primary" onClick={saveDoc} disabled={uploadMutation.isPending || !uploadFile}>
+              <button disabled={uploadMutation.isPending} className="usr-btn-ghost" onClick={() => { setModal(null); setUploadFile(null); }}>Cancelar</button>
+              <button className="usr-btn-primary" type="submit" form="core-vault-form" disabled={uploadMutation.isPending || !uploadFile}>
                 {uploadMutation.isPending ? "Subiendo…" : "✓ Guardar"}
               </button>
             </div>
           </div>
-        </div>
+        </DialogPortal>
       )}
       <GuideModal
         open={showGuide}

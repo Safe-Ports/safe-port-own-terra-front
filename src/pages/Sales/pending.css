@@ -1,0 +1,132 @@
+/* Bandeja de contratos por aprobar. Sólo aparece cuando hay algo que resolver,
+   así que puede permitirse destacar sin volverse ruido de fondo. */
+
+.pa-card {
+  border: 1px solid rgba(176, 121, 31, .35);
+  background: linear-gradient(180deg, rgba(251, 240, 220, .55), var(--sf));
+  border-radius: 20px;
+  padding: 18px;
+  margin-bottom: 16px;
+}
+
+.pa-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.pa-ico {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: #b0791f;
+  color: #fff;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.pa-title { font-weight: 700; color: var(--tx); font-size: .95rem; }
+.pa-sub { font-size: .8rem; color: var(--tx2); margin-top: 2px; max-width: 70ch; }
+
+.pa-count {
+  margin-left: auto;
+  align-self: center;
+  background: #b0791f;
+  color: #fff;
+  font-weight: 800;
+  font-size: .82rem;
+  min-width: 30px;
+  height: 30px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 9px;
+  flex-shrink: 0;
+}
+
+.pa-err { margin-bottom: 12px; }
+
+.pa-list { display: flex; flex-direction: column; gap: 9px; list-style: none; padding: 0; margin: 0; }
+
+.pa-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--bd);
+  background: var(--sf);
+}
+
+.pa-item-id { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.pa-item-id strong { font-size: .86rem; color: var(--tx); }
+.pa-item-id span { font-size: .8rem; color: var(--tx2); margin-top: 2px; }
+.pa-item-id small { font-size: .72rem; color: var(--mu); margin-top: 2px; }
+
+.pa-actions, .pa-reject { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pa-reject { flex: 1; min-width: 280px; }
+
+.pa-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--bd);
+  background: var(--sf2);
+  color: var(--tx);
+  font-family: var(--font-body);
+  font-size: .8rem;
+}
+
+.pa-input:focus { outline: none; border-color: #b0791f; }
+
+.pa-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: .78rem;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  transition: background .2s cubic-bezier(.2, .8, .2, 1), border-color .2s cubic-bezier(.2, .8, .2, 1);
+}
+
+.pa-btn:disabled { opacity: .55; cursor: default; }
+
+/* Aprobar y rechazar llevan color semántico, no el de la marca: lo que dicen es
+   "esto sale bien" o "esto se frena", y eso no cambia con la paleta. */
+.pa-btn-si { background: #2F6A38; color: #fff; border-color: #2F6A38; }
+.pa-btn-si:hover:not(:disabled) { background: #255730; }
+
+.pa-btn-no { background: #C0392B; color: #fff; border-color: #C0392B; }
+.pa-btn-no:hover:not(:disabled) { background: #a5301f; }
+
+.pa-btn-ghost { background: transparent; color: var(--tx2); border-color: var(--bd); }
+.pa-btn-ghost:hover:not(:disabled) { background: var(--sf2); }
+
+/* Estado del contrato en el repositorio */
+.pc-chip.pending-approval { background: #FBF0DC; color: #8A6111; border: 1px solid rgba(176, 121, 31, .3); }
+.pc-chip.rejected { background: #FBE7E4; color: #9C3A2E; border: 1px solid rgba(192, 57, 43, .28); }
+
+.pa-reason {
+  display: block;
+  font-size: .72rem;
+  color: #9C3A2E;
+  margin-top: 3px;
+  max-width: 34ch;
+}
+
+@media (max-width: 720px) {
+  .pa-item { align-items: stretch; }
+  .pa-actions, .pa-reject { width: 100%; }
+}

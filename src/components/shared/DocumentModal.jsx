@@ -1,233 +1,46 @@
-import { useEffect, useRef, useState } from "react";
+import InlineError from "@/components/shared/InlineError";
+import { parseApiError } from "@/errors/parseApiError";
+import WorkflowForm from "@/components/forms/WorkflowForm";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
 import Modal from "@/components/ui/Modal";
 import FieldError from "@/components/shared/FieldError";
-import { useFieldErrors } from "@/hooks/useFieldErrors";
-import { HiOutlineMagnifyingGlass } from "react-icons/hi2";
+import DocumentUploadFields, { useDocumentUpload } from "@/components/shared/DocumentUploadFields";
+import ClientPicker from "@/components/shared/ClientPicker";
+import ContractPicker from "@/components/shared/ContractPicker";
+import { clientService } from "@/services/clientService";
+import { HiOutlineFolder } from "react-icons/hi2";
 
-const CATEGORIES = [
-  { value: "contrato", label: "Contrato" },
-  { value: "identificacion", label: "Identificación" },
-  { value: "comprobante", label: "Comprobante" },
-  { value: "escritura", label: "Escritura" },
-  { value: "plano", label: "Plano" },
-  { value: "otro", label: "Otro" },
-];
-
-const ENTITY_TYPES = [
-  { value: "", label: "Sin vincular" },
-  { value: "contract", label: "Contrato" },
-  { value: "client", label: "Cliente" },
-];
-
-function DocumentModal() {
-  const { ui, closeModal, saveDocument, clients, contracts, documentDraft, resetDocumentDraft } = useAppContext();
-  const fileRef = useRef(null);
-  const [fileName, setFileName] = useState("");
+function DocumentForm() {
+  const { closeModal, saveDocument, documentDraft, resetDocumentDraft } = useAppContext();
+  const ctl = useDocumentUpload(documentDraft || {});
+  const [linkType, setLinkType] = useState(documentDraft?.linkType || "");
+  const [linkedId, setLinkedId] = useState(documentDraft?.linkedId || "");
   const [uploading, setUploading] = useState(false);
-  const [form, setForm] = useState({
-    name: "",
-    category: "contrato",
-    linkType: "",
-    linkedId: "",
-    notes: "",
-  });
-
-  /* ── Client search state ── */
-  const [clientSearch, setClientSearch] = useState("");
-  const [showClientDrop, setShowClientDrop] = useState(false);
-  const clientDropRef = useRef(null);
-
-  useEffect(() => {
-    if (!showClientDrop) return;
-    const handler = (e) => { if (!clientDropRef.current?.contains(e.target)) setShowClientDrop(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [showClientDrop]);
-
-  useEffect(() => {
-    if (!ui.documentModal) return;
-    fileRef.current = null;
-    setFileName("");
-    setUploading(false);
-    setClientSearch("");
-    setShowClientDrop(false);
-    setForm({
-      name: documentDraft?.name || "",
-      category: documentDraft?.category || "contrato",
-      linkType: documentDraft?.linkType || "",
-      linkedId: documentDraft?.linkedId || "",
-      folderId: documentDraft?.folderId || "",
-      notes: documentDraft?.notes || "",
-    });
-  }, [documentDraft, ui.documentModal]);
-
-  const fe = useFieldErrors();
-  const set = (key) => (e) => { const v = e.target.value; setForm((p) => ({ ...p, [key]: v })); fe.clear(key); };
-
-  const handleFile = (file) => {
-    if (!file) return;
-    fileRef.current = file;
-    setFileName(file.name);
-    fe.clear("file");
-    setForm((p) => ({ ...p, name: p.name || file.name.replace(/\.[^.]+$/, "") }));
-  };
-
-  const matchingContracts = contracts.filter(
-    (c) => !form.linkedId || String(c.client?.id) === form.linkedId || form.linkType !== "client"
-  );
-
-  const handleSave = async () => {
+  const [linkError, setLinkError] = useState("");
+  const client = useQuery({ queryKey: ["client", String(linkedId)], queryFn: () => clientService.get(linkedId), enabled: linkType === "client" && !!linkedId });
+  const close = () => { if (!uploading) { resetDocumentDraft(); closeModal("documentModal"); } };
+  const save = async () => {
     if (uploading) return;
-    // Validación de llenado por campo (no toast general).
-    const errs = {};
-    if (!form.name || !form.name.trim()) errs.name = "Ponle un nombre al documento.";
-    if (!fileRef.current) errs.file = "Selecciona un archivo para subir.";
-    fe.setErrors(errs);
-    if (Object.keys(errs).length) return;
+    const valid = ctl.validate();
+    setLinkError(linkType && !linkedId ? "Selecciona el registro al que pertenece el documento." : "");
+    if (!valid || (linkType && !linkedId)) return;
     setUploading(true);
-    try {
-      await saveDocument({ ...form, folderId: documentDraft?.folderId || undefined }, fileRef.current || null);
-    } finally {
-      setUploading(false);
-    }
+    try { await saveDocument({ ...ctl.form, linkType, linkedId }, ctl.file); }
+    finally { setUploading(false); }
   };
-
-  return (
-    <Modal
-      open={ui.documentModal}
-      icon="📁"
-      title="Subir documento"
-      subtitle="Expediente documental"
-      onClose={() => { resetDocumentDraft(); closeModal("documentModal"); }}
-      footer={
-        <>
-          <button className="btn-s" onClick={() => { resetDocumentDraft(); closeModal("documentModal"); }} disabled={uploading}>Cancelar</button>
-          <button className="btn-p" onClick={handleSave} disabled={uploading}>
-            {uploading ? "Subiendo..." : "Guardar"}
-          </button>
-        </>
-      }
-    >
-      <div className="space-y-3">
-        <label className={`mobile-input flex cursor-pointer items-center justify-between${fe.errors.file ? " is-invalid" : ""}`}>
-          <span className="truncate text-sm">{fileName || "Seleccionar archivo"}</span>
-          <input
-            type="file"
-            className="hidden"
-            onChange={(e) => handleFile(e.target.files?.[0])}
-          />
-          <span className="text-xs font-semibold text-[#1E3D2B]">Examinar</span>
-        </label>
-        <FieldError msg={fe.errors.file} />
-
-        <input
-          className={fe.errors.name ? "mobile-input is-invalid" : "mobile-input"}
-          value={form.name}
-          onChange={set("name")}
-          placeholder="Nombre descriptivo"
-        />
-        <FieldError msg={fe.errors.name} />
-
-        <select className="mobile-input" value={form.category} onChange={set("category")}>
-          {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-        </select>
-
-        <select
-          className="mobile-input"
-          value={form.linkType}
-          onChange={(e) => setForm((p) => ({ ...p, linkType: e.target.value, linkedId: "" }))}
-        >
-          {ENTITY_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-        </select>
-
-        {form.linkType === "client" && (
-          <div ref={clientDropRef} style={{ position: "relative" }}>
-            <div style={{
-              display: "flex", alignItems: "center", gap: 8,
-              background: "#fff", border: "1.5px solid #DCDAD2", borderRadius: 12,
-              padding: "10px 12px",
-            }}>
-              <HiOutlineMagnifyingGlass style={{ color: "#83867C", flexShrink: 0, fontSize: "1rem" }} />
-              <input
-                style={{ border: "none", background: "none", outline: "none", width: "100%", fontSize: ".84rem", color: "#1E3D2B", fontFamily: "var(--font-body)" }}
-                value={clients.find(c => String(c.id) === String(form.linkedId))?.name || clientSearch}
-                onChange={(e) => {
-                  setClientSearch(e.target.value);
-                  setForm(p => ({ ...p, linkedId: "" }));
-                  setShowClientDrop(true);
-                }}
-                onFocus={() => { if (!form.linkedId) setShowClientDrop(true); }}
-                placeholder="Buscar cliente por nombre…"
-                autoComplete="off"
-              />
-              {form.linkedId && (
-                <button
-                  type="button"
-                  onClick={() => { setForm(p => ({ ...p, linkedId: "" })); setClientSearch(""); setShowClientDrop(true); }}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "#83867C", fontSize: ".75rem", padding: "2px 4px" }}
-                >✕</button>
-              )}
-            </div>
-            {showClientDrop && (
-              <div style={{
-                position: "absolute", top: "100%", left: 0, right: 0, zIndex: 1000,
-                background: "#fff", border: "1.5px solid #DCDAD2",
-                borderRadius: 10, maxHeight: 200, overflowY: "auto",
-                boxShadow: "0 8px 24px rgba(30,61,43,.14)", marginTop: 4,
-              }}>
-                {clients
-                  .filter(c => !clientSearch || c.name.toLowerCase().includes(clientSearch.toLowerCase()))
-                  .map(c => (
-                    <div
-                      key={c.id}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        setForm(p => ({ ...p, linkedId: String(c.id) }));
-                        setClientSearch("");
-                        setShowClientDrop(false);
-                      }}
-                      style={{
-                        padding: "9px 12px", cursor: "pointer", fontSize: ".83rem",
-                        borderBottom: "1px solid rgba(67,69,63,.08)",
-                        color: "#1E3D2B",
-                        transition: "background .1s",
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = "#F1EEE6"}
-                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                    >
-                      {c.name}
-                    </div>
-                  ))
-                }
-                {clients.filter(c => !clientSearch || c.name.toLowerCase().includes(clientSearch.toLowerCase())).length === 0 && (
-                  <div style={{ padding: "10px 12px", fontSize: ".78rem", color: "#83867C" }}>
-                    Sin resultados
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {form.linkType === "contract" && (
-          <select className="mobile-input" value={form.linkedId} onChange={set("linkedId")}>
-            <option value="">— Seleccionar contrato —</option>
-            {matchingContracts.map((c) => (
-              <option key={c.id} value={c.id}>{c.contract_number}</option>
-            ))}
-          </select>
-        )}
-
-        <textarea
-          className="mobile-input min-h-[96px]"
-          value={form.notes}
-          onChange={set("notes")}
-          placeholder="Notas del documento"
-        />
-      </div>
-    </Modal>
-  );
+  return <Modal open icon={<HiOutlineFolder />} title="Subir documento" subtitle="Archivo y expediente al que pertenece" onClose={close} footer={<><button type="button" className="btn-s" onClick={close} disabled={uploading}>Cancelar</button><button type="submit" form="lands-document-form" className="btn-p" disabled={uploading}>{uploading ? "Subiendo…" : "Guardar documento"}</button></>}>
+    <WorkflowForm id="lands-document-form" noValidate busy={uploading} onSubmit={event => { event.preventDefault(); return save(); }}>
+      <fieldset disabled={uploading} className="lands-form-fields">
+        <DocumentUploadFields ctl={ctl} defaultFolderAppKey="lands" />
+        <div className="fg"><label className="fl" htmlFor="document-link-type">Vincular a (opcional)</label><select id="document-link-type" className="fi" value={linkType} onChange={event => { setLinkType(event.target.value); setLinkedId(""); setLinkError(""); }}><option value="">Sin vincular</option><option value="client">Cliente</option><option value="contract">Contrato</option></select></div>
+        {linkType === "client" && <ClientPicker allowCreate={false} disabled={uploading || client.isFetching} value={linkedId ? client.data || {id: linkedId, name: "Cargando cliente…"} : null} onSelect={value => { setLinkedId(value?.id || ""); setLinkError(""); }} />}
+        {linkType === "client" && client.isError && <InlineError error={parseApiError(client.error)}><button type="button" className="btn-s" onClick={() => client.refetch()}>Reintentar cliente</button></InlineError>}
+        {linkType === "contract" && <ContractPicker value={linkedId} onSelect={value => { setLinkedId(value || ""); setLinkError(""); }} disabled={uploading} />}
+        <FieldError msg={linkError} />
+      </fieldset>
+    </WorkflowForm>
+  </Modal>;
 }
-
-export default DocumentModal;
+export default function DocumentModal() { const {ui} = useAppContext(); return ui.documentModal ? <DocumentForm /> : null; }

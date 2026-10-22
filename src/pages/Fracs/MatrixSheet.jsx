@@ -1,0 +1,212 @@
+import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { HiArrowDownTray } from "react-icons/hi2";
+import FilesDropdown from "@/components/shared/FilesDropdown";
+import Pagination, { paginate } from "@/components/shared/Pagination";
+import { lotService } from "@/services/lotService";
+import { documentService } from "@/services/documentService";
+import { measure } from "@/services/formatters";
+
+const PAGE_SIZE = 20;
+
+/**
+ * Encabezados de la plantilla de importación, en su orden exacto.
+ *
+ * La fuente de verdad es `_TEMPLATE_HEADERS` del backend (csv_importer.py) —
+ * esta copia solo pinta la tabla; el archivo que se descarga lo genera el
+ * backend con esa constante, así que no pueden quedar desalineados en el
+ * archivo aunque esta lista se olvide de actualizar.
+ */
+const HEADERS = [
+  "ID Lote", "Fraccionamiento", "Estado", "Precio Contado", "Precio Financiado",
+  "Frente (ML)", "Fondo (ML)", "Superficie (m2)", "Orientación",
+  "Agua Potable", "Energía Eléctrica", "Drenaje", "Gas Natural", "Internet/Fibra", "Pavimento",
+  "Lote de Esquina", "Bardeado",
+  "Vendedor Asignado",
+];
+
+/**
+ * Especificaciones en el mismo orden en que aparecen en la plantilla — incluye
+ * lo que antes era "servicios" (agua...pavimento) seguido de esquina/bardeado.
+ * Todas booleanas: orientación es dimensional, vive en `lot.orientacion`, no acá.
+ */
+const ESPECIFICACION_KEYS = ["agua", "luz", "drenaje", "gas", "internet", "pavimento", "esquina", "bardeado"];
+
+/* Va aparte de HEADERS a propósito: HEADERS espeja la plantilla de importación
+   y el archivo que se descarga lo genera el backend con esa misma lista. Esta
+   columna es solo de pantalla —enlaces al Vault— y por eso no viaja en la
+   descarga: un archivo con una celda de links no se podría volver a importar. */
+const COL_ARCHIVOS = "Files asociados";
+
+const STATUS_ES = { available: "disponible", reserved: "apartado", sold: "vendido" };
+const STATUS_CLS = { available: "ok", reserved: "wr", sold: "sd" };
+
+/**
+ * Quién tiene el lote. Son dos orígenes distintos y hasta ahora la matriz solo
+ * miraba uno: el vendedor que un administrador asigna, y —si nadie lo asignó—
+ * quien lo apartó, que en la práctica es quien lo está trabajando.
+ *
+ * `reserved_by_id` no se limpia al liberar el apartado, así que solo cuenta
+ * mientras el lote siga apartado: si no, un lote disponible mostraría a alguien
+ * que ya no tiene nada que ver con él.
+ */
+function quienLoTiene(lot) {
+  if (lot.seller_name) return lot.seller_name;
+  if (lot.status === "reserved" && lot.reserved_by_name) {
+    return (
+      <span style={{ display: "inline-flex", flexDirection: "column", lineHeight: 1.25 }}>
+        <span>{lot.reserved_by_name}</span>
+        <span style={{ fontSize: ".68rem", color: "var(--mu)" }}>lo apartó</span>
+      </span>
+    );
+  }
+  return <span className="mx-no">—</span>;
+}
+
+/** Importe con separador de miles; vacío si no hay dato. */
+function money(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const n = Number(value);
+  return Number.isNaN(n) ? null : n.toLocaleString("es-MX");
+}
+
+/**
+ * Los lotes en el mismo formato que pide la plantilla de Excel: las 15 columnas,
+ * con sus nombres y su orden. Sirve para revisar todo el fraccionamiento de un
+ * vistazo y para bajar un archivo que se puede editar y volver a subir.
+ */
+export default function MatrixSheet({ lots, fracId, fracName, loading, showError }) {
+  const [downloading, setDownloading] = useState(null);
+  const [page, setPage] = useState(1);
+
+  // Vuelve a la página 1 cuando cambian los lotes mostrados (otro fraccionamiento
+  // o un filtro distinto) — sin esto, pasar de 1500 a 20 lotes podía dejar la
+  // paginación apuntando a una página que ya no existe.
+  useEffect(() => setPage(1), [lots]);
+
+  const pageLots = useMemo(() => paginate(lots, page, PAGE_SIZE), [lots, page]);
+
+  /* Si falla, la matriz se pinta igual: los archivos son un extra de la vista,
+     no la vista. */
+  const { data: archivosPorLote = {} } = useQuery({
+    queryKey: ["documents", "for-lots", fracId],
+    queryFn: () => documentService.forLots(fracId),
+    enabled: !!fracId,
+  });
+
+  const missing = useMemo(
+    () => lots.filter((l) => !l.area_m2 && !l.price_contado).length,
+    [lots]
+  );
+
+  const download = async (format) => {
+    if (downloading) return;
+    setDownloading(format);
+    try {
+      const blob = await lotService.matrixExport({ inmueble_id: fracId, format });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${(fracName || "lotes").toLowerCase().replace(/[^a-z0-9]+/g, "-")}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      showError(err, "No se pudo descargar el archivo");
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  return (
+    <article className="frac-panel">
+      <div className="frac-panel-head">
+        <div>
+          <div className="frac-panel-title">Vista matriz</div>
+          <div className="frac-panel-sub">
+            {lots.length} lote{lots.length === 1 ? "" : "s"} · mismas columnas que la plantilla de importación
+            {missing > 0 ? ` · ${missing} sin medidas ni precio` : ""}
+          </div>
+        </div>
+        <div className="mx-actions">
+          <button className="mx-btn" onClick={() => download("csv")} disabled={!!downloading}>
+            {downloading === "csv" ? "Generando…" : "CSV"}
+          </button>
+          <button className="mx-btn primary" onClick={() => download("xlsx")} disabled={!!downloading}>
+            <HiArrowDownTray />
+            {downloading === "xlsx" ? "Generando…" : "Descargar Excel"}
+          </button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="frac-empty">Cargando lotes...</div>
+      ) : lots.length === 0 ? (
+        <div className="frac-empty">No hay lotes que coincidan con los filtros.</div>
+      ) : (
+        <>
+        <div className="mx-wrap">
+          <table className="mx-table">
+            <thead>
+              <tr>
+                {HEADERS.map((h, i) => (
+                  <th key={h} className={i === 0 ? "mx-stick" : ""}>{h}</th>
+                ))}
+                <th className="mx-extra">{COL_ARCHIVOS}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pageLots.map((lot) => {
+                const money_c = money(lot.price_contado);
+                const money_f = money(lot.price_financiado);
+                const fr = measure(lot.frente_ml);
+                const fo = measure(lot.fondo_ml);
+                const sup = measure(lot.area_m2);
+                return (
+                  <tr key={lot.id}>
+                    <td className="mx-stick mx-sku">{lot.code}</td>
+                    <td>{lot.inmueble_name || fracName}</td>
+                    <td>
+                      <span className={`mx-pill ${STATUS_CLS[lot.status] || "ok"}`}>
+                        {STATUS_ES[lot.status] || lot.status}
+                      </span>
+                    </td>
+                    <td className="mx-num">{money_c ?? <span className="mx-miss">falta</span>}</td>
+                    <td className="mx-num">{money_f ?? <span className="mx-miss">falta</span>}</td>
+                    <td className="mx-num">{fr ?? <span className="mx-miss">falta</span>}</td>
+                    <td className="mx-num">{fo ?? <span className="mx-miss">falta</span>}</td>
+                    <td className="mx-num">{sup ?? <span className="mx-miss">falta</span>}</td>
+                    <td>{lot.orientacion || <span className="mx-miss">falta</span>}</td>
+                    {ESPECIFICACION_KEYS.map((k) => {
+                      const on = lot.especificaciones?.[k] === "true";
+                      return (
+                        <td key={k} className={on ? "mx-yes" : "mx-no"}>
+                          {on ? "Sí" : "No"}
+                        </td>
+                      );
+                    })}
+                    <td>{quienLoTiene(lot)}</td>
+                    <td className="mx-extra">
+                      <FilesDropdown archivos={archivosPorLote[lot.id]}
+                                     titulo={`Lote ${lot.code}`} />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <Pagination total={lots.length} page={page} limit={PAGE_SIZE} onPage={setPage} />
+        </>
+      )}
+
+      <div className="mx-foot">
+        El archivo descargado se puede editar en Excel y volver a subir desde
+        <b> Carga de Lotes</b>: usa exactamente las columnas que espera el importador.
+        <b> Files asociados</b> queda fuera de la descarga —son enlaces al Vault— para
+        que el archivo se siga pudiendo reimportar tal cual.
+      </div>
+    </article>
+  );
+}
