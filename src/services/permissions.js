@@ -18,7 +18,7 @@ export const GLOBAL_ROLES = {
 export const APP_CATALOG = [
   { key: "core", name: "Ecosistema Core", icon: "eco-brand", cls: "ic-lands", roles: ["admin", "manager", "viewer"], defaultRole: "viewer", desc: "Panel central, clientes, equipo y configuración." },
   { key: "lands", name: "OwnTerra Lands", icon: "eco-g-lands", cls: "ic-lands", roles: ["seller", "manager", "collections", "viewer"], defaultRole: "seller", desc: "Lotes, fraccionamientos, ventas y cobranza.", vertical: true, live: true },
-  { key: "construct", name: "Ownterra Construct", icon: "eco-g-construct", cls: "ic-construct", roles: ["admin_financiero", "residente_obra", "director_auditor"], defaultRole: "admin_financiero", desc: "Cuantificación física, presupuestos híbridos APU/Alzado y catálogo maestro de obra.", vertical: true, live: true },
+  { key: "construct", name: "Ownterra Construct", icon: "eco-g-construct", cls: "ic-construct", roles: ["admin_financiero", "residente_obra", "director_auditor"], defaultRole: "admin_financiero", desc: "Cuantificación física, presupuestos híbridos APU/Alzado y catálogo maestro de obra.", vertical: true, live: false },
   { key: "properties", name: "OwnTerra Properties", icon: "eco-g-neighb", cls: "ic-neighb", roles: ["manager", "viewer"], defaultRole: "manager", desc: "Condominios, rentas y comercialización de inmuebles.", vertical: true, live: true },
   { key: "vault", name: "OwnTerra Vault", icon: "eco-n-vault", cls: "ic-lands", roles: ["admin", "editor", "viewer"], defaultRole: "viewer", desc: "Documentos, expedientes y permisos de lectura." },
 ];

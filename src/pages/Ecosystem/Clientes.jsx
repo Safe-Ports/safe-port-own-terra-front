@@ -15,7 +15,7 @@ import EcoLayout from "./EcoLayout";
 const APPS = [
   { key: "lands", name: "OwnTerra Lands", handle: "terra.lands", icon: "eco-g-lands", cls: "ic-lands", color: "#6FAF6B", live: true, desc: "Lotificación y venta de terrenos." },
   { key: "properties", name: "OwnTerra Properties", handle: "terra.properties", icon: "eco-g-neighb", cls: "ic-neighb", color: "#0A3D62", live: true, desc: "Propiedades, propietarios y unidades rentables." },
-  { key: "construct", name: "Ownterra Construct", handle: "terra.construct", icon: "eco-g-construct", cls: "ic-construct", color: "#B98C58", live: true, desc: "Cuantificación y presupuestos de obra." },
+  { key: "construct", name: "Ownterra Construct", handle: "terra.construct", icon: "eco-g-construct", cls: "ic-construct", color: "#B98C58", live: false, desc: "Cuantificación y presupuestos de obra." },
 ];
 const APP_BY_KEY = Object.fromEntries(APPS.map((a) => [a.key, a]));
 
