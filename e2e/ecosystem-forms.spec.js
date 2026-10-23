@@ -33,11 +33,14 @@ test('Público: fallo de carga permite reintento y fallo de envío conserva resp
   sends++;body=route.request().postDataJSON();await route.fulfill({status:sends===1?503:200,json:sends===1?{detail:'No disponible'}:{ok:true}});
  });
  await page.goto('/f/inscripcion');await expect(page.getByRole('button',{name:'Reintentar carga'})).toBeVisible();allowLoad=true;await page.getByRole('button',{name:'Reintentar carga'}).click();
+ // Sin aceptar el aviso de privacidad no se puede enviar.
+ await expect(page.getByRole('button',{name:'Enviar información'})).toBeDisabled();
+ await page.getByRole('checkbox',{name:/He leído y acepto el Aviso de Privacidad/}).check();
  await page.getByRole('button',{name:'Enviar información'}).click();expect(sends).toBe(0);
  await expect(page.getByLabel('Nombre completo')).toBeFocused();
  await page.getByLabel('Nombre completo').fill('Laura Pérez');await page.getByRole('button',{name:'Enviar información'}).click();
  await expect(page.getByRole('alert')).toBeVisible();await expect(page.getByLabel('Nombre completo')).toHaveValue('Laura Pérez');
- await page.getByRole('button',{name:'Enviar información'}).click();await expect(page.getByText('¡Información enviada!')).toBeVisible();expect(sends).toBe(2);expect(body).toEqual({data:{nombre:'Laura Pérez'}});await noOverflow(page);
+ await page.getByRole('button',{name:'Enviar información'}).click();await expect(page.getByText('¡Información enviada!')).toBeVisible();expect(sends).toBe(2);expect(body).toMatchObject({data:{nombre:'Laura Pérez'},privacy_version:'2.1'});expect(body.terms_accepted_at).toBeTruthy();await noOverflow(page);
 });
 
 test('Público: enlace inexistente muestra estado definitivo',async({page})=>{
