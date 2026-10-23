@@ -34,8 +34,12 @@ const LISTED_APPS = APP_CATALOG.filter((a) => a.vertical);
 
 // Los logos van como <img> y no por el sprite (#eco-g-…): el sprite lo monta
 // EcoLayout, así que en la shell de Lands no existiría y el hueco quedaría vacío.
+// Llaves del catálogo actual (construct, properties) más las provisionales
+// (homes, neighb) que algunas asignaciones viejas todavía traen.
 const APP_LOGO = {
   lands: "/brand/lands-mark-color.svg",
+  construct: "/brand/construction-mark-color.svg",
+  properties: "/brand/properties-mark-color.svg",
   homes: "/brand/construction-mark-color.svg",
   neighb: "/brand/properties-mark-color.svg",
 };

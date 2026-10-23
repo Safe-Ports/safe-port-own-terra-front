@@ -90,7 +90,7 @@
 
 @media(min-width:901px){
  .eco-root.properties-focus,.eco-root.properties-focus:has(nav.properties-focus-rail:hover),.eco-root.properties-focus:has(nav.properties-focus-rail:focus-within){--sidebar-w:240px}
- .eco-root.properties-focus .properties-focus-rail,.eco-root.properties-focus .properties-focus-rail:hover,.eco-root.properties-focus .properties-focus-rail:focus-within{width:240px;padding:24px 16px;background:linear-gradient(170deg,#203c5d,#142d4b);box-shadow:none;overflow-y:auto;justify-content:flex-start}
+ .eco-root.properties-focus .properties-focus-rail,.eco-root.properties-focus .properties-focus-rail:hover,.eco-root.properties-focus .properties-focus-rail:focus-within{width:240px;padding:24px 16px;background:linear-gradient(170deg,#125670,#0a3445);box-shadow:none;overflow-y:auto;justify-content:flex-start}
  .eco-root.properties-focus .sidebar,.eco-root.properties-focus .main{transition:none}
  .eco-root.properties-focus .focus-brand,.eco-root.properties-focus .properties-focus-rail:hover .focus-brand,.eco-root.properties-focus .properties-focus-rail:focus-within .focus-brand{width:208px;background:transparent;border-color:rgba(255,255,255,.14);box-shadow:none;border-radius:12px;color:#fff}
  .eco-root.properties-focus .focus-brand strong{font-size:20px;font-weight:500}
@@ -161,16 +161,13 @@
 .partner-shell .partner-nav,.tenant-shell .tenant-nav{background:linear-gradient(170deg,#203c5d,#142d4b)}
 :is(.partner-shell,.tenant-shell) main :is(h1,h2){font-family:var(--font-title);font-weight:500;letter-spacing:-.03em;color:var(--portal-ink)}
 
-/* Marca del menú: solo el logo sobre un panel de vidrio encima del azul del
-   menú (contorno fino + brillo superior), con el mismo comportamiento al pasar
-   el mouse que la tarjeta de Lands (.sb-logo-mark). */
-.eco-root.properties-focus .properties-focus-rail .focus-brand.is-logo-only{position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:76px;min-height:76px;margin:0 0 4px;padding:10px;overflow:hidden;border:1px solid rgba(255,255,255,.2);border-radius:14px;background:linear-gradient(160deg,rgba(255,255,255,.14),rgba(255,255,255,.04) 60%),rgba(12,30,52,.35);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 10px 24px rgba(4,14,28,.38);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
-.eco-root.properties-focus .properties-focus-rail .focus-brand.is-logo-only::before{content:"";position:absolute;inset:auto 18% -40% 18%;height:70%;border-radius:50%;background:radial-gradient(closest-side,rgba(110,200,170,.35),transparent);filter:blur(8px);pointer-events:none}
-.eco-root.properties-focus .properties-focus-rail .focus-brand.is-logo-only:hover{transform:translateY(-2px);border-color:rgba(146,214,196,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 14px 30px rgba(4,14,28,.45),0 0 0 3px rgba(110,200,170,.12)}
-.eco-root.properties-focus .properties-focus-rail .focus-brand.is-logo-only:active{transform:translateY(0)}
-.eco-root.properties-focus .properties-focus-rail .focus-brand.is-logo-only:focus-visible{outline:3px solid rgba(146,214,196,.7);outline-offset:4px}
-.eco-root.properties-focus .focus-brand.is-logo-only img{position:relative;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 4px 10px rgba(4,14,28,.45))}
+/* Marca del menú: el símbolo de Properties directo sobre el panel, sin base
+   ni halo. El panel usa el azul petróleo del logo. Mismo tamaño y hover que Lands. */
+.eco-root.properties-focus .properties-focus-rail .focus-brand.is-logo-only{position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:76px;min-height:76px;margin:0 0 4px;padding:6px 10px;overflow:visible;border:0;border-radius:10px;background:transparent;box-shadow:none;transition:transform .18s ease}
+.eco-root.properties-focus .properties-focus-rail .focus-brand.is-logo-only:hover{transform:translateY(-2px) scale(1.03)}
+.eco-root.properties-focus .properties-focus-rail .focus-brand.is-logo-only:focus-visible{outline:3px solid rgba(128,194,144,.78);outline-offset:4px}
+.eco-root.properties-focus .focus-brand.is-logo-only img{width:100%;height:100%;object-fit:contain}
 @media(max-width:860px){
- .eco-root.properties-focus .properties-focus-rail .focus-brand.is-logo-only{width:46px;height:46px;min-height:46px;padding:6px;border-radius:12px}
-}
+ .eco-root.properties-focus .properties-focus-rail .focus-brand.is-logo-only{width:46px;height:46px;min-height:46px;padding:4px}
+ }
 @media(prefers-reduced-motion:reduce){.eco-root.properties-focus .properties-focus-rail .focus-brand.is-logo-only{transition:none}.eco-root.properties-focus .properties-focus-rail .focus-brand.is-logo-only:hover{transform:none}}
