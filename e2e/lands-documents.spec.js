@@ -12,9 +12,17 @@ const writes = (re) => db.log.filter((r) => r.method !== "GET" && re.test(r.path
 const sidebar = (page) => page.getByRole("complementary").filter({ hasText: "Mis carpetas" });
 const folderRow = (page, name) => page.locator(".doc-folder-row").filter({ hasText: name });
 
+// El menú se cierra con cualquier scroll, y la página se desplaza sola justo
+// después de cargar; se reintenta hasta que quede abierto.
 async function openFolderMenu(page, name) {
-  await folderRow(page, name).locator(".doc-folder-menu-btn").click();
-  return page.locator(".doc-folder-menu");
+  const boton = page.getByRole("button", { name: `Opciones de la carpeta ${name}` });
+  await expect(async () => {
+    if ((await boton.getAttribute("aria-expanded")) !== "true") await boton.click();
+    await expect(page.getByRole("menu")).toBeVisible({ timeout: 500 });
+    await page.waitForTimeout(300);
+    await expect(boton).toHaveAttribute("aria-expanded", "true", { timeout: 100 });
+  }).toPass({ timeout: 5000 });
+  return page.getByRole("menu");
 }
 
 test("crear una carpeta nueva", async ({ page }) => {
@@ -30,14 +38,14 @@ test("crear una carpeta nueva", async ({ page }) => {
 test("menú de carpeta: subcarpeta, renombrar y eliminar", async ({ page }) => {
   await page.goto("/documentos");
   let menu = await openFolderMenu(page, "Expedientes");
-  await menu.getByRole("button", { name: "Nueva subcarpeta" }).click();
+  await menu.getByRole("menuitem", { name: "Nueva subcarpeta" }).click();
   await page.getByRole("textbox", { name: "Nombre de la nueva carpeta" }).fill("2026");
   await page.getByRole("textbox", { name: "Nombre de la nueva carpeta" }).press("Enter");
   await expect.poll(() => writes(/^\/document-folders$/).length).toBe(1);
   expect(writes(/^\/document-folders$/)[0].body).toMatchObject({ name: "2026", parent_id: "fd1" });
 
   menu = await openFolderMenu(page, "Expedientes");
-  await menu.getByRole("button", { name: "Renombrar" }).click();
+  await menu.getByRole("menuitem", { name: "Renombrar" }).click();
   const rename = page.getByRole("textbox", { name: "Nombre de la carpeta Expedientes" });
   await rename.fill("Expedientes 2026");
   await rename.press("Enter");
@@ -45,14 +53,14 @@ test("menú de carpeta: subcarpeta, renombrar y eliminar", async ({ page }) => {
   expect(writes(/^\/document-folders\/fd1$/)[0].body).toEqual({ name: "Expedientes 2026" });
 
   menu = await openFolderMenu(page, "Expedientes 2026");
-  await menu.getByRole("button", { name: "Eliminar" }).click();
+  await menu.getByRole("menuitem", { name: "Eliminar" }).click();
   await expect.poll(() => writes(/^\/document-folders\/fd1$/).filter((r) => r.method === "DELETE").length).toBe(1);
 });
 
 test("renombrar con Escape cancela el cambio", async ({ page }) => {
   await page.goto("/documentos");
   const menu = await openFolderMenu(page, "Expedientes");
-  await menu.getByRole("button", { name: "Renombrar" }).click();
+  await menu.getByRole("menuitem", { name: "Renombrar" }).click();
   const rename = page.getByRole("textbox", { name: "Nombre de la carpeta Expedientes" });
   await rename.fill("Otro nombre");
   await rename.press("Escape");
@@ -143,10 +151,12 @@ test("eliminar un documento pide confirmación", async ({ page }) => {
   await expect(page.getByText("Contrato CT-001.pdf")).toHaveCount(0);
 });
 
-// BUG conocido (2026-10-23): el botón ⋮ de cada carpeta no tiene nombre
-// accesible (un lector de pantalla solo dice "botón").
-test("el menú de carpeta tiene nombre accesible", async ({ page }) => {
-  test.fail(true, "Bug: botón de menú de carpeta sin aria-label");
+test("el menú de carpeta tiene nombre accesible y se cierra al elegir", async ({ page }) => {
   await page.goto("/documentos");
-  await expect(folderRow(page, "Expedientes").getByRole("button", { name: /Opciones|Acciones|Menú/ })).toBeVisible({ timeout: 1000 });
+  const boton = page.getByRole("button", { name: "Opciones de la carpeta Expedientes" });
+  await expect(boton).toHaveAttribute("aria-expanded", "false");
+  await openFolderMenu(page, "Expedientes");
+  await expect(boton).toHaveAttribute("aria-expanded", "true");
+  await page.getByRole("menuitem", { name: "Renombrar" }).click();
+  await expect(page.getByRole("menu")).toHaveCount(0);
 });

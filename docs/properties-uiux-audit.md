@@ -1,6 +1,6 @@
 # Properties — revisión UI/UX por vista
 
-9 de octubre de 2026. Rama `feature/properties-condos-mvp`. Instrucciones aplicadas: `prompt-chatgpt-frontend-uiux.md` y adjunto del usuario. Trabajo realizado sobre componentes y CSS existentes; JavaScript/React y rutas conservadas.
+9 de octubre de 2026. Rama `feature/properties-condos-mvp`. Instrucciones aplicadas: `../../docs/2026-10-09_prompt-chatgpt-frontend-uiux.md` y adjunto del usuario. Trabajo realizado sobre componentes y CSS existentes; JavaScript/React y rutas conservadas.
 
 ## 1. Veredicto
 

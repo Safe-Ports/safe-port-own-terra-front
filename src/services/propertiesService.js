@@ -41,6 +41,9 @@ export const propertiesService = {
     quotaPlans: (id) => data(propertiesApi.get(`/communities/${id}/quota-plans`)),
     createQuotaPlan: (id, body) => data(propertiesApi.post(`/communities/${id}/quota-plans`, body)),
     generateQuota: (communityId, planId, body) => data(propertiesApi.post(`/communities/${communityId}/quota-plans/${planId}/generate`, body)),
+    // Recordatorios, recargos y generación automática (contrato propuesto).
+    collectionPolicy: (id) => data(propertiesApi.get(`/communities/${id}/collection-policy`)),
+    saveCollectionPolicy: (id, body) => data(propertiesApi.put(`/communities/${id}/collection-policy`, body)),
   },
   charges: {
     list: (params = {}) => data(propertiesApi.get("/ledger/charges", { params: { limit: 2000, ...params } })),
@@ -54,6 +57,9 @@ export const propertiesService = {
     create: (communityId, body) => data(propertiesApi.post(`/communities/${communityId}/announcements`, body)),
     publish: (id) => data(propertiesApi.post(`/announcements/${id}/publish`)),
     receipts: (id) => data(propertiesApi.get(`/announcements/${id}/receipts`)),
+    // Muro de la comunidad (contrato propuesto): respuesta oficial y moderación.
+    comment: (id, body) => data(propertiesApi.post(`/announcements/${id}/comments`, { body })),
+    hideComment: (id, commentId, hidden) => data(propertiesApi.patch(`/announcements/${id}/comments/${commentId}`, { hidden })),
   },
   amenities: {
     list: (communityId) => data(propertiesApi.get(`/communities/${communityId}/amenities`)),
@@ -68,9 +74,31 @@ export const propertiesService = {
   votes: {
     list: (communityId) => data(propertiesApi.get(`/communities/${communityId}/votes`)),
     create: (communityId, body) => data(propertiesApi.post(`/communities/${communityId}/votes`, body)),
-    open: (id) => data(propertiesApi.post(`/votes/${id}/open`)),
+    // `closesAt` (ISO) fija la fecha límite al abrir; sin ella la votación no cierra sola.
+    open: (id, closesAt = null) => data(propertiesApi.post(`/votes/${id}/open`, { closes_at: closesAt })),
     ballot: (id, relationId, optionId) => data(propertiesApi.post(`/votes/${id}/ballots`, { relation_id: relationId, option_id: optionId })),
     close: (id) => data(propertiesApi.post(`/votes/${id}/close`)),
+  },
+  tickets: {
+    list: (communityId, params = {}) => data(propertiesApi.get(`/communities/${communityId}/tickets`, { params })),
+    create: (communityId, body) => data(propertiesApi.post(`/communities/${communityId}/tickets`, body)),
+    get: (id) => data(propertiesApi.get(`/tickets/${id}`)),
+    update: (id, body) => data(propertiesApi.patch(`/tickets/${id}`, body)),
+    assign: (id, body) => data(propertiesApi.post(`/tickets/${id}/assign`, body)),
+    comment: (id, body, visibility = "participants") => data(propertiesApi.post(`/tickets/${id}/comments`, { body, visibility })),
+    resolve: (id) => data(propertiesApi.post(`/tickets/${id}/resolve`)),
+    cancel: (id) => data(propertiesApi.post(`/tickets/${id}/cancel`)),
+  },
+  workOrders: {
+    setStatus: (id, body) => data(propertiesApi.patch(`/work-orders/${id}/status`, body)),
+  },
+  access: {
+    points: (communityId) => data(propertiesApi.get(`/communities/${communityId}/access-points`)),
+    createPoint: (communityId, body) => data(propertiesApi.post(`/communities/${communityId}/access-points`, body)),
+    createVisitor: (communityId, body) => data(propertiesApi.post(`/communities/${communityId}/visitors`, body)),
+    revoke: (credentialId, reason = null) => data(propertiesApi.post(`/access-credentials/${credentialId}/revoke`, { reason })),
+    validate: (body) => data(propertiesApi.post("/access/validate", body)),
+    events: (communityId, params = {}) => data(propertiesApi.get(`/communities/${communityId}/access-events`, { params })),
   },
   packages: {
     list: (communityId, params = {}) => data(propertiesApi.get(`/communities/${communityId}/packages`, { params })),
@@ -126,6 +154,12 @@ export const propertiesService = {
       info: (token) => data(propertiesApi.get(`/public/service-enrollment/${token}`)),
       apply: (token, body) => data(propertiesApi.post(`/public/service-enrollment/${token}/applications`, body)),
     },
+  },
+  // Reportes de pago que envían los residentes (contrato propuesto).
+  paymentReports: {
+    list: (params = {}) => data(propertiesApi.get("/ledger/payment-reports", { params })),
+    approve: (id, body) => data(propertiesApi.post(`/ledger/payment-reports/${id}/approve`, body)),
+    reject: (id, reason) => data(propertiesApi.post(`/ledger/payment-reports/${id}/reject`, { reason })),
   },
   media: {
     list: (entityType, entityId) => data(propertiesApi.get(`/media/${entityType}/${entityId}`)),

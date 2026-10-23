@@ -43,6 +43,7 @@ function CommunityWorkspace(){
   // `?unit=` y `?community=` llegan de los enlaces "ver unidad" (cuotas, menú).
   const [params,setParams]=useSearchParams();
   const catalogOpen=!params.get("community")&&!params.get("unit")&&!resolveTab(params.get("tab"));
+  const catalogData=useMemo(()=>({properties,units,personUnitRelations,condoCharges,packages,reservations,votes}),[properties,units,personUnitRelations,condoCharges,packages,reservations,votes]);
   const [activeTab,setActiveTab]=useState(resolveTab(params.get("tab"))||"units");
   const [monitorUnitId,setMonitorUnitId]=useState(params.get("unit")||"");
   const [communityId,setCommunityId]=useState(params.get("community")||communities[0]?.id||"");
@@ -181,7 +182,7 @@ function CommunityWorkspace(){
         <button className="community-heading-action" type="button" onClick={openNewCommunity} disabled={!canWrite}><HiPlus/> Nueva comunidad</button>
       </header>
 
-      {catalogOpen?<CommunityCards communities={communities} selectedId={null} expanded={detailOpen} onSelect={selectCommunity} onOpenUnits={openCommunityUnits} onAlert={openAlert} data={{units,personUnitRelations,condoCharges,packages,reservations,votes}}/>:null}
+      {catalogOpen?<CommunityCards communities={communities} selectedId={null} expanded={detailOpen} onSelect={selectCommunity} onOpenUnits={openCommunityUnits} onAlert={openAlert} data={catalogData}/>:null}
 
       {!catalogOpen?<><nav className="community-catalog-back" aria-label="Navegación de catálogos"><button type="button" onClick={()=>{setMonitorUnitId("");setDetailOpen(false);setParams({});}}>← Volver a comunidades</button><span>Comunidades / {selectedCommunity?.name}</span><button type="button" aria-expanded={detailOpen} onClick={()=>setDetailOpen(open=>!open)}>Información de la comunidad</button></nav></>:null}
 
