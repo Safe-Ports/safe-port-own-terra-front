@@ -1,13 +1,15 @@
 import FieldError from "@/components/shared/FieldError";
 import WorkflowForm from "@/components/forms/WorkflowForm";
 import DialogPortal from "@/components/ui/DialogPortal";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import GuideModal from "@/components/shared/GuideModal";
+import Pagination from "@/components/shared/Pagination";
 import PhoneInput from "@/components/shared/PhoneInput";
 import { clientService } from "@/services/clientService";
 import { documentService, filenameForDocument } from "@/services/documentService";
 import { useAppContext } from "@/context/AppContext";
+import useDebouncedValue from "@/hooks/useDebouncedValue";
 import useEscapeKey from "@/hooks/useEscapeKey";
 
 import EcoLayout from "./EcoLayout";
@@ -23,6 +25,7 @@ const IDENTITY_CATEGORIES = ["Identificación (INE/IFE)", "Comprobante de domici
 
 const initials = (name = "") => name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 const fmtMoney = (n) => n != null ? "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 0 }) : "—";
+const POR_PAGINA = 20;
 const emailOk = (value = "") => !value.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
 const TYPE_LABEL = { buyer: "Comprador", lead: "Prospecto", tenant: "Arrendatario" };
@@ -38,32 +41,55 @@ function EcosystemClientes() {
   const [captureError, setCaptureError] = useState("");
   const [selectedId, setSelectedId] = useState(null);
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
   const [tab, setTab] = useState("contracts");
   const [appFilter, setAppFilter] = useState("all");
   const [modal, setModal]             = useState(null);
   const [showGuide, setShowGuide]     = useState(false);
   useEscapeKey(() => setModal(null), Boolean(modal));
 
-  // Client list
+  // Lista paginada y buscada en el servidor. Antes se pedían 100 y se buscaba
+  // dentro de esos: del cliente 101 en adelante no aparecían ni buscándolos.
+  const search = useDebouncedValue(query.trim());
   const { data: clientsData, isLoading } = useQuery({
-    queryKey: ["clients", "eco-list"],
-    queryFn: () => clientService.list({ limit: 100 }),
+    queryKey: ["clients", "eco-list", search, page],
+    queryFn: () => clientService.list({ page, limit: POR_PAGINA, ...(search ? { search } : {}) }),
+    placeholderData: (previous) => previous,
   });
   const clients = clientsData?.items ?? [];
+  const totalClients = clientsData?.total ?? 0;
+  // El listado ya trae las apps de cada cliente; sólo un backend anterior sin
+  // ese campo obliga a pedirlas una por una.
   const clientAppQueries = useQueries({
     queries: clients.map((client) => ({
       queryKey: ["client-apps", String(client.id)],
       queryFn: () => clientService.getApps(client.id),
       staleTime: 60_000,
+      enabled: !Array.isArray(client.apps),
     })),
   });
-  const appAssignmentsLoading = clientAppQueries.some((queryResult) => queryResult.isPending);
+  const appAssignmentsLoading = clientAppQueries.some((queryResult, index) => !Array.isArray(clients[index]?.apps) && queryResult.isPending);
   const appsByClientId = new Map(
     clients.map((client, index) => [
       String(client.id),
-      new Set(clientAppQueries[index]?.data?.apps ?? []),
+      new Set(client.apps ?? clientAppQueries[index]?.data?.apps ?? []),
     ])
   );
+  // Totales por app contados en el servidor. Si el backend aún no filtra por
+  // app (sus clientes no traen `apps`), ignora el filtro y el total sería el de
+  // todo el directorio, así que no se muestra.
+  const appTotalQueries = useQueries({
+    queries: ["lands", "properties"].map((appKey) => ({
+      queryKey: ["clients", "eco-app-total", appKey],
+      queryFn: () => clientService.list({ app_key: appKey, limit: 1 }),
+      staleTime: 60_000,
+    })),
+  });
+  const appTotals = Object.fromEntries(["lands", "properties"].map((appKey, index) => {
+    const result = appTotalQueries[index]?.data;
+    const filtersByApp = result && (result.items.length === 0 || Array.isArray(result.items[0].apps));
+    return [appKey, filtersByApp ? result.total : null];
+  }));
 
   // Auto-select first client
   const effectiveSelectedId = selectedId ?? (clients[0]?.id ? String(clients[0].id) : null);
@@ -204,16 +230,11 @@ function EcosystemClientes() {
     if (appFilter === appKey) setAppFilter("all");
   };
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return clients;
-    return clients.filter((c) => c.name.toLowerCase().includes(q) || (c.email || "").toLowerCase().includes(q));
-  }, [clients, query]);
+  const filtered = clients;
 
   const selectClient = (id) => { setSelectedId(String(id)); setTab("contracts"); setAppFilter("all"); };
 
   const presentIn = (client, key) => appsByClientId.get(String(client.id))?.has(key) ?? false;
-  const appCount = (key) => clients.filter((c) => presentIn(c, key)).length;
   const multiAppCount = clients.filter((c) => APPS.filter((a) => presentIn(c, a.key)).length > 1).length;
 
   const associatedApps = APPS.filter((a) => a.live && assignedApps.has(a.key));
@@ -327,20 +348,20 @@ function EcosystemClientes() {
 
       {/* KPIs */}
       <div className="kpi-row" style={{ marginBottom: 22 }}>
-        <div className="kpi"><div className="kpi-head"><span className="kpi-label">Clientes en el core</span></div><div className="kpi-val">{clients.length}</div><div className="kpi-foot">Identidad única compartida</div></div>
-        <div className="kpi"><div className="kpi-head"><span className="kpi-label">En OwnTerra Lands</span></div><div className="kpi-val">{appAssignmentsLoading ? "—" : appCount("lands")}</div><div className="kpi-foot">Con acceso asignado</div></div>
-        <div className="kpi"><div className="kpi-head"><span className="kpi-label">En Properties</span></div><div className="kpi-val">{appAssignmentsLoading ? "—" : appCount("properties")}</div><div className="kpi-foot">Con acceso asignado</div></div>
-        <div className="kpi"><div className="kpi-head"><span className="kpi-label">Multi-app</span></div><div className="kpi-val">{appAssignmentsLoading ? "—" : multiAppCount}</div><div className="kpi-foot">Asignados en 2+ apps</div></div>
+        <div className="kpi"><div className="kpi-head"><span className="kpi-label">Clientes en el core</span></div><div className="kpi-val">{totalClients}</div><div className="kpi-foot">Identidad única compartida</div></div>
+        <div className="kpi"><div className="kpi-head"><span className="kpi-label">En OwnTerra Lands</span></div><div className="kpi-val">{appTotals.lands ?? "—"}</div><div className="kpi-foot">Con acceso asignado</div></div>
+        <div className="kpi"><div className="kpi-head"><span className="kpi-label">En Properties</span></div><div className="kpi-val">{appTotals.properties ?? "—"}</div><div className="kpi-foot">Con acceso asignado</div></div>
+        <div className="kpi"><div className="kpi-head"><span className="kpi-label">Multi-app</span></div><div className="kpi-val">{appAssignmentsLoading ? "—" : multiAppCount}</div><div className="kpi-foot">Asignados en 2+ apps, en esta página</div></div>
       </div>
 
       <div className="usr-layout">
         {/* LISTA */}
         <div className="usr-card">
           <div className="usr-list-head">
-            <div className="usr-list-title">Clientes ({filtered.length})</div>
+            <div className="usr-list-title">Clientes ({totalClients})</div>
             <label className="usr-search">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-              <input placeholder="Buscar por nombre o correo…" value={query} onChange={(e) => setQuery(e.target.value)} />
+              <input placeholder="Buscar por nombre o correo…" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} />
             </label>
           </div>
           <div className="usr-list">
@@ -359,8 +380,9 @@ function EcosystemClientes() {
                 </span>
               </button>
             ))}
-            {filtered.length === 0 && <div className="usr-empty">Sin resultados para "{query}".</div>}
+            {filtered.length === 0 && <div className="usr-empty">{search ? `Sin resultados para "${search}".` : "Aún no hay clientes."}</div>}
           </div>
+          <Pagination total={totalClients} page={page} limit={POR_PAGINA} onPage={setPage} />
         </div>
 
         {/* DETALLE */}
