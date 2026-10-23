@@ -19,8 +19,8 @@ export default defineConfig({
   },
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
-    { name: "lands-android", testMatch: ["**/lands-workflows.spec.js", "**/ecosystem-forms.spec.js"], use: { ...devices["Pixel 7"] } },
-    { name: "lands-ios", testMatch: ["**/lands-workflows.spec.js", "**/ecosystem-forms.spec.js"], use: { ...devices["iPhone 13"], defaultBrowserType: "webkit" } },
+    { name: "lands-android", testMatch: ["**/lands-*.spec.js", "**/ecosystem-forms.spec.js"], use: { ...devices["Pixel 7"] } },
+    { name: "lands-ios", testMatch: ["**/lands-*.spec.js", "**/ecosystem-forms.spec.js"], use: { ...devices["iPhone 13"], defaultBrowserType: "webkit" } },
     { name: "properties-android", testMatch: ["**/properties-mobile.spec.js", "**/community-units-media.spec.js", "**/properties-external.spec.js", "**/properties-providers.spec.js"], use: { ...devices["Pixel 7"] } },
     { name: "properties-ios", testMatch: ["**/properties-mobile.spec.js", "**/community-units-media.spec.js", "**/properties-external.spec.js", "**/properties-providers.spec.js"], use: { ...devices["iPhone 13"], defaultBrowserType: "webkit" } },
   ],
