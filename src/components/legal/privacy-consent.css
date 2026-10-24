@@ -1,100 +1,10 @@
 .pc-root { margin: 4px 0; }
 
-/* Página completa del Aviso de Privacidad (no un modal flotante). Se abre
-   desde páginas públicas (login, portales externos, catálogo de renta) que a
-   veces envuelven todo en su propio overlay de alto z-index (ej. LoginScreen
-   a 9000, el backdrop del InquirySheet a 60) — por eso el z-index muy alto. */
-.pc-page {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  overflow-y: auto;
-}
-
-.pc-page-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 22px;
-}
-.pc-page-top .lg-brand { margin-bottom: 0; }
-
-.pc-page-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: .85rem;
-  font-weight: 600;
-  color: var(--mut, #6b7167);
-  cursor: pointer;
-}
-.pc-page-back:hover { color: var(--mid, #355e3b); }
-
-.pc-page-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 18px;
-}
-
-.pc-open {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 13px 16px;
-  border: 1.5px dashed var(--bd, #e2e7e5);
-  border-radius: 13px;
-  background: var(--sf2, #eef1f1);
-  cursor: pointer;
-  text-align: left;
-  transition: border-color .2s ease, background .2s ease;
-}
-.pc-open:hover { border-color: var(--leaf, #6faf6b); background: rgba(111, 175, 107, .08); }
-
-.pc-open-ico { font-size: 1.15rem; line-height: 1; flex-shrink: 0; }
-
-.pc-open-text { display: flex; flex-direction: column; gap: 2px; }
-.pc-open-text strong { font-size: .88rem; color: var(--deep, #1e3d2b); }
-.pc-open-text small { font-size: .74rem; color: var(--muted, #83867c); }
-
-.pc-summary {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px 14px;
-  border: 1px solid rgba(111, 175, 107, .35);
-  border-radius: 13px;
-  background: rgba(111, 175, 107, .1);
-}
-
-.pc-summary-check {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--leaf, #6faf6b);
-  color: #fff;
-  font-size: .72rem;
-  font-weight: 800;
-}
-
-.pc-summary-text { flex: 1; font-size: .82rem; line-height: 1.45; color: var(--tx, #1e3d2b); }
-
-.pc-summary-edit {
-  flex-shrink: 0;
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: .78rem;
-  font-weight: 700;
+/* Enlaces al aviso y a los términos dentro de la casilla de aceptación. */
+.pc-root a {
   color: var(--forest, #355e3b);
-  cursor: pointer;
+  font-weight: 600;
   text-decoration: underline;
+  text-underline-offset: 2px;
 }
+.pc-root a:hover { color: var(--mid, #355e3b); }

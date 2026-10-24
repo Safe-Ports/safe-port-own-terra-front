@@ -1,4 +1,5 @@
 import { useMemo, useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import DialogPortal from "@/components/ui/DialogPortal";
 import GuideModal from "@/components/shared/GuideModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -46,19 +47,43 @@ function pathTo(folders, id) {
 /* ── FolderNode ─────────────────────────────────────────────────────────── */
 function FolderNode({ node, folders, activeId, onSelect, onAddChild, onRename, onDelete, depth=0 }) {
   const [open, setOpen]     = useState(false);
-  const [menu, setMenu]     = useState(false);
+  const [menu, setMenu]     = useState(null); // {top,left} o {bottom,left} en coordenadas de viewport
   const [editing, setEdit]  = useState(false);
   const [draft, setDraft]   = useState(node.name);
   const menuRef = useRef();
+  const btnRef  = useRef();
   const kids    = childrenOf(folders, node.id);
   const isActive = activeId === node.id;
 
+  // El menú va en un portal con position:fixed: dentro del sidebar (overflow:hidden)
+  // se recortaba y "Eliminar" quedaba fuera de vista en las últimas carpetas.
   useEffect(() => {
     if (!menu) return;
-    const h = (e) => { if (!menuRef.current?.contains(e.target)) setMenu(false); };
+    const close = () => setMenu(null);
+    const h = (e) => { if (!menuRef.current?.contains(e.target) && !btnRef.current?.contains(e.target)) close(); };
+    const k = (e) => { if (e.key === "Escape") close(); };
     document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
+    document.addEventListener("keydown", k);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      document.removeEventListener("mousedown", h);
+      document.removeEventListener("keydown", k);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
   }, [menu]);
+
+  const toggleMenu = () => {
+    if (menu) { setMenu(null); return; }
+    const r = btnRef.current.getBoundingClientRect();
+    const MENU_W = 190, MENU_H = 140, GAP = 4;
+    const left = Math.max(8, Math.min(r.right - MENU_W, window.innerWidth - MENU_W - 8));
+    // Si no cabe abajo, se abre hacia arriba del botón.
+    setMenu(window.innerHeight - r.bottom < MENU_H + GAP
+      ? { bottom: window.innerHeight - r.top + GAP, left }
+      : { top: r.bottom + GAP, left });
+  };
 
   const commit = () => { if (draft.trim()) onRename(node.id, draft.trim()); setEdit(false); };
 
@@ -93,24 +118,27 @@ function FolderNode({ node, folders, activeId, onSelect, onAddChild, onRename, o
         <span className="doc-folder-count">{node.document_count}</span>
 
         <button
-          className="doc-folder-menu-btn"
-          onClick={e => { e.stopPropagation(); setMenu(v => !v); }}
+          ref={btnRef}
+          className={`doc-folder-menu-btn${menu ? " open" : ""}`}
+          aria-label={`Opciones de la carpeta ${node.name}`} aria-haspopup="menu" aria-expanded={!!menu}
+          onClick={e => { e.stopPropagation(); toggleMenu(); }}
         >
           <HiOutlineEllipsisVertical />
         </button>
 
-        {menu && (
-          <div ref={menuRef} className="doc-folder-menu">
-            <button onClick={e => { e.stopPropagation(); onAddChild(node.id); setMenu(false); }}>
+        {menu && createPortal(
+          <div ref={menuRef} role="menu" className="doc-folder-menu" style={menu} onClick={e => e.stopPropagation()}>
+            <button role="menuitem" onClick={() => { onAddChild(node.id); setMenu(null); }}>
               <HiOutlineFolderPlus /> Nueva subcarpeta
             </button>
-            <button onClick={e => { e.stopPropagation(); setDraft(node.name); setEdit(true); setMenu(false); }}>
+            <button role="menuitem" onClick={() => { setDraft(node.name); setEdit(true); setMenu(null); }}>
               <HiOutlinePencil /> Renombrar
             </button>
-            <button className="danger" onClick={e => { e.stopPropagation(); onDelete(node.id); setMenu(false); }}>
+            <button role="menuitem" className="danger" onClick={() => { onDelete(node.id); setMenu(null); }}>
               <HiOutlineTrash /> Eliminar
             </button>
-          </div>
+          </div>,
+          document.body,
         )}
       </div>
 
@@ -320,12 +348,13 @@ export default function DocumentsPage() {
           color:#83867C; font-size:1.05rem; padding:2px 5px; border-radius:7px;
           display:flex; align-items:center;
         }
-        .doc-folder-row:hover .doc-folder-menu-btn { opacity:.65; }
+        .doc-folder-row:hover .doc-folder-menu-btn, .doc-folder-menu-btn.open, .doc-folder-menu-btn:focus-visible { opacity:.65; }
+        @media (hover:none) { .doc-folder-menu-btn { opacity:.65; } }
         .doc-folder-menu-btn:hover { opacity:1 !important; background:rgba(67,69,63,.08); }
         .doc-folder-menu {
-          position:absolute; right:8px; top:calc(100% - 6px); z-index:200;
+          position:fixed; z-index:1000; width:190px; box-sizing:border-box;
           background:var(--sf); border:1px solid var(--bd); border-radius:12px;
-          padding:5px; min-width:182px;
+          padding:5px;
           box-shadow:0 14px 32px rgba(30,61,43,.18);
         }
         .doc-folder-menu button {

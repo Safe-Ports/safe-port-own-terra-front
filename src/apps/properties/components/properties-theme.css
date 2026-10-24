@@ -12,7 +12,7 @@
 .eco-root.properties-focus .main::before{background:radial-gradient(640px 360px at 95% 0,rgba(70,102,138,.09),transparent 70%),radial-gradient(540px 420px at 0 95%,rgba(159,182,204,.08),transparent 70%)}
 .eco-root.properties-focus .topbar{height:76px;border-color:var(--border);background:rgba(255,255,255,.84);z-index:20}
 .eco-root.properties-focus .topbar-title{color:var(--properties-ink);font-weight:500;font-size:24px}
-.eco-root.properties-focus .scroll-area{padding:32px 40px 48px}
+.eco-root.properties-focus .scroll-area{padding:16px 40px 48px}
 .eco-root.properties-focus main h1{font-family:var(--font-title);font-size:clamp(30px,3.1vw,42px);font-weight:500;letter-spacing:-.035em;line-height:1.15}
 .eco-root.properties-focus main h2{font-family:var(--font-title);font-weight:500;letter-spacing:-.025em}
 .eco-root.properties-focus main :is(button,select){font-family:var(--font-body)}
@@ -90,7 +90,7 @@
 
 @media(min-width:901px){
  .eco-root.properties-focus,.eco-root.properties-focus:has(nav.properties-focus-rail:hover),.eco-root.properties-focus:has(nav.properties-focus-rail:focus-within){--sidebar-w:240px}
- .eco-root.properties-focus .properties-focus-rail,.eco-root.properties-focus .properties-focus-rail:hover,.eco-root.properties-focus .properties-focus-rail:focus-within{width:240px;padding:24px 16px;background:linear-gradient(170deg,#203c5d,#142d4b);box-shadow:none;overflow-y:auto;justify-content:flex-start}
+ .eco-root.properties-focus .properties-focus-rail,.eco-root.properties-focus .properties-focus-rail:hover,.eco-root.properties-focus .properties-focus-rail:focus-within{width:240px;padding:24px 16px;background:linear-gradient(170deg,#125670,#0a3445);box-shadow:none;overflow-y:auto;justify-content:flex-start}
  .eco-root.properties-focus .sidebar,.eco-root.properties-focus .main{transition:none}
  .eco-root.properties-focus .focus-brand,.eco-root.properties-focus .properties-focus-rail:hover .focus-brand,.eco-root.properties-focus .properties-focus-rail:focus-within .focus-brand{width:208px;background:transparent;border-color:rgba(255,255,255,.14);box-shadow:none;border-radius:12px;color:#fff}
  .eco-root.properties-focus .focus-brand strong{font-size:20px;font-weight:500}
@@ -160,3 +160,14 @@
 .community-portal-shell .community-portal-nav nav button{min-height:44px}
 .partner-shell .partner-nav,.tenant-shell .tenant-nav{background:linear-gradient(170deg,#203c5d,#142d4b)}
 :is(.partner-shell,.tenant-shell) main :is(h1,h2){font-family:var(--font-title);font-weight:500;letter-spacing:-.03em;color:var(--portal-ink)}
+
+/* Marca del menú: el símbolo de Properties directo sobre el panel, sin base
+   ni halo. El panel usa el azul petróleo del logo. Mismo tamaño y hover que Lands. */
+.eco-root.properties-focus .properties-focus-rail .focus-brand.is-logo-only{position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:76px;min-height:76px;margin:0 0 4px;padding:6px 10px;overflow:visible;border:0;border-radius:10px;background:transparent;box-shadow:none;transition:transform .18s ease}
+.eco-root.properties-focus .properties-focus-rail .focus-brand.is-logo-only:hover{transform:translateY(-2px) scale(1.03)}
+.eco-root.properties-focus .properties-focus-rail .focus-brand.is-logo-only:focus-visible{outline:3px solid rgba(128,194,144,.78);outline-offset:4px}
+.eco-root.properties-focus .focus-brand.is-logo-only img{width:100%;height:100%;object-fit:contain}
+@media(max-width:860px){
+ .eco-root.properties-focus .properties-focus-rail .focus-brand.is-logo-only{width:46px;height:46px;min-height:46px;padding:4px}
+ }
+@media(prefers-reduced-motion:reduce){.eco-root.properties-focus .properties-focus-rail .focus-brand.is-logo-only{transition:none}.eco-root.properties-focus .properties-focus-rail .focus-brand.is-logo-only:hover{transform:none}}

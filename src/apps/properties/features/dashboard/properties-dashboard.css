@@ -140,3 +140,18 @@
   .pd-quick{grid-template-columns:1fr}
   .pd-hero-actions>button{width:100%}
 }
+
+/* Encabezado con el cielo de la hora (SkyScene): el texto toma los colores del cielo. */
+.pd-hero-copy.sky-host{min-height:300px;padding:36px 40px;border-radius:28px;box-shadow:0 24px 40px -24px rgba(15,39,66,.45)}
+.pd-hero-copy.sky-host>:not(.sky-scene){max-width:min(520px,58%)}
+.eco-root .pd-hero-copy.sky-host h1{color:var(--sky-ink)}
+.pd-hero-copy.sky-host .pd-date{color:var(--sky-muted)}
+.pd-hero-copy.sky-host .pd-lede{color:var(--sky-muted)}
+.pd-hero-copy.sky-host .pd-lede strong{color:var(--sky-ink)}
+.pd-hero-copy.sky-host .pd-ghost{border-color:rgba(255,255,255,.7);background:rgba(255,255,255,.82);backdrop-filter:blur(6px)}
+.pd-hero-copy.sky-host:is(.is-dusk,.is-night) .pd-ghost{border-color:rgba(255,255,255,.35);background:rgba(255,255,255,.14);color:#fff}
+@media(max-width:700px){
+  .pd-hero-copy.sky-host{padding:26px 22px 190px}
+  .pd-hero-copy.sky-host>:not(.sky-scene){max-width:none}
+  .pd-hero-copy.sky-host .sky-scene{top:auto;height:180px}
+}

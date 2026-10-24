@@ -162,7 +162,10 @@ function ClientsPage() {
   const debounced = useDebouncedValue(search.trim());
   const clientList = useQuery({
     queryKey: ["clients", "lands-directory", debounced, filter, page],
-    queryFn: () => clientService.list({ page, limit: 20, ...(debounced ? { search: debounced } : {}), ...(filter !== "all" ? { type: filter } : {}) }),
+    // `app_key` hace que el servidor filtre ANTES de paginar. Filtrar la página
+    // ya recibida dejaba páginas enteras vacías cuando los clientes más nuevos
+    // eran de otra app (con 200 de Properties, Lands empezaba en la página 11).
+    queryFn: () => clientService.list({ page, limit: 20, app_key: "lands", ...(debounced ? { search: debounced } : {}), ...(filter !== "all" ? { type: filter } : {}) }),
   });
   const pageClients = clientList.data?.items || [];
   const listBusy = clientList.isFetching || search.trim() !== debounced;
@@ -176,21 +179,25 @@ function ClientsPage() {
   const linkedId = params.get("client");
   const linkedClient = useQuery({ queryKey: ["client", linkedId], queryFn: () => clientService.get(linkedId), enabled: !!linkedId });
   const linkedApps = useQuery({ queryKey: ["client-apps", String(linkedId)], queryFn: () => clientService.getApps(linkedId), enabled: !!linkedId });
+  // Cada cliente ya trae sus apps en el listado; sólo un backend anterior sin
+  // ese campo obliga a pedirlas una por una.
   const clientAppQueries = useQueries({
     queries: pageClients.map((client) => ({
       queryKey: ["client-apps", String(client.id)],
       queryFn: () => clientService.getApps(client.id),
       staleTime: 60_000,
+      enabled: !Array.isArray(client.apps),
     })),
   });
   const clientAppsById = new Map(
     pageClients.map((client, index) => [
       String(client.id),
-      clientAppQueries[index]?.data?.apps ?? [],
+      client.apps ?? clientAppQueries[index]?.data?.apps ?? [],
     ])
   );
-  const clientAssignmentsLoading = clientAppQueries.some((queryResult) => queryResult.isPending);
-  const clientAssignmentsError = clientAppQueries.some((queryResult) => queryResult.isError);
+  const needsAppLookup = (index) => !Array.isArray(pageClients[index]?.apps);
+  const clientAssignmentsLoading = clientAppQueries.some((queryResult, index) => needsAppLookup(index) && queryResult.isPending);
+  const clientAssignmentsError = clientAppQueries.some((queryResult, index) => needsAppLookup(index) && queryResult.isError);
   const landsClients = pageClients.filter((client) => clientAppsById.get(String(client.id))?.includes("lands"));
 
   const filtered = listBusy ? [] : landsClients;
@@ -288,7 +295,7 @@ function ClientsPage() {
             {listBusy || clientAssignmentsLoading ? (
               <SkeletonRows rows={6} />
             ) : clientList.isError || clientAssignmentsError ? (
-              <div className="lands-list-message"><InlineError error={parseApiError(clientList.error || clientAppQueries.find(q => q.isError)?.error, "No se pudieron consultar los clientes")} /><button type="button" className="btn-s" onClick={() => { clientList.refetch(); clientAppQueries.forEach(q => q.refetch()); }}>Reintentar</button></div>
+              <div className="lands-list-message"><InlineError error={parseApiError(clientList.error || clientAppQueries.find(q => q.isError)?.error, "No se pudieron consultar los clientes")} /><button type="button" className="btn-s" onClick={() => { clientList.refetch(); clientAppQueries.forEach((q, i) => { if (needsAppLookup(i)) q.refetch(); }); }}>Reintentar</button></div>
             ) : pageClients.length === 0 && !search && filter === "all" ? (
               <EmptyState
                 icon={<HiUserGroup />}
@@ -299,7 +306,7 @@ function ClientsPage() {
               />
             ) : filtered.length === 0 ? (
               <div style={{ padding: "24px 16px", textAlign: "center", color: "var(--mu)", fontSize: ".8rem" }}>
-                Sin resultados para tu búsqueda.
+                {search || filter !== "all" ? "Sin resultados para tu búsqueda." : "Sin clientes vinculados a Lands en esta página."}
               </div>
             ) : (
               <>
