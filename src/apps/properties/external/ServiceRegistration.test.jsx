@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ServiceRegistration } from "./ServiceAccessPages";
+import { PRIVACY_NOTICE_VERSION } from "@/components/legal/PrivacyConsent";
 
 const api = vi.hoisted(() => ({ info: vi.fn(), apply: vi.fn() }));
 vi.mock("@/services/propertiesService", () => ({ default: { serviceNetwork: { public: api } } }));
@@ -10,8 +11,10 @@ const fill = () => {
   fireEvent.change(screen.getByPlaceholderText("Tu nombre y apellidos"), { target: { value: "  Juan Pérez  " } });
   fireEvent.change(screen.getByPlaceholderText("contacto@correo.mx"), { target: { value: "juan@example.com" } });
   fireEvent.change(screen.getByPlaceholderText("+52 55 0000 0000"), { target: { value: " +525500000000 " } });
-  fireEvent.click(screen.getByRole("checkbox", { name: /Confirmo/ }));
+  acceptConsent();
 };
+// Aviso de Privacidad v2.1: una sola casilla que acepta aviso y términos.
+const acceptConsent = () => fireEvent.click(screen.getByRole("checkbox", { name: /He leído y acepto/ }));
 describe("Inscripción pública de proveedores", () => {
   beforeEach(() => {
     vi.clearAllMocks(); window.history.replaceState({}, "", "/servicio/registro?token=public-test");
@@ -19,10 +22,13 @@ describe("Inscripción pública de proveedores", () => {
     api.apply.mockResolvedValue({ folio: "SOL-0042", status: "pending" });
   });
   it("valida los campos y el consentimiento antes de enviar", async () => {
-    setup(); fireEvent.click(await screen.findByRole("button", { name: "Enviar solicitud para revisión" }));
+    setup();
+    const send = await screen.findByRole("button", { name: "Enviar solicitud para revisión" });
+    expect(send).toBeDisabled();
+    acceptConsent();
+    fireEvent.click(send);
     expect(screen.getByText("Escribe tu nombre o razón social.")).toBeVisible();
     expect(screen.getByText("Escribe un correo válido.")).toBeVisible();
-    expect(screen.getByText("Acepta el consentimiento para enviar la solicitud.")).toBeVisible();
     expect(api.apply).not.toHaveBeenCalled();
   });
   it("envía el body público y muestra el folio sin acceso automático", async () => {
@@ -30,7 +36,8 @@ describe("Inscripción pública de proveedores", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "Plomería" }));
     fireEvent.click(screen.getByRole("button", { name: "Enviar solicitud para revisión" }));
     await waitFor(() => expect(api.apply).toHaveBeenCalledWith("public-test", {
-      kind: "independent", name: "Juan Pérez", representative_name: null, email: "juan@example.com", phone: "+525500000000", specialty_ids: ["plumbing"], coverage: null, experience: null, consent_version: "2026-10-08", consent_accepted: true,
+      kind: "independent", name: "Juan Pérez", representative_name: null, email: "juan@example.com", phone: "+525500000000", specialty_ids: ["plumbing"], coverage: null, experience: null,
+      consent_version: PRIVACY_NOTICE_VERSION, consent_accepted: true, financial_consent_version: PRIVACY_NOTICE_VERSION, financial_consent_accepted: true, secondary_use_optout: false,
     }));
     expect(await screen.findByText("Solicitud SOL-0042")).toBeVisible();
     expect(screen.getByRole("status")).toHaveTextContent("no habilita acceso");

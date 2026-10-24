@@ -35,9 +35,9 @@ const SettingsPage = lazyWithRetry(() => import("@/pages/Settings"));
 const ReportsPage = lazyWithRetry(() => import("@/pages/Reports"));
 const PricingPage = lazyWithRetry(() => import("@/pages/Pricing"));
 const AccessDenied = lazyWithRetry(() => import("@/pages/AccessDenied"));
-const ConstructPage = lazyWithRetry(() => import("@/pages/Construct"));
 const PropertiesDashboard = lazyWithRetry(() => import("@/apps/properties/features/dashboard/PropertiesDashboard"));
 const PropertiesGuidePage = lazyWithRetry(() => import("@/apps/properties/features/guide/PropertiesGuidePage"));
+const PropertiesProfilePage = lazyWithRetry(() => import("@/apps/properties/features/profile/PropertiesProfilePage"));
 const PropertiesOperationsHub = lazyWithRetry(() => import("@/apps/properties/features/dashboard/PropertiesOperationsHub"));
 const OwnersPage = lazyWithRetry(() => import("@/apps/properties/features/owners/OwnersPage"));
 const PropertiesPage = lazyWithRetry(() => import("@/apps/properties/features/properties/PropertiesPage"));
@@ -126,10 +126,12 @@ function AppRouter() {
           {/* Misma página que /perfil, con el shell del Core. El perfil es
               transversal, así que abrirlo no debe mandarte a otra app. */}
           <Route path="/ecosistema/perfil" element={<EcosystemPerfil />} />
-          <Route path="/construccion/*" element={<RequireFeature app="construct"><ConstructPage /></RequireFeature>} />
+          {/* Construct queda en "Próximamente" hasta su lanzamiento: el módulo sigue en el repo, pero sin ruta activa. */}
+          <Route path="/construccion/*" element={<Navigate to="/ecosistema" replace />} />
           <Route path="/properties" element={<RequireFeature app="properties"><PropertiesModule /></RequireFeature>}>
             <Route index element={<PropertiesDashboard />} />
             <Route path="guia" element={<PropertiesGuidePage />} />
+            <Route path="perfil" element={<PropertiesProfilePage />} />
             <Route path="operacion" element={<PropertiesOperationsHub />} />
             <Route path="propietarios" element={<RequireFeature feature="properties.owners.read"><OwnersPage /></RequireFeature>} />
             <Route path="inmuebles" element={<RequireFeature feature="properties.properties.read"><PropertiesPage /></RequireFeature>} />

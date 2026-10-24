@@ -7,3 +7,22 @@
 /* Cuando no hay red de proveedores, el campo lo dice y lleva a crearla. */
 .ticket-no-providers{display:flex;align-items:center;gap:6px;margin-top:6px;color:#788089;font-size:10px}
 .ticket-no-providers button{padding:0;border:0;background:none;color:#153457;font-size:10px;font-weight:800;cursor:pointer;text-decoration:underline}
+/* Detalle con backend: orden de trabajo, cierre y bitácora */
+.ticket-live-description{max-width:60ch;margin-top:6px!important;color:#56616d!important;font-size:9px!important;line-height:1.5}
+.ticket-live-order{display:grid;gap:8px;padding:14px 16px;border:1px solid #d2d6da;border-radius:16px;background:#fff}
+.ticket-live-order label{display:grid;gap:5px}
+.ticket-live-order label span{color:#848c95;font-size:7px;font-weight:800;text-transform:uppercase}
+.ticket-live-order select{padding:8px 10px;border:1px solid #d0d4d8;border-radius:10px;background:#f6f7f9;color:#2e3a48;font:inherit;font-size:9px}
+.ticket-live-order p{margin:0;color:#3a495a;font-size:9px}
+.ticket-live-order>div{display:flex;flex-wrap:wrap;gap:6px}
+.ticket-live-order button,.ticket-live-close button{justify-self:start;padding:8px 12px;border:1px solid #c9d0d8;border-radius:10px;background:#fff;color:#153457;cursor:pointer;font-size:9px;font-weight:800}
+.ticket-live-order>button,.ticket-live-close button.primary{border-color:#153457;background:#153457;color:#fff}
+.ticket-live-order button:disabled,.ticket-live-close button:disabled{cursor:not-allowed;opacity:.5}
+.ticket-live-order small,.ticket-live-close small{color:#7a828b;font-size:7.5px}
+.ticket-live-close{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.ticket-live-close small{flex-basis:100%}
+.ticket-live-empty{margin:auto;color:#848c95;font-size:8px}
+.ticket-live-internal{display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:99px;background:#fff0d5;color:#8a5d17;font-size:6.5px;font-style:normal;font-weight:800}
+.ticket-live-internal svg{width:8px;height:8px}
+.ticket-live-toggle{display:flex;align-items:center;gap:6px;color:#56616d;font-size:7.5px;cursor:pointer}
+.eco-root.properties-focus .trace-chat form>button[type="submit"],.trace-chat form>button[type="submit"]{justify-self:auto;width:31px;min-width:0;height:31px;padding:0}

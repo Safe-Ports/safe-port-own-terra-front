@@ -5,6 +5,8 @@ import EcoLayout from "@/pages/Ecosystem/EcoLayout";
 import { PROPERTY_ACTION_ICONS, PROPERTY_ENTITY_ICONS } from "../../components/propertiesIconCatalog";
 import Modal from "@/components/ui/Modal";
 import PackageDeskPanel from "./PackageDeskPanel";
+import VisitorAccessPanel from "./VisitorAccessPanel";
+import { usePropertiesData } from "../../data/PropertiesDataContext";
 import "./access-control.css";
 import { PROPERTIES_MVP_SCOPE } from "../../mvpScope";
 
@@ -21,6 +23,9 @@ const initialPasses=[
 const statusLabel={expected:"Por llegar",inside:"Dentro",completed:"Salida registrada"};
 
 function AccessControlPage(){
+  // Con properties-back conectado, los pases con QR son reales y reemplazan al prototipo.
+  const {backendLive}=usePropertiesData();
+  const prototype=PROPERTIES_MVP_SCOPE.later&&!backendLive;
   const [passes,setPasses]=useState(initialPasses);
   const [selectedId,setSelectedId]=useState(initialPasses[0].folio);
   const [creating,setCreating]=useState(false);
@@ -28,13 +33,14 @@ function AccessControlPage(){
   const selected=passes.find(item=>item.folio===selectedId)||passes[0];
   const createPass=event=>{event.preventDefault();const pass={...draft,folio:`AC-${String(Date.now()).slice(-4)}`,status:"expected"};setPasses(current=>[pass,...current]);setSelectedId(pass.folio);setCreating(false);setDraft({kind:"Visita",name:"",target:"",window:"",host:"",note:""});};
   const advancePass=()=>setPasses(current=>current.map(item=>item.folio===selected.folio?{...item,status:item.status==="expected"?"inside":"completed"}:item));
-  return <EcoLayout active="properties" title="OwnTerra Properties" subtitle={PROPERTIES_MVP_SCOPE.later?"Operación · Accesos":"Operación · Recepción y paquetería"}><main className="access-page">
+  return <EcoLayout active="properties" title="OwnTerra Properties" subtitle={backendLive?"Operación · Accesos y recepción":PROPERTIES_MVP_SCOPE.later?"Operación · Accesos":"Operación · Recepción y paquetería"}><main className="access-page">
     {/* Pases de visita, QR y bitácora de caseta todavía no tienen backend:
         quedan para una versión futura (mvpScope.later). En el MVP esta
         pantalla es sólo recepción y paquetería, que sí persiste. */}
-    {PROPERTIES_MVP_SCOPE.later?<header className="access-heading"><div><span>Recepción y paquetería</span><h1>Accesos sin fricción.</h1><p>La caseta recibe instrucciones claras para visitas, proveedores y entregas.</p></div><button type="button" onClick={()=>setCreating(true)}><HiPlus/> Crear pase</button></header>:<header className="access-heading"><div><span>Recepción y paquetería</span><h1>Paquetes bajo control.</h1><p>Registra lo que llega a recepción y entrégalo a una persona vinculada a la unidad.</p></div></header>}
+    {backendLive?<header className="access-heading"><div><span>Accesos y recepción</span><h1>Quién entra, bajo control.</h1><p>Pases con QR para visitas y proveedores, validación en caseta y paquetería en un solo lugar.</p></div></header>:PROPERTIES_MVP_SCOPE.later?<header className="access-heading"><div><span>Recepción y paquetería</span><h1>Accesos sin fricción.</h1><p>La caseta recibe instrucciones claras para visitas, proveedores y entregas.</p></div><button type="button" onClick={()=>setCreating(true)}><HiPlus/> Crear pase</button></header>:<header className="access-heading"><div><span>Recepción y paquetería</span><h1>Paquetes bajo control.</h1><p>Registra lo que llega a recepción y entrégalo a una persona vinculada a la unidad.</p></div></header>}
+    {backendLive?<VisitorAccessPanel/>:null}
     <PackageDeskPanel/>
-    {PROPERTIES_MVP_SCOPE.later?<><aside className="access-prototype-note"><span>▲</span><span><b>Lo de abajo es prototipo.</b> Los pases de visita no existen en el backend: lo que registres aquí se pierde al recargar. La paquetería de arriba sí se guarda.</span></aside>
+    {prototype?<><aside className="access-prototype-note"><span>▲</span><span><b>Lo de abajo es prototipo.</b> Los pases de visita no existen en el backend: lo que registres aquí se pierde al recargar. La paquetería de arriba sí se guarda.</span></aside>
     <section className="access-principle"><HiShieldCheck/><div><strong>Una vista pública, una sola tarea.</strong><p>Seguridad abre el enlace o escanea el QR, compara identificación, sigue instrucciones y registra entrada o salida.</p></div><span>Sin usuario · Sin contraseña</span></section>
     <section className="access-layout">
       <div className="access-queue"><header><div><span>Hoy</span><h2>Personas y entregas</h2></div><strong>{passes.filter(item=>item.status!=="completed").length} activas</strong></header>{passes.map(pass=><button type="button" className={selected.folio===pass.folio?"active":""} key={pass.folio} onClick={()=>setSelectedId(pass.folio)}><span className="access-kind">{pass.kind==="Entrega"?<HiTruck/>:<HiUser/>}</span><span><small>{pass.kind} · {pass.folio}</small><strong>{pass.name}</strong><em>{pass.target}</em></span><i className={pass.status}>{statusLabel[pass.status]}</i></button>)}</div>

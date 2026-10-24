@@ -2,7 +2,6 @@ import { HiArrowLeft, HiBanknotes, HiWrenchScrewdriver, HiHomeModern, HiMegaphon
 import { useLocation } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
 import { usePropertiesData } from "../data/PropertiesDataContext";
-import PropertiesLogo from "./PropertiesLogo";
 
 const OPERATIONS = "/properties/comunidades/operacion";
 
@@ -45,7 +44,7 @@ function PropertiesQuickNav({ goTo }) {
   };
 
   return <nav className="properties-focus-rail" aria-label="Navegación de Properties">
-    <button className="focus-brand" type="button" onClick={() => goTo("/properties")} aria-label="Inicio de Properties"><PropertiesLogo compact /><span><strong>Properties</strong><small>Centro de operación</small></span></button>
+    <button className="focus-brand is-logo-only" type="button" onClick={() => goTo("/properties")} aria-label="Inicio de Properties"><img src="/brand/properties-mark-color.svg" alt="" aria-hidden="true" /></button>
     <div className="focus-rail-nav">
       {item({ key: "home", label: "Hoy", icon: HiHomeModern, to: "/properties", active: pathname === "/properties" || pathname === "/properties/guia" })}
       {groups.map(([title, items]) => {

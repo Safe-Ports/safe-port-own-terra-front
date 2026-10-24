@@ -5,19 +5,8 @@ import { UNIT_TYPE_LABEL } from "../features/units/unitModel";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** Momento del día para el saludo y la ilustración del cielo. */
-export function dayPeriod(hour) {
-  if (hour >= 5 && hour < 8) return "dawn";
-  if (hour >= 8 && hour < 17) return "day";
-  if (hour >= 17 && hour < 20) return "dusk";
-  return "night";
-}
-
-export function greeting(hour) {
-  if (hour >= 5 && hour < 12) return "Buenos días";
-  if (hour >= 12 && hour < 19) return "Buenas tardes";
-  return "Buenas noches";
-}
+// El saludo y el cielo son los mismos del inicio de Properties.
+export { skyPeriod as dayPeriod, greeting } from "../components/SkyScene";
 
 /** "Laura Méndez (prueba)" -> "Laura". */
 export function firstName(fullName = "") {

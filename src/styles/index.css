@@ -3105,7 +3105,7 @@ textarea.is-invalid {
 
 .lf-input {
   width: 100%;
-  padding: 12px 52px 12px 52px;
+  padding: 12px 14px;
   border: 1px solid var(--bd);
   border-radius: 11px;
   font-size: 0.9rem;
@@ -4676,6 +4676,26 @@ textarea.is-invalid {
 }
 .mx-files-item:hover { background: var(--sf2); color: var(--forest); }
 
+
+/* Inputs con botón Ver/Ocultar a la derecha. */
+.lf-input.has-toggle { padding-right: 84px; }
+
+/* Pista bajo un campo con error (p. ej. correo ya registrado). */
+.lf-field-hint {
+  margin-top: 6px;
+  font-size: .78rem;
+  color: var(--text-secondary, #555b55);
+}
+.lf-link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--forest, #355E3B);
+  cursor: pointer;
+  text-decoration: underline;
+}
 
 /* Ayuda persistente de contraseña en el registro. */
 .lf-password-help {

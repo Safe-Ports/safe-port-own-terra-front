@@ -1,0 +1,29 @@
+/* Portal · reportes de mantenimiento (y pases de visita, que reutilizan el formulario) */
+.community-portal-shell .portal-tickets>header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.community-portal-shell .portal-tickets-new{padding:11px 16px;border-radius:12px;background:#153457;color:#fff;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 10px 18px -12px rgba(15,39,66,.6)}
+.community-portal-shell .portal-tickets-new:hover{background:#0f2742}
+.community-portal-shell .portal-tickets-note{margin:14px 24px 0;padding:12px 14px;border-radius:12px;font-size:14px}
+.community-portal-shell .portal-tickets-note.is-ok{background:#e6f3ea;color:#1f5a35}
+.community-portal-shell .portal-tickets-note.is-warn{background:#fdf1dc;color:#7a5113}
+.community-portal-shell .portal-tickets-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:16px 24px 4px;padding:18px;border:1px solid #e1e8f0;border-radius:18px;background:#fbfcfe}
+.community-portal-shell .portal-tickets-form label{display:grid;gap:6px}
+.community-portal-shell .portal-tickets-form label.wide,.community-portal-shell .portal-tickets-form footer{grid-column:1/-1}
+.community-portal-shell .portal-tickets-form label>span{color:#33567e;font-size:12px;font-weight:700}
+.community-portal-shell .portal-tickets-form :is(input,select,textarea){width:100%;padding:11px 12px;border:1px solid #d5dee8;border-radius:12px;background:#fff;color:#15293f;font:inherit;font-size:15px}
+.community-portal-shell .portal-tickets-form :is(input,select,textarea):focus{outline:2px solid #9fb6cc;outline-offset:1px}
+.community-portal-shell .portal-tickets-form footer{display:flex;justify-content:flex-end;gap:10px}
+.community-portal-shell .portal-tickets-form footer button{padding:10px 16px;border:1px solid #d5dee8;border-radius:12px;background:#fff;color:#153457;font-size:14px;font-weight:700;cursor:pointer}
+.community-portal-shell .portal-tickets-form footer button[type="submit"]{border-color:#153457;background:#153457;color:#fff}
+.community-portal-shell .portal-tickets-form footer button:disabled{opacity:.6;cursor:wait}
+.community-portal-shell .community-list i.muted{background:#eef1f4;color:#6b7785}
+@media (max-width:640px){
+  .community-portal-shell .portal-tickets-form{grid-template-columns:1fr;margin:14px 14px 4px;padding:14px}
+  .community-portal-shell .portal-tickets-note{margin:12px 14px 0}
+  .community-portal-shell .portal-tickets-new{width:100%;justify-content:center;text-align:center}
+}
+.community-portal-shell .portal-field-error{color:#a3401f;font-size:12px;font-style:normal}
+.community-portal-shell .portal-tickets-form .wide.portal-tickets-note{grid-column:1/-1;margin:0}
+.community-portal-shell .portal-tickets-form footer button[type="submit"]{display:inline-flex;align-items:center;gap:8px}
+.community-portal-shell .portal-tickets-form footer button svg{width:18px;height:18px}
+.community-portal-shell .portal-visitors-pass{padding:18px 24px 24px}
+@media (max-width:640px){.community-portal-shell .portal-visitors-pass{padding:14px}}

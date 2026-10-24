@@ -25,12 +25,13 @@ function CoreTopbarActions({ onGuide, className = "" }) {
 
   const isActive = (path) => location.pathname === path;
 
-  // El perfil es la misma página servida por dos shells (ver Ecosystem/Perfil.jsx).
-  // Esta barra la comparten Lands y el Core, así que se elige la versión
-  // de la shell en la que ya está el usuario: abrir tu perfil no debería cambiarte
-  // la de otra vertical.
-  const inLands = !/^\/ecosistema\b/.test(location.pathname);
-  const profilePath = inLands ? "/perfil" : "/ecosistema/perfil";
+  // El perfil es la misma página servida por la shell de cada app (ver
+  // Ecosystem/Perfil.jsx). Esta barra la comparten Lands, Properties y el Core,
+  // así que se elige la versión de la shell en la que ya está el usuario: abrir
+  // tu perfil no debería cambiarte de vertical.
+  const profilePath = /^\/properties\b/.test(location.pathname) ? "/properties/perfil"
+    : /^\/ecosistema\b/.test(location.pathname) ? "/ecosistema/perfil"
+    : "/perfil";
 
   return (
     <>
