@@ -39,6 +39,7 @@ describe("RentalCatalogPage", () => {
     const dialog=screen.getByRole("dialog", { name:"Solicitar información" });
     fireEvent.change(within(dialog).getByLabelText("Nombre *"), { target:{ value:"Laura Méndez" } });
     fireEvent.change(within(dialog).getByLabelText("Teléfono"), { target:{ value:"55 4000 5000" } });
+    fireEvent.click(within(dialog).getByRole("checkbox", { name:/He leído y acepto/ }));
     fireEvent.click(within(dialog).getByRole("button", { name:"Enviar solicitud" }));
     expect(screen.getByRole("heading", { name:"Recibimos tu interés" })).toBeInTheDocument();
     expect(readRentalInquiries()[0]).toMatchObject({ name:"Laura Méndez", unitId:"unit-j401", source:"Catálogo público" });
