@@ -154,3 +154,18 @@ describe("Registro: cada error se explica en su campo", () => {
     expect(await screen.findByText(/ref_test/)).toBeVisible();
   });
 });
+
+describe("Enlace desde el sitio público", () => {
+  it("con ?registro abre directo el alta de cuenta", () => {
+    window.history.replaceState(null, "", "/?registro=1");
+    render(<LoginScreen />);
+    expect(screen.getByRole("button", { name: "Crear cuenta" })).toBeInTheDocument();
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("sin el parámetro abre el inicio de sesión", () => {
+    render(<LoginScreen />);
+    expect(screen.queryByRole("button", { name: "Crear cuenta" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Crear cuenta nueva" })).toBeInTheDocument();
+  });
+});

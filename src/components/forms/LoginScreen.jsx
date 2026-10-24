@@ -531,7 +531,11 @@ function RegisterView({ onBack }) {
 
 /* ── ROOT ── */
 function LoginScreen() {
-  const [view, setView] = useState("login");
+  // El sitio público manda "Pruébalo ahora" con ?registro=1: se abre directo
+  // el alta de cuenta en lugar del inicio de sesión.
+  const [view, setView] = useState(() =>
+    new URLSearchParams(window.location.search).has("registro") ? "register" : "login"
+  );
 
   return (
     <div className="lf-screen">
