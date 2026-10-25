@@ -9,10 +9,10 @@ import { useState } from "react";
  * Stripe cuando está disponible y cae al de marketing (`price`) solo como respaldo,
  * así panel y cobro nunca se desincronizan.
  *
- * Para conectar cada tier: crea 3 precios en Stripe (USD) y pon sus IDs en las env
+ * Para conectar cada tier: crea 3 precios en Stripe (MXN) y pon sus IDs en las env
  * vars STRIPE_PRICE_ID_ESTANDAR / _CRECIMIENTO / _PROFESIONAL.
  */
-const CURRENCY = "USD"; // respaldo de moneda si Stripe aún no reporta la real
+const CURRENCY = "MXN"; // respaldo de moneda si Stripe aún no reporta la real
 
 const DASH = "—";
 
@@ -20,7 +20,7 @@ const DASH = "—";
 const MATRIX_ROWS = [
   { key: "usuarios", label: "Usuarios incluidos", hint: "Admins o vendedores" },
   { key: "inmuebles", label: "Inmuebles", hint: "Fraccionamientos" },
-  { key: "lotes", label: "Lotes por inmueble" },
+  { key: "lotes", label: "Lotes (total de la cuenta)" },
   { key: "formularios", label: "Formularios de llenado" },
   { key: "calculadoras", label: "Calculadoras" },
   { key: "reportes", label: "Reportes" },
@@ -55,10 +55,10 @@ const PLANS = [
     key: "estandar",
     name: "Estándar",
     tagline: "Para inmobiliarias que arrancan.",
-    price: 99,
+    price: 2000,
     highlights: [
       "5 usuarios del equipo",
-      "3 inmuebles · 25 lotes c/u",
+      "3 inmuebles · 25 lotes en total",
       "Reportes y dashboard ilimitados",
       "10 GB · Bot de soporte · App móvil",
     ],
@@ -73,10 +73,10 @@ const PLANS = [
     name: "Crecimiento",
     recommended: true,
     tagline: "Para desarrolladoras en expansión.",
-    price: 149,
+    price: 5000,
     highlights: [
       "10 usuarios del equipo",
-      "5 inmuebles · 50 lotes c/u",
+      "5 inmuebles · 50 lotes en total",
       "Formularios y calculadoras ilimitados",
       "50 GB · Bot prioritario · App móvil",
     ],
@@ -90,10 +90,10 @@ const PLANS = [
     key: "profesional",
     name: "Profesional",
     tagline: "Para grupos y constructoras.",
-    price: 249,
+    price: 8000,
     highlights: [
       "Usuarios e inmuebles ilimitados",
-      "250 lotes por inmueble",
+      "250 lotes en total",
       "Formularios y calculadoras ilimitados",
       "100 GB · Bot dedicado · App móvil",
     ],
