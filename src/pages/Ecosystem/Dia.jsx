@@ -7,6 +7,7 @@ import { appointmentService } from "@/services/appointmentService";
 import { taskService } from "@/services/taskService";
 import EcoLayout from "./EcoLayout";
 import TasksBoard from "./TasksBoard";
+import NotificationsCard from "./NotificationsCard";
 import OnboardingChecklist from "@/components/shared/OnboardingChecklist";
 import GuideModal from "@/components/shared/GuideModal";
 import { useLandsOverdue, LandsAlertStrip } from "./verticals/LandsMiDia";
@@ -17,40 +18,40 @@ const TOUR_STEPS = [
     text: "Este es tu hub central. Desde aquí controlas todas las aplicaciones, tu agenda y tus documentos en un solo lugar. El menú lateral izquierdo es tu punto de partida para navegar.",
   },
   {
-    title: "☀️ Mi Día",
+    title: "Mi Día",
     text: "La vista que ves ahora. Muestra tu progreso diario: citas agendadas, tareas prioritarias y pagos vencidos. Es tu resumen ejecutivo cada mañana.",
   },
   {
-    title: "📅 Agenda",
+    title: "Agenda",
     text: "Administra visitas, llamadas y firmas de contratos. Puedes crear citas, asignarles clientes y verlas en vista de semana o lista. Está sincronizada con todas las apps del ecosistema.",
   },
   {
-    title: "⚡ Acciones rápidas",
+    title: "Acciones rápidas",
     text: "Los botones 'Visita' y 'Documento' en la barra de bienvenida te llevan directamente al módulo correspondiente sin buscar en el menú.",
   },
   {
-    title: "📊 Apps",
+    title: "Apps",
     text: "El lanzador de aplicaciones del ecosistema — OwnTerra Lands y las que se vayan sumando.",
   },
   {
-    title: "🔒 OwnTerra Vault",
+    title: "OwnTerra Vault",
     text: "Bóveda centralizada de documentos. Organiza contratos, identificaciones, escrituras y planos en carpetas jerárquicas. Todos los documentos de tus clientes viven aquí.",
   },
   {
-    title: "👥 Clientes del core",
+    title: "Clientes del core",
     text: "El directorio maestro de identidades. Cada cliente tiene un perfil único que se comparte entre todas las apps. Aquí puedes vincularlos a Lands o Properties.",
   },
   {
-    title: "🛡️ Equipo",
+    title: "Equipo",
     text: "Gestiona los usuarios de tu organización: roles, permisos y acceso por aplicación. Solo los administradores pueden modificar esta sección.",
   },
   {
-    title: "🏡 OwnTerra Lands",
+    title: "OwnTerra Lands",
     text: "La app principal de gestión inmobiliaria: fraccionamientos, lotes, contratos de compraventa y cobranza. Accede desde el menú lateral bajo 'Aplicaciones'.",
   },
   {
-    title: "🔔 Alertas y pendientes",
-    text: "Al final de Mi Día ves todas tus notificaciones agrupadas por fecha. Puedes marcarlas como leídas individualmente o todas de una vez con el enlace 'Marcar todas como leídas'.",
+    title: "Notificaciones",
+    text: "Debajo de tus tareas ves las notificaciones de todas tus apps, agrupadas por día. El número del botón 'Mi Día' son las que no has leído. Márcalas una por una o todas con 'Marcar todas como leídas'.",
   },
 ];
 
@@ -117,7 +118,6 @@ function EcosystemDia() {
     const h = new Date().getHours();
     return h < 12 ? "Buenos días" : h < 19 ? "Buenas tardes" : "Buenas noches";
   })();
-  const emoji = (() => { const h = new Date().getHours(); return h < 12 ? "👋" : h < 19 ? "🌤️" : "🌙"; })();
 
   const todayAppts = rawAppts.filter((a) => {
     const d = new Date(a.scheduled_at);
@@ -132,12 +132,12 @@ function EcosystemDia() {
   const showingUpcoming = todayAppts.length === 0 && agendaAppts.length > 0;
 
   const motiv = done === totalAppts && totalAppts > 0
-    ? "¡Completaste todas tus citas del día! 🎉 Excelente trabajo."
+    ? "¡Completaste todas tus citas del día! Excelente trabajo."
     : hasLands && overdueItems.length > 0
-      ? `Vas muy bien — cierra el día recuperando ${overdueItems.length} pago${overdueItems.length > 1 ? "s" : ""} pendiente${overdueItems.length > 1 ? "s" : ""}. 💪`
+      ? `Vas muy bien — cierra el día recuperando ${overdueItems.length} pago${overdueItems.length > 1 ? "s" : ""} pendiente${overdueItems.length > 1 ? "s" : ""}.`
       : totalAppts > 0
-        ? `Llevas ${done} de ${totalAppts} citas. ¡Tú puedes con el resto! 🚀`
-        : "Sin citas para hoy. Buen momento para planificar. 📋";
+        ? `Llevas ${done} de ${totalAppts} citas. ¡Tú puedes con el resto!`
+        : "Sin citas para hoy. Buen momento para planificar.";
 
   // Acciones rápidas: solo lo genuinamente cotidiano para cualquier rol. Nada
   // específico de una vertical (ni siquiera condicionado) — eso vive en las
@@ -153,7 +153,7 @@ function EcosystemDia() {
       {/* HERO motivador */}
       <div className="md-hero">
         <div style={{ position: "relative", zIndex: 1 }}>
-          <div className="md-greet">{greeting}, {firstName} {emoji}</div>
+          <div className="md-greet">{greeting}, {firstName}</div>
           <div className="md-greet-sub">{motiv}</div>
         </div>
         <div className="md-prog">
@@ -254,6 +254,9 @@ function EcosystemDia() {
 
       {/* TABLERO DE TAREAS (personal) */}
       <TasksBoard />
+
+      {/* Notificaciones del Core: son las que cuenta el botón "Mi Día" de la barra. */}
+      <NotificationsCard />
 
       {/* Avisos por vertical — al final, como franja compacta, no como
           protagonista al lado de la agenda. */}
