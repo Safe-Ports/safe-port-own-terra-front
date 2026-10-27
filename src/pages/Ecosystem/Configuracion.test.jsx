@@ -57,5 +57,9 @@ describe("Configuración en el shell del Core", () => {
     // Y NO el de Lands (que trae Lotes / Fraccionamientos / Pagos).
     expect(screen.queryByRole("link", { name: /Fraccionamientos/ })).not.toBeInTheDocument();
     expect(screen.queryByText("Configuración del espacio Lands")).not.toBeInTheDocument();
+
+    // La suscripción es de Lands: aquí no sale ni la tarjeta ni el plan.
+    expect(screen.queryByText("Suscripción y facturación")).not.toBeInTheDocument();
+    expect(screen.queryByText("Estado suscripción")).not.toBeInTheDocument();
   });
 });
