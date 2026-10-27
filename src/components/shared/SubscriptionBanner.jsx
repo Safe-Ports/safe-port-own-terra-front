@@ -27,12 +27,9 @@ function SubscriptionBanner() {
   let dest = "/planes"; // por defecto, la página de planes (suscribir/renovar)
   let cta = "Ver planes";
 
-  // Configuración vive en dos rutas, una por shell (Core y Lands). El banner sale
-  // en ambos, así que manda a la del shell donde está el usuario para no moverlo
-  // de app al gestionar el pago.
-  const settingsPath = window.location.pathname.startsWith("/ecosistema")
-    ? "/ecosistema/configuracion"
-    : "/configuracion";
+  // La suscripción solo se gestiona en la Configuración de Lands: la del Core
+  // (que también usa Properties) ya no la muestra.
+  const settingsPath = "/configuracion";
 
   if (["cancelled", "unpaid"].includes(sub.status)) {
     tone = "error";

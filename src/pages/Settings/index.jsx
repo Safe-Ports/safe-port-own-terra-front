@@ -59,7 +59,9 @@ function fmtMoney(amount, currency) {
   }
 }
 
-function SettingsPage() {
+// `showSubscription`: la suscripción es solo de Lands (Properties tendrá la suya).
+// Desde el shell del Core, que también usa Properties, se oculta.
+function SettingsPage({ showSubscription = true }) {
   const { currentUser, showToast, showError, canUseFeature } = useAppContext();
   const [showGuide, setShowGuide] = useState(false);
   useLandsGuide(() => setShowGuide(true));
@@ -84,6 +86,7 @@ function SettingsPage() {
   const { data: subscription } = useQuery({
     queryKey: ["subscription"],
     queryFn: billingService.getSubscription,
+    enabled: showSubscription,
   });
 
   // Al volver de Stripe Checkout (success_url/cancel_url → /configuracion?billing=...),
@@ -127,6 +130,7 @@ function SettingsPage() {
   const { data: plans = [] } = useQuery({
     queryKey: ["billing-plans"],
     queryFn: billingService.getPlans,
+    enabled: showSubscription,
   });
 
   // Identifica QUÉ acción está en curso (el price_id del botón, o "portal"), para
@@ -289,8 +293,7 @@ function SettingsPage() {
                 {[
                   ["Usuarios", org.stats.total_users],
                   ["Nombre", org.name],
-                  ["Plan", org.plan],
-                  ["Estado suscripción", org.subscription_status],
+                  ...(showSubscription ? [["Plan", org.plan], ["Estado suscripción", org.subscription_status]] : []),
                   ["Correo", org.email || "—"],
                   ["Teléfono", org.phone || "—"],
                   ["RFC / Tax ID", org.tax_id || "—"],
@@ -315,6 +318,7 @@ function SettingsPage() {
 
 
       {/* Suscripción y facturación */}
+      {showSubscription && (
       <div className="card">
         <div className="card-hd">
           <div className="card-title"><HiCreditCard /> Suscripción y facturación</div>
@@ -392,6 +396,7 @@ function SettingsPage() {
           )}
         </div>
       </div>
+      )}
 
       {/* Usuarios */}
       <div className="card">

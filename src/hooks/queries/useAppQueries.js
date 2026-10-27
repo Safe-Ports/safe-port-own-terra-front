@@ -6,19 +6,22 @@ import { dashboardService } from "@/services/dashboardService";
 export function useDashboardQuery() {
   const { currentUser, clients, contracts, fracs, payments } = useAppContext();
 
-  const { data: stats } = useQuery({
+  const statsQuery = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: () => dashboardService.stats("year"),
     enabled: !!currentUser,
     staleTime: 120_000,
   });
 
-  const { data: midia } = useQuery({
+  const midiaQuery = useQuery({
     queryKey: ["dashboard-midia"],
     queryFn: () => dashboardService.midia(),
     enabled: !!currentUser,
     staleTime: 60_000,
   });
+
+  const stats = statsQuery.data;
+  const midia = midiaQuery.data;
 
   const data = useMemo(() => {
     if (!stats || !midia) return null;
@@ -46,7 +49,15 @@ export function useDashboardQuery() {
     };
   }, [stats, midia, clients, contracts, fracs]);
 
-  return { data };
+  // Si cualquiera de las dos falla, `data` nunca llega: sin esto la pantalla se
+  // quedaba en el esqueleto para siempre, sin decir qué pasó.
+  const error = statsQuery.error || midiaQuery.error || null;
+  const retry = () => {
+    if (statsQuery.error) statsQuery.refetch();
+    if (midiaQuery.error) midiaQuery.refetch();
+  };
+
+  return { data, error, retry };
 }
 
 export function useProjectsQuery() {

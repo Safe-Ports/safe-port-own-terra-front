@@ -1,5 +1,5 @@
 import { LuArrowRight, LuBath, LuBedDouble, LuBuilding2, LuCircleCheck, LuHouse, LuLayers, LuMegaphone, LuPackage, LuReceipt, LuRuler, LuVote, LuWallet } from "react-icons/lu";
-import SkyScene from "../components/SkyScene";
+import SkyScene from "@/components/shared/SkyScene";
 import { reportForCharge, reportNotices } from "../features/collections/collectionsModel";
 import { dayPeriod, firstName, greeting, homeFacts, homeKind, todayItems } from "./portalHomeModel";
 import "./portal-home.css";

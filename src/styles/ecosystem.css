@@ -596,6 +596,19 @@
 .eco-root .md-name{font-size:13.5px;font-weight:600;color:var(--text)}
 .eco-root .md-meta{font-size:11.5px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
+/* Notificaciones de Mi Día: sin leer = punto y fondo suave; leídas en gris. */
+.eco-root .md-notif-group+.md-notif-group{margin-top:10px}
+.eco-root .md-notif-day{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);padding:10px 0 4px}
+.eco-root .md-notif{display:flex;align-items:flex-start;gap:11px;padding:11px 10px;margin:0 -10px;border-radius:12px}
+.eco-root .md-notif.is-unread{background:rgba(72,169,166,.07)}
+.eco-root .md-notif-dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex-shrink:0;background:transparent}
+.eco-root .md-notif.is-unread .md-notif-dot{background:var(--mid)}
+.eco-root .md-notif:not(.is-unread) .md-name{font-weight:500;color:var(--text2)}
+.eco-root .md-notif-body{font-size:12.5px;color:var(--text2);margin-top:2px;line-height:1.45}
+.eco-root .md-notif .md-meta{white-space:normal}
+.eco-root .md-notif .md-open{background:none;border:none;padding:4px 0;margin-top:2px}
+.eco-root .md-notif-empty{padding:22px 0;text-align:center;color:var(--text3);font-size:13px}
+.eco-root .md-notif-more{font-size:11.5px;color:var(--text3);padding-top:10px}
 .eco-root .md-row{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--border)}
 .eco-root .md-row:last-child{border-bottom:none}
 .eco-root .md-row-ico{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;color:#C0392B}
