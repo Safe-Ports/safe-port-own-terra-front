@@ -3,7 +3,7 @@ import { useAppContext } from "@/context/AppContext";
 import CoreTopbarActions from "./CoreTopbarActions";
 
 const titleMap = {
-  "/dashboard": "Dashboard",
+  "/dashboard": "Actividad",
   "/lotes": "Carga de Lotes",
   "/fraccionamientos": "Fraccionamientos",
   "/track-lotes": "Track de Lotes",

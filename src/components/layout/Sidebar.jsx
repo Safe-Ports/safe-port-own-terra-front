@@ -25,7 +25,7 @@ import useEscapeKey from "@/hooks/useEscapeKey";
 // menú de Lands daba dos caminos al mismo lugar y ocupaba lugar de lo propio.
 const items = [
   { label: "Ecosistema", to: "/ecosistema", icon: HiRectangleGroup, section: "General" },
-  { label: "Dashboard", to: "/dashboard", icon: HiHome, section: "General" },
+  { label: "Actividad", to: "/dashboard", icon: HiHome, section: "General" },
   { label: "Carga de Lotes", to: "/lotes", icon: HiOutlineSquares2X2, section: "Propiedades" },
   { label: "Fraccionamientos", to: "/fraccionamientos", icon: HiMap, section: "Propiedades" },
   { label: "Track de Lotes", to: "/track-lotes", icon: HiPresentationChartLine, section: "Propiedades" },

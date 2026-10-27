@@ -41,7 +41,7 @@ describe("PropertiesQuickNav", () => {
     mocks.allowed = (feature) => feature !== "properties.properties.read";
     renderNav();
     expect(screen.queryByRole("button", { name: /Cobranza/ })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Hoy" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Actividad" })).toBeInTheDocument();
   });
 
   // Quitamos los enlaces "volver" de las pantallas: ahora el regreso vive solo
@@ -50,8 +50,8 @@ describe("PropertiesQuickNav", () => {
   it("keeps every Properties screen anchored to one menu entry", () => {
     mocks.allowed = () => true;
     const screens = [
-      ["/properties", "Hoy"],
-      ["/properties/guia", "Hoy"],
+      ["/properties", "Actividad"],
+      ["/properties/guia", "Actividad"],
       ["/properties/comunidades", "Comunidades"],
       ["/properties/comunidades?tab=units", "Comunidades"],
       ["/properties/comunidades/operacion?module=charges", "Cobranza"],

@@ -2,7 +2,7 @@ import "../components/properties-ui.css";
 import { useEffect, useMemo, useState } from "react";
 import { HiArrowLeft, HiArrowPath, HiArchiveBox, HiCalendarDays, HiChatBubbleLeftRight, HiCheckCircle, HiClock, HiExclamationTriangle, HiKey, HiMapPin, HiPaperAirplane, HiPhoto, HiSun, HiUser, HiWrenchScrewdriver, HiXMark } from "react-icons/hi2";
 import PropertiesLogo from "../components/PropertiesLogo";
-import SkyScene, { greeting, skyPeriod } from "../components/SkyScene";
+import SkyScene, { greeting, skyPeriod } from "@/components/shared/SkyScene";
 import { ORDER_STATUS, PARTNER_API_READY, PRIORITY_LABEL, STEPS, canMove, loadOrders, nextAction, partitionOrders, resetOrders, saveOrders, stepIndex, summary, validateFinish, whenLabel } from "./partnerModel";
 import "./service-partner-portal.css";
 

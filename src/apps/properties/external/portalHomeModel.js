@@ -6,7 +6,7 @@ import { UNIT_TYPE_LABEL } from "../features/units/unitModel";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 // El saludo y el cielo son los mismos del inicio de Properties.
-export { skyPeriod as dayPeriod, greeting } from "../components/SkyScene";
+export { skyPeriod as dayPeriod, greeting } from "@/components/shared/SkyScene";
 
 /** "Laura Méndez (prueba)" -> "Laura". */
 export function firstName(fullName = "") {
