@@ -46,7 +46,7 @@ function PropertiesQuickNav({ goTo }) {
   return <nav className="properties-focus-rail" aria-label="Navegación de Properties">
     <button className="focus-brand is-logo-only" type="button" onClick={() => goTo("/properties")} aria-label="Inicio de Properties"><img src="/brand/properties-mark-color.svg" alt="" aria-hidden="true" /></button>
     <div className="focus-rail-nav">
-      {item({ key: "home", label: "Hoy", icon: HiHomeModern, to: "/properties", active: pathname === "/properties" || pathname === "/properties/guia" })}
+      {item({ key: "home", label: "Actividad", icon: HiHomeModern, to: "/properties", active: pathname === "/properties" || pathname === "/properties/guia" })}
       {groups.map(([title, items]) => {
         const visible = items.filter((entry) => !entry.feature || canUseFeature(entry.feature));
         return visible.length ? [title ? <small className="focus-rail-group" key={title}>{title}</small> : null, ...visible.map(item)] : null;
