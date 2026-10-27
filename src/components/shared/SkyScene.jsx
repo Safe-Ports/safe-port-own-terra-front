@@ -1,7 +1,7 @@
 import "./sky-scene.css";
 
 // Momento del día para el saludo y el cielo. Lo comparten el inicio de Properties
-// (administración) y el portal de comunidad (residentes).
+// (administración), el portal de comunidad (residentes) y la Actividad de Lands.
 export function skyPeriod(hour) {
   if (hour >= 5 && hour < 8) return "dawn";
   if (hour >= 8 && hour < 17) return "day";
@@ -29,6 +29,20 @@ function House({ x, y, windowFill }) {
   </g>;
 }
 
+// Terreno lotificado: estacas que marcan los lotes y un letrero sobre la colina.
+function Land() {
+  return <g>
+    {[640, 690, 740, 790, 840, 890, 940].map((x) => <rect key={x} x={x} y={232 - (x - 640) * 0.035} width="4" height="22" rx="1" fill="var(--sky-door)"/>)}
+    <path d="M642 238 L942 228" stroke="var(--sky-door)" strokeWidth="1.5" opacity=".6"/>
+    <g transform="translate(800 150)">
+      <rect x="18" y="40" width="6" height="52" fill="var(--sky-door)"/>
+      <rect x="0" y="0" width="92" height="46" rx="4" fill="var(--sky-wall)"/>
+      <rect x="10" y="12" width="56" height="7" rx="3" fill="var(--sky-roof)"/>
+      <rect x="10" y="26" width="38" height="6" rx="3" fill="var(--sky-roof)" opacity=".55"/>
+    </g>
+  </g>;
+}
+
 function Building({ x, y, windowFill, lit, floors = 6 }) {
   return <g transform={`translate(${x} ${y})`}>
     <rect x="-6" y="-8" width="132" height="12" rx="4" fill="var(--sky-roof)"/>
@@ -39,7 +53,7 @@ function Building({ x, y, windowFill, lit, floors = 6 }) {
 }
 
 /**
- * Cielo según la hora con colinas y la casa, el edificio o la comunidad completa.
+ * Cielo según la hora con colinas y la casa, el edificio, la comunidad completa o un terreno.
  * Se anima con suavidad (estrellas, sol o luna, nubes); sin movimiento si la persona
  * lo pidió en su sistema. El contenedor necesita la clase `sky-host is-<periodo>`.
  */
@@ -59,6 +73,7 @@ function SkyScene({ period, kind = "building" }) {
     <path d="M0 262 C200 244 380 258 560 246 C720 236 860 252 1000 242 L1000 300 L0 300Z" fill="var(--sky-hill-near)"/>
     {kind === "house" ? <House x={748} y={150} windowFill={windowFill}/> : null}
     {kind === "building" ? <Building x={770} y={70} windowFill={windowFill} lit={lit}/> : null}
+    {kind === "land" ? <Land/> : null}
     {kind === "community" ? <>
       <Building x={780} y={97} windowFill={windowFill} lit={lit} floors={5}/>
       <g transform="translate(860 178) scale(.72)"><House x={0} y={0} windowFill={windowFill}/></g>

@@ -1,0 +1,21 @@
+/* Saludo de la Actividad de Lands. El cielo y sus colores vienen de sky-scene.css
+   (--sky-ink / --sky-muted); aquí solo el acomodo y los botones con la paleta de Lands. */
+.lg-hero{display:flex;flex-direction:column;justify-content:center;gap:12px;min-height:250px;padding:30px 36px;border-radius:24px;box-shadow:0 24px 40px -24px rgba(30,61,43,.45)}
+.lg-hero>:not(.sky-scene){max-width:min(520px,60%)}
+.lg-date{margin:0;color:var(--sky-muted);font-size:12px;font-weight:700;letter-spacing:.1em}
+.lg-hero h1{margin:0;color:var(--sky-ink);font-family:var(--font-title);font-size:42px;font-weight:600;line-height:1.05;letter-spacing:-.02em}
+.lg-lede{margin:0;color:var(--sky-muted);font-size:15px;line-height:1.55}
+.lg-lede strong{color:var(--sky-ink)}
+.lg-actions{display:flex;flex-wrap:wrap;gap:10px;padding-top:4px}
+.lg-primary,.lg-ghost{min-height:42px;padding:0 18px;border-radius:10px;font:inherit;font-size:14px;font-weight:650;cursor:pointer;transition:background .15s ease,border-color .15s ease}
+.lg-primary{border:0;background:var(--forest);color:#fff}
+.lg-primary:hover{background:var(--deep)}
+.lg-ghost{border:1px solid rgba(255,255,255,.7);background:rgba(255,255,255,.82);color:var(--sky-ink);backdrop-filter:blur(6px)}
+.lg-hero:is(.is-dusk,.is-night) .lg-ghost{border-color:rgba(255,255,255,.35);background:rgba(255,255,255,.14);color:#fff}
+.lg-primary:focus-visible,.lg-ghost:focus-visible{outline:2px solid var(--sky-ink);outline-offset:2px}
+@media(max-width:700px){
+  .lg-hero{padding:24px 20px 170px}
+  .lg-hero>:not(.sky-scene){max-width:none}
+  .lg-hero .sky-scene{top:auto;height:160px}
+  .lg-hero h1{font-size:34px}
+}

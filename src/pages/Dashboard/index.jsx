@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import GuideModal from "@/components/shared/GuideModal";
 import BusinessKpis from "@/components/shared/BusinessKpis";
 import QuickSummary from "@/components/shared/QuickSummary";
+import LandsGreeting from "./LandsGreeting";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAppContext } from "@/context/AppContext";
@@ -15,6 +16,7 @@ import {
   HiOutlineChevronDown, HiOutlineArrowRight,
 } from "react-icons/hi2";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { parseApiError } from "@/errors/parseApiError";
 
 /* Paleta de data-viz: ÚNICA fuente para los colores de gráficas. Usa tokens
    donde existen; los categóricos sin token (café/gris) quedan aquí centralizados. */
@@ -23,9 +25,6 @@ const VIZ = {
   egresos:   "#7B5C38",
   contratos: "var(--deep)",
   available: "var(--mid)",
-  sold:      "var(--danger)",
-  reserved:  "#7B5C38",
-  tramite:   "#94A3B8",
   grid:      "var(--line-soft)",
   axis:      "var(--muted)",
   hover:     "var(--sf2)",
@@ -41,55 +40,6 @@ function compactNum(n) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000)     return `${(n / 1_000).toFixed(0)}K`;
   return String(n);
-}
-
-/* ── KPI Card ────────────────────────────────────────────────── */
-/* ── Donut Chart (multi-segmento) ────────────────────────────── */
-function DonutChart({ segments, total, centerLabel }) {
-  const R = 44;
-  const C = 2 * Math.PI * R;
-  let cumulative = 0;
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-      <div style={{ position: "relative", flexShrink: 0 }}>
-        <svg width="110" height="110" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}>
-          <circle cx="50" cy="50" r={R} fill="none" stroke={VIZ.grid} strokeWidth="11" />
-          {segments.map((s, i) => {
-            const dash = total > 0 ? (s.value / total) * C : 0;
-            const offset = -cumulative;
-            cumulative += dash;
-            return (
-              <circle key={i} cx="50" cy="50" r={R} fill="none"
-                stroke={s.color} strokeWidth="11"
-                strokeDasharray={`${dash} ${C - dash}`}
-                strokeDashoffset={offset}
-                strokeLinecap="butt"
-              />
-            );
-          })}
-        </svg>
-        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column",
-          alignItems: "center", justifyContent: "center" }}>
-          <div style={{ fontFamily: "var(--font-body)", fontSize: "1.35rem",
-            fontWeight: 700, color: "var(--tx)", lineHeight: 1 }}>{total}</div>
-          <div style={{ fontSize: ".62rem", color: "var(--mu)", fontWeight: 600,
-            textTransform: "uppercase", letterSpacing: ".05em" }}>{centerLabel}</div>
-        </div>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-        {segments.map((s, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: ".78rem" }}>
-            <div style={{ width: 9, height: 9, borderRadius: "50%", background: s.color, flexShrink: 0 }} />
-            <span style={{ color: "var(--tx2)", flex: 1 }}>{s.label}</span>
-            <span style={{ fontWeight: 700, color: "var(--tx)" }}>{s.value}</span>
-            <span style={{ color: "var(--mu)", fontSize: ".7rem" }}>
-              ({total > 0 ? Math.round(s.value / total * 100) : 0}%)
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 }
 
 /* ── Gráfica genérica con tooltip ────────────────────────────── */
@@ -218,8 +168,8 @@ function DashboardSkeleton() {
 /* ══ PAGE ════════════════════════════════════════════════════════ */
 export default function DashboardPage() {
   const navigate    = useNavigate();
-  const { clients, contracts, payments, fracs } = useAppContext();
-  const { data }    = useDashboardQuery();
+  const { contracts, payments } = useAppContext();
+  const { data, error, retry } = useDashboardQuery();
   const [chartYear] = useState(CY);
   const [showGuide, setShowGuide] = useState(false);
   useLandsGuide(() => setShowGuide(true));
@@ -251,12 +201,6 @@ export default function DashboardPage() {
     staleTime: 60_000,
   });
   const salesThisMonth = kpisNegocio?.sales?.value ?? null;
-
-  const totalLots    = fracs.reduce((s, f) => s + (f.total_lots     || 0), 0);
-  const availLots    = fracs.reduce((s, f) => s + (f.available_lots || 0), 0);
-  const soldLots     = fracs.reduce((s, f) => s + (f.sold_lots      || 0), 0);
-  const reservedLots = fracs.reduce((s, f) => s + (f.reserved_lots  || 0), 0);
-  const inTramite    = Math.max(0, totalLots - availLots - soldLots - reservedLots);
 
   /* ── Chart data (monthly) ── */
   const monthlyChart = useMemo(() => {
@@ -292,12 +236,28 @@ export default function DashboardPage() {
       .sort((a, b) => new Date(b.contract_date) - new Date(a.contract_date))
       .slice(0, 5), [contracts]);
 
+  if (!data && error) {
+    const parsed = parseApiError(error, "No se pudo cargar la actividad.");
+    return (
+      <div role="alert" style={{ padding: "48px 24px", textAlign: "center" }}>
+        <h2 style={{ marginBottom: 6 }}>{parsed.title}</h2>
+        <p style={{ color: "var(--muted)", marginBottom: 4 }}>{parsed.message}</p>
+        <p style={{ color: "var(--muted)", fontSize: 12, marginBottom: 16 }}>
+          {parsed.code}{parsed.requestId ? ` · Ref ${parsed.requestId}` : ""}
+        </p>
+        <Button type="button" onClick={retry}>Reintentar</Button>
+      </div>
+    );
+  }
   if (!data) return <DashboardSkeleton />;
 
   return (
     <>
       <style>{`
-        .db-charts { display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px; }
+        /* El saludo arranca pegado a la barra superior, sin el aire general de las vistas. */
+        .view-scroll:has(.db-top) { padding-top:0; }
+        .db-top   { display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1fr);gap:14px;margin-bottom:14px; }
+        .db-charts { display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px; }
         .db-row3  { display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px; }
         .db-card  { background:var(--sf);border:1px solid var(--bd);border-radius:20px;overflow:hidden;box-shadow:var(--sh); }
         .db-card-hd { display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line-soft); }
@@ -308,15 +268,18 @@ export default function DashboardPage() {
         .db-accion:hover { border-color:var(--forest);background:var(--tan-lt); }
         .db-accion-ico { width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
 
-        @media (max-width:900px)  { .db-charts,.db-row3 { grid-template-columns:1fr; } }
+        @media (max-width:900px)  { .db-top,.db-charts,.db-row3 { grid-template-columns:1fr; } }
       `}</style>
 
-      {/* ── 6 KPIs ── */}
-      <BusinessKpis />
+      {/* ── Saludo + cobrado del mes ── */}
+      <div className="db-top">
+        <LandsGreeting />
+        <BusinessKpis />
+      </div>
       <QuickSummary />
 
-      {/* ── 3 gráficas ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
+      {/* ── 2 gráficas ── */}
+      <div className="db-charts">
 
         {/* 1. Ingresos vs Egresos */}
         <div className="db-card">
@@ -376,29 +339,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* 3. Estado de los lotes */}
-        <div className="db-card">
-          <div className="db-card-hd">
-            <div className="db-card-title">Estado de los lotes</div>
-          </div>
-          <div style={{ padding:"16px 18px" }}>
-            <DonutChart
-              segments={[
-                { label:"Disponibles", value:availLots,    color:VIZ.available },
-                { label:"Vendidos",    value:soldLots,     color:VIZ.sold },
-                { label:"Apartados",   value:reservedLots, color:VIZ.reserved },
-                { label:"En trámite",  value:inTramite,    color:VIZ.tramite },
-              ]}
-              total={totalLots}
-              centerLabel="Total lotes"
-            />
-          </div>
-          <div style={{ borderTop:"1px solid var(--line-soft)", padding:"10px 18px" }}>
-            <button className="db-ver-todos" onClick={() => navigate("/lotes")}>
-              Ver inventario completo <HiOutlineArrowRight />
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* ── Ventas recientes + Top vendedores ── */}
@@ -529,7 +469,7 @@ export default function DashboardPage() {
         title="Panel principal"
         subtitle="Vista consolidada de indicadores clave de tu negocio inmobiliario."
         steps={[
-          { title: "KPIs del mes", text: "Los indicadores al inicio muestran ingresos, ventas, lotes disponibles, vendidos e inventario total. El porcentaje compara con el mes anterior, y solo aparece donde hay historia para compararlo." },
+          { title: "Saludo del día", text: "Arriba ves cuántas cosas piden tu atención este mes (clientes en mora, apartados por vencer y lo que toca cobrar) y un botón que te lleva a resolver la más urgente. A un lado, lo cobrado en el mes contra el mes anterior." },
           { title: "Gráficas de tendencia", text: "Las gráficas muestran ingresos vs egresos y contratos cerrados mes a mes durante el año. Úsalas para detectar tendencias de cobranza y ventas." },
           { title: "Top vendedores", text: "Ranking mensual del equipo por número de contratos cerrados. Se actualiza en tiempo real con los contratos del mes en curso." },
           { title: "Ventas recientes", text: "Los últimos 5 contratos registrados con su cliente, fraccionamiento, monto y estado. Haz clic en 'Ver todos' para ir al repositorio completo." },

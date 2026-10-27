@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { HiArrowRight, HiBanknotes, HiBuildingOffice2, HiCheck, HiInboxStack, HiWrenchScrewdriver } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 import EcoLayout from "@/pages/Ecosystem/EcoLayout";
-import SkyScene, { greeting, skyPeriod } from "../../components/SkyScene";
+import SkyScene, { greeting, skyPeriod } from "@/components/shared/SkyScene";
 import { usePropertiesData } from "../../data/PropertiesDataContext";
 import { COLLECTIONS_API_READY, onPreviewChange, staffPayments } from "../collections/collectionsApi";
 import { paymentReportsKey } from "../collections/PaymentReviewPanel";
