@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import {
   HiCheckCircle,
   HiExclamationTriangle,
@@ -75,6 +76,11 @@ function ErrorToast({ data }) {
   );
 }
 
+// El toast va directo a document.body, igual que los modales (Modal y
+// DialogPortal). Dentro del layout quedaba atrapado en su contexto de apilado y
+// cualquier formulario abierto lo tapaba, sin importar su z-index.
+const toBody = (node) => createPortal(node, document.body);
+
 function Toast() {
   const { toast } = useAppContext();
 
@@ -82,7 +88,7 @@ function Toast() {
 
   // Toast enriquecido de error (showError) vs. toast de texto plano (showToast).
   if (typeof toast === "object" && toast.kind === "error") {
-    return <ErrorToast data={toast} />;
+    return toBody(<ErrorToast data={toast} />);
   }
 
   const data = typeof toast === "object"
@@ -91,7 +97,7 @@ function Toast() {
   const variant = TOAST_VARIANTS[data.kind] || TOAST_VARIANTS.info;
   const { Icon } = variant;
 
-  return (
+  return toBody(
     <div
       className={`app-toast app-toast--${data.kind || "info"}`}
       role={data.kind === "warning" ? "alert" : "status"}

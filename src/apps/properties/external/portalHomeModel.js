@@ -78,3 +78,72 @@ export function homeFacts(unit) {
     attributes.floor !== undefined && attributes.floor !== null && attributes.floor !== "" ? { icon: "floor", label: `Piso ${attributes.floor}` } : null,
   ].filter(Boolean);
 }
+
+const firstFilled = (source, keys) => keys.map((key) => source[key]).find((value) => value !== undefined && value !== null && value !== "");
+const stamp = (value) => (value ? parseDate(value).getTime() : 0);
+
+/** El cargo abierto que vence primero: es el "próximo pago" del encabezado. */
+export function nextCharge(charges = []) {
+  return charges.filter((charge) => pending(charge) > 0).sort((a, b) => stamp(a.due_date) - stamp(b.due_date))[0] || null;
+}
+
+/**
+ * Ficha corta de la unidad para la tarjeta "Mi departamento": las medidas
+ * principales y, aparte, lo que trae incluido. Sólo lo que la administración capturó.
+ */
+export function unitHighlights(unit) {
+  const source = unit?.attributes || {};
+  const area = firstFilled(source, ["area"]);
+  const floor = firstFilled(source, ["floor"]);
+  const bedrooms = firstFilled(source, ["bedrooms", "recamaras"]);
+  const bathrooms = firstFilled(source, ["bathrooms", "banos"]);
+  const parking = firstFilled(source, ["parking", "estacionamientos", "cajones"]);
+  const main = [
+    area ? { icon: "area", value: `${area} m²`, label: "Superficie" } : null,
+    floor !== undefined ? { icon: "floor", value: `Piso ${floor}`, label: "Piso o nivel" } : null,
+    Number(bedrooms) ? { icon: "bed", value: String(bedrooms), label: Number(bedrooms) === 1 ? "Recámara" : "Recámaras" } : null,
+    Number(bathrooms) ? { icon: "bath", value: String(bathrooms), label: Number(bathrooms) === 1 ? "Baño" : "Baños" } : null,
+  ].filter(Boolean);
+  const extra = [
+    Number(parking) ? { icon: "parking", label: "Estacionamiento", value: `${parking} ${Number(parking) === 1 ? "cajón" : "cajones"}` } : null,
+    source.storage_room === true ? { icon: "storage", label: "Bodega", value: "Incluida" } : null,
+    typeof source.pets_allowed === "boolean" ? { icon: "pets", label: "Mascotas", value: source.pets_allowed ? "Permitidas" : "No permitidas" } : null,
+    source.furnished === true ? { icon: "furnished", label: "Amueblada", value: "Sí" } : null,
+  ].filter(Boolean);
+  return { main, extra };
+}
+
+const IMAGE_URL = /\.(png|jpe?g|webp|gif|avif)(\?|#|$)/i;
+/** La primera imagen adjunta de un comunicado, para la portada de "Comunidad". */
+export function noticeImage(notice) {
+  return (notice?.attachments || []).map((file) => (typeof file === "string" ? file : file?.url)).find((url) => url && IMAGE_URL.test(url)) || null;
+}
+
+/**
+ * Lo que ya pasó en el hogar, de lo más reciente a lo más viejo: pagos
+ * reportados, solicitudes de mantenimiento, paquetes y comunicados.
+ */
+export function recentActivity({ reports = [], tickets = [], packages = [], announcements = [], statusLabel = {} }, limit = 4) {
+  const items = [
+    ...reports.filter((report) => report.status !== "cancelled").map((report) => ({
+      key: `report-${report.id}`, icon: report.status === "approved" ? "paid" : "charge", tone: report.status === "approved" ? "ok" : report.status === "rejected" ? "alert" : "calm", section: "charges",
+      title: report.status === "approved" ? "Pago confirmado" : report.status === "rejected" ? "Comprobante rechazado" : "Pago en revisión",
+      detail: money(report.amount, report.currency), at: report.reviewed_at || report.paid_on || report.created_at,
+    })),
+    ...tickets.map((ticket) => ({
+      key: `ticket-${ticket.id}`, icon: "ticket", tone: "warm", section: "tickets",
+      title: `Solicitud de mantenimiento${ticket.folio ? ` ${ticket.folio}` : ""}`,
+      detail: [ticket.title, statusLabel[ticket.status]].filter(Boolean).join(" · "), at: ticket.created_at,
+    })),
+    ...packages.map((item) => ({
+      key: `package-${item.id}`, icon: "package", tone: "violet", section: "packages",
+      title: item.status === "delivered" ? "Paquete entregado" : "Paquete recibido en recepción",
+      detail: [item.carrier, item.status === "delivered" ? "Entregado" : "Te espera en recepción"].filter(Boolean).join(" · "), at: item.received_at,
+    })),
+    ...announcements.map((notice) => ({
+      key: `notice-${notice.id}`, icon: "notice", tone: notice.is_urgent ? "alert" : "calm", section: "notices",
+      title: notice.title, detail: clip(notice.body, 60), at: notice.published_at || notice.created_at,
+    })),
+  ].filter((item) => item.at);
+  return items.sort((a, b) => stamp(b.at) - stamp(a.at)).slice(0, limit).map((item) => ({ ...item, date: shortDate(parseDate(item.at)) }));
+}
