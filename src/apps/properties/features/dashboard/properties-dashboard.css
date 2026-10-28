@@ -59,18 +59,6 @@
 .pd-occupancy .pd-bar{margin:4px 0 2px}
 .pd-occupancy .pd-text-link{justify-self:start;margin-top:6px}
 
-/* ── Configuración pendiente ────────────────────────────────────────────── */
-.pd-setup{display:grid;grid-template-columns:minmax(0,1fr) 200px auto;align-items:center;gap:8px 24px}
-.pd-setup p{margin:4px 0 0;color:#46607e;font-size:14px}
-.pd-setup-progress{display:grid;gap:6px}
-.pd-setup-progress small{color:#46607e;font-size:12px;font-weight:700}
-.pd-setup ul{display:flex;flex-wrap:wrap;grid-column:1 / -1;gap:8px 18px;margin:6px 0 0;padding:0;list-style:none}
-.pd-setup li{display:inline-flex;align-items:center;gap:8px;color:#15293f;font-size:13px;font-weight:650}
-.pd-setup li span{display:grid;width:18px;height:18px;place-items:center;border:2px solid #2f6b45;border-radius:50%;color:#2f6b45;font-size:11px}
-.pd-setup li.is-done{color:#6a768b;font-weight:400;text-decoration:line-through}
-.pd-setup li.is-done span{background:#2f6b45;color:#fff}
-.pd-setup>.pd-text-link{grid-column:3;grid-row:1}
-
 /* ── Acciones rápidas ───────────────────────────────────────────────────── */
 .eco-root .pd-page .pd-quick h2{margin:0 0 10px;color:#46607e;font-family:var(--font-body);font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
 .pd-quick>div{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
@@ -147,8 +135,6 @@
 }
 @media(max-width:1000px){
   .pd-middle{grid-template-columns:1fr}
-  .pd-setup{grid-template-columns:1fr}
-  .pd-setup>.pd-text-link{grid-column:auto;grid-row:auto}
 }
 @media(max-width:650px){
   .pd-hero{min-height:380px;border-radius:22px}

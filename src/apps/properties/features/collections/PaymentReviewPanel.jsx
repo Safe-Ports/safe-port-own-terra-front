@@ -24,7 +24,7 @@ function Evidence({ evidence }) {
   </div>;
 }
 
-function ReviewDialog({ report, onClose, onReviewed }) {
+export function ReviewDialog({ report, onClose, onReviewed }) {
   const { showToast } = useAppContext();
   const [amount, setAmount] = useState(String(report.amount));
   const [rejecting, setRejecting] = useState(false);

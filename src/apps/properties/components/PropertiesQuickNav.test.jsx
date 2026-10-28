@@ -24,23 +24,36 @@ function renderNav(path = "/properties") {
 describe("PropertiesQuickNav", () => {
   it("offers shortcuts with counts from persisted data and no duplicated top-bar items", () => {
     renderNav();
-    expect(screen.getByRole("button", { name: "Cobranza: 2 cargos vencidos" })).toBeInTheDocument();
+    // Las seis pestañas de Operación diaria viven colapsadas bajo "Operaciones"
+    // hasta que el usuario las despliega o entra a esa pantalla; el pendiente
+    // (2 cargos vencidos + 1 votación abierta) se resume en el propio acceso.
+    expect(screen.getByRole("button", { name: "Operaciones: 3 pendientes" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Cuotas y adeudos/ })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Comunidades" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Mi Día|Pendientes/ })).not.toBeInTheDocument();
   });
 
-  it("marks the module open in daily operations and navigates to shortcuts", () => {
+  it("expands Operaciones on click and lets the user reach every module", () => {
+    const goTo = renderNav();
+    fireEvent.click(screen.getByRole("button", { name: /Operaciones/ }));
+    expect(screen.getByRole("button", { name: /Gastos de servicios/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Cuotas y adeudos: 2 cargos vencidos" }));
+    expect(goTo).toHaveBeenCalledWith("/properties/comunidades/operacion?module=charges");
+  });
+
+  it("marks the active module open in daily operations, already expanded", () => {
     const goTo = renderNav("/properties/comunidades/operacion?module=committee");
-    expect(screen.getByRole("button", { name: /Comunicación/ })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("button", { name: /Cobranza/ })).not.toHaveAttribute("aria-current");
-    fireEvent.click(screen.getByRole("button", { name: /Cobranza/ }));
+    expect(screen.getByRole("button", { name: /Comité y votaciones/ })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("button", { name: /Cuotas y adeudos/ })).not.toHaveAttribute("aria-current");
+    fireEvent.click(screen.getByRole("button", { name: /Cuotas y adeudos/ }));
     expect(goTo).toHaveBeenCalledWith("/properties/comunidades/operacion?module=charges");
   });
 
   it("hides shortcuts the user has no permission for", () => {
     mocks.allowed = (feature) => feature !== "properties.properties.read";
     renderNav();
-    expect(screen.queryByRole("button", { name: /Cobranza/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Operaciones/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Comunidades/ })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Actividad" })).toBeInTheDocument();
   });
 
@@ -51,15 +64,16 @@ describe("PropertiesQuickNav", () => {
     mocks.allowed = () => true;
     const screens = [
       ["/properties", "Actividad"],
-      ["/properties/guia", "Actividad"],
       ["/properties/comunidades", "Comunidades"],
       ["/properties/comunidades?tab=units", "Comunidades"],
-      ["/properties/comunidades/operacion?module=charges", "Cobranza"],
-      ["/properties/comunidades/operacion?module=utilities", "Servicios"],
+      ["/properties/comunidades/operacion?module=charges", "Cuotas y adeudos"],
+      ["/properties/comunidades/operacion?module=utilities", "Gastos de servicios"],
       ["/properties/responsables", "Servicios"],
       ["/properties/tickets", "Servicios"],
-      ["/properties/comunidades/operacion?module=communications", "Comunicación"],
-      ["/properties/comunidades/operacion?module=committee", "Comunicación"],
+      ["/properties/comunidades/operacion?module=communications", "Comunicados"],
+      ["/properties/comunidades/operacion?module=committee", "Comité y votaciones"],
+      ["/properties/comunidades/operacion?module=amenities", "Amenidades"],
+      ["/properties/comunidades/operacion?module=reports", "Reportes"],
       ["/properties/operacion", "Todas las herramientas"],
       ["/properties/accesos", "Todas las herramientas"],
       ["/properties/portafolio", "Todas las herramientas"],

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { LuArrowRight, LuBanknote, LuBuilding2, LuCheck, LuChevronRight, LuCircleCheck, LuHouse, LuKeyRound, LuMegaphone, LuPackage, LuReceipt, LuUserPlus, LuUsers, LuVote, LuWrench } from "react-icons/lu";
+import { LuArrowRight, LuBanknote, LuBuilding2, LuChevronRight, LuCircleCheck, LuHouse, LuKeyRound, LuMegaphone, LuPackage, LuReceipt, LuUserPlus, LuUsers, LuVote, LuWrench } from "react-icons/lu";
 import { useAppContext } from "@/context/AppContext";
 import EcoLayout from "@/pages/Ecosystem/EcoLayout";
 import SkyScene, { greeting, skyPeriod } from "@/components/shared/SkyScene";
@@ -23,7 +23,7 @@ const plural = (count, one, many) => `${count} ${count === 1 ? one : many}`;
 function PropertiesDashboard() {
   const navigate = useNavigate();
   const { currentUser } = useAppContext();
-  const { properties, units, communities, condoCharges, votes, packages, reservations, tickets, announcements, personUnitRelations, quotaPlans, portalIdentities, propertiesLoading } = usePropertiesData();
+  const { properties, units, communities, condoCharges, votes, packages, reservations, tickets, announcements, portalIdentities, propertiesLoading } = usePropertiesData();
 
   const firstName = currentUser?.name?.split(" ")[0] || "equipo";
   const organizationName = currentUser?.organization?.name || currentUser?.organization || "Tu organización";
@@ -54,18 +54,6 @@ function PropertiesDashboard() {
     requestedReservations.length && { key: "amenities", tone: "calm", title: plural(requestedReservations.length, "reserva por aprobar", "reservas por aprobar"), detail: "Amenidades de la comunidad", cta: "Aprobar", to: `${OPERATIONS}?module=amenities` },
     openVotes.length && { key: "votes", tone: "calm", title: plural(openVotes.length, "votación abierta", "votaciones abiertas"), detail: "Da seguimiento a la participación", cta: "Ver", to: `${OPERATIONS}?module=committee` },
   ].filter(Boolean), [reportsToReview, overdue.length, overdueAmount, urgentTickets.length, openTickets.length, pendingPackages.length, requestedReservations.length, openVotes.length]);
-
-  // Progreso real de configuración: cada paso se marca con un dato que existe,
-  // no con una casilla que alguien palomeó. Completo, ya no ocupa lugar.
-  const steps = [
-    { label: "Crear comunidades", done: communities.length > 0 },
-    { label: "Registrar unidades", done: occupancy.total > 0 },
-    { label: "Asignar personas a sus unidades", done: personUnitRelations.some((item) => item.status !== "archived") },
-    { label: "Definir la cuota", done: (quotaPlans || []).length > 0 },
-    { label: "Invitar residentes al portal", done: (portalIdentities || []).length > 0 },
-  ];
-  const doneSteps = steps.filter((step) => step.done).length;
-  const nextStep = steps.find((step) => !step.done);
 
   const resolved = [
     [LuBanknote, "cuotas pagadas", condoCharges.filter((charge) => charge.status === "paid").length],
@@ -142,13 +130,6 @@ function PropertiesDashboard() {
           </section>
         </div>
       </div>
-
-      {nextStep ? <section className="pd-card pd-setup" aria-label="Progreso de configuración">
-        <div><h2>Configura tu portafolio</h2><p>Siguiente paso: <strong>{nextStep.label}</strong></p></div>
-        <div className="pd-setup-progress"><span className="pd-bar"><b style={{ width: `${Math.round((doneSteps / steps.length) * 100)}%` }}/></span><small>{doneSteps} de {steps.length}</small></div>
-        <ul>{steps.map((step) => <li key={step.label} className={step.done ? "is-done" : ""}><span aria-hidden="true">{step.done ? <LuCheck/> : null}</span>{step.label}</li>)}</ul>
-        <button type="button" className="pd-text-link" onClick={() => navigate("/properties/guia")}>Continuar guía <LuArrowRight/></button>
-      </section> : null}
 
       <section className="pd-quick" aria-label="Acciones rápidas">
         <h2>Acciones rápidas</h2>
