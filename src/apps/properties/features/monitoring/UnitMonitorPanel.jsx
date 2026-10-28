@@ -1,8 +1,11 @@
 import { useMemo, useState } from "react";
-import { HiArrowRight, HiBanknotes, HiBolt, HiBuildingOffice2, HiCreditCard, HiExclamationTriangle, HiHomeModern, HiMagnifyingGlass, HiPencilSquare, HiUserPlus, HiUsers } from "react-icons/hi2";
+import { Link } from "react-router-dom";
+import { HiArrowRight, HiBanknotes, HiBellAlert, HiBolt, HiBuildingOffice2, HiCreditCard, HiDocumentText, HiEyeDropper, HiFire, HiHomeModern, HiIdentification, HiMagnifyingGlass, HiPencilSquare, HiUserPlus, HiWifi } from "react-icons/hi2";
+import { useAppContext } from "@/context/AppContext";
 import { usePropertiesData } from "../../data/PropertiesDataContext";
 import { PROPERTIES_MVP_SCOPE } from "../../mvpScope";
 import { PERSON_UNIT_ROLE_LABEL } from "../community/communityModel";
+import { UTILITY_STATUS_LABEL, UTILITY_TYPE_LABEL } from "../condo/condoOperationsModel";
 import MediaGallery, { useEntityMedia } from "../media/MediaGallery";
 import SpecSheet from "../specs/SpecSheet";
 import { unitSpecSheet } from "../specs/specModel";
@@ -11,7 +14,14 @@ import { buildUnitMonitorRows } from "./unitMonitoringModel";
 import "./unit-monitoring.css";
 
 const money = (value) => new Intl.NumberFormat("es-MX", { style:"currency", currency:"MXN", maximumFractionDigits:0 }).format(value || 0);
+const shortDate = (value) => value ? new Date(String(value).length === 10 ? `${value}T12:00:00` : value).toLocaleDateString("es-MX", { day:"numeric", month:"short", year:"numeric" }) : "";
 const stateLabel = (value) => ({ paid:"Pagado", partial:"Pago parcial", pending:"Pendiente", overdue:"Vencido", waived:"Condonado", due_soon:"Por vencer", pending_evidence:"Sin evidencia", open:"Abierto", in_progress:"En progreso", resolved:"Resuelto" }[value] || value);
+// Qué tan urgente es cada estado de servicio, para colorear su pastilla.
+const UTILITY_TYPES = ["water", "electricity", "internet", "gas"];
+const UTILITY_ICON = { water:HiEyeDropper, electricity:HiBolt, internet:HiWifi, gas:HiFire };
+const UTILITY_TONE = { overdue:"danger", disputed:"danger", due_soon:"warn", pending_evidence:"warn", reported_paid:"warn", verified:"ok", suspended:"muted" };
+// Vigencia de la relación persona–unidad, si se capturó.
+const vigencia = (link) => link.endsAt ? `Vigente hasta ${shortDate(link.endsAt)}` : link.startsAt ? `Vigente desde ${shortDate(link.startsAt)}` : null;
 // Miniatura del encabezado: la portada de la unidad o, sin fotos, su ícono.
 function UnitCover({ unitId }) {
   const { images } = useEntityMedia("property", unitId);
@@ -35,6 +45,7 @@ const initials = (name = "") => name.split(" ").filter(Boolean).slice(0, 2).map(
    (mvpScope.later): hoy son datos demo. */
 function UnitMonitorPanel({ community, unitId, onSelectUnit, onAddUnit, onEditUnit, onAddMember, onUnlink, onOpenCharges, onBackToUnits, canWrite = false }) {
   const data = usePropertiesData();
+  const { showToast } = useAppContext();
   const [query, setQuery] = useState("");
   const withDemoModules = PROPERTIES_MVP_SCOPE.later;
   const rows = useMemo(() => buildUnitMonitorRows({
@@ -42,7 +53,10 @@ function UnitMonitorPanel({ community, unitId, onSelectUnit, onAddUnit, onEditUn
     people: data.communityPeople,
     relations: data.personUnitRelations,
     charges: data.condoCharges,
-    utilityServices: withDemoModules ? data.utilityServices : [],
+    // Igual que en Cobros: los servicios ya se muestran sin esconderse detrás
+    // de `later`, aunque la matriz de unidades conserve esa bandera para sus
+    // columnas de servicios/incidencias.
+    utilityServices: data.utilityServices,
     tickets: withDemoModules ? data.tickets : [],
   }), [data.units, data.communityPeople, data.personUnitRelations, data.condoCharges, data.utilityServices, data.tickets, community?.propertyId, withDemoModules]);
   const peopleById = useMemo(() => Object.fromEntries(data.communityPeople.map((person) => [person.id, person])), [data.communityPeople]);
@@ -53,6 +67,10 @@ function UnitMonitorPanel({ community, unitId, onSelectUnit, onAddUnit, onEditUn
   const selectedUnit = selected ? data.units.find((unit) => unit.id === selected.id) : null;
   const spec = selectedUnit ? unitSpecSheet({ ...(selectedUnit.attributes || {}), type: selectedUnit.type, floor: selectedUnit.floor, area: selectedUnit.area, bedrooms: selectedUnit.bedrooms, bathrooms: selectedUnit.bathrooms, description: selectedUnit.description }) : null;
   const withoutPeople = rows.filter((row) => !data.personUnitRelations.some((relation) => relation.unitId === row.id && relation.status !== "archived")).length;
+  const ownerLink = selected ? links.find((link) => link.role === "owner") : null;
+  const ownerPerson = ownerLink ? peopleById[ownerLink.personId] : null;
+  const remindResponsible = () => showToast(selected?.responsible.length ? `Vista previa: en producción avisaríamos a ${selected.responsible.map((person) => person.name).join(", ")}.` : "Esta unidad no tiene un responsable de pago asignado.", "info");
+  const generateDebtReport = () => showToast("Generar reporte de deuda estará disponible próximamente.", "info");
 
   if (!rows.length) return <section id="community-unit-workspace" className="community-panel unit-monitor-empty" aria-label={`Unidades de ${community?.name}`}><HiBuildingOffice2/><h2>Esta comunidad aún no tiene unidades</h2><p>Agrega sus casas, departamentos o espacios; quedarán vinculados a {community?.name}.</p>{canWrite&&onAddUnit?<button type="button" className="community-add-unit" onClick={onAddUnit}><HiHomeModern/> Agregar unidad</button>:null}</section>;
 
@@ -80,37 +98,73 @@ function UnitMonitorPanel({ community, unitId, onSelectUnit, onAddUnit, onEditUn
           {canWrite && onEditUnit ? <button type="button" className="unit-monitor-edit" onClick={() => onEditUnit(selected.id)} aria-label={`Editar ${selected.identifier}`}><HiPencilSquare/> Editar</button> : null}
         </header>
 
-        <div className="unit-page-stats">
-          <article className={selected.openChargeAmount ? "attention" : ""}><HiBanknotes/><span><small>Saldo pendiente</small><strong>{money(selected.openChargeAmount)}</strong><em>{selected.charges.length} movimientos registrados</em></span><button type="button" onClick={onOpenCharges}>Ver cuotas y adeudos <HiArrowRight/></button></article>
-          <article><HiUsers/><span><small>Personas</small><strong>{links.length}</strong><em>{!links.length ? "Nadie asignado" : selected.occupants.length ? `${selected.occupants.length} vive${selected.occupants.length === 1 ? "" : "n"} aquí` : "Nadie vive aquí"}</em></span></article>
-          <article className={selected.responsible.length ? "" : "attention"}><HiCreditCard/><span><small>Paga</small><strong>{selected.responsible.length ? selected.responsible.map((item) => item.name).join(", ") : "Sin responsable"}</strong><em>{selected.responsible.length ? "Responsable de pago" : "No se le pueden generar cuotas"}</em></span></article>
-          {withDemoModules ? <><article><HiBolt/><span><small>Servicios pendientes</small><strong>{money(selected.openServiceAmount)}</strong><em>{selected.services.length} servicios vinculados</em></span></article><article><HiExclamationTriangle/><span><small>Atención operativa</small><strong>{selected.openTickets} abiertas</strong><em>{selected.tickets.length} incidencias históricas</em></span></article></> : null}
-        </div>
+        <div className="unit-page-layout">
+          <div className="unit-page-main">
+            <section className="unit-page-card unit-service-card" aria-label={`Estado de servicios de ${selected.identifier}`}>
+              <h3>Estado de servicios</h3>
+              <ul className="unit-service-list">
+                {UTILITY_TYPES.map((type) => {
+                  const service = selected.services.find((item) => item.type === type);
+                  const Icon = UTILITY_ICON[type];
+                  const tone = service ? UTILITY_TONE[service.status] || "muted" : "muted";
+                  const pillText = !service ? "Sin registro" : (tone === "danger" || tone === "warn") && service.amount ? `${UTILITY_STATUS_LABEL[service.status] || service.status} · ${money(service.amount)}` : UTILITY_STATUS_LABEL[service.status] || service.status;
+                  return <li key={type} className="unit-service-row">
+                    <i className={`unit-service-ico tone-${tone}`}><Icon/></i>
+                    <span className="unit-service-label"><strong>{UTILITY_TYPE_LABEL[type]}</strong><small>{service?.name || "Sin periodo registrado"}</small></span>
+                    <span className={`unit-service-pill tone-${tone}`}>{pillText}</span>
+                  </li>;
+                })}
+              </ul>
+              <Link to={`/properties/comunidades/operacion?module=utilities&community=${community?.id || ""}`} className="unit-service-link">Ver todos los servicios de la comunidad <HiArrowRight/></Link>
+            </section>
 
-        <div className="unit-page-grid">
-          <div>
             <section className="unit-members unit-page-card" aria-label={`Personas de ${selected.identifier}`}>
               <header><h3>Personas de la unidad</h3>{canWrite && links.length ? <button type="button" className="unit-members-add" onClick={() => onAddMember(selected.id)}><HiUserPlus/> Agregar persona</button> : null}</header>
               {links.length ? links.map((link) => {
                 const person = peopleById[link.personId];
                 const perms = [link.isPaymentResponsible && "Paga", link.canVote && "Vota", link.amenityAccess && "Amenidades"].filter(Boolean);
+                const meta = [PERSON_UNIT_ROLE_LABEL[link.role] || link.role, link.isPrimary ? "Contacto principal" : null, person?.phone || null, vigencia(link)].filter(Boolean).join(" · ");
                 return <article key={link.id}>
                   <span className="unit-members-avatar">{initials(person?.name)}</span>
-                  <span><strong>{person?.name || "Persona archivada"}</strong><small>{PERSON_UNIT_ROLE_LABEL[link.role] || link.role}{link.isPrimary ? " · Contacto principal" : ""}</small><em>{perms.length ? perms.map((perm) => <i key={perm}>{perm}</i>) : <i className="muted">Sin permisos</i>}</em></span>
+                  <span><strong>{person?.name || "Persona archivada"}</strong><small>{meta}</small><em>{perms.length ? perms.map((perm) => <i key={perm}>{perm}</i>) : <i className="muted">Sin permisos</i>}</em></span>
                   {canWrite ? <button type="button" className="unit-members-unlink" onClick={() => onUnlink(link)} aria-label={`Quitar a ${person?.name || "esta persona"} de ${selected.identifier}`}>Quitar</button> : null}
                 </article>;
               }) : <div className="unit-members-empty"><p>Nadie está asignado a esta unidad. Sin una persona que pague, no se le pueden generar cuotas ni votar.</p>{canWrite ? <button type="button" onClick={() => onAddMember(selected.id)}><HiUserPlus/> Agregar la primera persona</button> : null}</div>}
             </section>
-            <section className="unit-page-card unit-page-movements"><h3>Movimientos recientes</h3>{selected.movements.length ? selected.movements.map((item) => <article key={item.id}><i>{item.type[0]}</i><span><strong>{item.title}</strong><small>{item.type} · {stateLabel(item.state)}</small></span><time>{String(item.date).slice(0, 10)}</time></article>) : <p>Esta unidad aún no tiene movimientos.</p>}</section>
+
+            <section className="unit-page-card unit-fact-card" aria-label={`Datos de ${selected.identifier}`}>
+              <h3>Datos de la unidad</h3>
+              <ul className="unit-fact-list">
+                <li><HiIdentification/><span><strong>{ownerPerson?.name || "Sin propietario asignado"}</strong><small>Propietario</small></span></li>
+                <li><HiBanknotes/><span><strong>{money(selected.openChargeAmount)}</strong><small>{selected.openChargeAmount ? `${selected.charges.length} movimiento${selected.charges.length === 1 ? "" : "s"} pendientes` : "Sin adeudo de cuotas"}</small></span></li>
+              </ul>
+              <div className="unit-fact-specs">
+                <h4>Ficha técnica</h4>
+                <SpecSheet {...spec} label={`Ficha técnica de ${selected.identifier}`} emptyText={canWrite ? "Sin ficha técnica. Complétala desde Editar." : "Sin ficha técnica."}/>
+              </div>
+            </section>
           </div>
-          <div>
-            <section className="unit-page-card"><h3>Fotos</h3><MediaGallery entityType="property" entityId={selected.id} label={`Fotos de ${selected.identifier}`} emptyText={canWrite ? "Sin fotos. Agrégalas desde Editar." : "Sin fotos."}/></section>
-            {/* Plegada: al administrador rara vez le hace falta; al residente sí (portal). */}
-            <details className="unit-spec-details unit-page-card">
-              <summary>Ficha técnica <small>{spec.facts.length + spec.features.length ? `${spec.facts.length + spec.features.length} datos` : "Sin datos"}</small></summary>
-              <SpecSheet {...spec} label={`Ficha técnica de ${selected.identifier}`} emptyText={canWrite ? "Sin ficha técnica. Complétala desde Editar." : "Sin ficha técnica."}/>
-            </details>
+
+          <div className="unit-actions-rail" aria-label="Acciones sobre la unidad">
+            <p className="unit-actions-label">Acciones</p>
+            <button type="button" className="unit-action is-primary" onClick={remindResponsible} disabled={!selected.responsible.length}>
+              <HiBellAlert/>
+              <span><strong>Enviar recordatorio</strong><small>{selected.responsible.length ? `Avisa a ${selected.responsible.map((person) => person.name).join(", ")} de lo pendiente` : "Asigna primero un responsable de pago"}</small></span>
+            </button>
+            <button type="button" className="unit-action" onClick={onOpenCharges}>
+              <HiCreditCard/>
+              <span><strong>Registrar pago</strong><small>Aplica un pago en Cuotas y adeudos</small></span>
+            </button>
+            <button type="button" className="unit-action" onClick={generateDebtReport}>
+              <HiDocumentText/>
+              <span><strong>Generar reporte de deuda</strong><small>Un PDF con cuotas y servicios pendientes</small></span>
+            </button>
           </div>
+        </div>
+
+        <div className="unit-page-grid unit-page-grid-secondary">
+          <section className="unit-page-card unit-page-movements"><h3>Movimientos recientes</h3>{selected.movements.length ? selected.movements.map((item) => <article key={item.id}><i>{item.type[0]}</i><span><strong>{item.title}</strong><small>{item.type} · {stateLabel(item.state)}</small></span><time>{String(item.date).slice(0, 10)}</time></article>) : <p>Esta unidad aún no tiene movimientos.</p>}</section>
+          <section className="unit-page-card"><h3>Fotos</h3><MediaGallery entityType="property" entityId={selected.id} label={`Fotos de ${selected.identifier}`} emptyText={canWrite ? "Sin fotos. Agrégalas desde Editar." : "Sin fotos."}/></section>
         </div>
       </aside> : null}
     </div>

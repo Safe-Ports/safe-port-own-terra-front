@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import UnitMonitorPanel from "./UnitMonitorPanel";
 
@@ -23,6 +24,8 @@ vi.mock("../../data/PropertiesDataContext", () => ({
 // Las fotos se consultan a properties-back; aquí sólo importa la tabla.
 vi.mock("../media/MediaGallery", () => ({ default: () => null, useEntityMedia: () => ({ images: [] }) }));
 
+vi.mock("@/context/AppContext", () => ({ useAppContext: () => ({ showToast: vi.fn() }) }));
+
 const community = { id: "c1", name: "Torre Jacarandas", propertyId: "p1" };
 
 describe("UnitMonitorPanel", () => {
@@ -40,7 +43,7 @@ describe("UnitMonitorPanel", () => {
 
   it("opens a unit on its own view, without the catalog, and goes back to it", () => {
     const onBackToUnits = vi.fn();
-    render(<UnitMonitorPanel community={community} unitId="u1" onSelectUnit={() => {}} onOpenCharges={() => {}} onBackToUnits={onBackToUnits} />);
+    render(<MemoryRouter><UnitMonitorPanel community={community} unitId="u1" onSelectUnit={() => {}} onOpenCharges={() => {}} onBackToUnits={onBackToUnits} /></MemoryRouter>);
     expect(screen.getByRole("complementary", { name: "Detalle de J-201" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /J-202/ })).not.toBeInTheDocument();
     expect(screen.queryByPlaceholderText("Buscar unidad o persona")).not.toBeInTheDocument();
@@ -50,7 +53,7 @@ describe("UnitMonitorPanel", () => {
 
   it("lists who is in the unit with their permissions and lets a writer add or remove people", () => {
     const onAddMember = vi.fn(); const onUnlink = vi.fn(); const onOpenCharges = vi.fn();
-    render(<UnitMonitorPanel community={community} unitId="u1" canWrite onSelectUnit={() => {}} onAddMember={onAddMember} onUnlink={onUnlink} onOpenCharges={onOpenCharges} />);
+    render(<MemoryRouter><UnitMonitorPanel community={community} unitId="u1" canWrite onSelectUnit={() => {}} onAddMember={onAddMember} onUnlink={onUnlink} onOpenCharges={onOpenCharges} /></MemoryRouter>);
     const members = screen.getByRole("region", { name: "Personas de J-201" });
     expect(members).toHaveTextContent("Mariana Torres");
     expect(members).toHaveTextContent("Residente");
@@ -59,18 +62,18 @@ describe("UnitMonitorPanel", () => {
     expect(onAddMember).toHaveBeenCalledWith("u1");
     fireEvent.click(screen.getByRole("button", { name: "Quitar a Mariana Torres de J-201" }));
     expect(onUnlink).toHaveBeenCalledWith(expect.objectContaining({ id: "r1" }));
-    fireEvent.click(screen.getByRole("button", { name: /Ver cuotas y adeudos/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Registrar pago/ }));
     expect(onOpenCharges).toHaveBeenCalled();
   });
 
   it("points an empty unit to its first person and hides edits for read-only users", () => {
     const onAddMember = vi.fn();
-    const { rerender } = render(<UnitMonitorPanel community={community} unitId="" canWrite onSelectUnit={() => {}} onAddMember={onAddMember} onUnlink={() => {}} onOpenCharges={() => {}} />);
+    const { rerender } = render(<MemoryRouter><UnitMonitorPanel community={community} unitId="" canWrite onSelectUnit={() => {}} onAddMember={onAddMember} onUnlink={() => {}} onOpenCharges={() => {}} /></MemoryRouter>);
     expect(screen.getByText(/1 de 2 unidades aún no tienen a nadie asignado/)).toBeInTheDocument();
-    rerender(<UnitMonitorPanel community={community} unitId="u2" canWrite onSelectUnit={() => {}} onAddMember={onAddMember} onUnlink={() => {}} onOpenCharges={() => {}} />);
+    rerender(<MemoryRouter><UnitMonitorPanel community={community} unitId="u2" canWrite onSelectUnit={() => {}} onAddMember={onAddMember} onUnlink={() => {}} onOpenCharges={() => {}} /></MemoryRouter>);
     fireEvent.click(screen.getByRole("button", { name: /Agregar la primera persona/ }));
     expect(onAddMember).toHaveBeenCalledWith("u2");
-    rerender(<UnitMonitorPanel community={community} unitId="u1" canWrite={false} onSelectUnit={() => {}} onAddMember={onAddMember} onUnlink={() => {}} onOpenCharges={() => {}} />);
+    rerender(<MemoryRouter><UnitMonitorPanel community={community} unitId="u1" canWrite={false} onSelectUnit={() => {}} onAddMember={onAddMember} onUnlink={() => {}} onOpenCharges={() => {}} /></MemoryRouter>);
     expect(screen.queryByRole("button", { name: /Agregar persona|Quitar/ })).not.toBeInTheDocument();
   });
 
