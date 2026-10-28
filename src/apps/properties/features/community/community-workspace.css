@@ -110,3 +110,7 @@ button.community-person-unlinked{border:0;cursor:pointer}
 
 .community-catalog-back{display:flex;align-items:center;flex-wrap:wrap;gap:16px}.community-catalog-back button{padding:10px 16px;border:1px solid #ccd5df;border-radius:12px;background:#fff;color:#153457;font-size:13px;font-weight:800}.community-catalog-back span{color:#687789;font-size:12px}.community-card-units{display:block;width:100%;padding:12px 16px;text-align:left;background:#eef3f8;color:#153457;font-size:12px;font-weight:800}.community-card-units:hover{background:#e0e9f2}
 .community-intent-hint{display:flex;align-items:center;gap:10px;margin:0;padding:12px 16px;border:1px solid #c9d8e8;border-radius:14px;background:#eef4fa;color:#153457;font-size:13px;font-weight:700}.community-intent-hint svg{flex:none;font-size:18px}
+.community-person-units{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.community-person-units button{padding:3px 8px;border:1px solid #cfd8e2;border-radius:99px;background:#fff;color:#153457;font-size:10.5px;font-weight:800;cursor:pointer}
+.community-person-units button:hover{background:#eef3f8}
+.community-person-links .community-person-units button{min-height:0;padding:3px 9px;font-size:11px;line-height:1.3}

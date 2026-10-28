@@ -56,7 +56,7 @@ function HospitalityOperationsPage() {
   const updateRate = (id, field, value) => setRates((current) => current.map((item) => item.id === id ? { ...item, [field]:Number(value) || 0 } : item));
   const collectBalance = (id) => setReservations((current) => current.map((item) => item.id === id ? { ...item, paid:item.total } : item));
 
-  return <EcoLayout active="properties" title="OwnTerra Properties" subtitle="Rentas · Hospedaje">
+  return <EcoLayout active="properties" title="Hospedaje" subtitle="Rentas · Hospedaje">
     <main className="hospitality-page">
       <header className="hospitality-heading">
         <button type="button" onClick={() => navigate("/properties/rentas")}><HiArrowLeft/> Rentas</button>

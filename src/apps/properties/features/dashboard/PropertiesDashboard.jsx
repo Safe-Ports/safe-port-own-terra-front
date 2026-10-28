@@ -84,7 +84,7 @@ function PropertiesDashboard() {
   const now = new Date();
   const period = skyPeriod(now.getHours());
 
-  return <EcoLayout active="properties" title="Properties" subtitle={organizationName}>
+  return <EcoLayout active="properties" title="Actividad" subtitle={organizationName}>
     <main className="pd-page">
 
       <div className="pd-top">

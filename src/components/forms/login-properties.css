@@ -1,0 +1,38 @@
+/* Login del equipo de administración cuando se entra por /properties: mismo
+   lenguaje que el login del portal de residentes (portal-login.css). Todo va
+   bajo .lf-screen.is-properties para no tocar el login de Lands. */
+.lf-screen.is-properties{background:#0f2742}
+.lf-screen.is-properties .ll-panel{width:50%;padding:44px 56px;background:#15293f url("/apps/properties.jpg") 38% center/cover no-repeat}
+.lf-screen.is-properties .ll-panel::before{background:linear-gradient(160deg,rgba(15,39,66,.94) 0%,rgba(21,52,87,.82) 45%,rgba(21,52,87,.45) 100%)}
+.lf-screen.is-properties .ll-panel::after{display:none}
+.lf-screen.is-properties .ll-panel>*{position:relative;z-index:1}
+.lf-screen.is-properties .properties-logo{display:inline-flex;align-items:center;gap:12px;color:#fff}
+.lf-screen.is-properties .properties-logo img{width:52px;height:52px;object-fit:contain}
+.lf-screen.is-properties .properties-logo>span{display:grid;line-height:1}
+.lf-screen.is-properties .properties-logo strong{color:#fff;font-size:19px;letter-spacing:.04em}
+.lf-screen.is-properties .properties-logo strong span{font-weight:400}
+.lf-screen.is-properties .properties-logo small{margin-top:6px;color:#c5d2e0;font-size:10px;font-weight:800;letter-spacing:.28em}
+.lf-screen.is-properties .ll-eyebrow{display:block;margin-bottom:14px;color:#c5d2e0;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+.lf-screen.is-properties .ll-tagline{margin-bottom:18px;color:#fff;font-size:clamp(40px,4.4vw,60px);line-height:1.08;letter-spacing:-.03em}
+.lf-screen.is-properties .ll-desc{max-width:460px;color:#dbe4ee;font-size:16px;line-height:1.6}
+.lf-screen.is-properties .ll-foot{color:#c5d2e0;font-size:13px}
+
+.lf-screen.is-properties .ll-form-side{background:#f6f2eb}
+.lf-screen.is-properties .ll-form-side::before{background:radial-gradient(640px 380px at 100% 0,rgba(201,169,104,.16),transparent 70%),radial-gradient(520px 420px at 0 100%,rgba(159,182,204,.18),transparent 70%)}
+.lf-screen.is-properties .lf-wrap{--tx:#0f2742;--forest:#153457;--mid:#153457;--deep:#0f2742;--tan:#153457;--tan-dk:#0f2742;max-width:460px;padding:40px;border:1px solid #d5dee8;border-bottom:4px solid #c3d0de;border-radius:26px;background:linear-gradient(145deg,#fff 40%,#f1f5fa);box-shadow:0 30px 50px -24px rgba(15,39,66,.4),inset 0 1px 0 #fff}
+.lf-screen.is-properties .lf-eyebrow{display:block;margin-bottom:10px;color:#33567e;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.lf-screen.is-properties .lf-title{font-size:38px;font-weight:500;letter-spacing:-.025em}
+.lf-screen.is-properties .lf-sub{color:#63758a;font-size:14px;line-height:1.5}
+.lf-screen.is-properties .lf-input{border-color:#d5dee8;border-radius:14px;background:#fff}
+.lf-screen.is-properties .lf-input:focus{border-color:#33567e;box-shadow:0 0 0 4px rgba(51,86,126,.14)}
+.lf-screen.is-properties .lf-btn{border-radius:14px;background:#153457;box-shadow:0 12px 20px -12px rgba(21,52,87,.7)}
+.lf-screen.is-properties .lf-btn:hover:not(:disabled){background:#0f2742}
+@media(max-width:900px){
+  .lf-screen.is-properties .ll-panel{display:flex;width:auto;min-height:0;gap:24px;padding:28px 24px 84px}
+  .lf-screen.is-properties .ll-tagline{font-size:36px}
+  .lf-screen.is-properties .ll-desc{font-size:15px}
+  .lf-screen.is-properties .ll-foot{display:none}
+  .lf-screen.is-properties .ll-form-side{align-items:flex-start;padding:0 16px 40px}
+  .lf-screen.is-properties .lf-wrap{margin-top:-56px;padding:28px 22px}
+  .lf-screen.is-properties .lf-title{font-size:32px}
+}

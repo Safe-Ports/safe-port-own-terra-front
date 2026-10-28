@@ -29,7 +29,7 @@ function CommunityDetail({ community, property, unitsCount, peopleCount, canWrit
         <div><span>Comunidad seleccionada</span><h2>{community.name}</h2><p>{address || "Sin dirección registrada en el inmueble"}</p></div>
         <div className="community-detail-actions">
           {canWrite ? <button type="button" className="primary" onClick={onEdit}><HiPencilSquare /> Editar comunidad</button> : null}
-          <button type="button" onClick={onClose} aria-label="Ocultar detalle"><HiChevronUp /></button>
+          <button type="button" className="community-detail-hide" onClick={onClose}><HiChevronUp aria-hidden="true"/> Ocultar</button>
         </div>
       </header>
       <dl>{facts.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>

@@ -111,7 +111,7 @@ function RentOperationsPage() {
     return { owner, leases, monthly:leases.reduce((sum, lease) => sum + lease.rent, 0) };
   }).filter((row) => row.leases.length);
 
-  return <EcoLayout active="properties" title="OwnTerra Properties" subtitle="Operación · Rentas">
+  return <EcoLayout active="properties" title="Rentas" subtitle="Operación · Rentas">
     <main className="rent-page">
       <header className="rent-heading"><div><span>Rentas de largo y mediano plazo</span><h1>Operación de rentas</h1><p>Prospectos, expedientes, contratos, cobranza e inspecciones conectados al mismo portafolio.</p></div><div className="rent-heading-actions"><button type="button" className="rent-hospitality-link" onClick={() => navigate("/properties/publicaciones")}><HiBuildingStorefront /> Marketplace</button><button type="button" className="rent-hospitality-link" onClick={() => navigate("/properties/rentas/hospedaje")}><HiHomeModern /> Abrir Hospedaje</button></div></header>
       <aside className="rent-prototype-note"><strong>Frontend funcional de sesión.</strong> Estos registros son demostrativos y se restablecen al recargar. Cobranza registra evidencia; no mueve dinero ni calcula recargos o liquidaciones.</aside>

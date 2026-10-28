@@ -138,3 +138,85 @@
 .eco-root .unit-fact-list small{color:#788089;font-size:11.5px}
 .eco-root .unit-fact-specs{margin-top:14px;padding-top:14px;border-top:1px solid #e2e7ec}
 .eco-root .unit-fact-specs h4{margin:0 0 10px;color:#0f2742;font-size:13px;font-weight:700}
+
+/* Acceso por persona: el estado de su portal y el botón para darle acceso. */
+.unit-members>article{grid-template-columns:auto 1fr auto auto}
+.unit-members-access{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border:1px solid transparent;border-radius:8px;font-size:10.5px;font-weight:800;white-space:nowrap}
+.unit-members-access svg{width:13px;height:13px}
+.unit-members-access.tone-ok{background:#e6f4ec;border-color:#c6e5d2;color:#1f6b43}
+.unit-members-access.tone-warn{background:#fdf4e1;border-color:#f0dcae;color:#8a6212}
+.unit-members-access.tone-danger{background:#fdeeeb;border-color:#ecd3cf;color:#9b4c42}
+.unit-members-access.tone-muted{background:#153457;color:#fff}
+.unit-members-access:hover{filter:brightness(.96)}
+.eco-root .unit-actions-label+.unit-action{margin-top:-2px}
+.eco-root .unit-action+.unit-actions-label{margin-top:8px}
+@media (max-width:560px){.unit-members>article{grid-template-columns:auto 1fr}.unit-members-access,.unit-members-unlink{grid-column:2;justify-self:start}}
+
+/* Cuenta de la unidad: el dinero se cobra desde la ficha. */
+.eco-root .unit-account>header,.eco-root .unit-ops-block>header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.eco-root .unit-account>header h3,.eco-root .unit-ops-block>header h3{margin:0}
+.eco-root .unit-account-new,.eco-root .unit-ops-block>header button,.eco-root .unit-ops-block>header a{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:9px;background:#153457;color:#fff;font-size:11px;font-weight:800;text-decoration:none}
+.eco-root .unit-account-new:disabled{opacity:.45;cursor:not-allowed}
+.eco-root .unit-account-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:6px}
+.eco-root .unit-account-totals>div{display:grid;gap:4px;padding:12px 14px;border-radius:13px;background:#f3f6f9}
+.eco-root .unit-account-totals small{color:#687789;font-size:11px;font-weight:700}
+.eco-root .unit-account-totals strong{color:#0f2742;font-size:20px;font-weight:850}
+.eco-root .unit-account-totals .is-ok strong{color:#1f6b43}
+.eco-root .unit-account-totals .is-danger{background:#fdeeeb}.eco-root .unit-account-totals .is-danger strong{color:#9b3b30}
+.eco-root .unit-account-totals .is-warn{background:#fdf4e1}.eco-root .unit-account-totals .is-warn strong{color:#8a6212}
+.eco-root .unit-account-list,.eco-root .unit-ops-list{display:grid;margin:6px 0 0;padding:0;list-style:none}
+.eco-root .unit-account-list li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:6px 12px;padding:12px 0;border-top:1px solid #e2e7ec}
+.eco-root .unit-account-concept{display:grid;gap:2px;min-width:0}
+.eco-root .unit-account-concept strong,.eco-root .unit-ops-list strong{color:#0f2742;font-size:13.5px}
+.eco-root .unit-account-concept small,.eco-root .unit-ops-list small{color:#788089;font-size:11.5px}
+.eco-root .unit-account-amount{color:#0f2742;font-size:14px;font-variant-numeric:tabular-nums}
+.eco-root .unit-account-pill{padding:4px 10px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap}
+.eco-root .unit-account-pill.tone-danger{background:#fbe9e6;color:#9b3b30}.eco-root .unit-account-pill.tone-warn{background:#fdf1dc;color:#8a6212}.eco-root .unit-account-pill.tone-ok{background:#e5f1e8;color:#276749}.eco-root .unit-account-pill.tone-muted{background:#eef1f4;color:#687789}
+.eco-root .unit-account-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;grid-column:1/-1}
+.eco-root .unit-account-actions:empty{display:none}
+.eco-root .unit-account-actions button,.eco-root .unit-ops-list button,.eco-root .unit-ops-form button,.eco-root .unit-ops-deliver button{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border:1px solid #d3dae2;border-radius:9px;background:#fff;color:#2e3a48;font-size:11.5px;font-weight:800}
+.eco-root .unit-account-actions button.is-primary,.eco-root .unit-ops-list button.is-primary,.eco-root .unit-ops-form button[type=submit],.eco-root .unit-ops-deliver button[type=submit]{border-color:#153457;background:#153457;color:#fff}
+.eco-root .unit-account-actions button:disabled,.eco-root .unit-ops-list button:disabled{opacity:.5;cursor:not-allowed}
+.eco-root .unit-account-done{display:inline-flex;align-items:center;gap:5px;color:#276749;font-size:11.5px;font-style:normal;font-weight:800}
+.eco-root .unit-account-empty,.eco-root .unit-ops-empty{margin:8px 0 0;color:#788089;font-size:12px}
+.eco-root .unit-account>footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+.eco-root .unit-account>footer small{color:#788089;font-size:11px}
+.eco-root .unit-account>footer .unit-service-link{margin:0;border:0;background:none;cursor:pointer}
+
+/* Operación de la unidad: paquetes y tickets. */
+.eco-root .unit-ops{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+.eco-root .unit-ops-block{display:flex;flex-direction:column;min-width:0}
+.eco-root .unit-ops-block h3{display:inline-flex;align-items:center;gap:7px}
+.eco-root .unit-ops-block h3 svg{width:17px;height:17px;color:#33567e}
+.eco-root .unit-ops-list li{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 0;border-top:1px solid #e2e7ec}
+.eco-root .unit-ops-list li>span{display:grid;gap:2px;min-width:0}
+.eco-root .unit-ops-form,.eco-root .unit-ops-deliver{display:flex;flex-wrap:wrap;gap:6px}
+.eco-root .unit-ops-form{margin-bottom:6px}
+.eco-root .unit-ops-form input,.eco-root .unit-ops-deliver select{flex:1 1 140px;min-width:0;padding:8px 10px;border:1px solid #d3dae2;border-radius:9px;background:#fff;font-size:12px}
+.eco-root .unit-ops-block>.unit-service-link{margin-top:auto;padding-top:10px}
+@media (max-width:760px){.eco-root .unit-ops{grid-template-columns:1fr}.eco-root .unit-account-totals{grid-template-columns:1fr}.eco-root .unit-account-list li{grid-template-columns:minmax(0,1fr) auto}.eco-root .unit-account-pill{grid-row:2;justify-self:start}}
+.eco-root .unit-account-new,.eco-root .unit-ops-block>header button,.eco-root .unit-ops-block>header a,.eco-root .unit-account-actions button,.eco-root .unit-ops-list button,.eco-root .unit-ops-form button,.eco-root .unit-ops-deliver button{min-height:34px;font-size:11.5px;line-height:1}
+.eco-root .unit-account-list li{grid-template-columns:minmax(0,1fr) auto auto auto}
+.eco-root .unit-account-actions{grid-column:auto}
+@media (max-width:1100px){.eco-root .unit-account-list li{grid-template-columns:minmax(0,1fr) auto auto}.eco-root .unit-account-actions{grid-column:1/-1}}
+@media (max-width:760px){.eco-root .unit-account-totals{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.eco-root .unit-account-totals>div{padding:10px}.eco-root .unit-account-totals strong{font-size:15px}}
+
+/* Vista propia de la unidad: la ruta reemplaza todo el encabezado de la comunidad. */
+.unit-view-crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0;padding:0;list-style:none;color:#687789;font-size:12.5px}
+.unit-view-crumbs li{display:inline-flex;align-items:center;gap:6px}
+.unit-view-crumbs li+li::before{content:"/";color:#a3adb8}
+.community-catalog-back .unit-view-crumbs button{padding:0;border:0;background:none;color:#33567e;font-size:12.5px;font-weight:700;cursor:pointer}
+.community-catalog-back .unit-view-crumbs button:hover{text-decoration:underline}
+.unit-view-crumbs li[aria-current]{color:#0f2742;font-weight:850}
+
+/* Contornos: sobre el fondo claro, los marcos blancos se perdían. Borde gris
+   azulado visible + sombra un poco más marcada para separar cada tarjeta. */
+.eco-root .unit-page-card,.eco-root .unit-action{border-color:#d5dee8;box-shadow:0 1px 2px rgba(15,39,66,.06),0 12px 22px -14px rgba(15,39,66,.32)}
+.eco-root .unit-page-hero{border-color:#d5dee8;border-bottom-color:#c3d0de}
+.eco-root .unit-action:hover:not(:disabled){border-color:#9fb3c8}
+.eco-root .unit-action.is-primary{border-color:#153457}
+.eco-root .unit-account-totals>div{border:1px solid #e1e7ee}
+.eco-root .unit-account-totals .is-danger{border-color:#f1d0ca}
+.eco-root .unit-account-totals .is-warn{border-color:#f0dcae}
+/* Al abrir una unidad, que su ruta no quede debajo del encabezado fijo. */
+#community-unit-workspace{scroll-margin-top:96px}
