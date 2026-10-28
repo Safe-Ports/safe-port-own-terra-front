@@ -81,3 +81,19 @@ export function parseApiError(error, fallbackMessage) {
 export function errorClipboardText(parsed) {
   return `Código: ${parsed.code} · Ref: ${parsed.requestId ?? "—"}`;
 }
+
+/**
+ * Motivo concreto de un 422 de validación, o `null` si no hay.
+ *
+ * El envelope de un 422 trae el texto genérico ("Algunos datos no son
+ * válidos.") en `message` y la razón real por campo en `details` (lista de
+ * pydantic): p. ej. que la contraseña apareció en una filtración. Sin esto la
+ * pantalla no le dice a la persona qué cambiar.
+ */
+export function validationMessage(error) {
+  const details = error?.response?.data?.error?.details;
+  if (!Array.isArray(details) || !details.length) return null;
+  const first = details[0];
+  const text = first?.ctx?.error || first?.msg;
+  return typeof text === "string" ? text.replace(/^Value error, /, "") : null;
+}

@@ -166,7 +166,7 @@ function CondoOperationsSuite(){
     data.addRentalPayment({leaseId:rentPaymentFor.id,period:currentPeriod,amount:rentPaymentDraft.amount,dueDate:`${currentPeriod}-${String(rentPaymentFor.dueDay).padStart(2,"0")}`,paidAt:rentPaymentDraft.paidAt,method:rentPaymentDraft.method,status:"paid"});
     setRentPaymentFor(null);showToast("Pago de renta registrado","success");
   }catch(error){showToast(error.message,"warning")}};
-  return <EcoLayout active="properties" title="Operación comunitaria" subtitle={`${community?.name||"Comunidad"} · Segundo nivel`}><main className="condo-suite">
+  return <EcoLayout active="properties" title="Operación diaria" subtitle={`${community?.name||"Comunidad"} · Segundo nivel`}><main className="condo-suite">
     <header className="condo-suite-heading"><div><h1>Operación diaria</h1></div><label><small>Comunidad activa</small><select value={communityId} onChange={event=>setCommunityId(event.target.value)}>{data.communities.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label></header>
     <div className="condo-suite-content">
     {active==="utilities"&&<UtilityMonitoringPanel community={community} units={units}/>}

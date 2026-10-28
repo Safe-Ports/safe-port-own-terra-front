@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dayPeriod, firstName, greeting, homeFacts, homeKind, sinceLabel, todayItems } from "./portalHomeModel";
+import { dayPeriod, firstName, greeting, homeFacts, homeKind, nextCharge, noticeImage, recentActivity, sinceLabel, todayItems, unitHighlights } from "./portalHomeModel";
 
 const now = new Date("2026-10-13T16:00:00");
 
@@ -49,5 +49,43 @@ describe("portalHomeModel", () => {
     expect(homeFacts({ attributes: {} })).toEqual([]);
     expect(homeKind(unit)).toBe("house");
     expect(homeKind({ attributes: { type: "apartment" } })).toBe("building");
+  });
+});
+
+describe("portalHomeModel · Mi hogar", () => {
+  it("picks the open charge that is due first", () => {
+    const charges = [
+      { id: "late", amount: "100", paid_amount: "0", due_date: "2026-12-01" },
+      { id: "paid", amount: "100", paid_amount: "100", due_date: "2026-10-01" },
+      { id: "soon", amount: "100", paid_amount: "20", due_date: "2026-11-05" },
+    ];
+    expect(nextCharge(charges).id).toBe("soon");
+    expect(nextCharge([])).toBeNull();
+  });
+
+  it("splits the unit sheet into measures and what it includes, skipping what is missing", () => {
+    const { main, extra } = unitHighlights({ attributes: { area: 82, floor: 0, recamaras: 2, banos: 1, parking: 1, storage_room: true, pets_allowed: false } });
+    expect(main.map((fact) => fact.value)).toEqual(["82 m²", "Piso 0", "2", "1"]);
+    expect(main[3].label).toBe("Baño");
+    expect(extra.map((fact) => `${fact.label}: ${fact.value}`)).toEqual(["Estacionamiento: 1 cajón", "Bodega: Incluida", "Mascotas: No permitidas"]);
+    expect(unitHighlights({ attributes: {} })).toEqual({ main: [], extra: [] });
+  });
+
+  it("finds the first image attached to a notice", () => {
+    expect(noticeImage({ attachments: ["https://x/doc.pdf", "https://x/alberca.JPG?v=2"] })).toBe("https://x/alberca.JPG?v=2");
+    expect(noticeImage({ attachments: ["https://x/doc.pdf"] })).toBeNull();
+  });
+
+  it("lists recent activity newest first, across payments, tickets, packages and notices", () => {
+    const items = recentActivity({
+      reports: [{ id: "r1", status: "approved", amount: 18500, reviewed_at: "2026-10-03T10:00:00" }, { id: "r2", status: "cancelled", amount: 1, created_at: "2026-10-20T10:00:00" }],
+      tickets: [{ id: "t1", folio: "#023", title: "Aire acondicionado", status: "in_progress", created_at: "2026-09-28T10:00:00" }],
+      packages: [{ id: "p1", carrier: "Amazon", status: "delivered", received_at: "2026-10-05T10:00:00" }],
+      announcements: [{ id: "a1", title: "Mantenimiento de elevador", body: "Mañana de 9 a 12", published_at: "2026-09-12T10:00:00" }],
+      statusLabel: { in_progress: "En progreso" },
+    }, 3);
+    expect(items.map((item) => item.key)).toEqual(["package-p1", "report-r1", "ticket-t1"]);
+    expect(items[1]).toMatchObject({ title: "Pago confirmado", tone: "ok", section: "charges" });
+    expect(items[2].detail).toBe("Aire acondicionado · En progreso");
   });
 });

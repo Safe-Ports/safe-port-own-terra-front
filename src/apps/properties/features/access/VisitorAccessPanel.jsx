@@ -1,15 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { HiArrowLeftOnRectangle, HiArrowRightOnRectangle, HiCamera, HiCheckCircle, HiNoSymbol, HiPlus, HiQrCode, HiShieldCheck, HiXCircle } from "react-icons/hi2";
+import { HiArrowLeftOnRectangle, HiArrowRightOnRectangle, HiCamera, HiCheckCircle, HiNoSymbol, HiQrCode, HiShieldCheck, HiXCircle } from "react-icons/hi2";
 import propertiesService from "@/services/propertiesService";
 import { useAppContext } from "@/context/AppContext";
 import { usePropertiesData } from "../../data/PropertiesDataContext";
-import QrPass from "./QrPass";
-import { ACCESS_POINT_KINDS, DENIAL_REASON, VISITOR_TYPES, accessPointKindLabel, defaultWindow, newClientEventId, passWindowText, validateVisitor, visitorBody, visitorTypeLabel } from "./accessModel";
+import VisitorPassForm from "./VisitorPassForm";
+import { ACCESS_POINT_KINDS, DENIAL_REASON, accessPointKindLabel, newClientEventId, passWindowText, visitorTypeLabel } from "./accessModel";
 import "./visitor-access.css";
 
 const failureText = (failure) => failure?.response?.data?.error?.message || failure?.message || "No pudimos completar la acción.";
-const blankPass = () => ({ propertyId: "", fullName: "", visitorType: "guest", phone: "", vehiclePlate: "", documentHint: "", maxEntries: 1, ...defaultWindow() });
 const clock = (value) => new Date(value).toLocaleString("es-MX", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
 /* Lee un QR con la cámara donde el navegador trae BarcodeDetector (Chrome, Android).
@@ -85,27 +84,7 @@ function VisitorAccessPanel() {
   };
 
   // Pases
-  const [draft, setDraft] = useState(blankPass);
-  const [errors, setErrors] = useState({});
-  const [saving, setSaving] = useState(false);
-  const [pass, setPass] = useState(null);
   const [created, setCreated] = useState([]); // pases de esta sesión (para poder revocarlos)
-  const set = (key) => (event) => setDraft({ ...draft, [key]: event.target.value });
-  const createPass = async (event) => {
-    event.preventDefault();
-    const found = validateVisitor(draft);
-    setErrors(found);
-    if (Object.keys(found).length) return;
-    setSaving(true);
-    try {
-      const response = await propertiesService.access.createVisitor(community.id, visitorBody(draft));
-      const row = { ...draft, qrToken: response.qr_token, credentialId: response.credential_id, validUntil: response.valid_until || draft.validUntil };
-      setPass(row);
-      setCreated((current) => [{ ...row, qrToken: undefined, status: "active" }, ...current]);
-      setDraft(blankPass());
-    } catch (failure) { showToast(failureText(failure), "warning"); }
-    finally { setSaving(false); }
-  };
   const revoke = async (row) => {
     try {
       await propertiesService.access.revoke(row.credentialId, "Cancelado por la administración");
@@ -170,17 +149,7 @@ function VisitorAccessPanel() {
 
       <article className="va-card" aria-label="Crear pase">
         <header><HiQrCode/><div><strong>Nuevo pase</strong><small>El QR se muestra una sola vez</small></div></header>
-        {pass ? <QrPass pass={pass} place={unitLabel(pass.propertyId)} onDone={() => setPass(null)}/> : <form className="va-form" onSubmit={createPass} noValidate>
-          <label className="wide"><small>Nombre de quien viene</small><input value={draft.fullName} maxLength={160} onChange={set("fullName")} aria-invalid={Boolean(errors.fullName)}/>{errors.fullName ? <em>{errors.fullName}</em> : null}</label>
-          <label><small>Unidad que recibe</small><select value={draft.propertyId} onChange={set("propertyId")} aria-invalid={Boolean(errors.propertyId)}><option value="">Elige…</option>{communityUnits.map((unit) => <option key={unit.id} value={unit.id}>{unit.identifier}</option>)}</select>{errors.propertyId ? <em>{errors.propertyId}</em> : null}</label>
-          <label><small>Tipo</small><select value={draft.visitorType} onChange={set("visitorType")}>{VISITOR_TYPES.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
-          <label><small>Desde</small><input type="datetime-local" value={draft.validFrom} onChange={set("validFrom")}/></label>
-          <label><small>Hasta</small><input type="datetime-local" value={draft.validUntil} onChange={set("validUntil")} aria-invalid={Boolean(errors.validUntil)}/>{errors.validUntil ? <em>{errors.validUntil}</em> : null}</label>
-          <label><small>Placas</small><input value={draft.vehiclePlate} maxLength={15} onChange={set("vehiclePlate")}/></label>
-          <label><small>Identificación (últimos 4)</small><input value={draft.documentHint} maxLength={4} onChange={set("documentHint")} inputMode="text"/></label>
-          <label><small>Entradas</small><input type="number" min="1" max="50" value={draft.maxEntries} onChange={set("maxEntries")} aria-invalid={Boolean(errors.maxEntries)}/>{errors.maxEntries ? <em>{errors.maxEntries}</em> : null}</label>
-          <button type="submit" className="va-primary" disabled={saving || !canWrite}><HiPlus/> {saving ? "Creando…" : "Crear pase"}</button>
-        </form>}
+        <VisitorPassForm key={community?.id} communityId={community?.id} units={communityUnits} canWrite={canWrite} onCreated={(row) => setCreated((current) => [{ ...row, qrToken: undefined, status: "active" }, ...current])}/>
         {created.length ? <ul className="va-created" aria-label="Pases creados en esta sesión">{created.map((row) => <li key={row.credentialId}>
           <div><strong>{row.fullName}</strong><small>{visitorTypeLabel(row.visitorType)} · {unitLabel(row.propertyId)} · {passWindowText(row.validFrom, row.validUntil)}</small></div>
           {row.status === "revoked" ? <i>Cancelado</i> : <button type="button" onClick={() => revoke(row)} disabled={!canWrite}><HiNoSymbol/> Cancelar</button>}

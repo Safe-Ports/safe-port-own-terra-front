@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueries } from "@tanstack/react-query";
-import { HiBanknotes, HiBuildingOffice2, HiCalendarDays, HiCheckCircle, HiExclamationTriangle, HiInboxStack, HiListBullet, HiMagnifyingGlass, HiScale, HiSquares2X2, HiUsers, HiXMark } from "react-icons/hi2";
+import { HiBanknotes, HiBuildingOffice2, HiCalendarDays, HiCheckCircle, HiExclamationTriangle, HiInboxStack, HiListBullet, HiMagnifyingGlass, HiPlus, HiScale, HiSquares2X2, HiUsers, HiXMark } from "react-icons/hi2";
 import propertiesService from "@/services/propertiesService";
 import { communityReferenceImage } from "./communityImages";
 import { mediaQueryKey } from "../media/MediaGallery";
@@ -64,7 +64,7 @@ function AlertButtons({ row, onAlert }) {
   }) : <span className="community-card-clear"><HiCheckCircle aria-hidden="true" /> Sin pendientes</span>;
 }
 
-function CommunityCards({ communities, selectedId, expanded = false, onSelect, onOpenUnits, onAlert, data }) {
+function CommunityCards({ onCreate, communities, selectedId, expanded = false, onSelect, onOpenUnits, onAlert, data }) {
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState("all");
   const [status, setStatus] = useState("all");
@@ -135,6 +135,7 @@ function CommunityCards({ communities, selectedId, expanded = false, onSelect, o
         <button type="button" role="radio" aria-checked={view === "cards"} onClick={() => setView("cards")} aria-label="Tarjetas" title="Tarjetas"><HiSquares2X2 /></button>
         <button type="button" role="radio" aria-checked={view === "list"} onClick={() => setView("list")} aria-label="Lista" title="Lista"><HiListBullet /></button>
       </div>
+      {onCreate ? <button type="button" className="community-catalog-create" onClick={onCreate}><HiPlus aria-hidden="true" /> Crear comunidad</button> : null}
     </div>
     <p className="community-catalog-count" aria-live="polite">{filtered ? `${visible.length} de ${rows.length} comunidades` : `${rows.length} ${rows.length === 1 ? "comunidad" : "comunidades"}`}{sort === "attention" && pendingCount ? " · primero las que necesitan atención" : ""}</p>
 
