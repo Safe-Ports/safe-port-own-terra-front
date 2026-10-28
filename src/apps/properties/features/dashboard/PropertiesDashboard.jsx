@@ -17,7 +17,7 @@ const OPERATIONS = "/properties/comunidades/operacion";
 function PropertiesDashboard() {
   const navigate = useNavigate();
   const { currentUser } = useAppContext();
-  const { properties, units, communities, condoCharges, votes, packages, reservations, tickets, personUnitRelations, quotaPlans, portalIdentities, propertiesLoading } = usePropertiesData();
+  const { properties, units, condoCharges, votes, packages, reservations, tickets, propertiesLoading } = usePropertiesData();
 
   const firstName = currentUser?.name?.split(" ")[0] || "equipo";
   const organizationName = currentUser?.organization?.name || currentUser?.organization || "Tu organización";
@@ -49,18 +49,6 @@ function PropertiesDashboard() {
     openVotes.length && { key: "votes", tone: "info", title: `${openVotes.length} ${openVotes.length === 1 ? "votación abierta" : "votaciones abiertas"}`, detail: "Da seguimiento a la participación", cta: "Ver", to: `${OPERATIONS}?module=committee` },
   ].filter(Boolean), [reportsToReview, overdue.length, overdueAmount, urgentTickets.length, openTickets.length, pendingPackages.length, requestedReservations.length, openVotes.length]);
 
-  // Progreso real de configuración: cada paso se marca con un dato que existe,
-  // no con una casilla que alguien palomeó.
-  const steps = [
-    { label: "Crear comunidades", done: communities.length > 0 },
-    { label: "Registrar unidades", done: activeUnits.length > 0 },
-    { label: "Asignar personas a sus unidades", done: personUnitRelations.some((item) => item.status !== "archived") },
-    { label: "Definir la cuota", done: (quotaPlans || []).length > 0 },
-    { label: "Invitar residentes al portal", done: (portalIdentities || []).length > 0 },
-  ];
-  const doneSteps = steps.filter((step) => step.done).length;
-  const nextStep = steps.find((step) => !step.done);
-
   const resolved = [
     { label: "cuotas pagadas", count: condoCharges.filter((charge) => charge.status === "paid").length },
     { label: "paquetes entregados", count: packages.filter((item) => item.status === "delivered").length },
@@ -91,18 +79,6 @@ function PropertiesDashboard() {
             <button type="button" className="pd-ghost" onClick={() => navigate(`${OPERATIONS}?module=communications`)}>Nuevo comunicado</button>
           </div>
         </div>
-
-        <aside className="pd-setup" aria-label="Progreso de configuración">
-          <header><h2>Configura tu portafolio</h2><span>{doneSteps} de {steps.length}</span></header>
-          <div className="pd-bar"><i style={{ width: `${Math.round((doneSteps / steps.length) * 100)}%` }} /></div>
-          <ul>
-            {steps.map((step) => <li key={step.label} className={step.done ? "is-done" : ""}>
-              <span className="pd-tick" aria-hidden="true">{step.done ? <HiCheck /> : null}</span>
-              {step.label}
-            </li>)}
-          </ul>
-          {nextStep ? <button type="button" className="pd-link" onClick={() => navigate("/properties/guia")}>Continuar guía <HiArrowRight /></button> : null}
-        </aside>
       </section>
 
       <section className="pd-kpis" aria-label="Resumen del portafolio">

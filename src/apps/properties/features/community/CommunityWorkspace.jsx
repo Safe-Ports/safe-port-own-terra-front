@@ -1,6 +1,6 @@
 import WorkflowForm from "@/components/forms/WorkflowForm";
 import { useEffect, useMemo, useState } from "react";
-import { HiKey, HiArchiveBox, HiBuildingOffice2, HiCheckCircle, HiClipboardDocument, HiHomeModern, HiMagnifyingGlass, HiPencilSquare, HiPlus, HiSquares2X2, HiUserGroup, HiUserPlus, HiUsers } from "react-icons/hi2";
+import { HiKey, HiArchiveBox, HiBuildingOffice2, HiClipboardDocument, HiHomeModern, HiMagnifyingGlass, HiPencilSquare, HiPlus, HiSquares2X2, HiUserGroup, HiUserPlus, HiUsers } from "react-icons/hi2";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import FieldError from "@/components/shared/FieldError";
 import Modal from "@/components/ui/Modal";
@@ -49,7 +49,7 @@ function CommunityWorkspace(){
   const [communityId,setCommunityId]=useState(params.get("community")||communities[0]?.id||"");
   const [communityDraft,setCommunityDraft]=useState(EMPTY_COMMUNITY);
   const [communityErrors,setCommunityErrors]=useState({});
-  const [creatingCommunity,setCreatingCommunity]=useState(false);
+  const [showOnboarding,setShowOnboarding]=useState(false);
   const [editingCommunity,setEditingCommunity]=useState(false);
   const [detailOpen,setDetailOpen]=useState(false);
   const [unitEditId,setUnitEditId]=useState(null);
@@ -73,14 +73,6 @@ function CommunityWorkspace(){
   const buildingSpec=useBuildingSpec(selectedCommunity?.inmuebleId);
   const communityUnits=units.filter(item=>item.propertyId===selectedCommunity?.propertyId&&item.status!=="archived");
   const activeRelations=personUnitRelations.filter(item=>item.communityId===selectedCommunity?.id&&item.status!=="archived");
-  // Los módulos operativos (cuotas, amenidades, votaciones, portal) exigen
-  // unidades, personas y una relación que diga quién paga o vota. Sin esto el
-  // usuario llegaba a formularios que fallaban al guardar, sin explicación.
-  const readiness=[
-    {key:"units",label:"Registra las unidades",hint:"Departamentos, casas, locales o espacios de esta comunidad.",done:communityUnits.length>0,action:()=>openNewUnit(),cta:"Agregar unidad"},
-    {key:"people",label:"Asigna personas a cada unidad",hint:"Quién es dueño, quién vive y quién paga. Sin esto no hay a quién cobrar ni quién vote.",done:activeRelations.length>0,action:()=>setActiveTab("units"),cta:"Ir a Unidades"},
-  ];
-  const pendingSteps=readiness.filter(step=>!step.done);
 
   // El directorio y las relaciones están acotados a la comunidad activa: al
   // vincular a alguien en otra comunidad, desaparece de esta sin explicación
@@ -129,10 +121,8 @@ function CommunityWorkspace(){
     event.preventDefault();
     const errors=validateCommunity(communityDraft);setCommunityErrors(errors);
     if(Object.keys(errors).length)return;
-    try{if(creatingCommunity){const created=await addCommunity(communityDraft);setCommunityId(created.id);setCreatingCommunity(false);showToast("Comunidad guardada","success");}
-    else{await updateCommunity(selectedCommunity.id,communityDraft);if(buildingDraft&&selectedCommunity.inmuebleId){await propertiesService.specs.save(selectedCommunity.inmuebleId,buildingSpecPayload(buildingDraft));await queryClient.invalidateQueries({queryKey:buildingSpecKey(selectedCommunity.inmuebleId)});}setEditingCommunity(false);showToast("Comunidad actualizada","success");}}catch(error){showToast(error.response?.data?.error?.message||error.message,"warning")}
+    try{await updateCommunity(selectedCommunity.id,communityDraft);if(buildingDraft&&selectedCommunity.inmuebleId){await propertiesService.specs.save(selectedCommunity.inmuebleId,buildingSpecPayload(buildingDraft));await queryClient.invalidateQueries({queryKey:buildingSpecKey(selectedCommunity.inmuebleId)});}setEditingCommunity(false);showToast("Comunidad actualizada","success");}catch(error){showToast(error.response?.data?.error?.message||error.message,"warning")}
   };
-  const openNewCommunity=()=>{setCreatingCommunity(true);setCommunityDraft(EMPTY_COMMUNITY);setCommunityErrors({});};
   // La ficha del edificio sólo se envía si ya se pudo leer: así no se pisa una
   // ficha existente con una vacía cuando la consulta falló.
   const openEditCommunity=()=>{setCommunityDraft({...selectedCommunity});setCommunityErrors({});setBuildingDraft(buildingSpec.isSuccess?buildingSpecDraft(buildingSpec.data):null);setEditingCommunity(true);};
@@ -179,7 +169,7 @@ function CommunityWorkspace(){
           <h1>Comunidades</h1>
           <p>Condominios, privadas, plazas, complejos de cabañas u hoteles conectados a la operación compartida.</p>
         </div>
-        <button className="community-heading-action" type="button" onClick={openNewCommunity} disabled={!canWrite}><HiPlus/> Nueva comunidad</button>
+        <button className="community-heading-action" type="button" onClick={()=>setShowOnboarding(true)} disabled={!canWrite}><HiPlus/> Crear comunidad</button>
       </header>
 
       {catalogOpen?<CommunityCards communities={communities} selectedId={null} expanded={detailOpen} onSelect={selectCommunity} onOpenUnits={openCommunityUnits} onAlert={openAlert} data={catalogData}/>:null}
@@ -187,8 +177,6 @@ function CommunityWorkspace(){
       {!catalogOpen?<><nav className="community-catalog-back" aria-label="Navegación de catálogos"><button type="button" onClick={()=>{setMonitorUnitId("");setDetailOpen(false);setParams({});}}>← Volver a comunidades</button><span>Comunidades / {selectedCommunity?.name}</span><button type="button" aria-expanded={detailOpen} onClick={()=>setDetailOpen(open=>!open)}>Información de la comunidad</button></nav></>:null}
 
       {!catalogOpen&&detailOpen&&selectedCommunity?<CommunityDetail community={selectedCommunity} property={selectedProperty} unitsCount={communityUnits.length} peopleCount={new Set(activeRelations.map(item=>item.personId)).size} canWrite={canWrite} onEdit={openEditCommunity} onClose={()=>setDetailOpen(false)}/>:null}
-
-      {!catalogOpen&&pendingSteps.length?<section className="community-readiness"><header><div><span>Preparación</span><h2>Falta{pendingSteps.length>1?"n":""} {pendingSteps.length} paso{pendingSteps.length>1?"s":""} para operar</h2><p>Cuotas, amenidades, votaciones y el portal de residentes necesitan esta base.</p></div><strong>{readiness.length-pendingSteps.length}/{readiness.length}</strong></header><ol>{readiness.map(step=><li key={step.key} className={step.done?"done":""}><i>{step.done?<HiCheckCircle/>:null}</i><div><strong>{step.label}</strong><small>{step.hint}</small></div>{step.done?<em>Listo</em>:<button type="button" onClick={step.action} disabled={!canWrite}>{step.cta}</button>}</li>)}</ol></section>:null}
 
       {!catalogOpen?<nav className="community-tabs" aria-label="Configuración de comunidad">{tabs.map(([key,label,Icon,hint])=><button type="button" key={key} className={activeTab===key?"active":""} onClick={()=>{setActiveTab(key);writeLocation(selectedCommunity.id,monitorUnitId,key)}}><Icon/><span><strong>{label}</strong><small>{hint}</small></span></button>)}<button type="button" className="community-operations-entry" onClick={()=>navigate(`/properties/comunidades/operacion?community=${selectedCommunity.id}`)}><HiSquares2X2/><span><strong>Operación diaria</strong><small>Cuotas, avisos y amenidades</small></span></button></nav>:null}
 
@@ -202,7 +190,7 @@ function CommunityWorkspace(){
 
     {portalPerson?<PortalAccessModal person={portalPerson} units={communityUnits} onClose={()=>setPortalPerson(null)}/>:null}
 
-    <Modal open={creatingCommunity} onClose={()=>setCreatingCommunity(false)} title="Nueva comunidad" subtitle="Conecta un inmueble existente con su operación comunitaria." icon={<HiBuildingOffice2/>} width="max-w-[660px]" footer={<><button type="button" onClick={()=>setCreatingCommunity(false)}>Cancelar</button><button type="submit" form="new-community-form">Crear comunidad</button></>}><WorkflowForm id="new-community-form" className="properties-form" onSubmit={saveCommunity}><section className="properties-form-section"><div className="properties-form-grid"><label><span>Tipo</span><select value={communityDraft.kind} onChange={event=>setCommunityDraft({...communityDraft,kind:event.target.value})}>{Object.entries(COMMUNITY_KIND_LABEL).map(([value,label])=><option value={value} key={value}>{label}</option>)}</select></label><label><span>Inmueble asociado</span><select value={communityDraft.propertyId} onChange={event=>setCommunityDraft({...communityDraft,propertyId:event.target.value})}><option value="">Seleccionar inmueble</option>{properties.filter(item=>item.status!=="archived"&&!communities.some(community=>community.propertyId===item.id)).map(item=><option value={item.id} key={item.id}>{item.name}</option>)}</select><FieldError msg={communityErrors.propertyId}/></label><label className="properties-form-wide"><span>Nombre de la comunidad</span><input value={communityDraft.name} onChange={event=>setCommunityDraft({...communityDraft,name:event.target.value})}/><FieldError msg={communityErrors.name}/></label><label><span>Cuota base mensual <small>Opcional</small></span><input type="number" min="0" value={communityDraft.cuotaBase} onChange={event=>setCommunityDraft({...communityDraft,cuotaBase:event.target.value})}/><FieldError msg={communityErrors.cuotaBase}/></label><label><span>Día de cobro <small>1–28</small></span><input type="number" min="1" max="28" value={communityDraft.billingDay} onChange={event=>setCommunityDraft({...communityDraft,billingDay:event.target.value})}/><FieldError msg={communityErrors.billingDay}/></label></div></section></WorkflowForm></Modal>
+    <Modal open={showOnboarding} onClose={()=>setShowOnboarding(false)} icon={<HiBuildingOffice2/>} width="max-w-[760px]" overlayClassName="community-onboarding-overlay"><CommunityOnboarding onDone={()=>setShowOnboarding(false)}/></Modal>
 
     <Modal open={Boolean(personModal)} onClose={()=>setPersonModal(null)} title={personModal==="new"?"Agregar contacto":"Editar contacto"} subtitle={`Datos de contacto en ${selectedCommunity?.name||"la comunidad"}. La relación con cada unidad se define en Unidades.`} icon={<HiUsers/>} width="max-w-[720px]" footer={<><button type="button" onClick={()=>setPersonModal(null)}>Cancelar</button><button type="submit" form="community-person-form">Guardar persona</button></>}><WorkflowForm id="community-person-form" className="properties-form" onSubmit={savePerson}><section className="properties-form-section"><div className="properties-form-grid"><label><span>Tipo de persona</span><select value={personDraft.personType} onChange={event=>setPersonDraft({...personDraft,personType:event.target.value})}><option value="individual">Persona física</option><option value="company">Persona moral</option></select></label><label><span>Preferencia de comunicación</span><select value={personDraft.communicationPreference} onChange={event=>setPersonDraft({...personDraft,communicationPreference:event.target.value})}><option value="email">Correo electrónico</option><option value="whatsapp">WhatsApp</option><option value="phone">Teléfono</option></select></label><label className="properties-form-wide"><span>{personDraft.personType==="company"?"Razón social":"Nombre completo"}</span><input value={personDraft.name} onChange={event=>setPersonDraft({...personDraft,name:event.target.value})}/><FieldError msg={personErrors.name}/></label><label><span>Correo <small>Opcional · para invitarla al portal</small></span><input type="email" value={personDraft.email} onChange={event=>setPersonDraft({...personDraft,email:event.target.value})}/><FieldError msg={personErrors.email}/></label><label><span>Teléfono</span><input value={personDraft.phone} onChange={event=>setPersonDraft({...personDraft,phone:event.target.value})}/></label><fieldset className="properties-form-wide community-role-picker"><legend>Rol general</legend><label><input type="checkbox" checked={isCommittee(personDraft.roles)} onChange={event=>setPersonDraft({...personDraft,roles:event.target.checked?["committee"]:[]})}/><span>Forma parte del comité</span></label></fieldset><label><span>Contacto de emergencia</span><input value={personDraft.emergencyContactName} onChange={event=>setPersonDraft({...personDraft,emergencyContactName:event.target.value})}/></label><label><span>Teléfono de emergencia</span><input value={personDraft.emergencyContactPhone} onChange={event=>setPersonDraft({...personDraft,emergencyContactPhone:event.target.value})}/></label><label className="properties-form-wide"><span>Notas internas</span><textarea value={personDraft.notes} onChange={event=>setPersonDraft({...personDraft,notes:event.target.value})}/></label></div></section></WorkflowForm></Modal>
 

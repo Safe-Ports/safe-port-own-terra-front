@@ -14,7 +14,7 @@
 }
 
 /* ── Encabezado ─────────────────────────────────────────────────────────── */
-.pd-hero{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:24px;align-items:stretch}
+.pd-hero{display:grid;grid-template-columns:1fr;gap:24px;align-items:stretch}
 .pd-hero-copy{display:flex;flex-direction:column;gap:14px;justify-content:center}
 .pd-date{margin:0;color:#4a5872;font-size:12px;font-weight:700;letter-spacing:.1em}
 .pd-hero-copy h1{
@@ -41,30 +41,6 @@
   transition:border-color .15s ease,background .15s ease;
 }
 .pd-ghost:hover{border-color:#9fb0c9;background:#f7f9fb}
-
-/* ── Tarjeta de configuración ───────────────────────────────────────────── */
-.pd-setup{
-  display:flex;flex-direction:column;gap:14px;
-  padding:24px;border:1px solid #e1e6ee;border-radius:16px;background:#fff;
-}
-.pd-setup>header{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
-.pd-setup h2{margin:0;font-size:15px;font-weight:700}
-.pd-setup>header span{color:#4a5872;font-size:13px;font-weight:650}
-.pd-bar{height:8px;overflow:hidden;border-radius:999px;background:#e6ebf2}
-.pd-bar>i{display:block;height:100%;background:#1f6b5c;transition:width .3s ease}
-.pd-setup ul{display:flex;flex-direction:column;gap:9px;margin:0;padding:0;list-style:none}
-.pd-setup li{display:flex;align-items:center;gap:10px;color:#18233a;font-size:13px;font-weight:650}
-.pd-setup li.is-done{color:#6a768b;font-weight:400;text-decoration:line-through}
-.pd-tick{
-  display:grid;width:18px;height:18px;flex:none;place-items:center;
-  box-sizing:border-box;border:2px solid #1f6b5c;border-radius:999px;color:#1f6b5c;font-size:11px;
-}
-.is-done .pd-tick{border-color:#1f6b5c;background:#1f6b5c;color:#fff}
-.pd-link{
-  display:inline-flex;align-items:center;gap:6px;width:max-content;
-  color:#1f6b5c;font-size:13px;font-weight:700;
-}
-.pd-link:hover{color:#164f44;text-decoration:underline}
 
 /* ── Indicadores ────────────────────────────────────────────────────────── */
 .pd-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}

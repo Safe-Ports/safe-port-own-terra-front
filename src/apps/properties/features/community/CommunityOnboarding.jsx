@@ -9,7 +9,7 @@ import { COMMUNITY_KIND_LABEL, regimenFromCommunityKind } from "./communityModel
 
 const initial={name:"",kind:"condominium",address:"",city:"",state:"",structure:"multiple",firstUnit:"",cuotaBase:"",billingDay:"",reglamentoUrl:""};
 
-function CommunityOnboarding(){
+function CommunityOnboarding({onDone}={}){
   const created = useRef({property:null, unit:null});
   const [apiError,setApiError]=useState(null);
   const {showToast}=useAppContext();
@@ -32,11 +32,12 @@ function CommunityOnboarding(){
       }
       await addCommunity({propertyId:property.id,inmuebleId:property.inmuebleId,name:draft.name,kind:draft.kind,regime:regimenFromCommunityKind(draft.kind),cuotaBase:draft.cuotaBase,billingDay:draft.billingDay,reglamentoUrl:draft.reglamentoUrl});
       showToast("Tu comunidad está lista para continuar","success");
+      onDone?.();
     }catch(error){setApiError(parseApiError(error,"No se pudo completar la comunidad. Puedes reintentar sin volver a crear el inmueble."));}
     finally{setSaving(false)}
   };
   return <section className="community-onboarding">
-    <header><span>Configuración inicial</span><h1>Crea tu primera comunidad</h1><p>Te guiaremos para registrar el lugar, su estructura y la configuración básica. Podrás completar personas y unidades después.</p></header>
+    <header><span>Configuración inicial</span><h1>Crea una comunidad</h1><p>Te guiaremos para registrar el lugar, su estructura y la configuración básica. Podrás completar personas y unidades después.</p></header>
     <ol className="community-onboarding-steps">{[[1,"Comunidad"],[2,"Estructura"],[3,"Operación"]].map(([number,label])=><li key={number} className={step===number?"active":step>number?"done":""}><i>{step>number?<HiCheckCircle/>:number}</i><span>{label}</span></li>)}</ol>
     <WorkflowForm className="community-onboarding-card" busy={saving} onSubmit={event=>{event.preventDefault();return step<3?next():submit()}}>
       {apiError?<InlineError error={apiError}/>:null}

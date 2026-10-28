@@ -33,8 +33,8 @@
 .eco-root.properties-focus :is(.property-paths-grid,.property-paths>div,.property-grid,.community-cards,.guide-map-grid){grid-template-columns:minmax(0,1fr)}
 .eco-root.properties-focus :is(.community-context,.community-detail,.condo-split,.utility-workspace,.service-layout,.access-layout,.portfolio-cell,.unit-monitor-workspace,.unicell-context){grid-template-columns:minmax(0,1fr)}
 .eco-root.properties-focus :is(.community-detail-body>dl,.community-permission-picker,.community-unit-relations,.service-profile-facts,.service-protocol>div){grid-template-columns:repeat(2,minmax(0,1fr))}
-.eco-root.properties-focus :is(.owners-segments,.properties-filters,.community-tabs,.condo-module-tabs,.unit-board,.ticket-toolbar>div){max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
-.eco-root.properties-focus :is(.owners-segments,.community-tabs,.condo-module-tabs){gap:8px}
+.eco-root.properties-focus :is(.owners-segments,.properties-filters,.community-tabs,.unit-board,.ticket-toolbar>div){max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
+.eco-root.properties-focus :is(.owners-segments,.community-tabs){gap:8px}
 .eco-root.properties-focus .owners-segments button{flex-shrink:0}
 .eco-root.properties-focus .units-toolbar{grid-template-columns:minmax(0,1fr)}
 .eco-root.properties-focus :is(.unit-row,.owner-row){gap:12px}

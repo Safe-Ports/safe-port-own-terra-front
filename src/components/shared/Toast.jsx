@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import {
   HiCheckCircle,
   HiExclamationTriangle,
@@ -78,11 +79,19 @@ function ErrorToast({ data }) {
 function Toast() {
   const { toast } = useAppContext();
 
-  if (!toast) return null;
+  if (!toast || typeof document === "undefined") return null;
 
+  // `.eco-root` es `position:fixed` con su propio z-index: eso abre un
+  // contexto de apilamiento propio. Un toast montado ahí queda atrapado
+  // dentro de ese contexto — su z-index (por alto que sea) nunca puede
+  // ganarle a un modal, que se porta aparte a `document.body` y por lo
+  // tanto vive en OTRO contexto de apilamiento montado después. El síntoma:
+  // el toast de error de un formulario en un modal quedaba tapado por el
+  // propio modal. Portar el toast también a `document.body`, fuera de
+  // `.eco-root`, lo saca de esa trampa.
   // Toast enriquecido de error (showError) vs. toast de texto plano (showToast).
   if (typeof toast === "object" && toast.kind === "error") {
-    return <ErrorToast data={toast} />;
+    return createPortal(<ErrorToast data={toast} />, document.body);
   }
 
   const data = typeof toast === "object"
@@ -91,7 +100,7 @@ function Toast() {
   const variant = TOAST_VARIANTS[data.kind] || TOAST_VARIANTS.info;
   const { Icon } = variant;
 
-  return (
+  return createPortal(
     <div
       className={`app-toast app-toast--${data.kind || "info"}`}
       role={data.kind === "warning" ? "alert" : "status"}
@@ -104,7 +113,8 @@ function Toast() {
         <strong className="app-toast__title">{data.title || variant.title}</strong>
         <span className="app-toast__message">{data.message}</span>
       </span>
-    </div>
+    </div>,
+    document.body
   );
 }
 
