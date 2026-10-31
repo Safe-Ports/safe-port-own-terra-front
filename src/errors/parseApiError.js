@@ -7,6 +7,9 @@ export function localRef() {
   return `ref_local_${rand}`;
 }
 
+export const OFFLINE_MESSAGE = "No hay conexión a internet.";
+export const OFFLINE_ACTION = "Revisa tu red. Cuando vuelva la conexión, intenta de nuevo; no se guardó nada.";
+
 // Mapa de status HTTP -> código del catálogo cuando la respuesta NO trae nuestro envelope.
 const STATUS_TO_CODE = {
   400: "OT-SYS-1000",
@@ -63,12 +66,15 @@ export function parseApiError(error, fallbackMessage) {
   }
 
   const meta = getErrorMeta(code);
+  // Sin red el problema es del dispositivo, no del servidor: se dice así, en vez
+  // del "No pudimos conectar con el servidor" que sonaba a falla de Own Terra.
+  const offline = !response && typeof navigator !== "undefined" && navigator.onLine === false;
   return {
     code: meta.code,
-    title: getErrorTitle(meta),
+    title: offline ? "Sin conexión a internet" : getErrorTitle(meta),
     // Preferimos el mensaje del backend (ya viene amigable y homologado); si no, el del catálogo.
-    message: backendMessage || meta.message || fallbackMessage || "Ocurrió un error.",
-    action: meta.action || "",
+    message: offline ? OFFLINE_MESSAGE : backendMessage || meta.message || fallbackMessage || "Ocurrió un error.",
+    action: offline ? OFFLINE_ACTION : meta.action || "",
     requestId,
     httpStatus: status,
     severity: meta.severity,
@@ -80,4 +86,20 @@ export function parseApiError(error, fallbackMessage) {
 /** Texto listo para copiar al ticket: "Código: OT-… · Ref: ref_…". */
 export function errorClipboardText(parsed) {
   return `Código: ${parsed.code} · Ref: ${parsed.requestId ?? "—"}`;
+}
+
+/**
+ * Motivo concreto de un 422 de validación, o `null` si no hay.
+ *
+ * El envelope de un 422 trae el texto genérico ("Algunos datos no son
+ * válidos.") en `message` y la razón real por campo en `details` (lista de
+ * pydantic): p. ej. que la contraseña apareció en una filtración. Sin esto la
+ * pantalla no le dice a la persona qué cambiar.
+ */
+export function validationMessage(error) {
+  const details = error?.response?.data?.error?.details;
+  if (!Array.isArray(details) || !details.length) return null;
+  const first = details[0];
+  const text = first?.ctx?.error || first?.msg;
+  return typeof text === "string" ? text.replace(/^Value error, /, "") : null;
 }

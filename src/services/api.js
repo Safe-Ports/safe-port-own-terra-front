@@ -1,6 +1,7 @@
 import axios from "axios";
 import * as Sentry from "@sentry/react";
 import { localRef } from "@/errors/parseApiError";
+import { trackAxios } from "./networkActivity";
 
 const configuredBaseUrl = import.meta.env.VITE_API_URL?.trim();
 export const BASE_URL = configuredBaseUrl || (import.meta.env.DEV ? "http://127.0.0.1:8000/api/v1" : "");
@@ -13,6 +14,7 @@ const api = axios.create({
   baseURL: BASE_URL,
   timeout: 15000,
 });
+trackAxios(api);
 
 /**
  * Timeout para las peticiones que GENERAN un archivo: PDF de contrato, estado de

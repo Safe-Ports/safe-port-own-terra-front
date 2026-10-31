@@ -1,4 +1,7 @@
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { HiSpeakerWave, HiSpeakerXMark } from "react-icons/hi2";
+import { playNotification, setSoundEnabled, soundEnabled } from "@/utils/sounds";
 import { notificationService } from "@/services/notificationService";
 
 // Las notificaciones son del Core (las mandan todas las apps), así que viven en
@@ -30,6 +33,12 @@ function groupByDay(items) {
 
 export default function NotificationsCard() {
   const qc = useQueryClient();
+  const [soundOn, setSoundOn] = useState(() => soundEnabled("notifications"));
+  const toggleSound = () => {
+    setSoundEnabled("notifications", !soundOn);
+    setSoundOn(!soundOn);
+    if (!soundOn) playNotification();
+  };
   const { data, isLoading, isError } = useQuery({
     queryKey: ["notifications", "list"],
     queryFn: () => notificationService.list({ limit: PAGE }),
@@ -55,11 +64,23 @@ export default function NotificationsCard() {
             {unread ? `${unread} sin leer · de todas tus apps` : "de todas tus apps"}
           </div>
         </div>
-        {unread > 0 && (
-          <button className="sh-link" disabled={markAll.isPending} onClick={() => markAll.mutate()}>
-            Marcar todas como leídas
+        <div className="md-notif-actions">
+          <button
+            type="button"
+            className="md-notif-sound"
+            onClick={toggleSound}
+            aria-pressed={soundOn}
+            title={soundOn ? "Silenciar el sonido de avisos" : "Activar el sonido de avisos"}
+          >
+            {soundOn ? <HiSpeakerWave aria-hidden /> : <HiSpeakerXMark aria-hidden />}
+            {soundOn ? "Sonido" : "Sin sonido"}
           </button>
-        )}
+          {unread > 0 && (
+            <button className="sh-link" disabled={markAll.isPending} onClick={() => markAll.mutate()}>
+              Marcar todas como leídas
+            </button>
+          )}
+        </div>
       </div>
 
       {isLoading ? (

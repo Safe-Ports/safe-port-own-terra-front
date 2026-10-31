@@ -56,7 +56,7 @@ test("registrar un ingreso recibido con comprobante", async ({ page }) => {
   const dialog = page.getByRole("dialog", { name: "Registrar ingreso" });
   await dialog.getByRole("textbox", { name: "Concepto" }).fill("Renta de bodega");
   await dialog.getByRole("combobox").first().selectOption({ label: "Renta" });
-  await dialog.getByRole("spinbutton", { name: "Monto" }).fill("8500");
+  await dialog.getByRole("textbox", { name: "Monto" }).fill("8500");
   await dialog.getByRole("textbox", { name: "Fecha del ingreso" }).fill("2026-10-15");
   const [chooser] = await Promise.all([page.waitForEvent("filechooser"), dialog.getByRole("button", { name: /Elegir archivo/ }).click()]);
   await chooser.setFiles(PDF("deposito.pdf"));
@@ -78,7 +78,7 @@ test("un ingreso esperado queda pendiente con su fecha", async ({ page }) => {
   await page.getByRole("button", { name: "Registrar ingreso", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Registrar ingreso" });
   await dialog.getByRole("textbox", { name: "Concepto" }).fill("Comisión por venta");
-  await dialog.getByRole("spinbutton", { name: "Monto" }).fill("12000");
+  await dialog.getByRole("textbox", { name: "Monto" }).fill("12000");
   await dialog.getByRole("radio", { name: /Se espera/ }).check();
   await dialog.getByRole("button", { name: "Registrar ingreso" }).click();
   await expect(dialog).toBeHidden();
@@ -91,7 +91,7 @@ test("registrar un egreso pagado, recurrente y con comprobante", async ({ page }
   const dialog = page.getByRole("dialog", { name: "Egreso" });
   await dialog.getByRole("textbox", { name: "Concepto" }).fill("Nómina octubre");
   await dialog.getByRole("combobox", { name: "Categoría" }).selectOption({ label: "Nómina" });
-  await dialog.getByRole("spinbutton", { name: "Monto" }).fill("45000");
+  await dialog.getByRole("textbox", { name: "Monto" }).fill("45000");
   await dialog.getByRole("radio", { name: /Ya está pagado/ }).check();
   await dialog.getByRole("combobox", { name: "Recurrencia" }).selectOption({ label: "Mensual" });
   await dialog.getByRole("textbox", { name: "Notas (opcional)" }).fill("Pago quincenal consolidado");
@@ -133,4 +133,19 @@ test("el formulario de ingreso no muestra secuencias unicode crudas", async ({ p
   const dialog = page.getByRole("dialog", { name: "Registrar ingreso" });
   await expect(dialog).toContainText("Categoría");
   expect(await dialog.innerText()).not.toMatch(/\\u[0-9a-f]{4}/i);
+});
+
+test("cobro con método Otro exige describirlo y lo manda en las notas", async ({ page }) => {
+  await page.goto("/pagos");
+  await amortRows(page).filter({ hasText: "Ana López" }).getByRole("button", { name: "Registrar pago" }).click();
+  const dialog = page.getByRole("dialog", { name: "Registrar cobro" });
+  const cuota = dialog.getByRole("combobox", { name: "Cuota" });
+  await cuota.selectOption({ index: 1 });
+  await dialog.getByRole("combobox", { name: "Método de pago" }).selectOption({ label: "Otro" });
+  await dialog.getByRole("button", { name: /^Registrar cobro|^Registrar abono|^Cobrar/ }).last().click();
+  await expect(dialog.getByText("Describe el método de pago.")).toBeVisible();
+  await dialog.getByRole("textbox", { name: "Describe el método de pago*" }).fill("Depósito de un familiar");
+  await dialog.getByRole("button", { name: /^Registrar cobro|^Registrar abono|^Cobrar/ }).last().click();
+  await expect.poll(() => writes(/^\/payments\/[^/]+\/mark-paid$/).length).toBe(1);
+  expect(writes(/^\/payments\/[^/]+\/mark-paid$/)[0].body).toMatchObject({ payment_method: "other", notes: "Método de pago: Depósito de un familiar" });
 });

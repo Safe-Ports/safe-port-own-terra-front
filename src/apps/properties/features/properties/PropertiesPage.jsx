@@ -1,4 +1,5 @@
 import WorkflowForm from "@/components/forms/WorkflowForm";
+import AmountInput from "@/components/forms/AmountInput";
 import { useMemo, useState } from "react";
 import { HiMapPin } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
@@ -167,8 +168,8 @@ function PropertiesPage() {
           {!draftIsContainer?<section className="properties-form-section">
             <header><span className="properties-form-step">03</span><div><h3>Operación del activo</h3><p>Como se administra completo, no tendrás que crear una unidad adicional.</p></div></header>
             <div className="properties-form-grid">
-              <label><span>Superficie m²</span><input type="number" min="0" value={draft.area} onChange={(event)=>updateDraft("area",event.target.value)} placeholder="Ej. 120"/></label>
-              <label><span>Renta mensual sugerida</span><input type="number" min="0" value={draft.suggestedRent} onChange={(event)=>updateDraft("suggestedRent",event.target.value)} placeholder="Ej. 25000"/></label>
+              <label><span>Superficie m²</span><AmountInput min="0" value={draft.area} onChange={(event)=>updateDraft("area",event.target.value)} placeholder="Ej. 120"/></label>
+              <label><span>Renta mensual sugerida</span><AmountInput min="0" value={draft.suggestedRent} onChange={(event)=>updateDraft("suggestedRent",event.target.value)} placeholder="Ej. 25000"/></label>
               {draft.type!=="land"?<><label><span>Recámaras</span><input type="number" min="0" value={draft.bedrooms} onChange={(event)=>updateDraft("bedrooms",event.target.value)} placeholder="Ej. 3"/></label><label><span>Baños</span><input type="number" min="0" step="0.5" value={draft.bathrooms} onChange={(event)=>updateDraft("bathrooms",event.target.value)} placeholder="Ej. 2.5"/></label></>:null}
               <label className="properties-form-wide"><span>Disponibilidad</span><select value={draft.unitStatus} onChange={(event)=>updateDraft("unitStatus",event.target.value)}><option value="available">Disponible</option><option value="rented">Rentada</option><option value="maintenance">En mantenimiento</option></select></label>
             </div>

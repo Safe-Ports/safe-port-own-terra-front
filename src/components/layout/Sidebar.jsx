@@ -1,4 +1,5 @@
 import useConfirmation from "@/hooks/useConfirmation";
+import { LOGOUT_CONFIRMATION } from "@/components/shared/logoutConfirmation";
 import { NavLink } from "react-router-dom";
 import {
   HiArrowLeftOnRectangle,
@@ -26,8 +27,8 @@ import useEscapeKey from "@/hooks/useEscapeKey";
 const items = [
   { label: "Ecosistema", to: "/ecosistema", icon: HiRectangleGroup, section: "General" },
   { label: "Actividad", to: "/dashboard", icon: HiHome, section: "General" },
-  { label: "Carga de Lotes", to: "/lotes", icon: HiOutlineSquares2X2, section: "Propiedades" },
-  { label: "Fraccionamientos", to: "/fraccionamientos", icon: HiMap, section: "Propiedades" },
+  { label: "Editar lotes", to: "/lotes", icon: HiOutlineSquares2X2, section: "Propiedades" },
+  { label: "Operación de lotes", to: "/fraccionamientos", icon: HiMap, section: "Propiedades" },
   { label: "Track de Lotes", to: "/track-lotes", icon: HiPresentationChartLine, section: "Propiedades" },
   { label: "Clientes & CRM", to: "/clientes", icon: HiOutlineUserGroup, section: "Gestion" },
   { label: "Contratos", to: "/contratos", icon: HiWallet, section: "Gestion" },
@@ -60,7 +61,8 @@ function Sidebar() {
   useEscapeKey(closeSidebar, ui.sidebarOpen);
 
   const handleLogout = async () => {
-    if (await requestConfirmation("¿Cerrar sesión?")) logout();
+    const { text, ...options } = LOGOUT_CONFIRMATION;
+    if (await requestConfirmation(text, options)) logout();
   };
 
   let lastSection = "";

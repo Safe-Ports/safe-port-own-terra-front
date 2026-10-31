@@ -20,3 +20,17 @@ export function calculateQuote(calculator, form, overrides = {}) {
   try { return { value: evaluate(calculator.formula, variables), variables, error: "" }; }
   catch (error) { return { value: null, variables, error: error.message }; }
 }
+
+// Mensualidad sin calculadora: la misma amortización francesa que usa el backend
+// (app/shared/amortization.py) cuando el contrato llega sin calculator_id. Solo es
+// una vista previa; el plan de pagos real lo genera el servidor.
+export function standardMonthlyPayment({ amount, down_payment, interest_rate, totalM }) {
+  const loan = (Number(amount) || 0) - (Number(down_payment) || 0);
+  const months = Math.trunc(Number(totalM) || 0);
+  const rate = Number(interest_rate) || 0;
+  if (loan <= 0 || months < 1 || rate < 0) return null;
+  if (rate === 0) return Math.round((loan / months) * 100) / 100;
+  const r = rate / 12;
+  const factor = (1 + r) ** months;
+  return Math.round(((loan * r * factor) / (factor - 1)) * 100) / 100;
+}

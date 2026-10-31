@@ -1,4 +1,4 @@
-// Carga de Lotes: alta de fraccionamiento con plano, matriz manual de lotes,
+// Editar lotes: alta de fraccionamiento con plano, matriz manual de lotes,
 // edición de un lote, importación por archivo, portafolio y migración.
 import fs from "node:fs";
 import { test, expect } from "@playwright/test";
@@ -59,21 +59,34 @@ test("matriz manual: secciones, edición de un lote con imagen y guardado", asyn
   const dialog = page.getByRole("dialog", { name: "Editar lote" });
   const [chooser] = await Promise.all([page.waitForEvent("filechooser"), dialog.getByRole("button", { name: "Subir imagen" }).click()]);
   await chooser.setFiles(PLANO);
-  await dialog.getByRole("button", { name: "Apartado", exact: true }).click();
-  await dialog.getByRole("spinbutton", { name: "Frente (ML) (opcional)" }).fill("12");
-  await dialog.getByRole("spinbutton", { name: "Fondo (ML) (opcional)" }).fill("25");
-  await dialog.getByRole("spinbutton", { name: "Superficie (m²) (opcional)" }).fill("300");
+  // El estado no se elige aquí: todo lote nuevo nace disponible.
+  await expect(dialog.getByRole("button", { name: "Apartado", exact: true })).toHaveCount(0);
+  await expect(dialog.getByText(/Todo lote nuevo se crea disponible/)).toBeVisible();
+  await dialog.getByRole("textbox", { name: "Frente (ML) (opcional)" }).fill("12");
+  await dialog.getByRole("textbox", { name: "Fondo (ML) (opcional)" }).fill("25");
+  await dialog.getByRole("textbox", { name: "Superficie (m²) (opcional)" }).fill("300");
   // Las especificaciones son interruptores: el checkbox real va oculto tras la etiqueta.
   for (const spec of ["Agua potable", "Lote de esquina"]) {
     await dialog.getByText(spec, { exact: true }).click();
     await expect(dialog.getByRole("checkbox", { name: spec })).toBeChecked();
   }
+  // Un servicio activo se puede describir, y "Otro servicio" cubre lo que no está en la lista.
+  await dialog.getByText("Energía eléctrica", { exact: true }).click();
+  await dialog.getByRole("textbox", { name: "Descripción de Energía eléctrica" }).fill("Solar");
+  await dialog.getByRole("textbox", { name: "Otro servicio (opcional)" }).fill("Vigilancia 24 h");
+  // El vendedor se busca en el equipo; si no aparece se ofrece registrarlo ahí mismo.
+  const seller = dialog.getByRole("textbox", { name: "Buscar vendedor por nombre o correo" });
+  await seller.fill("Nadie Así");
+  await expect(dialog.getByRole("button", { name: /registrar «Nadie Así»/ })).toBeVisible();
+  await seller.fill("Vera");
+  await dialog.getByRole("button").filter({ hasText: "Vera Vendedora" }).click();
+  await expect(dialog.getByRole("textbox", { name: "Vendedor seleccionado" })).toHaveValue("Vera Vendedora");
   await dialog.getByRole("button", { name: "Aplicar al borrador" }).click();
   await expect(dialog).toBeHidden();
 
   // Cancelar en el editor no aplica cambios.
   await page.getByRole("button", { name: /^E-03 Libre/ }).first().click();
-  await page.getByRole("dialog", { name: "Editar lote" }).getByRole("button", { name: "Vendido", exact: true }).click();
+  await page.getByRole("dialog", { name: "Editar lote" }).getByRole("textbox", { name: "Frente (ML) (opcional)" }).fill("99");
   await page.getByRole("dialog", { name: "Editar lote" }).getByRole("button", { name: "Cancelar" }).click();
   await expect(page.getByRole("button", { name: /^E-03 Libre/ }).first()).toBeVisible();
 
@@ -82,6 +95,26 @@ test("matriz manual: secciones, edición de un lote con imagen y guardado", asyn
   const saved = JSON.stringify(writes(/^\/lots(\/bulk)?$/).map((r) => r.body));
   expect(saved).toContain("E-02");
   expect(saved).toMatch(/"area_m2":"?300/);
+  expect(saved).toContain('"luz":"Solar"');
+  expect(saved).toContain('"agua":"true"');
+  expect(saved).toContain('"otros":"Vigilancia 24 h"');
+  expect(saved).toMatch(/"seller_id":"u[^"]*"/);
+  expect(saved).not.toContain('"status"');
+});
+
+test("salir de Editar lotes con cambios sin guardar pide confirmación", async ({ page, isMobile }) => {
+  test.skip(isMobile, "El menú lateral en móvil vive detrás de un botón; el aviso es el mismo.");
+  await newProject(page, "Valle Verde", { withPlan: false });
+  await addSection(page, "Etapa 1", 2);
+  await expect(page.getByText(/2 cambios sin guardar/)).toBeVisible();
+  await page.getByRole("complementary").getByRole("link", { name: /^Clientes/ }).click();
+  const confirm = page.getByRole("dialog", { name: "Cambios sin guardar" });
+  await expect(confirm).toContainText("2 cambios sin guardar");
+  await confirm.getByRole("button", { name: "Seguir editando" }).click();
+  await expect(page).toHaveURL(/\/lotes$/);
+  await page.getByRole("complementary").getByRole("link", { name: /^Clientes/ }).click();
+  await page.getByRole("dialog", { name: "Cambios sin guardar" }).getByRole("button", { name: "Salir sin guardar" }).click();
+  await expect(page).toHaveURL(/\/clientes$/);
 });
 
 // BUG conocido (2026-10-23): el prefijo del código sale de la inicial de la
@@ -177,9 +210,9 @@ test("migrar fraccionamiento: lotes, clientes y contratos en tres pasos", async 
   await expect(page).toHaveURL(/\/fraccionamientos\?frac=f1/);
 });
 
-test("migrar: volver regresa a Carga de Lotes", async ({ page }) => {
+test("migrar: volver regresa a Editar lotes", async ({ page }) => {
   await page.goto("/lotes");
   await page.getByRole("button", { name: "Migrar fraccionamiento" }).click();
-  await page.getByRole("button", { name: "Volver a Carga de Lotes" }).click();
+  await page.getByRole("button", { name: "Volver a Editar lotes" }).click();
   await expect(page.getByRole("heading", { name: "Lotes y proyectos" })).toBeVisible();
 });

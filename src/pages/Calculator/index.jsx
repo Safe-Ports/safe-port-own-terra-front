@@ -1,4 +1,5 @@
 import WorkflowForm from "@/components/forms/WorkflowForm";
+import AmountInput from "@/components/forms/AmountInput";
 import { useEffect, useMemo, useState } from "react";
 import { HiCalculator, HiTrash, HiMagnifyingGlass, HiCheck } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
@@ -413,7 +414,7 @@ function CalculatorPage() {
                       </div>
                       <div className="fg">
                         <label htmlFor="field-calculator-index-3" className="fl">Monto financiado</label>
-                        <input id="field-calculator-index-3" className="fi" type="number" min="0" value={effPrincipal}
+                        <AmountInput id="field-calculator-index-3" className="fi" min="0" value={effPrincipal}
                           onChange={(e) => setProj((p) => ({ ...p, principal: e.target.value }))} placeholder="Precio − Enganche" />
                       </div>
                     </div>

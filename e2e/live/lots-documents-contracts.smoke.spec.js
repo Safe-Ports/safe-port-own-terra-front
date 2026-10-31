@@ -17,12 +17,8 @@ const FIXTURE_DOC = path.join(__dirname, "fixtures", "documento.txt");
 // contrato sobre ese lote → documento vinculado a ese contrato. Todo real,
 // sin mocks. Cada entidad creada se archiva (soft-delete) al terminar.
 //
-// Precondición externa: una venta ("sale") exige una calculadora de
-// financiamiento activa para "lands" (ContractModal.jsx, `noCalculator`
-// bloquea el guardado con un toast si no hay una). Este spec NO crea una
-// calculadora — si no hay ninguna activa, se salta con un mensaje claro en
-// vez de fallar en rojo. Configúrala una vez en /calculadora si quieres que
-// esta corrida completa.
+// La calculadora es opcional: sin una activa, la venta usa la amortización
+// estándar, así que este spec ya no depende de configurar una.
 test.describe("Lotes → cliente → contrato → documento en vivo", () => {
   let projectName;
   let clientName;
@@ -31,7 +27,7 @@ test.describe("Lotes → cliente → contrato → documento en vivo", () => {
   let createdContractId;
   let createdDocumentId;
 
-  test.beforeEach(async ({ page, request }) => {
+  test.beforeEach(async ({ page }) => {
     skipUnlessLiveCredentials();
     await skipUnlessLiveBackend();
     const ts = Date.now();
@@ -43,17 +39,6 @@ test.describe("Lotes → cliente → contrato → documento en vivo", () => {
     createdDocumentId = null;
 
     await loginLive(page);
-
-    const token = await getAuthToken(page);
-    const calcRes = await request.get(`${LIVE_API_BASE}/calculators/active?app_key=lands`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const activeCalc = calcRes.ok() ? await calcRes.json() : null;
-    test.skip(
-      !activeCalc,
-      "No hay calculadora de financiamiento activa para 'lands' — actívala en /calculadora " +
-        "para poder generar un contrato de venta. Ver ContractModal.jsx `noCalculator`."
-    );
   });
 
   test.afterEach(async ({ request, page }) => {

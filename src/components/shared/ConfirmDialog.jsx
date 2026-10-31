@@ -1,6 +1,7 @@
 import { HiExclamationTriangle } from "react-icons/hi2";
 import Modal from "@/components/ui/Modal";
 
+
 /**
  * Confirmación con el estilo de la app, en lugar del window.confirm del navegador
  * (que rompe la identidad visual y no se puede matizar con un detalle o un aviso).

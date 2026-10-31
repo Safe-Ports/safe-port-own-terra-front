@@ -111,7 +111,7 @@ function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
               <HiBars3 aria-hidden="true" />
             </button>
             <div>
-              <div className="topbar-title">{title}</div>
+              <div className="topbar-title" role="heading" aria-level={1}>{title}</div>
               <div className="topbar-sub">{subtitle || `Bienvenido · Hoy, ${today}`}</div>
             </div>
           </div>

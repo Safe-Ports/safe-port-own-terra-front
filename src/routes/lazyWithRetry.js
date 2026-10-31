@@ -25,6 +25,13 @@ export function lazyWithRetry(factory, { retries = 5, delay = 600 } = {}) {
           factory()
             .then(resolve)
             .catch((err) => {
+              // Sin internet no tiene caso reintentar ni recargar: la recarga
+              // terminaba en la página de "sin conexión" del navegador. Se espera
+              // a que vuelva la red y se reintenta solo, sin perder la pantalla.
+              if (typeof navigator !== "undefined" && navigator.onLine === false) {
+                window.addEventListener("online", () => attempt(n), { once: true });
+                return;
+              }
               // Reintenta con backoff creciente (~9s en total). La ventana en la que
               // un chunk no está disponible durante un deploy suele durar pocos
               // segundos; reintentar la aguanta SIN recargar (menos disruptivo).

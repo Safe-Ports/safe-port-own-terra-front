@@ -6,8 +6,10 @@ import UnitMonitorPanel from "./UnitMonitorPanel";
 // Mismas llaves que expone PropertiesDataContext con properties-back: antes el
 // monitoreo leía `people`/`relations`/`charges`, que no existen, y mostraba
 // todas las unidades sin habitantes ni saldo.
+const live = vi.hoisted(() => ({ backendLive: false, portalIdentities: [] }));
 vi.mock("../../data/PropertiesDataContext", () => ({
   usePropertiesData: () => ({
+    ...live,
     units: [
       { id: "u1", propertyId: "p1", identifier: "J-201", type: "apartment", status: "rented", area: 80 },
       { id: "u2", propertyId: "p1", identifier: "J-202", type: "apartment", status: "available" },
@@ -23,6 +25,11 @@ vi.mock("../../data/PropertiesDataContext", () => ({
 
 // Las fotos se consultan a properties-back; aquí sólo importa la tabla.
 vi.mock("../media/MediaGallery", () => ({ default: () => null, useEntityMedia: () => ({ images: [] }) }));
+
+// Cuenta y operación tienen sus propias pruebas; aquí sólo importa que la ficha las monte.
+vi.mock("./UnitAccountCard", () => ({ default: ({ unit, onOpenCommunityCharges }) => <button type="button" onClick={onOpenCommunityCharges}>Cobranza de la comunidad ({unit.identifier})</button> }));
+vi.mock("./UnitOperationsCard", () => ({ default: () => null }));
+vi.mock("../access/VisitorPassForm", () => ({ default: ({ fixedUnit }) => <p>Pase para {fixedUnit.identifier}</p> }));
 
 vi.mock("@/context/AppContext", () => ({ useAppContext: () => ({ showToast: vi.fn() }) }));
 
@@ -62,7 +69,7 @@ describe("UnitMonitorPanel", () => {
     expect(onAddMember).toHaveBeenCalledWith("u1");
     fireEvent.click(screen.getByRole("button", { name: "Quitar a Mariana Torres de J-201" }));
     expect(onUnlink).toHaveBeenCalledWith(expect.objectContaining({ id: "r1" }));
-    fireEvent.click(screen.getByRole("button", { name: /Registrar pago/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Cobranza de la comunidad (J-201)" }));
     expect(onOpenCharges).toHaveBeenCalled();
   });
 
@@ -82,5 +89,19 @@ describe("UnitMonitorPanel", () => {
     fireEvent.change(screen.getByPlaceholderText("Buscar unidad o persona"), { target: { value: "mariana" } });
     expect(screen.getByRole("button", { name: /J-201/ })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /J-202/ })).not.toBeInTheDocument();
+  });
+
+  it("gives access from the unit: each person's portal status and a provisional pass for visits", () => {
+    live.backendLive = true;
+    live.portalIdentities = [{ id: "pi-1", persona_id: "per-1", status: "invited" }];
+    const onOpenAccess = vi.fn(); const onAddMember = vi.fn();
+    render(<MemoryRouter><UnitMonitorPanel community={community} unitId="u1" canWrite onSelectUnit={() => {}} onAddMember={onAddMember} onUnlink={() => {}} onOpenCharges={() => {}} onOpenAccess={onOpenAccess} /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: "Acceso al portal de Mariana Torres: Invitación pendiente" }));
+    expect(onOpenAccess).toHaveBeenCalledWith(expect.objectContaining({ id: "per-1" }));
+    fireEvent.click(screen.getByRole("button", { name: /Agregar persona con acceso/ }));
+    expect(onAddMember).toHaveBeenCalledWith("u1");
+    fireEvent.click(screen.getByRole("button", { name: /Pase para visita/ }));
+    expect(screen.getByText("Pase para J-201")).toBeInTheDocument();
+    live.backendLive = false; live.portalIdentities = [];
   });
 });

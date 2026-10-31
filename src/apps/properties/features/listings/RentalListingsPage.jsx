@@ -1,4 +1,5 @@
 import WorkflowForm from "@/components/forms/WorkflowForm";
+import AmountInput from "@/components/forms/AmountInput";
 import { useMemo, useState } from "react";
 import {
   HiArrowTopRightOnSquare, HiBuildingStorefront, HiCheckCircle, HiEye,
@@ -94,8 +95,8 @@ export default function RentalListingsPage() {
         <label className="properties-form-wide"><span>Título del anuncio *</span><input value={draft.title} onChange={(event)=>update("title",event.target.value)} placeholder="Ej. Departamento luminoso con balcón"/><FieldError msg={errors.title}/></label>
         <label className="properties-form-wide"><span>Resumen *</span><input value={draft.summary} onChange={(event)=>update("summary",event.target.value)} placeholder="La razón principal para abrir el anuncio"/><FieldError msg={errors.summary}/></label>
         <label className="properties-form-wide"><span>Descripción *</span><textarea rows="4" value={draft.description} onChange={(event)=>update("description",event.target.value)} placeholder="Distribución, entorno, condiciones y experiencia del inmueble"/><FieldError msg={errors.description}/></label>
-        <label><span>Renta mensual *</span><input type="number" min="1" value={draft.monthlyRent} onChange={(event)=>update("monthlyRent",event.target.value)}/><FieldError msg={errors.monthlyRent}/></label>
-        <label><span>Depósito informado</span><input type="number" min="0" value={draft.deposit} onChange={(event)=>update("deposit",event.target.value)}/></label>
+        <label><span>Renta mensual *</span><AmountInput min="1" value={draft.monthlyRent} onChange={(event)=>update("monthlyRent",event.target.value)}/><FieldError msg={errors.monthlyRent}/></label>
+        <label><span>Depósito informado</span><AmountInput min="0" value={draft.deposit} onChange={(event)=>update("deposit",event.target.value)}/></label>
         <label><span>Disponible desde *</span><input type="date" value={draft.availableFrom} onChange={(event)=>update("availableFrom",event.target.value)}/><FieldError msg={errors.availableFrom}/></label>
         <label><span>Estancia mínima (meses)</span><input type="number" min="1" value={draft.minimumTerm} onChange={(event)=>update("minimumTerm",event.target.value)}/><FieldError msg={errors.minimumTerm}/></label>
         <label><span>Política de mascotas</span><select value={draft.petPolicy} onChange={(event)=>update("petPolicy",event.target.value)}><option>A consideración</option><option>Se aceptan mascotas</option><option>No se aceptan mascotas</option><option>No aplica</option></select></label>

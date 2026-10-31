@@ -2,10 +2,59 @@ import WorkflowForm from "@/components/forms/WorkflowForm";
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAppContext } from '@/context/AppContext'
 import { useLocation } from 'react-router-dom'
+import useChimeOnIncrease from '@/hooks/useChimeOnIncrease'
+import api, { readSessionTokens } from '@/services/api'
 import './support.css'
 
 const BOT_URL = import.meta.env.VITE_BOT_API_URL || 'http://localhost:8001'
 const TICKET_KEY = 'sp_support_ticket_id'
+
+const OFFLINE_MESSAGE = 'No hay conexión a internet. Revisa tu red e intenta de nuevo.'
+const EXPIRED_MESSAGE = 'Tu sesión expiró. Vuelve a iniciar sesión para hablar con soporte.'
+
+function botRequest(path, options, token) {
+  const isFormData = options.body instanceof FormData
+  return fetch(`${BOT_URL}${path}`, {
+    ...options,
+    headers: {
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+      Authorization: `Bearer ${token}`,
+      ...options.headers,
+    },
+  })
+}
+
+/**
+ * Llamada al bot de soporte con el token VIGENTE. El de `currentUser` es el del
+ * inicio de sesión: la app lo renueva en silencio cada tanto, y el bot contestaba
+ * "Token de OwnTerra inválido o expirado" aunque la sesión siguiera viva. Si el
+ * bot rechaza el token, se pide uno nuevo a la API (su interceptor lo renueva) y
+ * se reintenta una vez. Sin red, el mensaje es el de "sin conexión", no el
+ * "Failed to fetch" del navegador.
+ */
+async function supportFetch(path, options = {}) {
+  const send = () => botRequest(path, options, readSessionTokens()?.token)
+  let res
+  try {
+    res = await send()
+    if (res.status === 401) {
+      await api.get('/auth/me')
+      res = await send()
+    }
+  } catch (err) {
+    if (err?.response?.status === 401) throw new Error(EXPIRED_MESSAGE)
+    throw new Error(navigator.onLine === false || err instanceof TypeError ? OFFLINE_MESSAGE : 'No pudimos conectar con soporte. Intenta de nuevo en unos segundos.')
+  }
+  if (res.status === 401) throw new Error(EXPIRED_MESSAGE)
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(typeof err.detail === 'string' ? err.detail : 'Soporte no pudo procesar la solicitud. Intenta de nuevo.')
+  }
+  return res.json()
+}
+const MOVE_HINT_KEY = 'sp_move_hint_seen'
+
+const moveHintSeen = () => { try { return localStorage.getItem(MOVE_HINT_KEY) === '1' } catch { return true } }
 const POSITION_KEY = 'sp_support_widget_position'
 const BUTTON_SIZE = 46
 const VIEWPORT_GAP = 12
@@ -368,6 +417,10 @@ function ThreadView({ ticketId, botFetch }) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  // Suena cuando soporte (o el bot) escribe con el hilo abierto. Hasta la
+  // primera carga no hay base, para no sonar por lo que ya estaba.
+  useChimeOnIncrease(ticket ? messages.filter(msg => msg.sender !== 'user').length : undefined)
+
   function handleFileChange(e) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -511,27 +564,28 @@ export default function SupportWidget() {
   // directo al ticket (o a la lista) en vez de a un menú genérico que no dice nada
   // de si hay algo nuevo.
   const [unreadTickets, setUnreadTickets] = useState([])
+  const [unreadTotal, setUnreadTotal] = useState(undefined)
+  useChimeOnIncrease(isOpen ? undefined : unreadTotal)
   const [widgetPosition, setWidgetPosition] = useState(initialWidgetPosition)
+  // Aviso de una sola vez: el botón se puede arrastrar, pero nada lo decía y
+  // los usuarios no lo descubrían. Espera a que termine la bienvenida para no
+  // encimarse con el tutorial.
+  const [showMoveHint, setShowMoveHint] = useState(false)
+  const welcomeDone = (currentUser?.tours_seen || []).includes('ecosistema')
+  useEffect(() => {
+    if (!currentUser || !welcomeDone || moveHintSeen()) return undefined
+    const timer = setTimeout(() => setShowMoveHint(true), 2500)
+    return () => clearTimeout(timer)
+  }, [currentUser, welcomeDone])
+  const dismissMoveHint = () => {
+    setShowMoveHint(false)
+    try { localStorage.setItem(MOVE_HINT_KEY, '1') } catch { /* sin almacenamiento */ }
+  }
   const [isDragging, setIsDragging] = useState(false)
   const dragRef = useRef(null)
   const suppressClickRef = useRef(false)
 
-  const botFetch = useCallback(async (path, options = {}) => {
-    const isFormData = options.body instanceof FormData
-    const res = await fetch(`${BOT_URL}${path}`, {
-      ...options,
-      headers: {
-        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-        Authorization: `Bearer ${currentUser?.token}`,
-        ...options.headers,
-      },
-    })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(err.detail || 'Error de soporte')
-    }
-    return res.json()
-  }, [currentUser?.token])
+  const botFetch = useCallback((path, options = {}) => supportFetch(path, options), [])
 
   // Punto rojo cuando el panel está cerrado — revisión continua (no solo una vez),
   // para que se vea aunque el usuario siga navegando la app sin volver a tocar el
@@ -540,7 +594,10 @@ export default function SupportWidget() {
     if (isOpen || !currentUser) return
     const check = () => {
       botFetch('/support/tickets/mine')
-        .then(tickets => setUnreadTickets(tickets.filter(t => t.unread_count > 0)))
+        .then(tickets => {
+          setUnreadTickets(tickets.filter(t => t.unread_count > 0))
+          setUnreadTotal(tickets.reduce((total, t) => total + (t.unread_count || 0), 0))
+        })
         .catch(() => {})
     }
     const initial = setTimeout(check, 2000)
@@ -586,6 +643,7 @@ export default function SupportWidget() {
     dragRef.current = null
     setIsDragging(false)
     if (drag.moved) {
+      dismissMoveHint()
       const clientX = Number.isFinite(event.clientX) ? event.clientX : drag.startX
       const clientY = Number.isFinite(event.clientY) ? event.clientY : drag.startY
       const finalPosition = clampWidgetPosition({
@@ -599,6 +657,7 @@ export default function SupportWidget() {
   }
 
   function handleWidgetClick() {
+    if (showMoveHint) dismissMoveHint()
     if (suppressClickRef.current) {
       suppressClickRef.current = false
       return
@@ -694,6 +753,22 @@ export default function SupportWidget() {
         <IconChat />
         {unreadTickets.length > 0 && !isOpen && <span className="sp-btn-dot" />}
       </button>
+
+      {showMoveHint && !isOpen && (
+        <div
+          className={`sp-move-hint sp-move-hint--${supportTheme}${widgetPosition.y < 140 ? " is-below" : ""}`}
+          role="status"
+          style={{
+            left: Math.max(12, Math.min(widgetPosition.x + BUTTON_SIZE - 260, window.innerWidth - 272)),
+            top: widgetPosition.y < 140 ? widgetPosition.y + BUTTON_SIZE + 12 : 'auto',
+            bottom: widgetPosition.y < 140 ? 'auto' : window.innerHeight - widgetPosition.y + 12,
+          }}
+        >
+          <strong>Este es tu chat de soporte</strong>
+          <p>Si te estorba, mantenlo presionado y arrástralo a cualquier parte de la pantalla.</p>
+          <button type="button" onClick={dismissMoveHint}>Entendido</button>
+        </div>
+      )}
 
       {/* Panel */}
       {isOpen && (
