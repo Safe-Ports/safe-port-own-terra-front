@@ -220,10 +220,10 @@ function ServiceNetworkPage() {
     action: (reason) => rejectServiceApplication(application.id, reason),
   });
 
-  if (serviceNetworkLoading) return <EcoLayout active="properties" title="OwnTerra Properties" subtitle="Operación · Proveedores"><main className="service-page" onClickCapture={event => event.target.closest("button")?.focus()}><p className="service-loading" role="status">Cargando red de servicio…</p></main></EcoLayout>;
-  if (serviceNetworkError) return <EcoLayout active="properties" title="OwnTerra Properties" subtitle="Operación · Proveedores"><main className="service-page" onClickCapture={event => event.target.closest("button")?.focus()}><section className="service-state"><h1>No pudimos cargar la red de proveedores</h1><InlineError error={parseApiError(serviceNetworkError)} /><button type="button" onClick={retryServiceNetwork}>Reintentar</button></section></main></EcoLayout>;
+  if (serviceNetworkLoading) return <EcoLayout active="properties" title="Proveedores" subtitle="Operación · Proveedores"><main className="service-page" onClickCapture={event => event.target.closest("button")?.focus()}><p className="service-loading" role="status">Cargando red de servicio…</p></main></EcoLayout>;
+  if (serviceNetworkError) return <EcoLayout active="properties" title="Proveedores" subtitle="Operación · Proveedores"><main className="service-page" onClickCapture={event => event.target.closest("button")?.focus()}><section className="service-state"><h1>No pudimos cargar la red de proveedores</h1><InlineError error={parseApiError(serviceNetworkError)} /><button type="button" onClick={retryServiceNetwork}>Reintentar</button></section></main></EcoLayout>;
 
-  return <EcoLayout active="properties" title="OwnTerra Properties" subtitle="Operación · Proveedores"><main className="service-page" onClickCapture={event => event.target.closest("button")?.focus()}>
+  return <EcoLayout active="properties" title="Proveedores" subtitle="Operación · Proveedores"><main className="service-page" onClickCapture={event => event.target.closest("button")?.focus()}>
     <header className="service-heading">
       <div><h1>Proveedores</h1><p>Quién resuelve en tus comunidades: perfiles habilitados desde el catálogo de Core, con sus especialidades y sus contactos operativos.</p></div>
       {canManage ? <button type="button" onClick={event => openDialog(event, setShowEnable)}><HiPlus /> Habilitar proveedor</button> : null}

@@ -10,8 +10,8 @@ for (const width of [1440, 390]) {
       await expect(page.locator('.eco-root.properties-focus main').first()).toBeVisible();
       await expectFits(page);
       await expect(page.locator('.eco-root:not(.dialog-theme)')).toHaveCSS('--deep', '#1e3a5f');
-      const heading = page.locator('main h1').first();
-      await expect(heading).toHaveCSS('font-weight', '500');
+      // El nombre de la sección vive en la barra superior y es el encabezado de la página.
+      await expect(page.getByRole('heading', {level: 1}).first()).toBeVisible();
       if (width > 900) {
         const rail = page.getByRole('navigation', {name: 'Navegación de Properties'});
         await expect(page.locator('.eco-root .main')).toBeVisible();
@@ -19,7 +19,7 @@ for (const width of [1440, 390]) {
         await rail.hover();
         expect((await page.locator('.eco-root .main').boundingBox()).x).toBe(before.x);
         await expect(rail).toHaveCSS('width', '240px');
-        await expect(rail.getByText('Unidades y residentes', {exact: true})).toBeVisible();
+        await expect(rail.getByText('Comunidades', {exact: true})).toBeVisible();
       }
       await page.screenshot({path: `/private/tmp/properties-design-${name}-${width}.png`});
     }

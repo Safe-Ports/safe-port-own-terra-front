@@ -163,7 +163,7 @@ describe("AgendaPage", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /10:00.*Visita con Ana/i })[0]);
     fireEvent.click(await screen.findByRole("button", { name: "Eliminar evento" }));
     expect(deletedId).toBeNull();
-    fireEvent.click(await screen.findByRole("button", { name: "Confirmar", exact: true }));
+    fireEvent.click(within(await screen.findByRole("dialog", { name: "¿Eliminar este evento?" })).getByRole("button", { name: "Eliminar evento" }));
 
     await waitFor(() => expect(showToast).toHaveBeenCalledWith("Evento eliminado"));
     expect(deletedId).toBe("appt-1");

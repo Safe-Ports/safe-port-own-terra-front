@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import WorkflowForm from "@/components/forms/WorkflowForm";
 import propertiesPortalService from "@/services/propertiesPortalService";
-import { parseApiError } from "@/errors/parseApiError";
+import { parseApiError, validationMessage } from "@/errors/parseApiError";
 import "../components/properties-ui.css";
 import { HiShieldCheck } from "react-icons/hi2";
 import PropertiesLogo from "../components/PropertiesLogo";
@@ -29,7 +29,7 @@ export default function PortalRecovery({ reset = false }) {
         setPassword(""); setConfirmation("");
       } else await propertiesPortalService.forgotPassword(email.trim());
       setDone(true);
-    } catch (requestError) { setError(parseApiError(requestError).message); }
+    } catch (requestError) { setError(validationMessage(requestError) || parseApiError(requestError).message); }
     finally { setBusy(false); }
   };
   return <main className="service-auth-page portal-login"><section className="service-auth-story"><PropertiesLogo/><div>

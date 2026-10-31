@@ -64,7 +64,7 @@ test('cotizador usa plan activo y lote directo conserva proyecto',async({page})=
  await page.locator('.frac-quote-head').click();
  await page.getByRole('button',{name:'Abrir cotizador completo'}).click();
  const dialog=page.getByRole('dialog',{name:'Cotizador'});
- await dialog.getByLabel('Precio financiado').fill('120000');await dialog.getByLabel('Enganche',{exact:true}).fill('20000');await dialog.getByLabel('Plazo (meses)').fill('10');
+ await dialog.getByLabel('Precio a meses').fill('120000');await dialog.getByLabel('Enganche (pago inicial)').fill('20000');await dialog.getByLabel('Número de meses').fill('10');
  await expect(dialog.locator('.frac-quote-result')).toContainText('11,200');
 });
 
@@ -94,9 +94,10 @@ test('configurar plan y volver conserva los datos del contrato',async({page})=>{
  await page.route(`${API}/calculators/active?**`,route=>route.fulfill({json:null}));
  await page.route(`${API}/calculators?**`,route=>route.fulfill({json:[]}));
  await page.goto('/contratos');await page.getByRole('button',{name:'+ Generar Contrato',exact:true}).click();
- await page.locator('#cf-amount').fill('345000');await page.getByRole('button',{name:'Crear calculadora →'}).click();
+ await page.locator('#cf-amount').fill('345000');
+ await page.getByRole('button',{name:'Crear una calculadora (opcional)'}).click();
  await expect(page.getByRole('button',{name:'Volver al contrato'})).toBeVisible();
- await page.getByRole('button',{name:'Volver al contrato'}).click();await expect(page.locator('#cf-amount')).toHaveValue('345000');
+ await page.getByRole('button',{name:'Volver al contrato'}).click();await expect(page.locator('#cf-amount')).toHaveValue('345,000');
 });
 
 test('alta de cliente usa etiquetas y permite enviar desde teclado',async({page})=>{

@@ -1678,3 +1678,15 @@
   --sh:  0 1px 3px rgba(21, 41, 63, 0.06), 0 4px 12px rgba(21, 41, 63, 0.07);
   --sh2: 0 18px 40px rgba(21, 41, 63, 0.10), 0 20px 40px rgba(21, 41, 63, 0.11);
 }
+.eco-root .usr-role-access{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;font-family: var(--font-body)}
+.eco-root .usr-role-access>div{border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--surface)}
+.eco-root .usr-role-access>div.is-off{background:var(--bg2, #f6f7f5)}
+.eco-root .usr-role-access-ttl{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);margin-bottom:6px}
+.eco-root .usr-role-access .is-off .usr-role-access-ttl{color:var(--text3)}
+.eco-root .usr-role-access ul{margin:0;padding-left:16px;display:grid;gap:4px;font-size:12px;line-height:1.45;color:var(--text2)}
+.eco-root .usr-d-body .usr-role-access{margin:0 0 18px}
+@media (max-width:640px){.eco-root .usr-role-access{grid-template-columns:1fr}}
+.eco-root .md-notif-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end}
+.eco-root .md-notif-sound{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border:1px solid var(--border2);border-radius:999px;background:var(--surface);color:var(--mid);font:600 12px/1 var(--font-body);cursor:pointer}
+.eco-root .md-notif-sound svg{width:15px;height:15px}
+.eco-root .md-notif-sound[aria-pressed="false"]{color:var(--text3)}

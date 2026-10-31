@@ -10,7 +10,7 @@ test('comunidad abre unidades y mantiene la ficha seleccionada tras recargar',as
  await page.getByRole('button',{name:'Abrir Departamento 302',exact:true}).click();await expect(page).toHaveURL(/unit=unit/);
  if(page.viewportSize().width<700)await expect.poll(async()=>{const box=await page.locator('#community-unit-detail').boundingBox();return box&&box.y>=0&&box.y<page.viewportSize().height/2;}).toBeTruthy();
  await page.reload();await expect(page.getByRole('complementary',{name:'Detalle de Departamento 302'})).toBeVisible();await expectFits(page);
- await page.getByRole('button',{name:'← Volver a comunidades'}).click();await expect(page.getByRole('region',{name:'Comunidades',exact:true})).toBeVisible();await expect(page.locator('#community-unit-workspace')).toHaveCount(0);
+ await page.getByRole('navigation',{name:'Navegación de unidades'}).getByRole('button',{name:'Comunidades',exact:true}).click();await expect(page.getByRole('region',{name:'Comunidades',exact:true})).toBeVisible();await expect(page.locator('#community-unit-workspace')).toHaveCount(0);
  await page.goBack();await expect(page.getByRole('complementary',{name:'Detalle de Departamento 302'})).toBeVisible();
 });
 
@@ -32,7 +32,7 @@ test('elegir foto de images_condos guarda en inmueble y sobrevive recarga',async
  await page.goto('/properties/comunidades');await page.getByRole('button',{name:/Comunidad Jacarandas Condominio/}).click();await page.getByRole('button',{name:'Editar comunidad'}).click();
  const gallery=page.getByRole('region',{name:'Fotos de la comunidad'});await gallery.getByText('Elegir una imagen de images_condos').click();await gallery.getByRole('button',{name:'Agregar 1625338881.jpg a la comunidad'}).click();
  await expect(gallery).toContainText('1 foto en la galería');await expect(gallery.getByRole('img',{name:'1625338881.jpg'})).toBeVisible();expect(uploads).toBe(1);
- await page.getByRole('button',{name:'Cancelar',exact:true}).click();await page.reload();await page.getByRole('button',{name:'Información de la comunidad'}).click();await expect(page.getByRole('region',{name:'Fotos de Comunidad Jacarandas'}).getByRole('img',{name:'1625338881.jpg'})).toBeVisible();expect(uploads).toBe(1);await expectFits(page);
+ await page.getByRole('button',{name:'Cancelar',exact:true}).click();await page.reload();await page.getByRole('button',{name:'Mostrar información'}).click();await expect(page.getByRole('region',{name:'Fotos de Comunidad Jacarandas'}).getByRole('img',{name:'1625338881.jpg'})).toBeVisible();expect(uploads).toBe(1);await expectFits(page);
 });
 
 test('error de lectura de archivos se muestra y permite reintentar',async({page})=>{
@@ -66,7 +66,9 @@ test('vincular contacto existente como inquilino guarda y sobrevive recarga',asy
  await page.goto('/properties/comunidades?community=building');await page.getByRole('button',{name:'Abrir Departamento 302',exact:true}).click();await page.getByRole('button',{name:'Agregar la primera persona'}).click();
  const dialog=page.getByRole('dialog',{name:'Agregar persona a Departamento 302'});
  await dialog.getByText('Ya está en el directorio',{exact:true}).click();await dialog.getByRole('combobox',{name:'Persona',exact:true}).selectOption('person');await dialog.getByText('Inquilino',{exact:true}).click();
+ // Sin invitación al portal: este caso solo vincula a la persona.
+ const invite=dialog.getByRole('checkbox',{name:/Invitar al portal/});if(await invite.isChecked())await invite.uncheck();
  await dialog.getByRole('button',{name:'Agregar a la unidad'}).click();await expect(dialog).toHaveCount(0);
- expect(created).toMatchObject({property_id:'unit',persona_id:'person',role_id:'tenant-role',can_vote:false,is_payment_responsible:false,start_date:null,end_date:null});
+ expect(created).toMatchObject({property_id:'unit',persona_id:'person',role_id:'tenant-role',can_vote:false,is_payment_responsible:false,start_date:null});expect(created.end_date??null).toBeNull();
  await expect(page.getByRole('region',{name:'Personas de Departamento 302'})).toContainText('Mariana Torres');await page.reload();await expect(page.getByRole('region',{name:'Personas de Departamento 302'})).toContainText('Mariana Torres');
 });

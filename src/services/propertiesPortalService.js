@@ -1,14 +1,15 @@
 import axios from "axios";
 import { BASE_URL as CORE_BASE_URL } from "./api";
 import { PROPERTIES_BASE_URL } from "./propertiesApi";
+import { trackAxios } from "./networkActivity";
 
 // La identidad pertenece a Core; las consultas operativas a Properties.
 // Esta sesión es de portal (aud=portal) y nunca utiliza lm_session de staff.
 const SESSION_KEY = "ownterra_portal_session";
 const LEGACY_TOKEN_KEY = "ownterra_properties_portal_token";
-const authApi = axios.create({ baseURL: CORE_BASE_URL, timeout: 15000 });
-const portalApi = axios.create({ baseURL: PROPERTIES_BASE_URL, timeout: 15000 });
-const identityApi = axios.create({ baseURL: CORE_BASE_URL, timeout: 15000 });
+const authApi = trackAxios(axios.create({ baseURL: CORE_BASE_URL, timeout: 15000 }));
+const portalApi = trackAxios(axios.create({ baseURL: PROPERTIES_BASE_URL, timeout: 15000 }));
+const identityApi = trackAxios(axios.create({ baseURL: CORE_BASE_URL, timeout: 15000 }));
 let sessionGeneration = 0;
 let refreshPromise = null;
 

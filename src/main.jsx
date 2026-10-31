@@ -7,6 +7,8 @@ import { AppProvider } from "@/context/AppContext";
 import App from "@/App";
 import { initSentry } from "@/observability/sentry";
 import ErrorBoundary from "@/components/shared/ErrorBoundary";
+import ConnectionBanner from "@/components/shared/ConnectionBanner";
+import NetworkActivity from "@/components/shared/NetworkActivity";
 import "@/styles/index.css";
 import "@/styles/primitives.css";
 
@@ -49,5 +51,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         </BrowserRouter>
       </QueryClientProvider>
     </ErrorBoundary>
+    <ConnectionBanner />
+    <NetworkActivity />
   </React.StrictMode>
 );

@@ -95,7 +95,7 @@ function EcosystemFormularios() {
   };
 
   const handleDelete = async (t) => {
-    if (!await requestConfirmation(`¿Eliminar "${t.name}"? También se borrarán todas sus respuestas.`)) return;
+    if (!await requestConfirmation("También se borran todas sus respuestas y el enlace público deja de funcionar.", { title: `¿Eliminar "${t.name}"?`, confirmLabel: "Eliminar formulario", danger: true })) return;
     deleteMutation.mutate(t.id);
   };
 

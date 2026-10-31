@@ -17,7 +17,7 @@ describe("Confirmación de cierre de sesión", () => {
     const dialog = screen.getByRole("dialog", { name: "¿Cerrar sesión?" });
     expect(dialog.closest(".dialog-theme").parentElement).toBe(document.body);
     expect(logout).not.toHaveBeenCalled();
-    fireEvent.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Seguir aquí" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(trigger).toHaveFocus();
   });

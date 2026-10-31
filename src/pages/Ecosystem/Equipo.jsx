@@ -14,10 +14,31 @@ import { employeeService } from "@/services/employeeService";
 import { jobTitleService } from "@/services/jobTitleService";
 import { useAppContext } from "@/context/AppContext";
 import { parseApiError } from "@/errors/parseApiError";
-import { GLOBAL_ROLES, VERTICAL_APP_CATALOG } from "@/services/permissions";
+import { GLOBAL_ROLES, ROLE_ACCESS, VERTICAL_APP_CATALOG } from "@/services/permissions";
 import useEscapeKey from "@/hooks/useEscapeKey";
 
 const ROLE_LABEL = Object.fromEntries(Object.entries(GLOBAL_ROLES).map(([key, value]) => [key, value.label]));
+
+// Lo que entrega cada rol, a la vista de quien da el acceso: sin esto había que
+// adivinar qué ve un colaborador hasta probarlo con su cuenta.
+function RoleAccess({ role }) {
+  const access = ROLE_ACCESS[role];
+  if (!access) return null;
+  return (
+    <div className="usr-role-access" data-testid="role-access">
+      <div>
+        <div className="usr-role-access-ttl">Puede</div>
+        <ul>{access.can.map((item) => <li key={item}>{item}</li>)}</ul>
+      </div>
+      {access.cannot.length ? (
+        <div className="is-off">
+          <div className="usr-role-access-ttl">Solo un administrador</div>
+          <ul>{access.cannot.map((item) => <li key={item}>{item}</li>)}</ul>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 const APP_LABEL = Object.fromEntries(VERTICAL_APP_CATALOG.map((app) => [app.key, app]));
 
 const blankDraft = {
@@ -384,19 +405,19 @@ function EcosystemEquipo() {
 
   if (isLoading) {
     return (
-      <EcoLayout active="team" title="Equipo del core" subtitle="Usuarios, personal y permisos por app">
+      <EcoLayout active="team" title="Equipo" subtitle="Usuarios, personal y permisos por app">
         <SkeletonRows rows={5} />
       </EcoLayout>
     );
   }
 
   return (
-    <EcoLayout active="team" title="Equipo del core" subtitle="Usuarios internos y personal · acceso a OwnTerra Lands" onGuide={() => setShowGuide(true)}>
+    <EcoLayout active="team" title="Equipo" subtitle="Usuarios internos y personal · acceso a las apps" onGuide={() => setShowGuide(true)}>
       <div className="ag-hero">
         <div>
-          <div className="ag-kicker">Ecosistema Core</div>
+          <div className="ag-kicker">Ecosistema</div>
           <h2>Equipo</h2>
-          <p>Administradores, vendedores y personal (obra, limpieza, colaboradores externos). Solo quien tiene acceso a la app puede loguearse — el resto se registra únicamente para presupuesto y pagos.</p>
+          <p>Aquí está todo tu equipo: administradores, vendedores y personal de obra, limpieza o externo. Solo quienes tienen acceso pueden entrar a la app con su correo y contraseña; a los demás solo los registras para llevar sus pagos y el presupuesto.</p>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <button className="ag-primary" onClick={openCreate}>Nuevo colaborador</button>
@@ -469,8 +490,9 @@ function EcosystemEquipo() {
               </div>
               <div className="usr-d-body">
                 <div className="usr-d-intro">
-                  Este usuario vive en el <b>Core</b> con acceso a la app. Si es vendedor, OwnTerra Lands lo usa como responsable comercial para clientes, contratos, lotes y seguimiento de cobranza.
+                  Este usuario puede entrar a la app con su correo y contraseña. Si es vendedor, OwnTerra Lands lo usa como responsable comercial para clientes, contratos, lotes y seguimiento de cobranza.
                 </div>
+                <RoleAccess role={selected.role} />
                 <div className="usr-stats">
                   <div className="usr-stat ok"><div className="usr-stat-val">{selected.is_active ? "Sí" : "No"}</div><div className="usr-stat-lbl">Acceso activo</div></div>
                   <div className="usr-stat ok"><div className="usr-stat-val">{selectedIsAdmin ? "Todo" : verticalAppRows.length}</div><div className="usr-stat-lbl">Apps verticales</div></div>
@@ -546,7 +568,7 @@ function EcosystemEquipo() {
               </div>
               <div className="usr-d-body">
                 <div className="usr-d-intro">
-                  Este colaborador vive en el <b>Core</b> como registro de personal — sin usuario ni contraseña. No puede loguearse a ninguna app del ecosistema bajo ningún concepto.
+                  Esta persona está registrada solo como personal, sin usuario ni contraseña. No puede entrar a ninguna app.
                 </div>
                 {selectedEmployee.notes && (
                   <div className="usr-access-note" style={{ marginTop: 8 }}>{selectedEmployee.notes}</div>
@@ -577,7 +599,7 @@ function EcosystemEquipo() {
             <div className="usr-modal-head">
               <div>
                 <div className="usr-modal-title">Editar colaborador</div>
-                <div className="usr-modal-sub">Registro de personal en el Core — sin usuario ni acceso a ninguna app.</div>
+                <div className="usr-modal-sub">Registro de personal, sin usuario ni acceso a ninguna app.</div>
               </div>
               <button className="usr-modal-close" onClick={() => setEmployeeModal(null)}>x</button>
             </div>
@@ -621,8 +643,8 @@ function EcosystemEquipo() {
                 <div className="usr-modal-title">{modal.mode === "create" ? "Nuevo colaborador" : "Editar integrante"}</div>
                 <div className="usr-modal-sub">
                   {modal.mode === "create"
-                    ? "Se registra en el Core. Por defecto, sin acceso a ninguna app."
-                    : "El usuario queda registrado en el Core y se refleja en OwnTerra Lands."}
+                    ? "Por defecto queda registrado sin acceso a ninguna app."
+                    : "Los cambios se reflejan en las apps a las que tiene acceso."}
                 </div>
               </div>
               <button className="usr-modal-close" onClick={() => setModal(null)}>x</button>
@@ -655,6 +677,7 @@ function EcosystemEquipo() {
                     <select id="field-ecosystem-equipo-5" className="usr-select" value={modal.draft.role} onChange={(e) => setDraft({ role: e.target.value })}>
                       {Object.entries(GLOBAL_ROLES).map(([key, { label }]) => <option key={key} value={key}>{label}</option>)}
                     </select>
+                    <RoleAccess role={modal.draft.role} />
                   </div>
                   <div className="usr-field">
                     <label htmlFor="field-ecosystem-equipo-6" className="usr-field-lbl">Correo</label>
@@ -761,10 +784,12 @@ function EcosystemEquipo() {
         title="Equipo"
         subtitle="Usuarios con acceso al ecosistema y personal sin acceso, en un solo lugar."
         steps={[
-          { title: "Dos tipos, una lista", text: "Los círculos verdes son usuarios (tienen login); los grises son personal (obra, limpieza, colaboradores externos) sin acceso a ninguna app." },
-          { title: "Roles disponibles", text: "Admin: acceso completo incluyendo configuración y gestión de usuarios. Vendor: acceso a operaciones comerciales sin configuración administrativa." },
-          { title: "Nuevo colaborador", text: "Pulsa 'Nuevo colaborador': por defecto queda sin acceso (nombre, puesto, teléfono). Marca '¿Le damos acceso a la app?' solo si necesita loguearse — ahí pide correo, rol y contraseña temporal." },
-          { title: "Asignar apps", text: "Desde la ficha de cada usuario puedes activar o desactivar su acceso a OwnTerra Lands." },
+          { title: "Dos tipos, una lista", text: "Los círculos verdes son usuarios: pueden entrar a la app con su correo y contraseña. Los grises son personal (obra, limpieza o externo) y no entran a ninguna app." },
+          { title: "Qué hace un administrador", text: "Todo: las apps del ecosistema, el equipo, los accesos, las contraseñas, la configuración y el plan." },
+          { title: "Qué hace un colaborador", text: "Solo entra a las apps que le asignes. En Lands ve los lotes, atiende sus clientes, aparta y arma contratos, agenda citas, sube documentos y cambia el estado de sus propios lotes. En Properties opera las comunidades: unidades, residentes, cuotas, tickets y accesos." },
+          { title: "Lo que un colaborador no puede", text: "Crear o editar fraccionamientos, usar la calculadora, cambiar precio, enganche, tasa, plazo o vendedor asignado, registrar pagos, ver reportes de Lands, autorizar contratos ni entrar a Equipo o Configuración. Sus contratos quedan esperando que un administrador los autorice." },
+          { title: "Nuevo colaborador", text: "Pulsa 'Nuevo colaborador': por defecto queda sin acceso (nombre, puesto, teléfono). Marca '¿Le damos acceso a la app?' solo si necesita entrar a la app — ahí pide correo, rol y contraseña temporal." },
+          { title: "Asignar apps", text: "Desde la ficha de cada usuario puedes activar o desactivar su acceso a OwnTerra Lands y OwnTerra Properties." },
           { title: "Restablecer contraseña", text: "Si un usuario olvidó su contraseña, usa el botón de restablecer en su ficha para generar una nueva contraseña temporal." },
           { title: "Filtrar por tipo", text: "Las pestañas superiores permiten ver todos, solo administradores, solo colaboradores, o solo personal." },
           { title: "Los dos roles", text: "Un administrador maneja la organización, el equipo y los accesos. Un colaborador opera su cartera: clientes, apartados y citas. Cualquiera de los dos puede ser el vendedor asignado de un lote o un contrato — eso es quién lleva la operación comercial, no un rol." },

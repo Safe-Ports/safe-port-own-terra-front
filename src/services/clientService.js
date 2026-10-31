@@ -21,7 +21,8 @@ export const clientService = {
   payments:  (id, params = {}) => api.get(`/clients/${id}/payments`, { params }).then(r => r.data),
   statement: (id)           => api.get(`/clients/${id}/statement`).then(r => r.data),
   statementPdf: (id)        => api.get(`/clients/${id}/statement/pdf`, { responseType: "blob", timeout: TIMEOUT_ARCHIVO }).then(r => r.data),
-  sendStatement: (id, body = {}) => api.post(`/clients/${id}/statement/send-email`, body).then(r => r.data),
+  // Síncrono: responde cuando el correo ya salió (genera el PDF), por eso el timeout largo.
+  sendStatement: (id, body = {}) => api.post(`/clients/${id}/statement/send-email`, body, { timeout: TIMEOUT_ARCHIVO }).then(r => r.data),
   getApps:   (id)           => api.get(`/clients/${id}/apps`).then(r => r.data),
   assignApp: (id, appKey)   => api.post(`/clients/${id}/apps/${appKey}`).then(r => r.data),
   removeApp: (id, appKey)   => api.delete(`/clients/${id}/apps/${appKey}`),

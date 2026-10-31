@@ -303,7 +303,7 @@ function PaymentBehaviorChart({ payments }) {
 
 /* ── ClientReport (rediseñado: documento profesional) ────────── */
 function ClientReport({ clientId }) {
-  const { showToast } = useAppContext();
+  const { showToast, showError } = useAppContext();
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
   const { data: client } = useQuery({
@@ -351,8 +351,8 @@ function ClientReport({ clientId }) {
       link.remove();
       URL.revokeObjectURL(url);
       showToast("Estado de cuenta descargado");
-    } catch {
-      showToast("No se pudo descargar el estado de cuenta");
+    } catch (err) {
+      showError(err, "No se pudo descargar el estado de cuenta");
     } finally {
       setDownloadingPdf(false);
     }
@@ -361,9 +361,9 @@ function ClientReport({ clientId }) {
     setSendingEmail(true);
     try {
       await clientService.sendStatement(clientId);
-      showToast("Estado de cuenta enviado por correo");
-    } catch {
-      showToast("No se pudo enviar el estado de cuenta");
+      showToast(client?.email ? `Estado de cuenta enviado a ${client.email}` : "Estado de cuenta enviado por correo");
+    } catch (err) {
+      showError(err, "No se pudo enviar el estado de cuenta");
     } finally {
       setSendingEmail(false);
     }

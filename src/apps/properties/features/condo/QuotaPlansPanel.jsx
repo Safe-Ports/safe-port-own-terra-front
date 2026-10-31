@@ -1,4 +1,5 @@
 import WorkflowForm from "@/components/forms/WorkflowForm";
+import AmountInput from "@/components/forms/AmountInput";
 import { useState } from "react";
 import { HiArrowPath, HiCalendarDays, HiCheckCircle, HiExclamationTriangle, HiPlus } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
@@ -68,10 +69,10 @@ function QuotaPlansPanel({community,units}){
       <label className="wide"><span>Concepto</span><input autoFocus value={planDraft.concept} onChange={e=>setPlanDraft({...planDraft,concept:e.target.value})} placeholder="Cuota ordinaria de mantenimiento"/></label>
       <label><span>Tipo</span><select value={planDraft.quotaKind} onChange={e=>setPlanDraft({...planDraft,quotaKind:e.target.value})}>{Object.entries(KIND).map(([v,l])=><option value={v} key={v}>{l}</option>)}</select></label>
       <label><span>Cómo se reparte</span><select value={planDraft.basis} onChange={e=>setPlanDraft({...planDraft,basis:e.target.value})}>{Object.entries(BASIS).map(([v,l])=><option value={v} key={v}>{l}</option>)}</select></label>
-      <label><span>Importe</span><input type="number" min="0" step="0.01" value={planDraft.amount} onChange={e=>setPlanDraft({...planDraft,amount:e.target.value})} placeholder="1500.00"/></label>
+      <label><span>Importe</span><AmountInput min="0" value={planDraft.amount} onChange={e=>setPlanDraft({...planDraft,amount:e.target.value})} placeholder="1500.00"/></label>
       <label><span>Periodicidad</span><select value={planDraft.frequency} onChange={e=>setPlanDraft({...planDraft,frequency:e.target.value})}>{Object.entries(FREQ).map(([v,l])=><option value={v} key={v}>{l}</option>)}</select></label>
       <label><span>Recargo por mora</span><select value={planDraft.lateFeeKind} onChange={e=>setPlanDraft({...planDraft,lateFeeKind:e.target.value})}>{Object.entries(LATE).map(([v,l])=><option value={v} key={v}>{l}</option>)}</select></label>
-      {planDraft.lateFeeKind!=="none"?<label><span>Valor del recargo</span><input type="number" min="0" step="0.01" value={planDraft.lateFeeValue} onChange={e=>setPlanDraft({...planDraft,lateFeeValue:e.target.value})}/></label>:null}
+      {planDraft.lateFeeKind!=="none"?<label><span>Valor del recargo</span><AmountInput min="0" value={planDraft.lateFeeValue} onChange={e=>setPlanDraft({...planDraft,lateFeeValue:e.target.value})}/></label>:null}
       <label><span>Vigente desde</span><input type="date" value={planDraft.effectiveFrom} onChange={e=>setPlanDraft({...planDraft,effectiveFrom:e.target.value})}/></label>
       {planDraft.basis==="by_indiviso"?<p className="quota-hint wide"><HiExclamationTriangle/> Repartida por indiviso: el importe se prorratea con el <b>porcentaje de indiviso</b> de cada unidad. Las unidades que no lo tengan capturado quedarán fuera de la generación.</p>:null}
       <footer className="wide"><button type="submit" disabled={busy==="plan"}>{busy==="plan"?"Guardando…":"Crear plan"}</button></footer>

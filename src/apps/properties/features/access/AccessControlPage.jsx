@@ -33,7 +33,7 @@ function AccessControlPage(){
   const selected=passes.find(item=>item.folio===selectedId)||passes[0];
   const createPass=event=>{event.preventDefault();const pass={...draft,folio:`AC-${String(Date.now()).slice(-4)}`,status:"expected"};setPasses(current=>[pass,...current]);setSelectedId(pass.folio);setCreating(false);setDraft({kind:"Visita",name:"",target:"",window:"",host:"",note:""});};
   const advancePass=()=>setPasses(current=>current.map(item=>item.folio===selected.folio?{...item,status:item.status==="expected"?"inside":"completed"}:item));
-  return <EcoLayout active="properties" title="OwnTerra Properties" subtitle={backendLive?"Operación · Accesos y recepción":PROPERTIES_MVP_SCOPE.later?"Operación · Accesos":"Operación · Recepción y paquetería"}><main className="access-page">
+  return <EcoLayout active="properties" title={backendLive?"Accesos y recepción":PROPERTIES_MVP_SCOPE.later?"Accesos":"Recepción y paquetería"} subtitle={backendLive?"Operación · Accesos y recepción":PROPERTIES_MVP_SCOPE.later?"Operación · Accesos":"Operación · Recepción y paquetería"}><main className="access-page">
     {/* Pases de visita, QR y bitácora de caseta todavía no tienen backend:
         quedan para una versión futura (mvpScope.later). En el MVP esta
         pantalla es sólo recepción y paquetería, que sí persiste. */}

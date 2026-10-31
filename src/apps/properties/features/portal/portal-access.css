@@ -42,3 +42,8 @@
   .eco-root .portal-grant-form{grid-template-columns:1fr}
   .eco-root .portal-link{grid-template-columns:1fr}
 }
+.eco-root .portal-send{display:flex;flex-wrap:wrap;gap:8px}
+.eco-root .portal-send a{display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border:1px solid #ced3d7;border-radius:10px;background:#fff;color:#2e3a48;font-size:12px;font-weight:800;text-decoration:none}
+.eco-root .portal-send a svg{width:16px;height:16px}
+.eco-root .portal-send a.is-whatsapp{border-color:#1f8f55;background:#1f8f55;color:#fff}
+.eco-root .portal-send a:hover{filter:brightness(.95)}

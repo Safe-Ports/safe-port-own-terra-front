@@ -169,3 +169,18 @@ describe("Enlace desde el sitio público", () => {
     expect(screen.getByRole("button", { name: "Crear cuenta nueva" })).toBeInTheDocument();
   });
 });
+
+describe("LoginScreen · entrada por Properties", () => {
+  it("shows the Properties brand and slogan only when the visit comes through /properties", () => {
+    window.history.pushState({}, "", "/properties/comunidades");
+    const { unmount } = render(<LoginScreen />);
+    expect(screen.getByText(/Cada unidad\./)).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "OwnTerra Properties" })).toBeInTheDocument();
+    expect(screen.getByText("Inicia sesión")).toBeInTheDocument();
+    unmount();
+    window.history.pushState({}, "", "/");
+    render(<LoginScreen />);
+    expect(screen.queryByText(/Cada unidad\./)).not.toBeInTheDocument();
+    expect(screen.getByText("Bienvenido")).toBeInTheDocument();
+  });
+});

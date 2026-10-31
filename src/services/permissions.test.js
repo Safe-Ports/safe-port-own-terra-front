@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { APP_CATALOG, canAccessApp, canUseFeature, defaultPermissionsFor, isGlobalAdmin } from "./permissions.js";
+import { APP_CATALOG, GLOBAL_ROLES, ROLE_ACCESS, canAccessApp, canUseFeature, defaultPermissionsFor, isGlobalAdmin } from "./permissions.js";
 
 describe("permissions catalog", () => {
   it("registers OwnTerra Lands as the deployed assignable vertical", () => {
@@ -155,5 +155,14 @@ describe("isGlobalAdmin: única fuente de verdad de \"es admin\" (evita sets dup
     expect(isGlobalAdmin({ role: "vendor" })).toBe(false);
     expect(isGlobalAdmin({ role: "owner" })).toBe(false);
     expect(isGlobalAdmin({ role: "superadmin" })).toBe(false);
+  });
+});
+
+describe("ROLE_ACCESS", () => {
+  it("describe qué puede y qué no un colaborador, y que el admin no tiene límites", () => {
+    expect(ROLE_ACCESS.vendor.can.length).toBeGreaterThan(0);
+    expect(ROLE_ACCESS.vendor.cannot.join(" ")).toMatch(/precio/);
+    expect(ROLE_ACCESS.admin.cannot).toEqual([]);
+    expect(Object.keys(ROLE_ACCESS).sort()).toEqual(Object.keys(GLOBAL_ROLES).sort());
   });
 });

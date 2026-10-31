@@ -1,4 +1,5 @@
 import WorkflowForm from "@/components/forms/WorkflowForm";
+import AmountInput from "@/components/forms/AmountInput";
 import { useEffect, useMemo, useState } from "react";
 import { HiQueueList, HiViewColumns } from "react-icons/hi2";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -169,7 +170,7 @@ function UnitsPage() {
           <section className="properties-form-section">
             <header><span className="properties-form-step">02</span><div><h3>Características</h3><p>Dimensiones y distribución del espacio.</p></div></header>
             <div className="properties-form-grid is-three">
-              <label><span>Superficie</span><div className="properties-input-suffix"><input type="number" min="0" value={draft.area} onChange={(event) => updateDraft("area", event.target.value)} aria-invalid={Boolean(errors.area)} /><i>m²</i></div><FieldError msg={errors.area} /></label>
+              <label><span>Superficie</span><div className="properties-input-suffix"><AmountInput min="0" value={draft.area} onChange={(event) => updateDraft("area", event.target.value)} aria-invalid={Boolean(errors.area)} /><i>m²</i></div><FieldError msg={errors.area} /></label>
               <label><span>Recámaras</span><input type="number" min="0" value={draft.bedrooms} onChange={(event) => updateDraft("bedrooms", event.target.value)} placeholder="0" /></label>
               <label><span>Baños</span><input type="number" min="0" step="0.5" value={draft.bathrooms} onChange={(event) => updateDraft("bathrooms", event.target.value)} placeholder="0" /></label>
             </div>
@@ -177,7 +178,7 @@ function UnitsPage() {
           <section className="properties-form-section">
             <header><span className="properties-form-step">03</span><div><h3>Operación</h3><p>Referencia económica y disponibilidad actual.</p></div></header>
             <div className="properties-form-grid">
-              <label><span>Renta mensual sugerida</span><div className="properties-input-prefix"><i>$</i><input type="number" min="0" value={draft.suggestedRent} onChange={(event) => updateDraft("suggestedRent", event.target.value)} placeholder="0" aria-invalid={Boolean(errors.suggestedRent)} /></div><FieldError msg={errors.suggestedRent} /></label>
+              <label><span>Renta mensual sugerida</span><div className="properties-input-prefix"><i>$</i><AmountInput min="0" value={draft.suggestedRent} onChange={(event) => updateDraft("suggestedRent", event.target.value)} placeholder="0" aria-invalid={Boolean(errors.suggestedRent)} /></div><FieldError msg={errors.suggestedRent} /></label>
               <label><span>Estado operativo</span><select value={draft.status} onChange={(event) => updateDraft("status", event.target.value)}>{Object.entries(UNIT_STATUS_LABEL).filter(([value]) => value !== "archived").map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
               <label className="properties-form-wide"><span>Descripción <small>Opcional</small></span><textarea rows="3" value={draft.description} onChange={(event) => updateDraft("description", event.target.value)} placeholder="Amenidades, distribución o indicaciones internas…" /></label>
             </div>

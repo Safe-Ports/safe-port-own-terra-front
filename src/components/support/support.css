@@ -428,3 +428,35 @@
 @media (max-width: 480px) {
   .sp-panel { width: calc(100vw - 24px); }
 }
+
+/* Aviso de una sola vez: el botón se puede mover */
+.sp-move-hint {
+  position: fixed;
+  z-index: 9991;
+  width: 260px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #fff;
+  color: #2b2f2c;
+  border: 1px solid rgba(30,61,43,.14);
+  box-shadow: 0 18px 40px -16px rgba(20,40,30,.45);
+  font-size: 13px;
+  line-height: 1.45;
+  animation: sp-hint-in .25s ease-out;
+}
+.sp-move-hint strong { display: block; font-size: 14px; color: #1E3D2B; margin-bottom: 4px; }
+.sp-move-hint p { margin: 0 0 10px; color: #5b6158; }
+.sp-move-hint button {
+  border: none;
+  border-radius: 999px;
+  padding: 7px 14px;
+  background: #1E3D2B;
+  color: #fff;
+  font-weight: 700;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+@keyframes sp-hint-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .sp-move-hint { animation: none; } }
+.sp-move-hint--properties strong { color: #0f2742; }
+.sp-move-hint--properties button { background: #0f2742; }

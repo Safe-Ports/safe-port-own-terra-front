@@ -89,8 +89,9 @@ export default function ConnectCalendarModal({ onClose }) {
   // dejar de publicar.
   const cambiarEnlace = async () => {
     if (!await requestConfirmation(
-      "Se generará un enlace nuevo y el actual dejará de funcionar. " +
-      "Tendrás que volver a suscribirlo en tu calendario. ¿Continuar?"
+      "Se genera un enlace nuevo y el actual deja de funcionar. " +
+      "Tendrás que volver a suscribirlo en tu calendario.",
+      { title: "¿Cambiar el enlace de tu agenda?", confirmLabel: "Cambiar enlace" },
     )) return;
     setBusy(true);
     try {
@@ -106,8 +107,9 @@ export default function ConnectCalendarModal({ onClose }) {
 
   const dejarDePublicar = async () => {
     if (!await requestConfirmation(
-      "Tu agenda dejará de publicarse y el enlace no funcionará para nadie. " +
-      "Podrás volver a generarlo cuando quieras. ¿Continuar?"
+      "El enlace deja de funcionar para todos los que lo tengan. " +
+      "Puedes volver a generarlo cuando quieras.",
+      { title: "¿Dejar de publicar tu agenda?", confirmLabel: "Dejar de publicar", danger: true },
     )) return;
     setBusy(true);
     try {

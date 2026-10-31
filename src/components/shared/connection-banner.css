@@ -1,0 +1,20 @@
+.conn-banner {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100vw - 32px);
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.35;
+  box-shadow: 0 10px 28px rgba(15, 30, 50, 0.22);
+}
+.conn-banner svg { flex: 0 0 auto; width: 18px; height: 18px; }
+.conn-banner.is-offline { background: #1F2B3D; color: #F7F2E8; border: 1px solid #C9A45C; }
+.conn-banner.is-back { background: #E8F3EC; color: #1E3D2B; border: 1px solid #8DBA9C; }

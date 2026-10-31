@@ -5,7 +5,9 @@ import { useAppContext } from "@/context/AppContext";
 import { getDeniedMessage } from "@/services/permissions";
 import SupportWidget from "@/components/support/SupportWidget";
 import GuidedTour from "@/components/tour/GuidedTour";
+import NotificationSounds from "@/components/notifications/NotificationSounds";
 import { lazyWithRetry } from "@/routes/lazyWithRetry";
+import LoadingScreen from "@/components/shared/LoadingScreen";
 import { PROPERTIES_MVP_SCOPE } from "@/apps/properties/mvpScope";
 
 const EcosystemHub = lazyWithRetry(() => import("@/pages/Ecosystem"));
@@ -66,13 +68,7 @@ function KeepQuery({ to }) {
 }
 
 function PageLoader() {
-  return (
-    <div className="flex min-h-[50vh] items-center justify-center">
-      <div className="rounded-[28px] border border-[#E2E7E5] bg-white/88 px-5 py-4 text-sm font-semibold text-[#3F4644] shadow-[0_18px_40px_rgba(30,61,43,.08)]">
-        Cargando espacio de trabajo...
-      </div>
-    </div>
-  );
+  return <LoadingScreen compact message="Cargando espacio de trabajo…" />;
 }
 
 function RequireFeature({ feature, app, children }) {
@@ -177,6 +173,7 @@ function AppRouter() {
       </Suspense>
       <SupportWidget />
       <GuidedTour />
+      <NotificationSounds />
     </>
   );
 }

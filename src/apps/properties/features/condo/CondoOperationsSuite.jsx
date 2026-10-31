@@ -1,4 +1,5 @@
 import WorkflowForm from "@/components/forms/WorkflowForm";
+import AmountInput from "@/components/forms/AmountInput";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { HiAdjustmentsHorizontal, HiBanknotes, HiBolt, HiBuildingStorefront, HiCheckCircle, HiDocumentArrowUp, HiDocumentText, HiHomeModern, HiInboxStack, HiMagnifyingGlass, HiPlus, HiScale, HiSquares2X2 } from "react-icons/hi2";
@@ -166,7 +167,7 @@ function CondoOperationsSuite(){
     data.addRentalPayment({leaseId:rentPaymentFor.id,period:currentPeriod,amount:rentPaymentDraft.amount,dueDate:`${currentPeriod}-${String(rentPaymentFor.dueDay).padStart(2,"0")}`,paidAt:rentPaymentDraft.paidAt,method:rentPaymentDraft.method,status:"paid"});
     setRentPaymentFor(null);showToast("Pago de renta registrado","success");
   }catch(error){showToast(error.message,"warning")}};
-  return <EcoLayout active="properties" title="Operación comunitaria" subtitle={`${community?.name||"Comunidad"} · Segundo nivel`}><main className="condo-suite">
+  return <EcoLayout active="properties" title="Operación diaria" subtitle={`${community?.name||"Comunidad"} · Segundo nivel`}><main className="condo-suite">
     <header className="condo-suite-heading"><div><h1>Operación diaria</h1></div><label><small>Comunidad activa</small><select value={communityId} onChange={event=>setCommunityId(event.target.value)}>{data.communities.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label></header>
     <div className="condo-suite-content">
     {active==="utilities"&&<UtilityMonitoringPanel community={community} units={units}/>}
@@ -250,7 +251,7 @@ function CondoOperationsSuite(){
         <section className="properties-form-section"><div className="properties-form-grid">
           <label className="properties-form-wide"><span>Concepto</span><input required value={draft.concept||""} onChange={e=>setDraft({...draft,concept:e.target.value})}/></label>
           <label><span>Unidad</span><select value={draft.unitId||""} onChange={e=>setDraft({...draft,unitId:e.target.value})}><option value="">Toda la comunidad</option>{units.map(item=><option key={item.id} value={item.id}>{item.identifier}</option>)}</select></label>
-          <label><span>Importe</span><input required type="number" min="1" value={draft.amount||""} onChange={e=>setDraft({...draft,amount:e.target.value})}/></label>
+          <label><span>Importe</span><AmountInput required min="1" value={draft.amount||""} onChange={e=>setDraft({...draft,amount:e.target.value})}/></label>
           <label className="properties-form-wide"><span>Vencimiento</span><input type="date" value={draft.dueDate||""} onChange={e=>setDraft({...draft,dueDate:e.target.value})}/></label>
         </div></section>
         <p className="condo-penalty-note">Las penalizaciones quedan pendientes de una regla configurable aprobada; no se calculan automáticamente.</p>
@@ -266,7 +267,7 @@ function CondoOperationsSuite(){
       <WorkflowForm id="service-report-form" className="properties-form" onSubmit={submitServiceReport}>
         <section className="properties-form-section"><div className="properties-form-grid">
           <label className="properties-form-wide"><span>Comprobante</span><input required value={serviceReportDraft.evidenceName} onChange={e=>setServiceReportDraft({...serviceReportDraft,evidenceName:e.target.value})} placeholder="Ej. comprobante-cfe-octubre.pdf"/></label>
-          <label><span>Importe pagado</span><input type="number" min="0" step="0.01" value={serviceReportDraft.reportedAmount} onChange={e=>setServiceReportDraft({...serviceReportDraft,reportedAmount:e.target.value})} placeholder={reportingService?String(reportingService.amount):""}/></label>
+          <label><span>Importe pagado</span><AmountInput min="0" value={serviceReportDraft.reportedAmount} onChange={e=>setServiceReportDraft({...serviceReportDraft,reportedAmount:e.target.value})} placeholder={reportingService?String(reportingService.amount):""}/></label>
           <label><span>Fecha de pago</span><input type="date" value={serviceReportDraft.paidAt} onChange={e=>setServiceReportDraft({...serviceReportDraft,paidAt:e.target.value})}/></label>
         </div></section>
         <p className="condo-penalty-note">Esto no realiza ni confirma el pago. La administración puede verificar el comprobante después.</p>
@@ -276,7 +277,7 @@ function CondoOperationsSuite(){
     <Modal open={Boolean(rentPaymentFor)} onClose={()=>setRentPaymentFor(null)} title="Registrar pago de renta" subtitle={units.find(u=>u.id===rentPaymentFor?.unitId)?.identifier} icon={<HiHomeModern/>} width="max-w-[460px]" footer={<><button type="button" onClick={()=>setRentPaymentFor(null)}>Cancelar</button><button type="submit" form="rent-payment-form">Registrar pago</button></>}>
       <WorkflowForm id="rent-payment-form" className="properties-form" onSubmit={submitRentPayment}>
         <section className="properties-form-section"><div className="properties-form-grid">
-          <label><span>Importe</span><input required type="number" min="1" value={rentPaymentDraft.amount} onChange={e=>setRentPaymentDraft({...rentPaymentDraft,amount:e.target.value})}/></label>
+          <label><span>Importe</span><AmountInput required min="1" value={rentPaymentDraft.amount} onChange={e=>setRentPaymentDraft({...rentPaymentDraft,amount:e.target.value})}/></label>
           <label><span>Fecha de pago</span><input required type="date" value={rentPaymentDraft.paidAt} onChange={e=>setRentPaymentDraft({...rentPaymentDraft,paidAt:e.target.value})}/></label>
         </div></section>
       </WorkflowForm>
