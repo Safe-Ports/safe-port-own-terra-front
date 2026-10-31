@@ -367,7 +367,7 @@ export async function installLandsApi(page, db = createLandsDb(), { user = LANDS
     if ((hit = m(/^\/clients\/([^/]+)\/payments$/))) return json(route, 200, { items: db.payments.filter((x) => x.client?.id === hit[1]) });
     if ((hit = m(/^\/clients\/([^/]+)\/timeline$/))) return json(route, 200, { items: [], total: 0, page: 1, limit: 20, pages: 1 });
     if ((hit = m(/^\/clients\/([^/]+)\/statement\/pdf$/))) return route.fulfill({ status: 200, contentType: "application/pdf", body: "%PDF-1.4" });
-    if ((hit = m(/^\/clients\/([^/]+)\/statement\/send-email$/))) return json(route, 202, { ok: true });
+    if ((hit = m(/^\/clients\/([^/]+)\/statement\/send-email$/))) return json(route, 200, { status: "sent" });
     if ((hit = m(/^\/clients\/([^/]+)\/statement$/))) { const c = db.clients.find((x) => x.id === hit[1]); return json(route, 200, { client: c, summary: clientSummary(db, c), contracts: db.contracts.filter((k) => k.client?.id === hit[1]), payments: db.payments.filter((x) => x.client?.id === hit[1]) }); }
     if ((hit = m(/^\/clients\/([^/]+)\/(stage|contact)$/))) { const c = db.clients.find((x) => x.id === hit[1]); if (c && body?.stage) c.pipeline_stage = body.stage; if (c && body?.pipeline_stage) c.pipeline_stage = body.pipeline_stage; return json(route, 200, c); }
     if ((hit = m(/^\/clients\/([^/]+)$/))) {
@@ -395,7 +395,8 @@ export async function installLandsApi(page, db = createLandsDb(), { user = LANDS
       const q = (u.searchParams.get("search") || "").toLowerCase();
       const status = u.searchParams.get("status");
       const cid = u.searchParams.get("client_id");
-      return json(route, 200, page1(db.contracts.filter((k) => (!q || `${k.contract_number} ${k.client?.name}`.toLowerCase().includes(q)) && (!status || k.status === status) && (!cid || k.client?.id === cid)), u, 100));
+      const lid = u.searchParams.get("lot_id");
+      return json(route, 200, page1(db.contracts.filter((k) => (!q || `${k.contract_number} ${k.client?.name}`.toLowerCase().includes(q)) && (!status || k.status === status) && (!cid || k.client?.id === cid) && (!lid || k.lot?.id === lid)), u, 100));
     }
     if (p === "/contracts" && method === "POST") {
       const c = db.clients.find((x) => x.id === body?.client_id) || db.clients[0];
@@ -405,7 +406,7 @@ export async function installLandsApi(page, db = createLandsDb(), { user = LANDS
       return json(route, 201, { ...k, payments: [] });
     }
     if ((hit = m(/^\/contracts\/([^/]+)\/pdf$/))) return route.fulfill({ status: 200, contentType: "application/pdf", body: "%PDF-1.4" });
-    if ((hit = m(/^\/contracts\/([^/]+)\/send-email$/))) return json(route, 202, { ok: true });
+    if ((hit = m(/^\/contracts\/([^/]+)\/send-email$/))) return json(route, 200, { status: "sent" });
     if ((hit = m(/^\/contracts\/([^/]+)\/amortization$/))) return json(route, 200, { rows: [] });
     if ((hit = m(/^\/contracts\/([^/]+)\/collect$/))) {
       const pend = db.payments.filter((x) => x.contract?.id === hit[1] && x.status !== "paid");

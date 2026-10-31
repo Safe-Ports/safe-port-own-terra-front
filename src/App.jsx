@@ -5,6 +5,7 @@ import LoginScreen from "@/components/forms/LoginScreen";
 import VerifyEmail from "@/components/forms/VerifyEmail";
 import ResetPassword from "@/components/forms/ResetPassword";
 import AppRouter from "@/routes/AppRouter";
+import LoadingScreen from "@/components/shared/LoadingScreen";
 import { PROPERTIES_MVP_SCOPE } from "@/apps/properties/mvpScope";
 
 const FormPublico = lazy(() => import("@/pages/FormPublico"));
@@ -26,29 +27,29 @@ function App() {
   if (pathname === "/reset-password") return <ResetPassword />;
   // Páginas legales públicas (requeridas por el OAuth de Google): privacidad y términos.
   if (pathname === "/privacidad" || pathname === "/terminos") {
-    return <Suspense fallback={null}><LegalPage /></Suspense>;
+    return <Suspense fallback={<LoadingScreen />}><LegalPage /></Suspense>;
   }
   // Formularios públicos son accesibles sin sesión
-  if (pathname.startsWith("/f/")) return <Suspense fallback={null}><FormPublico /></Suspense>;
-  if (pathname.startsWith("/cotizacion/")) return <Suspense fallback={null}><PublicQuote /></Suspense>;
+  if (pathname.startsWith("/f/")) return <Suspense fallback={<LoadingScreen />}><FormPublico /></Suspense>;
+  if (pathname.startsWith("/cotizacion/")) return <Suspense fallback={<LoadingScreen />}><PublicQuote /></Suspense>;
   // Marketplace público de inmuebles en renta; no requiere cuenta de OwnTerra.
-  if (PROPERTIES_MVP_SCOPE.rentals && (pathname === "/rentas" || pathname.startsWith("/rentas/"))) return <Suspense fallback={null}><RentalCatalogPage /></Suspense>;
+  if (PROPERTIES_MVP_SCOPE.rentals && (pathname === "/rentas" || pathname.startsWith("/rentas/"))) return <Suspense fallback={<LoadingScreen />}><RentalCatalogPage /></Suspense>;
   // Portal del inquilino: vista pública de demostración, sin sesión propia.
-  if (PROPERTIES_MVP_SCOPE.rentals && pathname === "/portal-inquilino") return <Suspense fallback={null}><TenantPortal /></Suspense>;
+  if (PROPERTIES_MVP_SCOPE.rentals && pathname === "/portal-inquilino") return <Suspense fallback={<LoadingScreen />}><TenantPortal /></Suspense>;
   // Acceso del residente. Las rutas viven bajo /portal: decían /servicio y un
   // residente que recibe el enlace por WhatsApp no tiene por qué leer
   // "servicio" para entrar a su comunidad. Las viejas siguen resolviendo
   // porque hay invitaciones de un solo uso ya repartidas.
-  if (pathname === "/portal/recuperar") return <Suspense fallback={null}><PortalRecovery /></Suspense>;
+  if (pathname === "/portal/recuperar") return <Suspense fallback={<LoadingScreen />}><PortalRecovery /></Suspense>;
   // URL de recuperación que Core ya envía por correo.
-  if (pathname === "/portal/entrar/restablecer" || pathname === "/portal/restablecer") return <Suspense fallback={null}><PortalRecovery reset /></Suspense>;
-  if (pathname === "/portal/acceso" || pathname === "/portal/entrar" || pathname === "/servicio/login") return <Suspense fallback={null}><ServiceLogin /></Suspense>;
-  if (pathname === "/portal/invitacion" || pathname === "/servicio/invitacion") return <Suspense fallback={null}><ServiceInvitation /></Suspense>;
+  if (pathname === "/portal/entrar/restablecer" || pathname === "/portal/restablecer") return <Suspense fallback={<LoadingScreen />}><PortalRecovery reset /></Suspense>;
+  if (pathname === "/portal/acceso" || pathname === "/portal/entrar" || pathname === "/servicio/login") return <Suspense fallback={<LoadingScreen />}><ServiceLogin /></Suspense>;
+  if (pathname === "/portal/invitacion" || pathname === "/servicio/invitacion") return <Suspense fallback={<LoadingScreen />}><ServiceInvitation /></Suspense>;
   // Formulario público de inscripción de proveedores: sin sesión, por diseño
   // (ACC/PRV-05 del doc de requerimientos) — igual que login/invitación de
   // arriba, antes del gate `currentUser ? AppRouter : LoginScreen` de abajo.
-  if (pathname === "/servicio/registro" || pathname.startsWith("/servicio/registro/")) return <Suspense fallback={null}><ServiceRegistration /></Suspense>;
-  if (pathname === "/portal-comunidad") return <Suspense fallback={null}><CommunityPortal /></Suspense>;
+  if (pathname === "/servicio/registro" || pathname.startsWith("/servicio/registro/")) return <Suspense fallback={<LoadingScreen />}><ServiceRegistration /></Suspense>;
+  if (pathname === "/portal-comunidad") return <Suspense fallback={<LoadingScreen />}><CommunityPortal /></Suspense>;
   return currentUser ? <AppRouter /> : <LoginScreen />;
 }
 

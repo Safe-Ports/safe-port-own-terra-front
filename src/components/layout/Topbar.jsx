@@ -4,8 +4,8 @@ import CoreTopbarActions from "./CoreTopbarActions";
 
 const titleMap = {
   "/dashboard": "Actividad",
-  "/lotes": "Carga de Lotes",
-  "/fraccionamientos": "Fraccionamientos",
+  "/lotes": "Editar lotes",
+  "/fraccionamientos": "Operación de lotes",
   "/track-lotes": "Track de Lotes",
   "/clientes": "Clientes & CRM",
   "/ventas": "Contratos",

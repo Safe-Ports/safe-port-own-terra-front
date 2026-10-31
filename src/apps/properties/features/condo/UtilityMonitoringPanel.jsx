@@ -1,4 +1,5 @@
 import WorkflowForm from "@/components/forms/WorkflowForm";
+import AmountInput from "@/components/forms/AmountInput";
 import { useMemo, useState } from "react";
 import { HiBolt, HiCheckCircle, HiClock, HiDocumentArrowUp, HiExclamationTriangle, HiFire, HiGlobeAlt, HiPlus, HiTicket, HiWrenchScrewdriver } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
@@ -58,7 +59,7 @@ function UtilityMonitoringPanel({community,units}){
             <label>Periodo del recibo actual<input type="date" value={serviceDraft.periodStart} onChange={e=>setServiceDraft({...serviceDraft,periodStart:e.target.value})}/></label>
             <label>Hasta<input type="date" value={serviceDraft.periodEnd} onChange={e=>setServiceDraft({...serviceDraft,periodEnd:e.target.value})}/></label>
             <label>Fecha límite<input type="date" value={serviceDraft.dueDate} onChange={e=>setServiceDraft({...serviceDraft,dueDate:e.target.value})}/></label>
-            <label>Importe del recibo<input type="number" min="0" step="0.01" value={serviceDraft.amount} onChange={e=>setServiceDraft({...serviceDraft,amount:e.target.value})}/></label>
+            <label>Importe del recibo<AmountInput min="0" value={serviceDraft.amount} onChange={e=>setServiceDraft({...serviceDraft,amount:e.target.value})}/></label>
             <label className="wide">Nota<input value={serviceDraft.note} onChange={e=>setServiceDraft({...serviceDraft,note:e.target.value})}/></label>
           </div>
           <footer><span>El responsable puede cambiar según contrato; no se asumirá automáticamente.</span><button type="submit">Guardar servicio</button></footer>
@@ -77,7 +78,7 @@ function UtilityMonitoringPanel({community,units}){
             ?<WorkflowForm className="utility-action-form" onSubmit={submitBill}>
               <label>Periodo desde<input required type="date" value={billDraft.periodStart} onChange={e=>setBillDraft({...billDraft,periodStart:e.target.value})}/></label>
               <label>Hasta<input required type="date" value={billDraft.periodEnd} onChange={e=>setBillDraft({...billDraft,periodEnd:e.target.value})}/></label>
-              <label>Importe<input required type="number" min="0" step="0.01" value={billDraft.amount} onChange={e=>setBillDraft({...billDraft,amount:e.target.value})}/><span>MXN</span></label>
+              <label>Importe<AmountInput required min="0" value={billDraft.amount} onChange={e=>setBillDraft({...billDraft,amount:e.target.value})}/><span>MXN</span></label>
               <label>Fecha límite<input type="date" value={billDraft.dueDate} onChange={e=>setBillDraft({...billDraft,dueDate:e.target.value})}/></label>
               <label>Registró<input value={billDraft.recordedBy} onChange={e=>setBillDraft({...billDraft,recordedBy:e.target.value})}/></label>
               <label>Recibo del proveedor<input value={billDraft.evidenceName} onChange={e=>setBillDraft({...billDraft,evidenceName:e.target.value})} placeholder="Nombre del archivo"/></label>
@@ -91,7 +92,7 @@ function UtilityMonitoringPanel({community,units}){
                 <strong>Registrar comprobante reportado</strong>
                 <p>Esto no realiza ni confirma el pago. La administración puede verificar posteriormente el comprobante.</p>
                 <input required value={paymentDraft.evidenceName} onChange={e=>setPaymentDraft({...paymentDraft,evidenceName:e.target.value})} placeholder="Ej. comprobante-cfe-agosto.pdf"/>
-                <input type="number" min="0" step="0.01" value={paymentDraft.reportedAmount} onChange={e=>setPaymentDraft({...paymentDraft,reportedAmount:e.target.value})} placeholder={`Importe pagado (${money(selected.amount)})`}/>
+                <AmountInput min="0" value={paymentDraft.reportedAmount} onChange={e=>setPaymentDraft({...paymentDraft,reportedAmount:e.target.value})} placeholder={`Importe pagado (${money(selected.amount)})`}/>
                 <input type="date" value={paymentDraft.paidAt} onChange={e=>setPaymentDraft({...paymentDraft,paidAt:e.target.value})}/>
               </div>
               <button type="submit">Marcar como reportado</button>

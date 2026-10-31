@@ -1,4 +1,5 @@
 import WorkflowForm from "@/components/forms/WorkflowForm";
+import AmountInput from "@/components/forms/AmountInput";
 import { useEffect, useMemo, useState } from "react";
 import {
   HiChatBubbleLeftRight,
@@ -581,8 +582,7 @@ function ClientsPage() {
               </div>
               <div>
                 <label htmlFor="field-clients-index-2" style={{ display: "block", fontSize: ".68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#83867C", marginBottom: 5 }}>Monto de reembolso ($) <span style={{ fontWeight: 400, textTransform: "none" }}>— opcional</span></label>
-                <input id="field-clients-index-2"
-                  type="number"
+                <AmountInput id="field-clients-index-2"
                   min="0"
                   value={cancelForm.refund_amount}
                   onChange={(e) => setCancelForm((p) => ({ ...p, refund_amount: e.target.value }))}

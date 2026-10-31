@@ -167,7 +167,8 @@ function ClientReportModal() {
     setSending(true);
     try {
       await clientService.sendStatement(data.client.id);
-      showToast("Estado de cuenta enviado por correo");
+      // El backend lo pone en cola y lo manda en segundos con el PDF adjunto.
+      showToast(`Estado de cuenta enviado a ${data.client.email}`);
     } catch (err) {
       showError(err, "No se pudo enviar el estado de cuenta");
     } finally {
@@ -186,13 +187,15 @@ function ClientReportModal() {
       footer={
         <>
           <button className="btn-s" onClick={closeClientReport}>Cerrar</button>
-          <button className="btn-s" onClick={sendBackendPdf} disabled={sending || !data.client.email}>
+          <button
+            className="btn-s"
+            onClick={sendBackendPdf}
+            disabled={sending || !data.client.email}
+            title={data.client.email ? `Se envía a ${data.client.email}` : "Agrega un correo al cliente para enviarle su estado de cuenta"}
+          >
             {sending ? "Enviando..." : "Enviar por correo"}
           </button>
-          <button className="btn-s" onClick={downloadBackendPdf} disabled={downloading}>
-            {downloading ? "Descargando..." : "Descargar PDF"}
-          </button>
-          <button className="btn-p" onClick={() => {
+          <button className="btn-s" onClick={() => {
             const iframe = document.createElement("iframe");
             iframe.style.cssText = "position:fixed;width:0;height:0;border:0;visibility:hidden";
             document.body.appendChild(iframe);
@@ -204,7 +207,10 @@ function ClientReportModal() {
               iframe.contentWindow.print();
               setTimeout(() => document.body.removeChild(iframe), 2000);
             };
-          }}>Imprimir / PDF</button>
+          }}>Imprimir</button>
+          <button className="btn-p" onClick={downloadBackendPdf} disabled={downloading}>
+            {downloading ? "Generando PDF..." : "Descargar PDF"}
+          </button>
         </>
       }
     >

@@ -152,7 +152,7 @@ test("cancelar un contrato exige motivo y manda el reembolso", async ({ page }) 
   const dialog = page.getByRole("dialog", { name: "Cancelar contrato" });
   await expect(dialog.getByRole("button", { name: "Confirmar cancelación" })).toBeDisabled();
   await dialog.getByRole("textbox", { name: "Motivo de cancelación *" }).fill("Solicitud del cliente");
-  await dialog.getByRole("spinbutton", { name: "Monto de reembolso ($) — opcional" }).fill("10000");
+  await dialog.getByRole("textbox", { name: "Monto de reembolso ($) — opcional" }).fill("10000");
   await dialog.getByRole("button", { name: "Confirmar cancelación" }).click();
   await expect.poll(() => writes(/^\/contracts\/ct1\/cancel$/).length).toBe(1);
   const body = JSON.stringify(writes(/^\/contracts\/ct1\/cancel$/)[0].body);

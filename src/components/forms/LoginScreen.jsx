@@ -7,6 +7,8 @@ import { useFieldErrors } from "@/hooks/useFieldErrors";
 import { PROPERTIES_MVP_SCOPE } from "@/apps/properties/mvpScope";
 import { getFieldErrors } from "@/services/errors";
 import PrivacyConsent, { emptyConsent, isConsentValid, buildConsentFields } from "@/components/legal/PrivacyConsent";
+import PropertiesLogo from "@/apps/properties/components/PropertiesLogo";
+import "./login-properties.css";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const EMAIL_FORMAT_MSG = "Revisa el correo: debe tener el formato nombre@empresa.com.";
@@ -87,8 +89,29 @@ export function LeftPanel() {
   );
 }
 
+/* Quien entra por /properties ve el acceso con la marca de Properties, con el
+   mismo lenguaje que el login del portal de residentes: foto de comunidad,
+   slogan y la paleta azul marino y crema. El resto del ecosistema sigue igual. */
+const isPropertiesEntry = () => typeof window !== "undefined" && window.location.pathname.startsWith("/properties");
+
+export function PropertiesLeftPanel() {
+  return (
+    <div className="ll-panel is-properties">
+      <PropertiesLogo />
+      <div className="ll-hero">
+        <span className="ll-eyebrow">Administración de comunidades</span>
+        <div className="ll-tagline">Cada unidad.<br />Bajo control.</div>
+        <div className="ll-desc">
+          Cobranza, accesos, residentes y mantenimiento de tus condominios y privadas, con la unidad al centro de la operación.
+        </div>
+      </div>
+      <div className="ll-foot">Acceso para el equipo de administración de tu organización.</div>
+    </div>
+  );
+}
+
 /* ── LOGIN ── */
-function LoginView({ onForgot, onRegister }) {
+function LoginView({ onForgot, onRegister, properties = false }) {
   const { login, resendVerification, showToast } = useAppContext();
   const [form, setForm]     = useState({ identifier: "", password: "", remember: false });
   const [error, setError]   = useState(null);
@@ -120,8 +143,9 @@ function LoginView({ onForgot, onRegister }) {
 
   return (
     <WorkflowForm busy={loading} onSubmit={event => { event.preventDefault(); return submit(); }} className="lf-wrap">
-      <div className="lf-title">Bienvenido</div>
-      <div className="lf-sub">Accede a tu sistema de gestión inmobiliaria</div>
+      {properties ? <span className="lf-eyebrow">Equipo de administración</span> : null}
+      <div className="lf-title">{properties ? "Inicia sesión" : "Bienvenido"}</div>
+      <div className="lf-sub">{properties ? "Entra a la operación de tus comunidades en Properties." : "Accede a tu sistema de gestión inmobiliaria"}</div>
 
       <InlineError error={error}>
         {unverifiedEmail ? (
@@ -537,11 +561,13 @@ function LoginScreen() {
     new URLSearchParams(window.location.search).has("registro") ? "register" : "login"
   );
 
+  const properties = isPropertiesEntry();
+
   return (
-    <div className="lf-screen">
-      <LeftPanel />
+    <div className={`lf-screen${properties ? " is-properties" : ""}`}>
+      {properties ? <PropertiesLeftPanel /> : <LeftPanel />}
       <div className="ll-form-side">
-        {view === "login"    && <LoginView  onForgot={() => setView("forgot")}   onRegister={() => setView("register")} />}
+        {view === "login"    && <LoginView  onForgot={() => setView("forgot")}   onRegister={() => setView("register")} properties={properties} />}
         {view === "forgot"   && <ForgotView onBack={() => setView("login")} />}
         {view === "register" && <RegisterView onBack={() => setView("login")} />}
       </div>

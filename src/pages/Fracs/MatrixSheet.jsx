@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { specLabel, specOn } from "@/services/lotSpecs";
 import { useQuery } from "@tanstack/react-query";
 import { HiArrowDownTray } from "react-icons/hi2";
 import FilesDropdown from "@/components/shared/FilesDropdown";
@@ -179,10 +180,10 @@ export default function MatrixSheet({ lots, fracId, fracName, loading, showError
                     <td className="mx-num">{sup ?? <span className="mx-miss">falta</span>}</td>
                     <td>{lot.orientacion || <span className="mx-miss">falta</span>}</td>
                     {ESPECIFICACION_KEYS.map((k) => {
-                      const on = lot.especificaciones?.[k] === "true";
+                      const on = specOn(lot.especificaciones?.[k]);
                       return (
                         <td key={k} className={on ? "mx-yes" : "mx-no"}>
-                          {on ? "Sí" : "No"}
+                          {specLabel(lot.especificaciones?.[k])}
                         </td>
                       );
                     })}
@@ -203,7 +204,7 @@ export default function MatrixSheet({ lots, fracId, fracName, loading, showError
 
       <div className="mx-foot">
         El archivo descargado se puede editar en Excel y volver a subir desde
-        <b> Carga de Lotes</b>: usa exactamente las columnas que espera el importador.
+        <b> Editar lotes</b>: usa exactamente las columnas que espera el importador.
         <b> Files asociados</b> queda fuera de la descarga —son enlaces al Vault— para
         que el archivo se siga pudiendo reimportar tal cual.
       </div>

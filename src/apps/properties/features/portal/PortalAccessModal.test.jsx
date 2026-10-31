@@ -36,10 +36,10 @@ describe('Administración de acceso al portal', () => {
   it('explica el alcance global de suspensión y cancelar no modifica la cuenta', async () => {
     setup(); await screen.findByText(/No tiene permisos adicionales/);
     fireEvent.click(screen.getByRole('button', {name: 'Suspender'}));
-    expect(await screen.findByText(/todas las comunidades y verticales/)).toBeVisible();
+    expect(await screen.findByText(/ninguna comunidad de la organización/)).toBeVisible();
     expect(context.suspendPortal).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', {name: 'Cancelar', exact: true}));
-    await waitFor(() => expect(screen.queryByText(/todas las comunidades y verticales/)).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText(/ninguna comunidad de la organización/)).not.toBeInTheDocument());
     expect(context.suspendPortal).not.toHaveBeenCalled();
   });
 });

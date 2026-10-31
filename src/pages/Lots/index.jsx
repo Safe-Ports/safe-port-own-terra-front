@@ -1,19 +1,24 @@
 import WorkflowForm from "@/components/forms/WorkflowForm";
+import AmountInput from "@/components/forms/AmountInput";
 import { useEffect, useMemo, useRef, useState } from "react";
 import DialogPortal from "@/components/ui/DialogPortal";
 import FieldError from "@/components/shared/FieldError";
+import SellerPicker from "@/components/shared/SellerPicker";
 import { validateLotDraft } from "@/services/lotDraftValidation";
+import { countPendingLotChanges } from "@/services/lotDraftChanges";
+import useConfirmation from "@/hooks/useConfirmation";
 import MigrationWizard from "./MigrationWizard";
 import { useNavigate } from "react-router-dom";
-import { HiChevronLeft, HiChevronRight, HiCube, HiMap, HiPencil, HiXMark } from "react-icons/hi2";
+import { HiChevronLeft, HiChevronRight, HiCube, HiDocumentText, HiMap, HiPencil, HiXMark } from "react-icons/hi2";
 import * as XLSX from "xlsx";
 import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
 import useEscapeKey from "@/hooks/useEscapeKey";
 import { useProjectsQuery } from "@/hooks/queries/useAppQueries";
 import { lotService } from "@/services/lotService";
+import { SPEC_OTHER_KEY, specDetail, specOn } from "@/services/lotSpecs";
 import { parseApiError } from "@/errors/parseApiError";
-import { MAP_IMAGE_ACCEPT, isSupportedMapImage, prepareMapImage } from "@/utils/mapImage";
+import { MAP_IMAGE_ACCEPT, isMapUrlPdf, isSupportedMapImage, prepareMapImage } from "@/utils/mapImage";
 import Button from "@/components/Button";
 import GuideModal from "@/components/shared/GuideModal";
 import LotImportFormatModal from "./LotImportFormatModal";
@@ -24,7 +29,6 @@ const LOT_COLORS = {
   sold:      { bg: "#fee2e2", border: "#fca5a5", text: "#991b1b" },
   reserved:  { bg: "#fef3c7", border: "#fcd34d", text: "#92400e" },
 };
-const STATUS_CYCLE = { available: "sold", sold: "reserved", reserved: "available" };
 const LOT_TEMPLATE_GUIDE = [
   ["GUÍA PARA CARGAR LOTES DESDE EXCEL O CSV"],
   ["Regla", "Detalle"],
@@ -41,7 +45,7 @@ const LOT_TEMPLATE_GUIDE = [
 const LOT_IMPORT_GUIDE_STEPS = [
   {
     title: "Cómo subir el archivo",
-    text: "En Carga de Lotes entra al editor, pulsa Plantilla para descargar un ejemplo, completa el archivo y luego pulsa Subir. El servidor valida el archivo y guarda los lotes si no hay errores.",
+    text: "En Editar lotes, entra al editor, pulsa Plantilla para descargar un ejemplo, completa el archivo y luego pulsa Subir. El servidor valida el archivo y guarda los lotes si no hay errores.",
   },
   {
     title: "Formato de Excel y CSV",
@@ -77,7 +81,7 @@ const LOT_IMPORT_GUIDE_STEPS = [
   },
 ];
 const LOT_SELECTOR_GUIDE = {
-  title: "Guía de Carga de Lotes",
+  title: "Guía para editar lotes",
   subtitle: "Elige el método adecuado para iniciar o continuar un fraccionamiento.",
   steps: [
     {
@@ -126,7 +130,11 @@ const LOT_EDITOR_GUIDE = {
   steps: [
     {
       title: "Crear lotes manualmente",
-      text: "Escribe el nombre de la sección o manzana, indica cuántos lotes necesitas y pulsa Agregar. Después haz clic en cada lote para editar código, estado, medidas, precios y servicios.",
+      text: "Escribe el nombre de la sección o manzana, indica cuántos lotes necesitas y pulsa Agregar. Después haz clic en cada lote para editar código, medidas, precios, servicios y vendedor asignado.",
+    },
+    {
+      title: "Vendedor asignado",
+      text: "En la ficha de cada lote busca al vendedor por nombre o correo. Si ya está en tu equipo, selecciónalo; si no aparece, regístralo ahí mismo con \"Nuevo\" (nombre, correo y contraseña temporal) y queda asignado al lote.",
     },
     ...LOT_IMPORT_GUIDE_STEPS,
   ],
@@ -249,6 +257,7 @@ function SectionGrid({ section, onAddLots, onRemoveSection, onEditLot, onDeleteL
 
 function LotsPage() {
   const navigate = useNavigate();
+  const { requestConfirmation, confirmationDialog } = useConfirmation();
   const { data: projects = [] } = useProjectsQuery();
   const { draftProject, setDraftProject, createFracDraft, saveEditedFrac, deleteFrac, setSelectedFracId, showToast, showError } = useAppContext();
 
@@ -337,6 +346,7 @@ function LotsPage() {
             frente:          lot.frente_ml ?? "",
             fondo:           lot.fondo_ml ?? "",
             orientacion:     lot.orientacion ?? "",
+            sellerId:        lot.seller_id ?? "",
             especificaciones: JSON.stringify(lot.especificaciones || {}),
           },
           code:            lot.code,
@@ -347,6 +357,7 @@ function LotsPage() {
           frente:          lot.frente_ml ?? "",
           fondo:           lot.fondo_ml ?? "",
           orientacion:     lot.orientacion ?? "",
+          sellerId:        lot.seller_id ?? "",
           especificaciones: lot.especificaciones || {},
         });
       });
@@ -354,6 +365,7 @@ function LotsPage() {
         mode:           "editor",
         name:           project.name,
         mapUrl:         project.mapImageUrl || "",
+        mapThumbnailUrl: project.mapThumbnailUrl || "",
         cadProcessing:  false,
         sections:       Object.values(sectionMap),
         _editingFracId: project.id,
@@ -427,6 +439,7 @@ function LotsPage() {
             frente:          lot.frente_ml ?? "",
             fondo:           lot.fondo_ml ?? "",
             orientacion:     lot.orientacion ?? "",
+            sellerId:        lot.seller_id ?? "",
             especificaciones: JSON.stringify(lot.especificaciones || {}),
           },
           code:            lot.code,
@@ -437,6 +450,7 @@ function LotsPage() {
           frente:          lot.frente_ml ?? "",
           fondo:           lot.fondo_ml ?? "",
           orientacion:     lot.orientacion ?? "",
+          sellerId:        lot.seller_id ?? "",
           especificaciones: lot.especificaciones || {},
         });
       });
@@ -481,7 +495,7 @@ function LotsPage() {
       fondo: lot.fondo ?? "",
       orientacion: lot.orientacion ?? "",
       priceFinanciado: lot.priceFinanciado ?? "",
-      vendedor: lot.vendedor ?? "",
+      sellerId: lot.sellerId ?? "",
       especificaciones: lot.especificaciones ?? {
         agua: false, luz: false, drenaje: false, gas: false, internet: false, pavimento: false,
         esquina: false, bardeado: false,
@@ -498,7 +512,7 @@ function LotsPage() {
     lotData.code = lotData.code.trim();
     updateLot(sectionId, lotData.id, lotData);
     setLotEditDraft(null);
-    showToast("Lote actualizado en el borrador. Guarda los lotes para confirmar los cambios.");
+    showToast("Cambio aplicado al borrador. Todavía no está guardado: presiona Guardar cuando termines.", "warning");
   };
 
   const addSection = () => {
@@ -533,20 +547,6 @@ function LotsPage() {
     setSectionName("");
     setSectionTotal("20");
     showToast(`${cleanName} agregada · ${total} lote${total === 1 ? "" : "s"}`);
-  };
-
-  const cycleLotStatus = (sectionId, lotId) => {
-    setDraftProject((previous) => ({
-      ...previous,
-      sections: previous.sections.map((sec) =>
-        sec.id !== sectionId ? sec : {
-          ...sec,
-          lots: sec.lots.map((lot) =>
-            lot.id !== lotId ? lot : { ...lot, status: STATUS_CYCLE[lot.status] || "available" }
-          )
-        }
-      )
-    }));
   };
 
   const updateLot = (sectionId, lotId, patch) => {
@@ -628,7 +628,7 @@ function LotsPage() {
 
   const updateMap = async (file) => {
     if (!isSupportedMapImage(file)) {
-      showToast("El plano debe ser una imagen JPG, PNG, WEBP, HEIC o HEIF. Excel y CSV solo van en Llenar con Excel o CSV.", "warning");
+      showToast("El plano debe ser una imagen JPG, PNG, WEBP, HEIC, HEIF o un PDF. Excel y CSV solo van en Llenar con Excel o CSV.", "warning");
       return false;
     }
     try {
@@ -654,6 +654,43 @@ function LotsPage() {
   };
 
   const totalDraftLots = draftProject.sections.reduce((sum, section) => sum + section.lots.length, 0);
+  const pendingChanges = draftProject.mode === "editor" ? countPendingLotChanges(draftProject, deletedLotIds.size) : 0;
+  const pendingText = `${pendingChanges} cambio${pendingChanges === 1 ? "" : "s"} sin guardar`;
+  const confirmLeave = () => pendingChanges === 0 || requestConfirmation(
+    `Tienes ${pendingText} en ${draftProject.name || "este fraccionamiento"}. Si sales ahora, no se guardan en el sistema.`,
+    { title: "Cambios sin guardar", confirmLabel: "Salir sin guardar", cancelLabel: "Seguir editando", danger: true },
+  );
+  const pendingRef = useRef(0);
+  pendingRef.current = pendingChanges;
+  const confirmLeaveRef = useRef(confirmLeave);
+  confirmLeaveRef.current = confirmLeave;
+
+  // Cerrar o recargar la pestaña: el navegador muestra su propio aviso.
+  useEffect(() => {
+    if (!pendingChanges) return undefined;
+    const warn = (event) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [pendingChanges]);
+
+  // Ir a otra sección desde el menú: la app usa BrowserRouter (sin bloqueo de
+  // rutas), así que se intercepta el clic en el enlace antes de que React Router
+  // navegue, y solo se sigue si el usuario confirma.
+  useEffect(() => {
+    if (draftProject.mode !== "editor") return undefined;
+    const onClick = async (event) => {
+      if (!pendingRef.current || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey) return;
+      const link = event.target.closest?.("a[href]");
+      if (!link || link.target === "_blank") return;
+      const url = new URL(link.href, window.location.href);
+      if (url.origin !== window.location.origin || url.pathname === window.location.pathname) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (await confirmLeaveRef.current()) navigate(url.pathname + url.search + url.hash);
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, [draftProject.mode, navigate]);
   // El fraccionamiento ya existe siempre en este punto (se crea explícitamente en
   // "Guardar y continuar", antes de que el tablero sea alcanzable) — esto es solo para
   // la ETIQUETA del botón: si todavía no hay ni un lote guardado, se siente más como
@@ -672,13 +709,20 @@ function LotsPage() {
           <div className="flex items-center gap-2">
             <button
               className="lots-editor-btn"
-              onClick={() => { setDraftProject((p) => ({ ...p, _editingFracId: null })); navigate("/fraccionamientos"); }}
+              onClick={async () => {
+                if (!(await confirmLeave())) return;
+                setDeletedLotIds(new Set());
+                setDraftProject((p) => ({ ...p, _editingFracId: null }));
+                navigate("/fraccionamientos");
+              }}
             >
               Cancelar
             </button>
-            <span className="lots-editor-state">
+            <span className={`lots-editor-state${pendingChanges ? " has-pending" : ""}`}>
               <span className="lots-editor-dot warn" />
-              {hasSavedLots ? `Editando: ${draftProject.name}` : `Guardado: ${draftProject.name} — agrega tus lotes`}
+              {pendingChanges
+                ? `${draftProject.name}: ${pendingText}`
+                : hasSavedLots ? `Editando: ${draftProject.name} · todo guardado` : `Guardado: ${draftProject.name} — agrega tus lotes`}
             </span>
           </div>
           <div className="flex-1" />
@@ -733,11 +777,19 @@ function LotsPage() {
           {/* Left: map */}
           <div className="lots-map-pane">
             {draftProject.mapUrl ? (
-              <img
-                src={draftProject.mapUrl}
-                alt="Plano"
-                className="max-h-full max-w-full object-contain"
-              />
+              isMapUrlPdf(draftProject.mapUrl) ? (
+                <iframe
+                  src={draftProject.mapUrl}
+                  title="Plano (PDF)"
+                  className="h-full w-full border-0"
+                />
+              ) : (
+                <img
+                  src={draftProject.mapUrl}
+                  alt="Plano"
+                  className="max-h-full max-w-full object-contain"
+                />
+              )
             ) : (
               <div className="lots-map-empty">
                 <div className="lots-map-empty-code">PL</div>
@@ -800,6 +852,9 @@ function LotsPage() {
                   const activo = modoCarga === op.id;
                   return (
                     <button key={op.id} type="button" onClick={() => setModoCarga(op.id)}
+                      // El tour apunta a esta opción y no a la fila de Excel: esa fila solo
+                      // existe con "Importar archivo" elegido y la pantalla abre en "a mano".
+                      data-tour={op.id === "archivo" ? "frac-excel" : undefined}
                       style={{
                         flex: 1, textAlign: "left", cursor: "pointer", borderRadius: 12,
                         padding: "10px 13px", background: activo ? "rgba(53,94,59,.07)" : "transparent",
@@ -873,7 +928,7 @@ function LotsPage() {
               )}
 
               {modoCarga === "archivo" && (
-              <div className="lots-excel-row" data-tour="frac-excel">
+              <div className="lots-excel-row">
                 <div>
                   <span className="lots-excel-title">Llenar con Excel o CSV</span>
                   <span className="lots-excel-sub">
@@ -954,15 +1009,20 @@ function LotsPage() {
         // un sistema aparte: agua/luz/etc son especificaciones booleanas mas.
         // Todas booleanas: uso_suelo se quitó y orientacion es dimensional (ver
         // el campo en "Medidas" mas abajo, no vive en especificaciones).
+        //
+        // Cada servicio activo acepta una descripción opcional: "tiene luz" no
+        // dice si es de CFE o solar, ni "tiene camino" si es concreto o
+        // terracería. La descripción se guarda como el valor mismo (ver
+        // services/lotSpecs.js); sin descripción queda el "true" de siempre.
         const ESPECIFICACIONES_BOOL = [
-          { key: "agua",      label: "Agua potable"       },
-          { key: "luz",       label: "Energia electrica"  },
-          { key: "drenaje",   label: "Drenaje"            },
-          { key: "gas",       label: "Gas natural"        },
-          { key: "internet",  label: "Internet / Fibra"   },
-          { key: "pavimento", label: "Pavimento"          },
-          { key: "esquina",   label: "Lote de esquina"    },
-          { key: "bardeado",  label: "Bardeado / cercado" },
+          { key: "agua",      label: "Agua potable",            hint: "Ej. red municipal, pozo, pipa" },
+          { key: "luz",       label: "Energía eléctrica",       hint: "Ej. CFE, solar, planta" },
+          { key: "drenaje",   label: "Drenaje",                 hint: "Ej. red municipal, fosa séptica" },
+          { key: "gas",       label: "Gas",                     hint: "Ej. natural, LP estacionario" },
+          { key: "internet",  label: "Internet / Fibra",        hint: "Ej. fibra óptica, satelital" },
+          { key: "pavimento", label: "Camino / Pavimento",      hint: "Ej. concreto, empedrado, terracería" },
+          { key: "esquina",   label: "Lote de esquina" },
+          { key: "bardeado",  label: "Bardeado / cercado",      hint: "Ej. block, malla ciclónica" },
         ];
         return (
           <DialogPortal className="lot-edit-overlay" onClick={() => setLotEditDraft(null)}>
@@ -985,11 +1045,25 @@ function LotsPage() {
                 <div className="lot-edit-sec">Imagen del plano</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
                   {draftProject.mapUrl ? (
-                    <img
-                      src={draftProject.mapUrl}
-                      alt="Plano"
-                      style={{ width: 90, height: 64, objectFit: "cover", borderRadius: 8, border: "1.5px solid #E2E7E5", flexShrink: 0 }}
-                    />
+                    isMapUrlPdf(draftProject.mapUrl) ? (
+                      draftProject.mapThumbnailUrl ? (
+                        <img
+                          src={draftProject.mapThumbnailUrl}
+                          alt="Plano"
+                          style={{ width: 90, height: 64, objectFit: "cover", borderRadius: 8, border: "1.5px solid #E2E7E5", flexShrink: 0 }}
+                        />
+                      ) : (
+                        <div style={{ width: 90, height: 64, borderRadius: 8, border: "1.5px solid #E2E7E5", background: "#EEF1F1", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <HiDocumentText style={{ fontSize: "1.3rem", color: "#83867C" }} />
+                        </div>
+                      )
+                    ) : (
+                      <img
+                        src={draftProject.mapUrl}
+                        alt="Plano"
+                        style={{ width: 90, height: 64, objectFit: "cover", borderRadius: 8, border: "1.5px solid #E2E7E5", flexShrink: 0 }}
+                      />
+                    )
                   ) : (
                     <div style={{ width: 90, height: 64, borderRadius: 8, border: "1.5px dashed #E2E7E5", background: "#EEF1F1", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <span style={{ fontSize: "0.6rem", color: "#83867C", textAlign: "center", lineHeight: 1.3 }}>Sin imagen</span>
@@ -1022,28 +1096,15 @@ function LotsPage() {
                   </div>
                 </div>
 
-                {/* Estado */}
+                {/* Estado: solo lectura. Apartar, liberar y vender se hace en
+                    Operación de lotes, que pide vencimiento, cliente o contrato. */}
                 <div className="lot-edit-sec">Estado</div>
-                <div className="lot-edit-status">
-                  {[
-                    { value: "available", label: "Disponible", dot: "#6FAF6B" },
-                    { value: "reserved",  label: "Apartado",   dot: "#B98C58" },
-                    { value: "sold",      label: "Vendido",    dot: "#C0392B" },
-                  ].map(({ value, label, dot }) => {
-                    const c = LOT_COLORS[value];
-                    const active = d.status === value;
-                    return (
-                      <button type="button"
-                        key={value}
-                        className="lot-edit-status-btn"
-                        onClick={() => setField("status", value)}
-                        style={active ? { background: c.bg, borderColor: c.border, color: c.text } : {}}
-                      >
-                        <span className="lot-edit-status-dot" style={{ background: dot }} />
-                        {label}
-                      </button>
-                    );
-                  })}
+                <div className="lot-edit-status-note">
+                  <span className="lot-edit-status-dot" style={{ background: d.status === "sold" ? "#C0392B" : d.status === "reserved" ? "#B98C58" : "#6FAF6B" }} />
+                  <span>
+                    <b>{d.status === "sold" ? "Vendido" : d.status === "reserved" ? "Apartado" : "Disponible"}</b>
+                    {d._backendId ? " · Para apartarlo, liberarlo o venderlo ve a Operación de lotes." : " · Todo lote nuevo se crea disponible. Para apartarlo o venderlo ve a Operación de lotes."}
+                  </span>
                 </div>
 
                 {/* Medidas */}
@@ -1052,7 +1113,7 @@ function LotsPage() {
                   {[{ key: "frente", label: "Frente (ML)" }, { key: "fondo", label: "Fondo (ML)" }, { key: "area", label: "Superficie (m²)" }].map(({ key, label }) => (
                     <div className="lot-edit-field" key={key}>
                       <label className="lot-edit-lbl" htmlFor={`lot-${key}`}>{label} (opcional)</label>
-                      <input id={`lot-${key}`} aria-invalid={!!lotErrors[key]} type="number" min="0" step="any" className="lot-edit-input" value={d[key]} onChange={(e) => setField(key, e.target.value)} /><FieldError msg={lotErrors[key]} />
+                      <AmountInput id={`lot-${key}`} aria-invalid={!!lotErrors[key]} min="0" className="lot-edit-input" value={d[key]} onChange={(e) => setField(key, e.target.value)} /><FieldError msg={lotErrors[key]} />
                     </div>
                   ))}
                   <div className="lot-edit-field">
@@ -1066,34 +1127,58 @@ function LotsPage() {
                 <div className="lot-edit-row">
                   <div className="lot-edit-field">
                     <label className="lot-edit-lbl" htmlFor="lot-price">Precio Contado ($) (opcional)</label>
-                    <input type="number" className="lot-edit-input" value={d.price} onChange={(e) => setField("price", e.target.value)} />
+                    <AmountInput className="lot-edit-input" value={d.price} onChange={(e) => setField("price", e.target.value)} />
                   </div>
                   <div className="lot-edit-field">
                     <label className="lot-edit-lbl" htmlFor="lot-priceFinanciado">Precio Financiado ($) (opcional)</label>
-                    <input type="number" className="lot-edit-input" value={d.priceFinanciado} onChange={(e) => setField("priceFinanciado", e.target.value)} />
+                    <AmountInput className="lot-edit-input" value={d.priceFinanciado} onChange={(e) => setField("priceFinanciado", e.target.value)} />
                   </div>
                 </div>
 
                 {/* Gestion */}
                 <div className="lot-edit-sec">Gestion</div>
                 <div className="lot-edit-field">
-                  <label className="lot-edit-lbl" htmlFor="lot-vendedor">Vendedor Asignado (opcional)</label>
-                  <input className="lot-edit-input" placeholder="Nombre del vendedor" value={d.vendedor} onChange={(e) => setField("vendedor", e.target.value)} />
+                  <label className="lot-edit-lbl" htmlFor="lot-vendedor">Vendedor asignado (opcional)</label>
+                  <SellerPicker inputId="lot-vendedor" value={d.sellerId} onChange={(id) => setField("sellerId", id)} />
                 </div>
 
                 {/* Especificaciones (incluye lo que antes era "servicios") */}
-                <div className="lot-edit-sec">Especificaciones</div>
+                <div className="lot-edit-sec">Servicios y especificaciones</div>
                 <div className="lot-edit-services">
-                  {ESPECIFICACIONES_BOOL.map(({ key, label }) => {
-                    const on = d.especificaciones?.[key] === "true" || d.especificaciones?.[key] === true;
+                  {ESPECIFICACIONES_BOOL.map(({ key, label, hint }) => {
+                    const value = d.especificaciones?.[key];
+                    const on = specOn(value);
                     return (
-                      <label key={key} className="lot-edit-service">
-                        <span>{label}</span>
-                        <input type="checkbox" checked={on} onChange={(e) => setEspecificacion(key, e.target.checked)} />
-                        <span className={`lot-edit-toggle${on ? " on" : ""}`} />
-                      </label>
+                      <div key={key} className={`lot-edit-service-card${on ? " on" : ""}`}>
+                        <label className="lot-edit-service">
+                          <span>{label}</span>
+                          <input type="checkbox" checked={on} onChange={(e) => setEspecificacion(key, e.target.checked)} />
+                          <span className={`lot-edit-toggle${on ? " on" : ""}`} />
+                        </label>
+                        {on && hint ? (
+                          <input
+                            className="lot-edit-service-detail"
+                            aria-label={`Descripción de ${label}`}
+                            placeholder={hint}
+                            maxLength={80}
+                            value={specDetail(value)}
+                            onChange={(e) => setEspecificacion(key, e.target.value.trim() ? e.target.value : true)}
+                          />
+                        ) : null}
+                      </div>
                     );
                   })}
+                </div>
+                <div className="lot-edit-field" style={{ marginTop: 10 }}>
+                  <label className="lot-edit-lbl" htmlFor="lot-otros">Otro servicio (opcional)</label>
+                  <input
+                    id="lot-otros"
+                    className="lot-edit-input"
+                    maxLength={160}
+                    placeholder="Ej. alumbrado público, vigilancia, pozo propio"
+                    value={specDetail(d.especificaciones?.[SPEC_OTHER_KEY])}
+                    onChange={(e) => setEspecificacion(SPEC_OTHER_KEY, e.target.value)}
+                  />
                 </div>
               </WorkflowForm>
 
@@ -1119,6 +1204,7 @@ function LotsPage() {
       })()}
 
       <LotImportFormatModal open={showFormatGuide} onClose={() => setShowFormatGuide(false)} />
+      {confirmationDialog}
       <ImportResultsModal
         open={showImportResults}
         onClose={() => setShowImportResults(false)}
@@ -1283,12 +1369,27 @@ function LotsPage() {
               <div className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 items-start gap-3">
                   {project.mapImageUrl ? (
-                    <img
-                      src={project.mapImageUrl}
-                      alt=""
-                      className="frac-map-thumb"
-                      style={{ width: 52, height: 52, minWidth: 52, minHeight: 52, objectFit: "cover" }}
-                    />
+                    isMapUrlPdf(project.mapImageUrl) ? (
+                      project.mapThumbnailUrl ? (
+                        <img
+                          src={project.mapThumbnailUrl}
+                          alt=""
+                          className="frac-map-thumb"
+                          style={{ width: 52, height: 52, minWidth: 52, minHeight: 52, objectFit: "cover" }}
+                        />
+                      ) : (
+                        <div className="frac-map-thumb-empty" title="Plano en PDF">
+                          <HiDocumentText className="text-lg" />
+                        </div>
+                      )
+                    ) : (
+                      <img
+                        src={project.mapImageUrl}
+                        alt=""
+                        className="frac-map-thumb"
+                        style={{ width: 52, height: 52, minWidth: 52, minHeight: 52, objectFit: "cover" }}
+                      />
+                    )
                   ) : (
                     <div className="frac-map-thumb-empty" title="Sin plano">
                       <HiMap className="text-lg" />
@@ -1358,7 +1459,7 @@ function LotsPage() {
       ) : draftProject.mode === "selector" ? (
         <section className="rounded-[28px] border border-[#E2E7E5] bg-white/88 p-8 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
           <div className="mx-auto max-w-[660px] text-center">
-            <h2 className="font-display text-[1.65rem] text-forest">Carga de Lotes</h2>
+            <h2 className="font-display text-[1.65rem] text-forest">Editar lotes</h2>
             <p className="mx-auto mt-2 max-w-[420px] text-[0.84rem] leading-relaxed text-[#83867C]">
               Elige el método que mejor se adapte a tu flujo de trabajo
             </p>
@@ -1466,11 +1567,11 @@ function LotsPage() {
             <label className="lot-upload-drop" data-tour="frac-plano">
               <div className="lot-upload-code">IMG</div>
               <div>
-                <div className="lot-upload-drop-title">Seleccionar imagen del plano</div>
-                <div className="lot-upload-drop-sub">JPG, PNG, WEBP, HEIC o HEIF</div>
+                <div className="lot-upload-drop-title">Seleccionar imagen o PDF del plano</div>
+                <div className="lot-upload-drop-sub">JPG, PNG, WEBP, HEIC, HEIF o PDF</div>
               </div>
               <div className="lot-upload-formats">
-                {["JPG", "PNG", "WEBP", "HEIC", "HEIF"].map((ext) => (
+                {["JPG", "PNG", "WEBP", "HEIC", "HEIF", "PDF"].map((ext) => (
                   <span key={ext}>{ext}</span>
                 ))}
               </div>
@@ -1491,11 +1592,17 @@ function LotsPage() {
             </label>
             {mapFileName && draftProject.mapUrl && (
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10 }}>
-                <img
-                  src={draftProject.mapUrl}
-                  alt="Vista previa del plano"
-                  style={{ width: 90, height: 64, objectFit: "cover", borderRadius: 8, border: "1.5px solid #E2E7E5", flexShrink: 0 }}
-                />
+                {isMapUrlPdf(draftProject.mapUrl) ? (
+                  <div style={{ width: 90, height: 64, borderRadius: 8, border: "1.5px solid #E2E7E5", background: "#EEF1F1", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#83867C" }}>PDF</span>
+                  </div>
+                ) : (
+                  <img
+                    src={draftProject.mapUrl}
+                    alt="Vista previa del plano"
+                    style={{ width: 90, height: 64, objectFit: "cover", borderRadius: 8, border: "1.5px solid #E2E7E5", flexShrink: 0 }}
+                  />
+                )}
                 <div className="lots-editor-file">
                   <span>MAP</span>{mapFileName} — listo, falta guardar
                 </div>

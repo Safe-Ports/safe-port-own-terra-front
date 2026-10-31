@@ -39,7 +39,7 @@ function PortfolioWorkspace(){
     };
   },[activeProperties,liveUnits]);
 
-  return <EcoLayout active="properties" title="OwnTerra Properties" subtitle="Portafolio · Una fuente de verdad"><main className="portfolio-workspace">
+  return <EcoLayout active="properties" title="Portafolio" subtitle="Portafolio · Una fuente de verdad"><main className="portfolio-workspace">
     <header className="portfolio-heading">
       <h1>Portafolio</h1>
       <button type="button" className="portfolio-create" onClick={()=>navigate("/properties/inmuebles")}><HiPlus/> Agregar inmueble</button>

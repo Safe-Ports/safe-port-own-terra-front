@@ -499,7 +499,7 @@ function AgendaPage() {
                   type="button"
                   className="ag-danger"
                   style={{ marginRight: "auto" }}
-                  onClick={async () => { if (await requestConfirmation("¿Eliminar este evento del calendario? Si tiene videollamada, también se borra de Google Calendar.")) { if (!cancelMutation.isPending) cancelMutation.mutate(editingId); } }}
+                  onClick={async () => { if (await requestConfirmation("Se borra de tu calendario. Si tiene videollamada, también se borra de Google Calendar.", { title: "¿Eliminar este evento?", confirmLabel: "Eliminar evento", danger: true })) { if (!cancelMutation.isPending) cancelMutation.mutate(editingId); } }}
                 >
                   Eliminar evento
                 </button>

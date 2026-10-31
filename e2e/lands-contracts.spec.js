@@ -84,11 +84,11 @@ test("generar contrato completo con vendedor, condiciones y documento", async ({
   await dialog.getByRole("combobox", { name: "Tipo de Contrato" }).selectOption({ label: "Compraventa" });
   await dialog.getByRole("textbox", { name: "Fecha de firma*" }).fill("2026-10-20");
   await dialog.getByRole("textbox", { name: "Primer pago*" }).fill("2026-11-20");
-  await dialog.getByRole("textbox", { name: "Buscar vendedor…" }).fill("Vera");
-  await dialog.getByText("Vera Vendedora").last().click();
+  await dialog.getByRole("textbox", { name: "Buscar vendedor por nombre o correo" }).fill("Vera");
+  await dialog.getByRole("button").filter({ hasText: "Vera Vendedora" }).last().click();
   await dialog.getByRole("textbox", { name: "Notas" }).fill("Firma en notaría 12");
-  await dialog.getByRole("spinbutton", { name: "Monto total ($)*" }).fill("200000");
-  await dialog.getByRole("spinbutton", { name: "Enganche ($)" }).fill("20000");
+  await dialog.getByRole("textbox", { name: "Monto total ($)*" }).fill("200000");
+  await dialog.getByRole("textbox", { name: "Enganche ($)" }).fill("20000");
   await dialog.getByRole("spinbutton", { name: "Plazo (meses)*" }).fill("12");
   await dialog.getByRole("combobox", { name: "Método de pago del enganche" }).selectOption({ label: "Transferencia" });
   await expect(dialog).toContainText("15,000");
@@ -112,6 +112,119 @@ test("generar contrato completo con vendedor, condiciones y documento", async ({
   expect(writes(/^\/documents\/upload$/)[0].body.files[0].filename).toBe("contrato-firmado.pdf");
 });
 
+test("venta de contado sin calculadora y con método de pago Otro", async ({ page }) => {
+  // Sin calculadora activa la venta ya no se bloquea.
+  db.calculators.forEach((c) => { c.is_active = false; });
+  await page.goto("/contratos");
+  await page.getByRole("button", { name: "+ Generar Contrato" }).click();
+  const dialog = page.getByRole("dialog", { name: "Generar Contrato" });
+  await dialog.getByRole("combobox", { name: "Fraccionamiento*" }).selectOption({ label: "Proyecto Norte · 2 disponibles" });
+  await dialog.getByRole("textbox", { name: "Lote*" }).fill("N-2");
+  await dialog.getByText("N-2", { exact: true }).click();
+  await dialog.getByRole("textbox", { name: "Buscar cliente por nombre, correo o teléfono" }).fill("Carla");
+  await page.getByRole("button").filter({ hasText: "Carla Ruiz" }).last().click();
+  await dialog.getByRole("combobox", { name: "Tipo de Contrato" }).selectOption({ label: "Compraventa" });
+  await dialog.getByRole("radio", { name: /De contado/ }).click();
+  await expect(dialog.getByRole("textbox", { name: "Enganche ($)" })).toHaveCount(0);
+  await expect(dialog.getByRole("spinbutton", { name: /Plazo/ })).toHaveCount(0);
+  await dialog.getByRole("textbox", { name: "Fecha de firma*" }).fill("2026-10-20");
+  await dialog.getByRole("textbox", { name: "Fecha de pago*" }).fill("2026-10-20");
+  await dialog.getByRole("textbox", { name: "Monto total ($)*" }).fill("350000");
+  await expect(dialog.getByRole("textbox", { name: "Monto total ($)*" })).toHaveValue("350,000");
+  await dialog.getByRole("combobox", { name: "Método de pago" }).selectOption({ label: "Otro" });
+  await dialog.getByRole("button", { name: "Registrar" }).click();
+  await expect(dialog.getByText("Describe cómo se va a pagar")).toBeVisible();
+  await dialog.getByRole("textbox", { name: "Describe el método de pago*" }).fill("Permuta de un terreno");
+  await dialog.getByRole("button", { name: "Registrar" }).click();
+  await expect.poll(() => writes(/^\/contracts$/).length).toBe(1);
+  const body = writes(/^\/contracts$/)[0].body;
+  expect(body).toMatchObject({ type: "sale", total_months: 1, interest_rate: 0, down_payment_method: "other", down_payment_method_detail: "Permuta de un terreno" });
+  expect(Number(body.down_payment)).toBe(0);
+  expect(body.calculator_id).toBeUndefined();
+});
+
+test("venta en parcialidades: sin intereses ni calculadora", async ({ page }) => {
+  db.calculators.forEach((c) => { c.is_active = false; });
+  await page.goto("/contratos");
+  await page.getByRole("button", { name: "+ Generar Contrato" }).click();
+  const dialog = page.getByRole("dialog", { name: "Generar Contrato" });
+  await dialog.getByRole("combobox", { name: "Fraccionamiento*" }).selectOption({ label: "Proyecto Norte · 2 disponibles" });
+  await dialog.getByRole("textbox", { name: "Lote*" }).fill("N-2");
+  await dialog.getByText("N-2", { exact: true }).click();
+  await dialog.getByRole("textbox", { name: "Buscar cliente por nombre, correo o teléfono" }).fill("Carla");
+  await page.getByRole("button").filter({ hasText: "Carla Ruiz" }).last().click();
+  await dialog.getByRole("combobox", { name: "Tipo de Contrato" }).selectOption({ label: "Compraventa" });
+  await dialog.getByRole("radio", { name: /En parcialidades/ }).click();
+  await expect(dialog.getByText("Falta la calculadora de financiamiento")).toHaveCount(0);
+  await dialog.getByRole("textbox", { name: "Fecha de firma*" }).fill("2026-10-20");
+  await dialog.getByRole("textbox", { name: "Primer pago*" }).fill("2026-11-20");
+  await dialog.getByRole("textbox", { name: "Monto total ($)*" }).fill("120000");
+  await dialog.getByRole("textbox", { name: "Enganche ($)" }).fill("20000");
+  await dialog.getByRole("spinbutton", { name: "Número de pagos*" }).fill("4");
+  await dialog.getByRole("button", { name: "Registrar", exact: true }).click();
+  await expect.poll(() => writes(/^\/contracts$/).length).toBe(1);
+  expect(writes(/^\/contracts$/)[0].body).toMatchObject({ total_months: 4, interest_rate: 0 });
+  expect(writes(/^\/contracts$/)[0].body.calculator_id).toBeUndefined();
+});
+
+// La calculadora es opcional: sin ella (o si la venta elige no usarla) el backend
+// aplica la amortización estándar con la tasa anual del formulario.
+async function fillFinancedSale(page, dialog) {
+  await dialog.getByRole("combobox", { name: "Fraccionamiento*" }).selectOption({ label: "Proyecto Norte · 2 disponibles" });
+  await dialog.getByRole("textbox", { name: "Lote*" }).fill("N-2");
+  await dialog.getByText("N-2", { exact: true }).click();
+  await dialog.getByRole("textbox", { name: "Buscar cliente por nombre, correo o teléfono" }).fill("Carla");
+  await page.getByRole("button").filter({ hasText: "Carla Ruiz" }).last().click();
+  await dialog.getByRole("combobox", { name: "Tipo de Contrato" }).selectOption({ label: "Compraventa" });
+  await dialog.getByRole("radio", { name: /A mensualidades/ }).click();
+  await dialog.getByRole("textbox", { name: "Fecha de firma*" }).fill("2026-10-20");
+  await dialog.getByRole("textbox", { name: "Primer pago*" }).fill("2026-11-20");
+  await dialog.getByRole("textbox", { name: "Monto total ($)*" }).fill("120000");
+  await dialog.getByRole("textbox", { name: "Enganche ($)" }).fill("20000");
+  await dialog.getByRole("spinbutton", { name: "Plazo (meses)*" }).fill("12");
+}
+
+test("a mensualidades sin calculadora usa la amortización estándar", async ({ page }) => {
+  db.calculators.forEach((c) => { c.is_active = false; });
+  await page.goto("/contratos");
+  await page.getByRole("button", { name: "+ Generar Contrato" }).click();
+  const dialog = page.getByRole("dialog", { name: "Generar Contrato" });
+  await fillFinancedSale(page, dialog);
+  await expect(dialog.getByText("Mensualidad con amortización estándar")).toBeVisible();
+  await expect(dialog.getByRole("radio", { name: /Amortización estándar/ })).toHaveCount(0);
+  // 100,000 a 12 meses al 12% anual: pago fijo francés.
+  await expect(dialog).toContainText("8,884.88");
+  await dialog.getByRole("button", { name: "Registrar", exact: true }).click();
+  await expect.poll(() => writes(/^\/contracts$/).length).toBe(1);
+  const body = writes(/^\/contracts$/)[0].body;
+  expect(body).toMatchObject({ total_months: 12, interest_rate: 0.12 });
+  expect(body.calculator_id).toBeUndefined();
+});
+
+test("con calculadora activa la venta puede elegir la amortización estándar", async ({ page }) => {
+  await page.goto("/contratos");
+  await page.getByRole("button", { name: "+ Generar Contrato" }).click();
+  const dialog = page.getByRole("dialog", { name: "Generar Contrato" });
+  await fillFinancedSale(page, dialog);
+  await expect(dialog.getByRole("radio", { name: /Calculadora/ })).toHaveAttribute("aria-checked", "true");
+  await dialog.getByRole("radio", { name: /Amortización estándar/ }).click();
+  await expect(dialog.getByText("Esta venta no usa la calculadora", { exact: false })).toBeVisible();
+  await dialog.getByRole("spinbutton", { name: /Tasa anual/ }).fill("0.1");
+  await dialog.getByRole("button", { name: "Registrar", exact: true }).click();
+  await expect.poll(() => writes(/^\/contracts$/).length).toBe(1);
+  const body = writes(/^\/contracts$/)[0].body;
+  expect(body).toMatchObject({ total_months: 12, interest_rate: 0.1 });
+  expect(body.calculator_id).toBeUndefined();
+});
+
+test("registrar incompleto avisa qué falta", async ({ page }) => {
+  await page.goto("/contratos");
+  await page.getByRole("button", { name: "+ Generar Contrato" }).click();
+  const dialog = page.getByRole("dialog", { name: "Generar Contrato" });
+  await dialog.getByRole("button", { name: "Registrar", exact: true }).click();
+  await expect(page.getByText(/El contrato todavía no está completo\. Revisa: .*lote.*cliente/)).toBeVisible();
+});
+
 // BUG conocido (2026-10-23): el formulario ofrece "N° de Contrato (opcional)" y
 // lands-back lo acepta en ContractCreate, pero saveContract solo lo manda al
 // editar: al crear se pierde y el contrato queda con el número automático.
@@ -125,7 +238,7 @@ test("el número de contrato escrito al crear se envía", async ({ page }) => {
   await dialog.getByText("N-2", { exact: true }).click();
   await dialog.getByRole("textbox", { name: "Buscar cliente por nombre, correo o teléfono" }).fill("Carla");
   await page.getByRole("button").filter({ hasText: "Carla Ruiz" }).last().click();
-  await dialog.getByRole("spinbutton", { name: "Monto total ($)*" }).fill("200000");
+  await dialog.getByRole("textbox", { name: "Monto total ($)*" }).fill("200000");
   await dialog.getByRole("button", { name: "Registrar" }).click();
   await expect.poll(() => writes(/^\/contracts$/).length).toBe(1);
   expect(writes(/^\/contracts$/)[0].body.contract_number).toBe("CT-100");

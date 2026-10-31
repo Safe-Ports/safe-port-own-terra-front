@@ -1,7 +1,9 @@
 import WorkflowForm from "@/components/forms/WorkflowForm";
+import { SPEC_OTHER_KEY, specDetail, specOn } from "@/services/lotSpecs";
+import AmountInput from "@/components/forms/AmountInput";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { HiMap, HiBookmark, HiSquares2X2, HiXMark } from "react-icons/hi2";
+import { HiMap, HiBookmark, HiSquares2X2, HiXMark, HiDocumentText } from "react-icons/hi2";
 import GuideModal from "@/components/shared/GuideModal";
 import PhoneInput from "@/components/shared/PhoneInput";
 import FieldError from "@/components/shared/FieldError";
@@ -19,12 +21,14 @@ import EmptyState from "@/components/ui/EmptyState";
 import InlineDocumentsPanel from "@/components/shared/InlineDocumentsPanel";
 import Button from "@/components/Button";
 import { calculatorService } from "@/services/calculatorService";
-import { calculateQuote, guessVarValue } from "@/services/financingQuote";
+import { calculateQuote, guessVarValue, standardMonthlyPayment } from "@/services/financingQuote";
 import DialogPortal from "@/components/ui/DialogPortal";
 import { lotService } from "@/services/lotService";
+import LotContractCard from "./LotContractCard";
 import { appointmentService } from "@/services/appointmentService";
 import { currency, measure } from "@/services/formatters";
 import useEscapeKey from "@/hooks/useEscapeKey";
+import { isMapUrlPdf } from "@/utils/mapImage";
 import "./fracs.css";
 
 const LOT_COLORS = {
@@ -37,11 +41,11 @@ const LOT_COLORS = {
 // (agua, luz, …): ya no es un sistema aparte, es el mismo catálogo.
 const ESPECIFICACIONES_CHIPS = [
   { k: "agua", lbl: "Agua potable" },
-  { k: "luz", lbl: "Energia electrica" },
+  { k: "luz", lbl: "Energía eléctrica" },
   { k: "drenaje", lbl: "Drenaje" },
-  { k: "gas", lbl: "Gas natural" },
+  { k: "gas", lbl: "Gas" },
   { k: "internet", lbl: "Internet/Fibra" },
-  { k: "pavimento", lbl: "Pavimento" },
+  { k: "pavimento", lbl: "Camino / Pavimento" },
   { k: "esquina", lbl: "Lote de esquina" },
   { k: "bardeado", lbl: "Bardeado" },
 ];
@@ -107,10 +111,10 @@ function SpecRow({ label, value, unit, money }) {
 function SpecGrid2Bool({ items }) {
   return (
     <div className="lotp-grid2">
-      {items.map(({ key, label, on }) => (
+      {items.map(({ key, label, on, detail }) => (
         <div className="lotp-grid2-cell" key={key}>
           <span className="lotp-spec-k">{label}</span>
-          <span className={`lotp-spec-bool${on ? " on" : ""}`}>{on ? "Sí" : "No"}</span>
+          <span className={`lotp-spec-bool${on ? " on" : ""}`} title={detail || undefined}>{on ? (detail ? `Sí · ${detail}` : "Sí") : "No"}</span>
         </div>
       ))}
     </div>
@@ -151,6 +155,7 @@ function MapViewer({ src, onClose }) {
   const dragging = useRef(false);
   const last = useRef({ x: 0, y: 0 });
   const containerRef = useRef(null);
+  const isPdf = isMapUrlPdf(src);
 
   const onWheel = useCallback((event) => {
     event.preventDefault();
@@ -158,11 +163,12 @@ function MapViewer({ src, onClose }) {
   }, []);
 
   useEffect(() => {
+    if (isPdf) return undefined;
     const el = containerRef.current;
     if (!el) return undefined;
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, [onWheel]);
+  }, [onWheel, isPdf]);
 
   useEffect(() => {
     const onKey = (event) => {
@@ -171,6 +177,24 @@ function MapViewer({ src, onClose }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  if (isPdf) {
+    // El visor nativo de PDF del navegador ya trae su propio zoom/pan, así que
+    // no se reusan los controles ni la transformación con CSS pensados para <img>.
+    return (
+      <div className="frac-map-viewer" onClick={(event) => event.target === event.currentTarget && onClose()}>
+        <div className="frac-map-toolbar">
+          <span>Plano de referencia (PDF)</span>
+          <div>
+            <button onClick={onClose}>x</button>
+          </div>
+        </div>
+        <div className="frac-map-canvas">
+          <iframe src={src} title="Plano (PDF)" style={{ width: "100%", height: "100%", border: 0 }} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="frac-map-viewer" onClick={(event) => event.target === event.currentTarget && onClose()}>
@@ -352,7 +376,12 @@ function FracsPage() {
 
   const calculator = useQuery({ queryKey: ["calculators", "active", "lands"], queryFn: () => calculatorService.getActive("lands"), enabled: !!selectedFrac });
   const quoteForm = { amount: cotPrecioF, down_payment: cotEnganche, interest_rate: Number(cotTasa) / 100, totalM: cotPlazo };
-  const quote = calculateQuote(calculator.data, quoteForm, quoteOverrides);
+  // Sin calculadora activa se cotiza con la amortización estándar, igual que el
+  // contrato: la calculadora es opcional.
+  const standardQuote = calculator.isSuccess && !calculator.data;
+  const quote = standardQuote
+    ? { value: standardMonthlyPayment(quoteForm), variables: {}, error: "" }
+    : calculateQuote(calculator.data, quoteForm, quoteOverrides);
   const monthly = quote.value || 0;
   const financed = Math.max(0, Number(cotPrecioF) - Number(cotEnganche));
   const quoteTotal = monthly > 0 ? monthly * Number(cotPlazo) + Number(cotEnganche) : 0;
@@ -396,8 +425,8 @@ function FracsPage() {
       <EmptyState
         icon={<HiSquares2X2 />}
         title="Sin fraccionamientos creados"
-        description="Carga un plano, arma la matriz de lotes y crea tu primer proyecto desde la seccion Carga de Lotes."
-        action={<Link className="mobile-primary-button" to="/lotes">Ir a Carga de Lotes</Link>}
+        description="Carga un plano, arma la matriz de lotes y crea tu primer proyecto desde la sección Editar lotes."
+        action={<Link className="mobile-primary-button" to="/lotes">Ir a Editar lotes</Link>}
       />
     );
   }
@@ -428,7 +457,11 @@ function FracsPage() {
               >
                 <span className="frac-gallery-thumb">
                   {frac.image_url
-                    ? <img src={frac.image_url} alt={`Plano de ${frac.name}`} loading="lazy" />
+                    ? isMapUrlPdf(frac.image_url)
+                      ? frac.thumbnail_url
+                        ? <img src={frac.thumbnail_url} alt={`Plano de ${frac.name}`} loading="lazy" />
+                        : <span className="frac-gallery-thumb-empty" title="Plano en PDF"><HiDocumentText /></span>
+                      : <img src={frac.image_url} alt={`Plano de ${frac.name}`} loading="lazy" />
                     : <span className="frac-gallery-thumb-empty"><HiMap /></span>}
                 </span>
                 <span className="frac-gallery-body">
@@ -448,14 +481,14 @@ function FracsPage() {
       <GuideModal
         open={showGuide}
         onClose={() => setShowGuide(false)}
-        title="Fraccionamientos"
+        title="Operación de lotes"
         subtitle="Gestión táctil de tu inventario de lotes con plano interactivo."
         steps={[
           { title: "Seleccionar proyecto", text: "La galería muestra todos tus fraccionamientos con la miniatura de su plano. Haz clic en uno para ver su plano interactivo y la matriz de lotes; usa la flecha ‹ Proyectos para volver." },
           { title: "Plano interactivo", text: "Usa el scroll o pinch para hacer zoom. Haz clic en el plano para ver los lotes superpuestos con su estado (disponible, apartado, vendido)." },
           { title: "Filtrar lotes", text: "Los botones de estado en la barra superior filtran los lotes visibles en el plano. Combínalos con la búsqueda por sección o código." },
           { title: "Ficha de lote", text: "Selecciona un lote para ver su ficha completa: medidas, servicios disponibles, precio de contado y financiado, y vendedor asignado." },
-          { title: "Cotizador integrado", text: "Desde la ficha del lote puedes abrir el cotizador para simular la mensualidad con la fórmula activa de la organización." },
+          { title: "Cotizador integrado", text: "Desde la ficha del lote puedes abrir el cotizador para simular la mensualidad con tu calculadora activa o, si no usas una, con la amortización estándar." },
           { title: "Agendar visita", text: "El botón 'Agendar' en la ficha del lote crea una cita en la agenda central vinculada al lote y al contacto del prospecto." },
         ]}
       />
@@ -492,6 +525,7 @@ function FracsPage() {
           frente: lot.frente_ml ?? "",
           fondo: lot.fondo_ml ?? "",
           orientacion: lot.orientacion ?? "",
+          sellerId: lot.seller_id ?? "",
           especificaciones: JSON.stringify(lot.especificaciones || {}),
         },
         code: lot.code,
@@ -502,6 +536,7 @@ function FracsPage() {
         frente: lot.frente_ml ?? "",
         fondo: lot.fondo_ml ?? "",
         orientacion: lot.orientacion ?? "",
+        sellerId: lot.seller_id ?? "",
         especificaciones: lot.especificaciones || {},
       });
     });
@@ -509,6 +544,7 @@ function FracsPage() {
       mode: "editor",
       name: selectedFrac.name,
       mapUrl: selectedFrac.image_url || "",
+      mapThumbnailUrl: selectedFrac.thumbnail_url || "",
       cadProcessing: false,
       sections: Object.values(sectionMap),
       _editingFracId: selectedFrac.id,
@@ -745,7 +781,11 @@ function FracsPage() {
             </div>
             <div className="frac-plan-body" onClick={() => selectedFrac.image_url && setShowMapViewer(true)}>
               {selectedFrac.image_url ? (
-                <img src={selectedFrac.image_url} alt="Plano" />
+                isMapUrlPdf(selectedFrac.image_url) ? (
+                  <iframe src={selectedFrac.image_url} title="Plano (PDF)" style={{ width: "100%", height: "100%", border: 0, pointerEvents: "none" }} />
+                ) : (
+                  <img src={selectedFrac.image_url} alt="Plano" />
+                )
               ) : (
                 <div className="frac-plan-empty">
                   <strong>Sin plano</strong>
@@ -817,24 +857,24 @@ function FracsPage() {
         <button className="frac-quote-head" onClick={() => setQuoteOpen((value) => !value)}>
           <span className="frac-quote-icon">$</span>
           <span>
-            <strong>Cotizador rapido</strong>
+            <strong>Cotizador rápido</strong>
             <small>{selectedLot ? `Lote ${selectedLot.code}` : "Selecciona un lote"}</small>
           </span>
           <svg className="frac-quote-chevron" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 6 8 10 12 6"/></svg>
         </button>
         <div className="frac-quote-body">
           <div className="frac-quote-result">
-            <span>Mensualidad estimada</span>
+            <span>Pago mensual aproximado</span>
             <strong>{monthly > 0 ? currency(Math.round(monthly)) : "--"}</strong>
-            <small>{cotPlazo} meses / {cotTasa}% anual</small>
+            <small>{cotPlazo} pagos mensuales · interés de {cotTasa}% al año</small>
           </div>
           <div className="frac-quote-rows">
-            <span>Precio financiado <strong>{currency(Number(cotPrecioF || 0))}</strong></span>
-            <span>Enganche <strong>{currency(Number(cotEnganche || 0))}</strong></span>
-            <span>A financiar <strong>{currency(Math.round(financed))}</strong></span>
-            <span>Total estimado <strong>{currency(Math.round(quoteTotal || 0))}</strong></span>
+            <span>Precio a meses <strong>{currency(Number(cotPrecioF || 0))}</strong></span>
+            <span>Enganche (pago inicial) <strong>{currency(Number(cotEnganche || 0))}</strong></span>
+            <span>Resta por pagar en mensualidades <strong>{currency(Math.round(financed))}</strong></span>
+            <span>Total que pagará el cliente <strong>{currency(Math.round(quoteTotal || 0))}</strong></span>
           </div>
-          <p className="lands-list-note">{calculator.isPending ? "Cargando plan…" : calculator.isError ? "No se pudo consultar el plan." : quote.error || `Plan: ${calculator.data?.name}. La venta conservará la fórmula vigente al registrarse.`}</p>
+          <p className="lands-list-note">{calculator.isPending ? "Cargando plan…" : calculator.isError ? "No se pudo consultar el plan." : quote.error || (standardQuote ? "Sin calculadora: pago fijo con la tasa anual (amortización estándar)." : `Plan: ${calculator.data?.name}. La venta conservará la fórmula vigente al registrarse.`)}</p>
           {calculator.isError && <button type="button" className="btn-s" onClick={() => calculator.refetch()}>Reintentar</button>}
           <button className="frac-quote-full" onClick={() => setShowCotizador(true)} disabled={!selectedLot}>Abrir cotizador completo</button>
         </div>
@@ -907,8 +947,8 @@ function FracsPage() {
                           onChange={(e) => setApartarUntil(e.target.value)}
                         />
                         <label className="frac-appt-lbl" htmlFor="reservation-amount">Monto del apartado (opcional)</label>
-                        <input
-                          id="reservation-amount" type="number" min="0" step="0.01" placeholder="0.00"
+                        <AmountInput
+                          id="reservation-amount" min="0" placeholder="0.00"
                           className="frac-apartar-input"
                           value={apartarMonto}
                           onChange={(e) => setApartarMonto(e.target.value)}
@@ -1079,15 +1119,21 @@ function FracsPage() {
                   </div>
                 </div>
 
+                <LotContractCard lotId={selectedLot.id} />
+
                 <div className="lotp-sec">
                   <div className="lotp-sh"><b>Especificaciones</b></div>
                   <SpecGrid2Bool
                     items={ESPECIFICACIONES_CHIPS.map((esp) => ({
                       key: esp.k,
                       label: esp.lbl,
-                      on: selectedLot.especificaciones?.[esp.k] === "true",
+                      on: specOn(selectedLot.especificaciones?.[esp.k]),
+                      detail: specDetail(selectedLot.especificaciones?.[esp.k]),
                     }))}
                   />
+                  {specDetail(selectedLot.especificaciones?.[SPEC_OTHER_KEY]) ? (
+                    <p className="lotp-spec-other"><b>Otro servicio:</b> {specDetail(selectedLot.especificaciones[SPEC_OTHER_KEY])}</p>
+                  ) : null}
                 </div>
 
                 {apptData.length ? (
@@ -1212,29 +1258,39 @@ function FracsPage() {
             <div className="frac-calculator-body">
               <aside className="frac-calculator-controls">
                 {[
-                  ["Precio financiado", cotPrecioF, setCotPrecioF, 1000],
-                  ["Enganche", cotEnganche, setCotEnganche, 1000],
-                  ["Tasa anual (%)", cotTasa, setCotTasa, 0.5],
-                  ["Plazo (meses)", cotPlazo, setCotPlazo, 12],
-                ].map(([label, value, setter, step]) => (
+                  ["Precio a meses", cotPrecioF, setCotPrecioF, 1000, true],
+                  ["Enganche (pago inicial)", cotEnganche, setCotEnganche, 1000, true],
+                  ["Interés anual (%)", cotTasa, setCotTasa, 0.5],
+                  ["Número de meses", cotPlazo, setCotPlazo, 12],
+                ].map(([label, value, setter, step, money = false]) => (
                   <label key={label}>
                     <span>{label}</span>
-                    <input
-                      type="number"
-                      value={value}
-                      step={step}
-                      onFocus={(event) => event.target.select()}
-                      onChange={(event) => setter(event.target.value === "" ? "" : Number(event.target.value))}
-                    />
+                    {/* Los importes llevan separadores de miles; tasa y plazo son números chicos. */}
+                    {money ? (
+                      <AmountInput
+                        decimals={0}
+                        value={value}
+                        onFocus={(event) => event.target.select()}
+                        onChange={(event) => setter(event.target.value === "" ? "" : Number(event.target.value))}
+                      />
+                    ) : (
+                      <input
+                        type="number"
+                        value={value}
+                        step={step}
+                        onFocus={(event) => event.target.select()}
+                        onChange={(event) => setter(event.target.value === "" ? "" : Number(event.target.value))}
+                      />
+                    )}
                   </label>
                 ))}
                 <div className="frac-quote-result">
-                  <span>Mensualidad</span>
+                  <span>Pago mensual</span>
                   <strong>{monthly > 0 ? currency(Math.round(monthly)) : "--"}</strong>
-                  <small>A financiar {currency(Math.round(financed))}</small>
+                  <small>Resta por pagar en mensualidades: {currency(Math.round(financed))}</small>
                 </div>
               </aside>
-              <div className="lands-quote-explanation"><h3>{calculator.data?.name || "Plan de financiamiento"}</h3><p>{quote.error || "Mensualidad calculada con la misma fórmula activa que usa el contrato."}</p>{calculator.data?.variables?.filter(key => guessVarValue(key, quoteForm) === "").map(key => <label key={key}>{key}<input className="fi" type="number" value={quoteOverrides[key] ?? ""} onChange={event => setQuoteOverrides(previous => ({ ...previous, [key]: event.target.value }))} /></label>)}<p>El calendario definitivo de pagos se genera al registrar el contrato. Revisa el plan y las condiciones antes de confirmar la venta.</p></div>
+              <div className="lands-quote-explanation"><h3>{calculator.data?.name || (standardQuote ? "Amortización estándar" : "Plan de financiamiento")}</h3><p>{quote.error || (standardQuote ? "Pago fijo mensual con la tasa anual, igual que un contrato sin calculadora." : "Mensualidad calculada con la misma fórmula activa que usa el contrato.")}</p>{calculator.data?.variables?.filter(key => guessVarValue(key, quoteForm) === "").map(key => <label key={key}>{key}<input className="fi" type="number" value={quoteOverrides[key] ?? ""} onChange={event => setQuoteOverrides(previous => ({ ...previous, [key]: event.target.value }))} /></label>)}<p>El calendario definitivo de pagos se genera al registrar el contrato. Revisa el plan y las condiciones antes de confirmar la venta.</p></div>
             </div>
           </article>
         </DialogPortal>
@@ -1246,14 +1302,14 @@ function FracsPage() {
       <GuideModal
         open={showGuide}
         onClose={() => setShowGuide(false)}
-        title="Fraccionamientos"
+        title="Operación de lotes"
         subtitle="Gestión táctil de tu inventario de lotes con plano interactivo."
         steps={[
           { title: "Seleccionar proyecto", text: "La galería muestra todos tus fraccionamientos con la miniatura de su plano. Haz clic en uno para ver su plano interactivo y la matriz de lotes; usa la flecha ‹ Proyectos para volver." },
           { title: "Plano interactivo", text: "Usa el scroll o pinch para hacer zoom. Haz clic en el plano para ver los lotes superpuestos con su estado (disponible, apartado, vendido)." },
           { title: "Filtrar lotes", text: "Los botones de estado en la barra superior filtran los lotes visibles en el plano. Combínalos con la búsqueda por sección o código." },
           { title: "Ficha de lote", text: "Selecciona un lote para ver su ficha completa: medidas, servicios disponibles, precio de contado y financiado, y vendedor asignado." },
-          { title: "Cotizador integrado", text: "Desde la ficha del lote puedes abrir el cotizador para simular la mensualidad con la fórmula activa de la organización." },
+          { title: "Cotizador integrado", text: "Desde la ficha del lote puedes abrir el cotizador para simular la mensualidad con tu calculadora activa o, si no usas una, con la amortización estándar." },
           { title: "Agendar visita", text: "El botón 'Agendar' en la ficha del lote crea una cita en la agenda central vinculada al lote y al contacto del prospecto." },
         ]}
       />

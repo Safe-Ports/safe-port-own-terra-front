@@ -1,7 +1,7 @@
 @import "./properties-theme.css";
 
 /* Base compartida de Properties. No alcanza al shell de Core ni a Lands. */
-.eco-root.properties-focus{--properties-ink:#0f2742;--properties-muted:#4f647c;--properties-line:#dee2e6;height:100dvh}
+.eco-root.properties-focus{--properties-ink:#0f2742;--properties-muted:#4f647c;--properties-line:#d5dee8;height:100dvh}
 .eco-root.properties-focus :is(.main,.scroll-area,main,section,article,header,footer,form,nav,label){min-width:0}
 .eco-root.properties-focus main :is(h1,h2,h3,p){overflow-wrap:break-word}
 .eco-root.properties-focus main h1{font-size:clamp(28px,3.5vw,44px);line-height:1.12;letter-spacing:-.025em}
@@ -33,8 +33,8 @@
 .eco-root.properties-focus :is(.property-paths-grid,.property-paths>div,.property-grid,.community-cards,.guide-map-grid){grid-template-columns:minmax(0,1fr)}
 .eco-root.properties-focus :is(.community-context,.community-detail,.condo-split,.utility-workspace,.service-layout,.access-layout,.portfolio-cell,.unit-monitor-workspace,.unicell-context){grid-template-columns:minmax(0,1fr)}
 .eco-root.properties-focus :is(.community-detail-body>dl,.community-permission-picker,.community-unit-relations,.service-profile-facts,.service-protocol>div){grid-template-columns:repeat(2,minmax(0,1fr))}
-.eco-root.properties-focus :is(.owners-segments,.properties-filters,.community-tabs,.condo-module-tabs,.unit-board,.ticket-toolbar>div){max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
-.eco-root.properties-focus :is(.owners-segments,.community-tabs,.condo-module-tabs){gap:8px}
+.eco-root.properties-focus :is(.owners-segments,.properties-filters,.community-tabs,.unit-board,.ticket-toolbar>div){max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
+.eco-root.properties-focus :is(.owners-segments,.community-tabs){gap:8px}
 .eco-root.properties-focus .owners-segments button{flex-shrink:0}
 .eco-root.properties-focus .units-toolbar{grid-template-columns:minmax(0,1fr)}
 .eco-root.properties-focus :is(.unit-row,.owner-row){gap:12px}
@@ -107,3 +107,4 @@
 /* El pie del riel agrupa la salida: todo lo que no cabe en los cinco
    destinos principales, y el regreso al ecosistema. */
 .eco-root .focus-rail-foot{display:flex;flex-direction:column;gap:2px;width:100%;padding-top:8px;border-top:1px solid rgba(255,255,255,.1)}
+

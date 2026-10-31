@@ -5,7 +5,9 @@ import { useAppContext } from "@/context/AppContext";
 import { getDeniedMessage } from "@/services/permissions";
 import SupportWidget from "@/components/support/SupportWidget";
 import GuidedTour from "@/components/tour/GuidedTour";
+import NotificationSounds from "@/components/notifications/NotificationSounds";
 import { lazyWithRetry } from "@/routes/lazyWithRetry";
+import LoadingScreen from "@/components/shared/LoadingScreen";
 import { PROPERTIES_MVP_SCOPE } from "@/apps/properties/mvpScope";
 
 const EcosystemHub = lazyWithRetry(() => import("@/pages/Ecosystem"));
@@ -36,7 +38,6 @@ const ReportsPage = lazyWithRetry(() => import("@/pages/Reports"));
 const PricingPage = lazyWithRetry(() => import("@/pages/Pricing"));
 const AccessDenied = lazyWithRetry(() => import("@/pages/AccessDenied"));
 const PropertiesDashboard = lazyWithRetry(() => import("@/apps/properties/features/dashboard/PropertiesDashboard"));
-const PropertiesGuidePage = lazyWithRetry(() => import("@/apps/properties/features/guide/PropertiesGuidePage"));
 const PropertiesProfilePage = lazyWithRetry(() => import("@/apps/properties/features/profile/PropertiesProfilePage"));
 const PropertiesOperationsHub = lazyWithRetry(() => import("@/apps/properties/features/dashboard/PropertiesOperationsHub"));
 const OwnersPage = lazyWithRetry(() => import("@/apps/properties/features/owners/OwnersPage"));
@@ -67,13 +68,7 @@ function KeepQuery({ to }) {
 }
 
 function PageLoader() {
-  return (
-    <div className="flex min-h-[50vh] items-center justify-center">
-      <div className="rounded-[28px] border border-[#E2E7E5] bg-white/88 px-5 py-4 text-sm font-semibold text-[#3F4644] shadow-[0_18px_40px_rgba(30,61,43,.08)]">
-        Cargando espacio de trabajo...
-      </div>
-    </div>
-  );
+  return <LoadingScreen compact message="Cargando espacio de trabajo…" />;
 }
 
 function RequireFeature({ feature, app, children }) {
@@ -130,7 +125,6 @@ function AppRouter() {
           <Route path="/construccion/*" element={<Navigate to="/ecosistema" replace />} />
           <Route path="/properties" element={<RequireFeature app="properties"><PropertiesModule /></RequireFeature>}>
             <Route index element={<PropertiesDashboard />} />
-            <Route path="guia" element={<PropertiesGuidePage />} />
             <Route path="perfil" element={<PropertiesProfilePage />} />
             <Route path="operacion" element={<PropertiesOperationsHub />} />
             <Route path="propietarios" element={<RequireFeature feature="properties.owners.read"><OwnersPage /></RequireFeature>} />
@@ -179,6 +173,7 @@ function AppRouter() {
       </Suspense>
       <SupportWidget />
       <GuidedTour />
+      <NotificationSounds />
     </>
   );
 }

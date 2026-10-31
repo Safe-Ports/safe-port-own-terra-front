@@ -7,8 +7,11 @@ describe("map images", () => {
     expect(isSupportedMapImage(new File(["x"], "plano.HEIF", { type: "" }))).toBe(true);
   });
 
+  it("accepts a PDF map", () => {
+    expect(isSupportedMapImage(new File(["x"], "plano.pdf", { type: "application/pdf" }))).toBe(true);
+  });
+
   it("rejects files that are not supported images", () => {
-    expect(isSupportedMapImage(new File(["x"], "plano.pdf", { type: "application/pdf" }))).toBe(false);
     expect(isSupportedMapImage(new File(["x"], "lotes.xlsx", { type: "image/unknown" }))).toBe(false);
   });
 

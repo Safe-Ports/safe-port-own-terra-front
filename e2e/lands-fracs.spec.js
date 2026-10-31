@@ -105,7 +105,7 @@ test("apartar un lote con cliente, vencimiento, monto y comprobantes", async ({ 
   await expect(panel.getByRole("button", { name: "Confirmar apartado" })).toBeDisabled();
   await pickClient(panel, page, "Carla Ruiz");
   await panel.getByRole("button", { name: "15 días" }).click();
-  await panel.getByRole("spinbutton", { name: "Monto del apartado (opcional)" }).fill("5000");
+  await panel.getByRole("textbox", { name: "Monto del apartado (opcional)" }).fill("5000");
   const [chooser] = await Promise.all([page.waitForEvent("filechooser"), panel.getByRole("button", { name: /Elegir archivos/ }).click()]);
   await chooser.setFiles([PDF("transferencia.pdf"), PDF("ine.pdf")]);
   await panel.getByRole("button", { name: "Confirmar apartado" }).click();
@@ -175,12 +175,21 @@ test("volver desde un formulario regresa a la ficha del lote", async ({ page }) 
 
 test("cotizador rápido y completo usan el plan activo", async ({ page }) => {
   await openProject(page);
-  await page.getByRole("button", { name: /Cotizador rapido/ }).click();
+  await page.getByRole("button", { name: /Cotizador rápido/ }).click();
   await expect(page.getByText(/Plan: Plan aprobado/)).toBeVisible();
   await page.getByRole("button", { name: "Abrir cotizador completo" }).click();
   const dialog = page.getByRole("dialog", { name: "Cotizador" });
-  await dialog.getByLabel("Precio financiado").fill("120000");
-  await dialog.getByLabel("Enganche", { exact: true }).fill("20000");
-  await dialog.getByLabel("Plazo (meses)").fill("10");
+  await dialog.getByLabel("Precio a meses").fill("120000");
+  await dialog.getByLabel("Enganche (pago inicial)").fill("20000");
+  await dialog.getByLabel("Número de meses").fill("10");
   await expect(dialog.locator(".frac-quote-result")).toContainText("10,000");
+});
+
+test("la ficha del lote muestra su contrato", async ({ page }) => {
+  const panel = await openLot(page, "N-1");
+  await expect(panel).toContainText("Contrato");
+  await expect(panel).toContainText("CT-001");
+  await expect(panel.getByRole("link", { name: "Ver en Contratos →" })).toHaveAttribute("href", "/contratos?q=CT-001");
+  const libre = await openLot(page, "N-2");
+  await expect(libre.getByRole("link", { name: "Ver en Contratos →" })).toHaveCount(0);
 });
