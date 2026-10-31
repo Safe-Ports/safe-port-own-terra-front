@@ -22,7 +22,10 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          # Node 24 trae npm 11, el mismo con el que se genera el package-lock en
+          # local. npm 10 exige en el lock las dependencias peer opcionales (p. ej.
+          # esbuild para vite 8) que npm 11 omite, y rechazaba locks válidos.
+          node-version: "24"
           cache: npm
 
       - name: Instalar dependencias
