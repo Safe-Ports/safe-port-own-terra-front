@@ -1,7 +1,7 @@
 import WorkflowForm from "@/components/forms/WorkflowForm";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { HiMap, HiBookmark, HiSquares2X2, HiXMark } from "react-icons/hi2";
+import { HiMap, HiBookmark, HiSquares2X2, HiXMark, HiDocumentText } from "react-icons/hi2";
 import GuideModal from "@/components/shared/GuideModal";
 import PhoneInput from "@/components/shared/PhoneInput";
 import FieldError from "@/components/shared/FieldError";
@@ -25,6 +25,7 @@ import { lotService } from "@/services/lotService";
 import { appointmentService } from "@/services/appointmentService";
 import { currency, measure } from "@/services/formatters";
 import useEscapeKey from "@/hooks/useEscapeKey";
+import { isMapUrlPdf } from "@/utils/mapImage";
 import "./fracs.css";
 
 const LOT_COLORS = {
@@ -151,6 +152,7 @@ function MapViewer({ src, onClose }) {
   const dragging = useRef(false);
   const last = useRef({ x: 0, y: 0 });
   const containerRef = useRef(null);
+  const isPdf = isMapUrlPdf(src);
 
   const onWheel = useCallback((event) => {
     event.preventDefault();
@@ -158,11 +160,12 @@ function MapViewer({ src, onClose }) {
   }, []);
 
   useEffect(() => {
+    if (isPdf) return undefined;
     const el = containerRef.current;
     if (!el) return undefined;
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, [onWheel]);
+  }, [onWheel, isPdf]);
 
   useEffect(() => {
     const onKey = (event) => {
@@ -171,6 +174,24 @@ function MapViewer({ src, onClose }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  if (isPdf) {
+    // El visor nativo de PDF del navegador ya trae su propio zoom/pan, así que
+    // no se reusan los controles ni la transformación con CSS pensados para <img>.
+    return (
+      <div className="frac-map-viewer" onClick={(event) => event.target === event.currentTarget && onClose()}>
+        <div className="frac-map-toolbar">
+          <span>Plano de referencia (PDF)</span>
+          <div>
+            <button onClick={onClose}>x</button>
+          </div>
+        </div>
+        <div className="frac-map-canvas">
+          <iframe src={src} title="Plano (PDF)" style={{ width: "100%", height: "100%", border: 0 }} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="frac-map-viewer" onClick={(event) => event.target === event.currentTarget && onClose()}>
@@ -428,7 +449,11 @@ function FracsPage() {
               >
                 <span className="frac-gallery-thumb">
                   {frac.image_url
-                    ? <img src={frac.image_url} alt={`Plano de ${frac.name}`} loading="lazy" />
+                    ? isMapUrlPdf(frac.image_url)
+                      ? frac.thumbnail_url
+                        ? <img src={frac.thumbnail_url} alt={`Plano de ${frac.name}`} loading="lazy" />
+                        : <span className="frac-gallery-thumb-empty" title="Plano en PDF"><HiDocumentText /></span>
+                      : <img src={frac.image_url} alt={`Plano de ${frac.name}`} loading="lazy" />
                     : <span className="frac-gallery-thumb-empty"><HiMap /></span>}
                 </span>
                 <span className="frac-gallery-body">
@@ -509,6 +534,7 @@ function FracsPage() {
       mode: "editor",
       name: selectedFrac.name,
       mapUrl: selectedFrac.image_url || "",
+      mapThumbnailUrl: selectedFrac.thumbnail_url || "",
       cadProcessing: false,
       sections: Object.values(sectionMap),
       _editingFracId: selectedFrac.id,
@@ -745,7 +771,11 @@ function FracsPage() {
             </div>
             <div className="frac-plan-body" onClick={() => selectedFrac.image_url && setShowMapViewer(true)}>
               {selectedFrac.image_url ? (
-                <img src={selectedFrac.image_url} alt="Plano" />
+                isMapUrlPdf(selectedFrac.image_url) ? (
+                  <iframe src={selectedFrac.image_url} title="Plano (PDF)" style={{ width: "100%", height: "100%", border: 0, pointerEvents: "none" }} />
+                ) : (
+                  <img src={selectedFrac.image_url} alt="Plano" />
+                )
               ) : (
                 <div className="frac-plan-empty">
                   <strong>Sin plano</strong>

@@ -7,6 +7,8 @@ const MAP_IMAGE_MIME_TYPES = new Set([
 ]);
 
 const MAP_IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "heic", "heif"]);
+const MAP_PDF_MIME_TYPE = "application/pdf";
+const MAP_PDF_EXTENSION = "pdf";
 const MAX_MAP_DIMENSION = 3200;
 const JPEG_QUALITY = 0.9;
 
@@ -17,21 +19,36 @@ export const MAP_IMAGE_ACCEPT = [
   ".webp",
   ".heic",
   ".heif",
+  ".pdf",
   "image/jpeg",
   "image/png",
   "image/webp",
   "image/heic",
   "image/heif",
+  "application/pdf",
 ].join(",");
 
 function fileExtension(filename = "") {
   return filename.split(".").pop()?.toLowerCase() || "";
 }
 
+export function isMapPdf(file) {
+  if (!file) return false;
+  const mimeType = String(file.type || "").split(";")[0].trim().toLowerCase();
+  return mimeType === MAP_PDF_MIME_TYPE || fileExtension(file.name) === MAP_PDF_EXTENSION;
+}
+
 export function isSupportedMapImage(file) {
   if (!file) return false;
   const mimeType = String(file.type || "").split(";")[0].trim().toLowerCase();
-  return MAP_IMAGE_MIME_TYPES.has(mimeType) || MAP_IMAGE_EXTENSIONS.has(fileExtension(file.name));
+  return MAP_IMAGE_MIME_TYPES.has(mimeType)
+    || MAP_IMAGE_EXTENSIONS.has(fileExtension(file.name))
+    || isMapPdf(file);
+}
+
+export function isMapUrlPdf(url = "") {
+  return String(url).split("?")[0].toLowerCase().endsWith(".pdf")
+    || String(url).startsWith("data:application/pdf");
 }
 
 function readFileAsDataUrl(file) {
@@ -107,6 +124,13 @@ function findCropBounds(context, width, height) {
 export async function prepareMapImage(file) {
   if (!isSupportedMapImage(file)) throw new Error("Formato de imagen no compatible");
 
+  if (isMapPdf(file)) {
+    // A PDF can't be decoded into an <img>/canvas, so it's stored as-is: no
+    // crop, resize, or format conversion.
+    const dataUrl = await readFileAsDataUrl(file);
+    return { dataUrl, cropped: false, resized: false, converted: false, isPdf: true };
+  }
+
   const dataUrl = await readFileAsDataUrl(file);
   const image = await loadImage(dataUrl);
   if (!image.naturalWidth || !image.naturalHeight) throw new Error("La imagen está vacía o dañada");
@@ -151,15 +175,24 @@ export async function prepareMapImage(file) {
     resized: scale < 1,
     converted: ["heic", "heif"].includes(fileExtension(file.name))
       || ["image/heic", "image/heif"].includes(String(file.type || "").toLowerCase()),
+    isPdf: false,
   };
 }
 
 export async function mapFileFromUrl(url) {
   const response = await fetch(url);
   if (!response.ok && typeof response.ok === "boolean") {
-    throw new Error("No se pudo recuperar la imagen del plano");
+    throw new Error("No se pudo recuperar el plano");
   }
   const sourceBlob = await response.blob();
+
+  if (sourceBlob.type === MAP_PDF_MIME_TYPE || isMapUrlPdf(url)) {
+    const blob = sourceBlob.type === MAP_PDF_MIME_TYPE
+      ? sourceBlob
+      : new Blob([sourceBlob], { type: MAP_PDF_MIME_TYPE });
+    return new File([blob], `map.${MAP_PDF_EXTENSION}`, { type: MAP_PDF_MIME_TYPE });
+  }
+
   const supportedType = ["image/jpeg", "image/png", "image/webp"].includes(sourceBlob.type)
     ? sourceBlob.type
     : "image/jpeg";

@@ -75,6 +75,7 @@ export function useProjectsQuery() {
         sold: inmueble.sold_lots ?? 0,
         reserved: inmueble.reserved_lots ?? 0,
         mapImageUrl: inmueble.image_url ?? "",
+        mapThumbnailUrl: inmueble.thumbnail_url ?? "",
       })),
   });
 }

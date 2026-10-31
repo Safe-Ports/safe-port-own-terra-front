@@ -5,7 +5,7 @@ import FieldError from "@/components/shared/FieldError";
 import { validateLotDraft } from "@/services/lotDraftValidation";
 import MigrationWizard from "./MigrationWizard";
 import { useNavigate } from "react-router-dom";
-import { HiChevronLeft, HiChevronRight, HiCube, HiMap, HiPencil, HiXMark } from "react-icons/hi2";
+import { HiChevronLeft, HiChevronRight, HiCube, HiDocumentText, HiMap, HiPencil, HiXMark } from "react-icons/hi2";
 import * as XLSX from "xlsx";
 import { useAppContext } from "@/context/AppContext";
 import { useLandsGuide } from "@/context/LandsGuideContext";
@@ -13,7 +13,7 @@ import useEscapeKey from "@/hooks/useEscapeKey";
 import { useProjectsQuery } from "@/hooks/queries/useAppQueries";
 import { lotService } from "@/services/lotService";
 import { parseApiError } from "@/errors/parseApiError";
-import { MAP_IMAGE_ACCEPT, isSupportedMapImage, prepareMapImage } from "@/utils/mapImage";
+import { MAP_IMAGE_ACCEPT, isMapUrlPdf, isSupportedMapImage, prepareMapImage } from "@/utils/mapImage";
 import Button from "@/components/Button";
 import GuideModal from "@/components/shared/GuideModal";
 import LotImportFormatModal from "./LotImportFormatModal";
@@ -354,6 +354,7 @@ function LotsPage() {
         mode:           "editor",
         name:           project.name,
         mapUrl:         project.mapImageUrl || "",
+        mapThumbnailUrl: project.mapThumbnailUrl || "",
         cadProcessing:  false,
         sections:       Object.values(sectionMap),
         _editingFracId: project.id,
@@ -628,7 +629,7 @@ function LotsPage() {
 
   const updateMap = async (file) => {
     if (!isSupportedMapImage(file)) {
-      showToast("El plano debe ser una imagen JPG, PNG, WEBP, HEIC o HEIF. Excel y CSV solo van en Llenar con Excel o CSV.", "warning");
+      showToast("El plano debe ser una imagen JPG, PNG, WEBP, HEIC, HEIF o un PDF. Excel y CSV solo van en Llenar con Excel o CSV.", "warning");
       return false;
     }
     try {
@@ -733,11 +734,19 @@ function LotsPage() {
           {/* Left: map */}
           <div className="lots-map-pane">
             {draftProject.mapUrl ? (
-              <img
-                src={draftProject.mapUrl}
-                alt="Plano"
-                className="max-h-full max-w-full object-contain"
-              />
+              isMapUrlPdf(draftProject.mapUrl) ? (
+                <iframe
+                  src={draftProject.mapUrl}
+                  title="Plano (PDF)"
+                  className="h-full w-full border-0"
+                />
+              ) : (
+                <img
+                  src={draftProject.mapUrl}
+                  alt="Plano"
+                  className="max-h-full max-w-full object-contain"
+                />
+              )
             ) : (
               <div className="lots-map-empty">
                 <div className="lots-map-empty-code">PL</div>
@@ -985,11 +994,25 @@ function LotsPage() {
                 <div className="lot-edit-sec">Imagen del plano</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
                   {draftProject.mapUrl ? (
-                    <img
-                      src={draftProject.mapUrl}
-                      alt="Plano"
-                      style={{ width: 90, height: 64, objectFit: "cover", borderRadius: 8, border: "1.5px solid #E2E7E5", flexShrink: 0 }}
-                    />
+                    isMapUrlPdf(draftProject.mapUrl) ? (
+                      draftProject.mapThumbnailUrl ? (
+                        <img
+                          src={draftProject.mapThumbnailUrl}
+                          alt="Plano"
+                          style={{ width: 90, height: 64, objectFit: "cover", borderRadius: 8, border: "1.5px solid #E2E7E5", flexShrink: 0 }}
+                        />
+                      ) : (
+                        <div style={{ width: 90, height: 64, borderRadius: 8, border: "1.5px solid #E2E7E5", background: "#EEF1F1", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <HiDocumentText style={{ fontSize: "1.3rem", color: "#83867C" }} />
+                        </div>
+                      )
+                    ) : (
+                      <img
+                        src={draftProject.mapUrl}
+                        alt="Plano"
+                        style={{ width: 90, height: 64, objectFit: "cover", borderRadius: 8, border: "1.5px solid #E2E7E5", flexShrink: 0 }}
+                      />
+                    )
                   ) : (
                     <div style={{ width: 90, height: 64, borderRadius: 8, border: "1.5px dashed #E2E7E5", background: "#EEF1F1", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <span style={{ fontSize: "0.6rem", color: "#83867C", textAlign: "center", lineHeight: 1.3 }}>Sin imagen</span>
@@ -1283,12 +1306,27 @@ function LotsPage() {
               <div className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 items-start gap-3">
                   {project.mapImageUrl ? (
-                    <img
-                      src={project.mapImageUrl}
-                      alt=""
-                      className="frac-map-thumb"
-                      style={{ width: 52, height: 52, minWidth: 52, minHeight: 52, objectFit: "cover" }}
-                    />
+                    isMapUrlPdf(project.mapImageUrl) ? (
+                      project.mapThumbnailUrl ? (
+                        <img
+                          src={project.mapThumbnailUrl}
+                          alt=""
+                          className="frac-map-thumb"
+                          style={{ width: 52, height: 52, minWidth: 52, minHeight: 52, objectFit: "cover" }}
+                        />
+                      ) : (
+                        <div className="frac-map-thumb-empty" title="Plano en PDF">
+                          <HiDocumentText className="text-lg" />
+                        </div>
+                      )
+                    ) : (
+                      <img
+                        src={project.mapImageUrl}
+                        alt=""
+                        className="frac-map-thumb"
+                        style={{ width: 52, height: 52, minWidth: 52, minHeight: 52, objectFit: "cover" }}
+                      />
+                    )
                   ) : (
                     <div className="frac-map-thumb-empty" title="Sin plano">
                       <HiMap className="text-lg" />
@@ -1466,11 +1504,11 @@ function LotsPage() {
             <label className="lot-upload-drop" data-tour="frac-plano">
               <div className="lot-upload-code">IMG</div>
               <div>
-                <div className="lot-upload-drop-title">Seleccionar imagen del plano</div>
-                <div className="lot-upload-drop-sub">JPG, PNG, WEBP, HEIC o HEIF</div>
+                <div className="lot-upload-drop-title">Seleccionar imagen o PDF del plano</div>
+                <div className="lot-upload-drop-sub">JPG, PNG, WEBP, HEIC, HEIF o PDF</div>
               </div>
               <div className="lot-upload-formats">
-                {["JPG", "PNG", "WEBP", "HEIC", "HEIF"].map((ext) => (
+                {["JPG", "PNG", "WEBP", "HEIC", "HEIF", "PDF"].map((ext) => (
                   <span key={ext}>{ext}</span>
                 ))}
               </div>
@@ -1491,11 +1529,17 @@ function LotsPage() {
             </label>
             {mapFileName && draftProject.mapUrl && (
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10 }}>
-                <img
-                  src={draftProject.mapUrl}
-                  alt="Vista previa del plano"
-                  style={{ width: 90, height: 64, objectFit: "cover", borderRadius: 8, border: "1.5px solid #E2E7E5", flexShrink: 0 }}
-                />
+                {isMapUrlPdf(draftProject.mapUrl) ? (
+                  <div style={{ width: 90, height: 64, borderRadius: 8, border: "1.5px solid #E2E7E5", background: "#EEF1F1", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#83867C" }}>PDF</span>
+                  </div>
+                ) : (
+                  <img
+                    src={draftProject.mapUrl}
+                    alt="Vista previa del plano"
+                    style={{ width: 90, height: 64, objectFit: "cover", borderRadius: 8, border: "1.5px solid #E2E7E5", flexShrink: 0 }}
+                  />
+                )}
                 <div className="lots-editor-file">
                   <span>MAP</span>{mapFileName} — listo, falta guardar
                 </div>
