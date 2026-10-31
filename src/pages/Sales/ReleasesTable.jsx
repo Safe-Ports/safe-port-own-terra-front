@@ -1,4 +1,5 @@
 import WorkflowForm from "@/components/forms/WorkflowForm";
+import AmountInput from "@/components/forms/AmountInput";
 import InlineError from "@/components/shared/InlineError";
 import DialogPortal from "@/components/ui/DialogPortal";
 import { useState } from "react";
@@ -77,7 +78,7 @@ function SettleModal({ fila, onClose, onDone }) {
 
           <div className="fg">
             <label className="fl" htmlFor="release-refund">¿Cuánto se le devolvió?</label>
-            <input id="release-refund" aria-invalid={!!err} className={`fi ${err ? "is-invalid" : ""}`} type="number" min="0" step="0.01"
+            <AmountInput id="release-refund" aria-invalid={!!err} className={`fi ${err ? "is-invalid" : ""}`} min="0"
               value={monto} onChange={(e) => { setMonto(e.target.value); setErr(""); }} autoFocus />
             {err && <div role="alert" style={{ marginTop: 6, fontSize: ".76rem", color: "var(--danger)" }}>{err}</div>}
             {!err && !invalido && (

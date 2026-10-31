@@ -64,3 +64,7 @@
   .community-catalog-bar>select{flex:0 1 200px}
 }
 @media(min-width:901px) and (max-width:1280px){.community-catalog-bar{flex-wrap:wrap}}
+/* Crear comunidad vive dentro del panel de búsqueda, no en una fila aparte. */
+.community-catalog-create{display:inline-flex;flex:none;margin-left:auto;align-items:center;gap:7px;min-height:42px;padding:0 16px;border:0;border-radius:12px;background:#0f2742;color:#fff;font-size:13.5px;font-weight:700;white-space:nowrap;cursor:pointer}
+.community-catalog-create:hover{background:#153457}
+@media(max-width:900px){.community-catalog-create{width:100%;justify-content:center}}

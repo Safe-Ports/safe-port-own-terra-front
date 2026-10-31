@@ -1,7 +1,11 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { HiArrowRight, HiBanknotes, HiBellAlert, HiBolt, HiBuildingOffice2, HiCreditCard, HiDocumentText, HiEyeDropper, HiFire, HiHomeModern, HiIdentification, HiMagnifyingGlass, HiPencilSquare, HiUserPlus, HiWifi } from "react-icons/hi2";
+import { HiArrowRight, HiBanknotes, HiBellAlert, HiBolt, HiBuildingOffice2, HiCreditCard, HiDocumentText, HiEyeDropper, HiFire, HiHomeModern, HiIdentification, HiKey, HiMagnifyingGlass, HiPencilSquare, HiQrCode, HiUserPlus, HiWifi } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
+import Modal from "@/components/ui/Modal";
+import VisitorPassForm from "../access/VisitorPassForm";
+import UnitAccountCard from "./UnitAccountCard";
+import UnitOperationsCard from "./UnitOperationsCard";
 import { usePropertiesData } from "../../data/PropertiesDataContext";
 import { PROPERTIES_MVP_SCOPE } from "../../mvpScope";
 import { PERSON_UNIT_ROLE_LABEL } from "../community/communityModel";
@@ -36,6 +40,10 @@ const unitFacts = (unit, row) => [
   unit?.bedrooms ? `${unit.bedrooms} recámara${Number(unit.bedrooms) === 1 ? "" : "s"}` : null,
   unit?.bathrooms ? `${unit.bathrooms} baño${Number(unit.bathrooms) === 1 ? "" : "s"}` : null,
 ].filter(Boolean);
+// Estado de la cuenta de portal de cada persona, para saber de un vistazo
+// quién ya puede entrar y a quién falta invitar.
+const PORTAL_STATUS = { active:["Portal activo", "ok"], invited:["Invitación pendiente", "warn"], suspended:["Acceso suspendido", "danger"] };
+const portalStatus = (identity) => PORTAL_STATUS[identity?.status] || ["Dar acceso", "muted"];
 const initials = (name = "") => name.split(" ").filter(Boolean).slice(0, 2).map((word) => word[0]).join("") || "?";
 
 /* Pestaña Unidades de una comunidad: aquí vive la pieza central de Properties,
@@ -43,10 +51,12 @@ const initials = (name = "") => name.split(" ").filter(Boolean).slice(0, 2).map(
    quién paga, con su saldo, y desde aquí se agrega a alguien en un solo paso.
    Servicios e incidencias sólo aparecen cuando esos módulos tengan backend
    (mvpScope.later): hoy son datos demo. */
-function UnitMonitorPanel({ community, unitId, onSelectUnit, onAddUnit, onEditUnit, onAddMember, onUnlink, onOpenCharges, onBackToUnits, canWrite = false }) {
+function UnitMonitorPanel({ community, unitId, onSelectUnit, onAddUnit, onEditUnit, onAddMember, onUnlink, onOpenCharges, onOpenAccess, onBackToUnits, onBackToCommunities, canWrite = false }) {
   const data = usePropertiesData();
   const { showToast } = useAppContext();
   const [query, setQuery] = useState("");
+  const [visitOpen, setVisitOpen] = useState(false);
+  const identityByPerson = useMemo(() => Object.fromEntries((data.portalIdentities || []).map((identity) => [identity.persona_id, identity])), [data.portalIdentities]);
   const withDemoModules = PROPERTIES_MVP_SCOPE.later;
   const rows = useMemo(() => buildUnitMonitorRows({
     units: data.units.filter((unit) => unit.propertyId === community?.propertyId),
@@ -76,7 +86,7 @@ function UnitMonitorPanel({ community, unitId, onSelectUnit, onAddUnit, onEditUn
 
   return <section id="community-unit-workspace" className="community-panel unit-monitor-panel unit-floating-catalog" aria-label={`Unidades de ${community?.name}`}>
     {selected ? null : <header><div><h2>Unidades de {community?.name}</h2><p>Elige una casa, departamento o espacio para abrir su ficha.</p><p>{withoutPeople ? `${withoutPeople} de ${rows.length} unidades aún no tienen a nadie asignado.` : rows.length===1?"La unidad tiene al menos una persona asignada.":`Las ${rows.length} unidades tienen al menos una persona asignada.`}</p></div><label className="unit-monitor-search"><HiMagnifyingGlass/><input aria-label="Buscar unidad o persona" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar unidad o persona"/></label>{canWrite&&onAddUnit?<button type="button" className="community-add-unit" onClick={onAddUnit}><HiHomeModern/> Agregar unidad</button>:null}</header>}
-    {selected ? <nav className="community-catalog-back unit-view-back" aria-label="Navegación de unidades"><button type="button" onClick={onBackToUnits}>← Volver a unidades</button><span>{community?.name} / {selected.identifier}</span></nav> : null}
+    {selected ? <nav className="community-catalog-back unit-view-back" aria-label="Navegación de unidades"><button type="button" onClick={onBackToUnits}>← Volver a unidades</button><ol className="unit-view-crumbs">{onBackToCommunities ? <li><button type="button" onClick={onBackToCommunities}>Comunidades</button></li> : null}<li><button type="button" onClick={onBackToUnits}>{community?.name}</button></li><li aria-current="page">{selected.identifier}</li></ol></nav> : null}
     <div className={`unit-monitor-workspace ${withDemoModules ? "" : "is-compact"}`}>
       {selected ? null : <div className="unit-monitor-matrix">
         <header><span>Unidad</span><span>Personas</span><span>Saldo pendiente</span>{withDemoModules ? <><span>Servicios</span><span>Atención</span></> : null}</header>
@@ -100,6 +110,25 @@ function UnitMonitorPanel({ community, unitId, onSelectUnit, onAddUnit, onEditUn
 
         <div className="unit-page-layout">
           <div className="unit-page-main">
+            <UnitAccountCard unit={selected} community={community} canWrite={canWrite} hasPayer={selected.responsible.length > 0} onOpenCommunityCharges={onOpenCharges}/>
+
+            <section className="unit-members unit-page-card" aria-label={`Personas de ${selected.identifier}`}>
+              <header><h3>Personas de la unidad</h3>{canWrite && links.length ? <button type="button" className="unit-members-add" onClick={() => onAddMember(selected.id)}><HiUserPlus/> Agregar persona</button> : null}</header>
+              {links.length ? links.map((link) => {
+                const person = peopleById[link.personId];
+                const perms = [link.isPaymentResponsible && "Paga", link.canVote && "Vota", link.amenityAccess && "Amenidades"].filter(Boolean);
+                const meta = [PERSON_UNIT_ROLE_LABEL[link.role] || link.role, link.isPrimary ? "Contacto principal" : null, person?.phone || null, vigencia(link)].filter(Boolean).join(" · ");
+                return <article key={link.id}>
+                  <span className="unit-members-avatar">{initials(person?.name)}</span>
+                  <span><strong>{person?.name || "Persona archivada"}</strong><small>{meta}</small><em>{perms.length ? perms.map((perm) => <i key={perm}>{perm}</i>) : <i className="muted">Sin permisos</i>}</em></span>
+                  {onOpenAccess && person ? (() => { const [label, tone] = portalStatus(identityByPerson[person.id]); return <button type="button" className={`unit-members-access tone-${tone}`} onClick={() => onOpenAccess(person)} aria-label={`Acceso al portal de ${person.name}: ${label}`}><HiKey/> {label}</button>; })() : null}
+                  {canWrite ? <button type="button" className="unit-members-unlink" onClick={() => onUnlink(link)} aria-label={`Quitar a ${person?.name || "esta persona"} de ${selected.identifier}`}>Quitar</button> : null}
+                </article>;
+              }) : <div className="unit-members-empty"><p>Nadie está asignado a esta unidad. Sin una persona que pague, no se le pueden generar cuotas ni votar.</p>{canWrite ? <button type="button" onClick={() => onAddMember(selected.id)}><HiUserPlus/> Agregar la primera persona</button> : null}</div>}
+            </section>
+
+            <UnitOperationsCard unit={selected} community={community} canWrite={canWrite} people={links.map((link) => peopleById[link.personId]).filter(Boolean)}/>
+
             <section className="unit-page-card unit-service-card" aria-label={`Estado de servicios de ${selected.identifier}`}>
               <h3>Estado de servicios</h3>
               <ul className="unit-service-list">
@@ -118,20 +147,6 @@ function UnitMonitorPanel({ community, unitId, onSelectUnit, onAddUnit, onEditUn
               <Link to={`/properties/comunidades/operacion?module=utilities&community=${community?.id || ""}`} className="unit-service-link">Ver todos los servicios de la comunidad <HiArrowRight/></Link>
             </section>
 
-            <section className="unit-members unit-page-card" aria-label={`Personas de ${selected.identifier}`}>
-              <header><h3>Personas de la unidad</h3>{canWrite && links.length ? <button type="button" className="unit-members-add" onClick={() => onAddMember(selected.id)}><HiUserPlus/> Agregar persona</button> : null}</header>
-              {links.length ? links.map((link) => {
-                const person = peopleById[link.personId];
-                const perms = [link.isPaymentResponsible && "Paga", link.canVote && "Vota", link.amenityAccess && "Amenidades"].filter(Boolean);
-                const meta = [PERSON_UNIT_ROLE_LABEL[link.role] || link.role, link.isPrimary ? "Contacto principal" : null, person?.phone || null, vigencia(link)].filter(Boolean).join(" · ");
-                return <article key={link.id}>
-                  <span className="unit-members-avatar">{initials(person?.name)}</span>
-                  <span><strong>{person?.name || "Persona archivada"}</strong><small>{meta}</small><em>{perms.length ? perms.map((perm) => <i key={perm}>{perm}</i>) : <i className="muted">Sin permisos</i>}</em></span>
-                  {canWrite ? <button type="button" className="unit-members-unlink" onClick={() => onUnlink(link)} aria-label={`Quitar a ${person?.name || "esta persona"} de ${selected.identifier}`}>Quitar</button> : null}
-                </article>;
-              }) : <div className="unit-members-empty"><p>Nadie está asignado a esta unidad. Sin una persona que pague, no se le pueden generar cuotas ni votar.</p>{canWrite ? <button type="button" onClick={() => onAddMember(selected.id)}><HiUserPlus/> Agregar la primera persona</button> : null}</div>}
-            </section>
-
             <section className="unit-page-card unit-fact-card" aria-label={`Datos de ${selected.identifier}`}>
               <h3>Datos de la unidad</h3>
               <ul className="unit-fact-list">
@@ -146,14 +161,25 @@ function UnitMonitorPanel({ community, unitId, onSelectUnit, onAddUnit, onEditUn
           </div>
 
           <div className="unit-actions-rail" aria-label="Acciones sobre la unidad">
-            <p className="unit-actions-label">Acciones</p>
-            <button type="button" className="unit-action is-primary" onClick={remindResponsible} disabled={!selected.responsible.length}>
+            {data.backendLive ? <>
+              <p className="unit-actions-label">Accesos</p>
+              <button type="button" className="unit-action is-primary" onClick={() => setVisitOpen(true)} disabled={!canWrite}>
+                <HiQrCode/>
+                <span><strong>Pase para visita</strong><small>Un QR provisional para entrar a {selected.identifier}</small></span>
+              </button>
+              {canWrite ? <button type="button" className="unit-action" onClick={() => onAddMember(selected.id)}>
+                <HiUserPlus/>
+                <span><strong>Agregar persona con acceso</strong><small>La vincula a la unidad y la invita al portal</small></span>
+              </button> : null}
+            </> : null}
+            <p className="unit-actions-label">Cobranza</p>
+            <button type="button" className={`unit-action ${data.backendLive ? "" : "is-primary"}`} onClick={remindResponsible} disabled={!selected.responsible.length}>
               <HiBellAlert/>
               <span><strong>Enviar recordatorio</strong><small>{selected.responsible.length ? `Avisa a ${selected.responsible.map((person) => person.name).join(", ")} de lo pendiente` : "Asigna primero un responsable de pago"}</small></span>
             </button>
-            <button type="button" className="unit-action" onClick={onOpenCharges}>
+            <button type="button" className="unit-action" onClick={() => document.getElementById("unit-account")?.scrollIntoView({ behavior:"smooth", block:"start" })}>
               <HiCreditCard/>
-              <span><strong>Registrar pago</strong><small>Aplica un pago en Cuotas y adeudos</small></span>
+              <span><strong>Registrar pago</strong><small>{selected.openChargeAmount ? `${money(selected.openChargeAmount)} pendientes en su cuenta` : "Su cuenta está al corriente"}</small></span>
             </button>
             <button type="button" className="unit-action" onClick={generateDebtReport}>
               <HiDocumentText/>
@@ -168,6 +194,9 @@ function UnitMonitorPanel({ community, unitId, onSelectUnit, onAddUnit, onEditUn
         </div>
       </aside> : null}
     </div>
+    {selected ? <Modal open={visitOpen} onClose={() => setVisitOpen(false)} title={`Pase para visita a ${selected.identifier}`} subtitle={`${community?.name || ""} · El QR se muestra una sola vez: compártelo o guárdalo al crearlo.`} icon={<HiQrCode/>} width="max-w-[620px]">
+      <VisitorPassForm key={selected.id} communityId={community?.id} fixedUnit={selectedUnit || { id:selected.id, identifier:selected.identifier }} canWrite={canWrite} onDone={() => setVisitOpen(false)}/>
+    </Modal> : null}
   </section>;
 }
 

@@ -14,6 +14,15 @@ vi.mock("@/context/AppContext", () => ({
   useAppContext: () => ({ currentUser: mockCurrentUser }),
 }));
 
+// Los tokens vigentes los guarda api.js (los renueva su interceptor); el widget
+// debe leerlos de ahí y no del perfil de React, que conserva el del login.
+let mockToken = "tok";
+const mockAuthMe = vi.fn();
+vi.mock("@/services/api", () => ({
+  default: { get: (...args) => mockAuthMe(...args) },
+  readSessionTokens: () => ({ token: mockToken, refresh_token: "r" }),
+}));
+
 function renderWidget(path = "/dashboard") {
   return render(<MemoryRouter initialEntries={[path]}><SupportWidget /></MemoryRouter>);
 }
@@ -22,6 +31,8 @@ describe("SupportWidget: el punto rojo revisa mensajes no leídos de forma conti
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     mockCurrentUser = { token: "tok" };
+    mockToken = "tok";
+    mockAuthMe.mockReset();
     const storage = new Map();
     vi.stubGlobal("localStorage", {
       getItem: vi.fn(key => storage.get(key) ?? null),
@@ -171,5 +182,27 @@ describe("SupportWidget: el punto rojo revisa mensajes no leídos de forma conti
 
     renderWidget("/construction");
     expect(screen.getByRole("button", { name: /soporte/i })).toHaveClass("sp-btn--construction");
+  });
+
+  it("si el bot rechaza un token vencido, lo renueva y reintenta con el nuevo (sin 'Token inválido')", async () => {
+    // Queja real: "Token de OwnTerra inválido" en soporte con la sesión viva. El
+    // widget mandaba el token del login; la app ya lo había renovado.
+    mockAuthMe.mockImplementation(async () => { mockToken = "tok-nuevo"; return { data: {} }; });
+    const fetchMock = vi.fn((url, options) => {
+      if (options.headers.Authorization === "Bearer tok") {
+        return Promise.resolve({ ok: false, status: 401, json: async () => ({ detail: "Token de OwnTerra inválido o expirado" }) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => [{ id: "t1", status: "open", unread_count: 1 }] });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderWidget();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+
+    await waitFor(() => expect(document.querySelector(".sp-btn-dot")).toBeTruthy());
+    expect(mockAuthMe).toHaveBeenCalledWith("/auth/me");
+    expect(fetchMock.mock.calls.at(-1)[1].headers.Authorization).toBe("Bearer tok-nuevo");
   });
 });

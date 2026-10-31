@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import AmountInput from "@/components/forms/AmountInput";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import EcoLayout from "../EcoLayout";
 import { useAppContext } from "@/context/AppContext";
@@ -398,9 +399,8 @@ function LinksTab() {
 
           <div className="rec-field">
             <label className="rec-label">Monto (MXN)</label>
-            <input
+            <AmountInput
               className="rec-input"
-              type="number"
               min="0"
               placeholder="5000.00"
               disabled={!esUnico && draft.montoAbierto}

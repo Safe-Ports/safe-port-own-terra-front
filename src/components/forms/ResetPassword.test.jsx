@@ -29,6 +29,12 @@ describe("ResetPassword", () => {
     expect(screen.queryByLabelText("Nueva contraseña")).not.toBeInTheDocument();
   });
 
+  it("ningún ícono tapa el inicio de la contraseña", () => {
+    const { container } = renderView("?token=reset-token");
+    expect(container.querySelector(".lf-ico")).toBeNull();
+    expect(screen.getByLabelText("Nueva contraseña")).toHaveClass("has-toggle");
+  });
+
   it("valida que ambas contraseñas coincidan", () => {
     renderView("?token=reset-token");
     fireEvent.change(screen.getByLabelText("Nueva contraseña"), { target: { value: "Password123" } });

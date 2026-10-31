@@ -140,3 +140,8 @@
 .community-portal-shell .portal-feed{max-width:720px;overflow:visible;border:0;background:transparent;box-shadow:none}
 .community-portal-shell .portal-feed>header{padding:0 4px 16px;border:0}
 .community-portal-shell .portal-feed .feed-post-body h3{font-size:22px}
+
+/* Contornos visibles: sobre el fondo claro los marcos blancos se perdían. */
+.community-portal-shell .community-unit-banner,.community-portal-shell .community-pulse article,.community-portal-shell .community-section{border-color:#d5dee8;box-shadow:0 1px 2px rgba(15,39,66,.06),0 12px 22px -14px rgba(15,39,66,.32)}
+.community-portal-shell .community-unit-banner{border-bottom-color:#c3d0de}
+.community-portal-shell :is(.portal-tickets-form,.feed-post,.feed-composer){border-color:#d5dee8;box-shadow:0 1px 2px rgba(15,39,66,.06),0 12px 22px -14px rgba(15,39,66,.28)}

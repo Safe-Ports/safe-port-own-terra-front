@@ -4,9 +4,9 @@ import { test, expect } from "@playwright/test";
 import { installLandsApi } from "./helpers/landsApi.js";
 
 const SECTIONS = [
-  ["Dashboard", "/dashboard", "Dashboard"],
-  ["Carga de Lotes", "/lotes", "Carga de Lotes"],
-  ["Fraccionamientos", "/fraccionamientos", "Fraccionamientos"],
+  ["Actividad", "/dashboard", "Actividad"],
+  ["Editar lotes", "/lotes", "Editar lotes"],
+  ["Operación de lotes", "/fraccionamientos", "Operación de lotes"],
   ["Track de Lotes", "/track-lotes", "Track de Lotes"],
   ["Clientes & CRM", "/clientes", "Clientes & CRM"],
   ["Contratos", "/contratos", "Contratos"],

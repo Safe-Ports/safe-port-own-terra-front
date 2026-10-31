@@ -3,10 +3,10 @@
 .eco-root.properties-focus{
   --deep:#1e3a5f;--mid:#304f73;--leaf:#46668a;--light:#9fb6cc;
   --bg:#f4f5f7;--bg2:#e9edf1;--surface:#fff;--surface2:#f0f3f6;
-  --border:rgba(30,58,95,.10);--border2:rgba(30,58,95,.20);
+  --border:rgba(30,58,95,.17);--border2:rgba(30,58,95,.28);
   --text:#15293f;--text2:#405164;--text3:#63758a;
-  --properties-ink:#15293f;--properties-muted:#63758a;--properties-line:#dce2e9;
-  --properties-shadow:0 4px 24px rgba(21,41,63,.04);
+  --properties-ink:#15293f;--properties-muted:#63758a;--properties-line:#d5dee8;
+  --properties-shadow:0 1px 2px rgba(15,39,66,.06),0 12px 22px -14px rgba(15,39,66,.28);
   --radius:20px;--radius-sm:12px;
 }
 .eco-root.properties-focus .main::before{background:radial-gradient(640px 360px at 95% 0,rgba(70,102,138,.09),transparent 70%),radial-gradient(540px 420px at 0 95%,rgba(159,182,204,.08),transparent 70%)}
@@ -176,3 +176,41 @@
  .eco-root.properties-focus .properties-focus-rail .focus-brand.is-logo-only{width:46px;height:46px;min-height:46px;padding:4px}
  }
 @media(prefers-reduced-motion:reduce){.eco-root.properties-focus .properties-focus-rail .focus-brand.is-logo-only{transition:none}.eco-root.properties-focus .properties-focus-rail .focus-brand.is-logo-only:hover{transform:none}}
+
+/* Contornos: los marcos claros se perdían sobre el fondo. Las barras y
+   tarjetas que no usaban la línea del tema ahora la usan. */
+.eco-root.properties-focus :is(.community-catalog-bar,.feed-composer,.feed-post,.pkg-columns li,.hub-grid>button){border-color:var(--properties-line);box-shadow:var(--properties-shadow)}
+.eco-root.properties-focus .ticket-toolbar{border:1px solid var(--properties-line);box-shadow:var(--properties-shadow)}
+.eco-root.properties-focus .hub-grid>button:hover{border-color:var(--border2)}
+
+/* Estándar visual de Properties = el del portal del inquilino: fondo crema
+   cálido con brillos dorado y azul, menú azul marino con la opción activa en
+   blanco, y globos dorados. Va al final para ganarle al tema anterior. */
+.eco-root.properties-focus{--bg:#f6f2eb;--bg2:#efe9df;--surface2:#f8f5ef;--properties-gold:#c9a968;background:#f6f2eb}
+.eco-root.properties-focus .main::before{background:radial-gradient(760px 420px at 100% 0,rgba(201,169,104,.14),transparent 70%),radial-gradient(640px 480px at 0 100%,rgba(159,182,204,.16),transparent 70%)}
+.eco-root.properties-focus .topbar{background:rgba(250,247,242,.88);border-color:rgba(21,41,63,.08)}
+.eco-root.properties-focus .sidebar,.eco-root.properties-focus .properties-focus-rail,.eco-root.properties-focus .properties-focus-rail:hover,.eco-root.properties-focus .properties-focus-rail:focus-within{background:linear-gradient(180deg,#15293f,#0f2742)}
+.eco-root.properties-focus .focus-rail-nav button,.eco-root.properties-focus .focus-rail-foot button,.eco-root.properties-focus .focus-exit{color:#b9c6d4}
+.eco-root.properties-focus .focus-rail-nav button:hover,.eco-root.properties-focus .focus-rail-foot button:hover,.eco-root.properties-focus .focus-exit:hover{background:rgba(255,255,255,.07);color:#fff}
+.eco-root.properties-focus .focus-rail-nav button.active,.eco-root.properties-focus .focus-rail-foot button.active{border-color:transparent;background:#fff;color:#153457;box-shadow:0 10px 18px -12px rgba(0,0,0,.5)}
+.eco-root.properties-focus .focus-rail-nav button>i{background:var(--properties-gold);color:#15293f}
+.eco-root.properties-focus .focus-rail-nav button>i.danger{background:#e4745f;color:#fff}
+.eco-root.properties-focus .focus-rail-nav button.active>i{background:#153457;color:#fff}
+.eco-root.properties-focus .focus-rail-group,.eco-root.properties-focus .focus-rail-chevron{color:#8fa3ba}
+.eco-root.properties-focus .focus-rail-submenu{border-left-color:rgba(255,255,255,.12)}
+.eco-root.properties-focus .focus-rail-foot{border-top:1px solid rgba(255,255,255,.1)}
+@media(min-width:901px){
+ .eco-root.properties-focus .focus-rail-nav button>span,.eco-root.properties-focus .focus-exit>span{font-size:13.5px;font-weight:600}
+ .eco-root.properties-focus .focus-rail-submenu button>span{font-size:12.5px;font-weight:500}
+}
+/* En un grupo abierto solo la sub-opción activa va en blanco; el grupo se marca suave. */
+.eco-root.properties-focus .focus-rail-nav button.focus-rail-expand-toggle.active{background:rgba(255,255,255,.1);color:#fff;box-shadow:none}
+@media(min-width:901px){.eco-root.properties-focus .focus-rail-submenu{margin-left:10px;padding-left:8px}.eco-root.properties-focus .focus-rail-submenu button{width:190px;padding-right:8px}.eco-root.properties-focus .focus-rail-submenu button>span{min-width:0;overflow:hidden;text-overflow:ellipsis}}
+/* La barra superior repetía "Properties · Centro de operación" encima del nombre
+   de la sección: en Properties sólo queda el nombre de la sección en la página. */
+.eco-root.properties-focus .topbar-sub{display:none}
+.eco-root.properties-focus .topbar-title{font-family:var(--font-title);font-size:28px;font-weight:500;letter-spacing:-.02em;color:var(--properties-ink)}
+.eco-root.properties-focus .community-heading{justify-content:flex-end;min-height:0;padding:0;margin:0}
+.eco-root.properties-focus .community-info-toggle{display:inline-flex;align-items:center;gap:6px}
+.eco-root.properties-focus .community-heading{align-items:center}
+.eco-root.properties-focus .community-heading{display:flex;align-items:center;justify-content:flex-end;gap:12px 20px;flex-wrap:wrap}

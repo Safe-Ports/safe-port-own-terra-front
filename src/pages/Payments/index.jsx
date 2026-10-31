@@ -1,4 +1,5 @@
 import WorkflowForm from "@/components/forms/WorkflowForm";
+import AmountInput from "@/components/forms/AmountInput";
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -31,7 +32,18 @@ import FieldError from "@/components/shared/FieldError";
 import { useFieldErrors } from "@/hooks/useFieldErrors";
 import useEscapeKey from "@/hooks/useEscapeKey";
 
-const PAYMENT_METHODS = [{ value: "transfer", label: "Transferencia" }, { value: "cash", label: "Efectivo" }, { value: "card", label: "Tarjeta" }, { value: "check", label: "Cheque" }];
+const PAYMENT_METHODS = [{ value: "transfer", label: "Transferencia" }, { value: "cash", label: "Efectivo" }, { value: "card", label: "Tarjeta" }, { value: "check", label: "Cheque" }, { value: "other", label: "Otro" }];
+// Con "Otro" la descripción viaja en las notas del pago, que el backend ya guarda.
+const methodNotes = (method, detail) => (method === "other" ? `Método de pago: ${detail.trim()}` : undefined);
+
+function MethodDetail({ id, value, onChange }) {
+  return (
+    <div className="fg">
+      <label className="fl" htmlFor={id}>Describe el método de pago<span style={{ color: "var(--danger)", marginLeft: 3 }}>*</span></label>
+      <input id={id} className="fi" maxLength={120} value={value} onChange={(e) => onChange(e.target.value)} placeholder="Ej. permuta, pago en especie, depósito de un tercero" />
+    </div>
+  );
+}
 const reqText = (label) => (v) => (!v || !String(v).trim() ? `${label} es obligatorio.` : "");
 const reqNum = (label) => (v) => (v === "" || v == null || isNaN(Number(v)) || Number(v) <= 0 ? `Ingresa un ${label} válido (> 0).` : "");
 const EGRESO_RULES = { concepto: reqText("El concepto"), monto: reqNum("monto"), due_date: v => !v || !Number.isFinite(new Date(`${v}T00:00:00`).getTime()) ? "Selecciona una fecha válida." : "" };
@@ -495,7 +507,7 @@ function EgresoModal({ initial, onClose, onSave, busy }) {
                 {Object.entries(CAT_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select></div>
             <div className="fg"><label className="fl" htmlFor="lands-egresomodal-3">Monto</label>
-              <input id="lands-egresomodal-3" {...fe.fieldProps("monto")} type="number" value={form.monto} onChange={set("monto")} placeholder="0" />
+              <AmountInput id="lands-egresomodal-3" {...fe.fieldProps("monto")} value={form.monto} onChange={set("monto")} placeholder="0" />
               <FieldError msg={fe.errors.monto} /></div>
           </div>
           {form.categoria === "nomina" && (
@@ -612,7 +624,7 @@ function IngresoModal({ onClose, onSave, busy }) {
                 {Object.entries(INCOME_CAT).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select></div>
             <div className="fg"><label className="fl" htmlFor="lands-ingresomodal-3">Monto</label>
-              <input id="lands-ingresomodal-3" {...fe.fieldProps("monto")} type="number" min="0" step="0.01" value={form.monto}
+              <AmountInput id="lands-ingresomodal-3" {...fe.fieldProps("monto")} min="0" value={form.monto}
                 onChange={set("monto")} placeholder="0.00" /><FieldError msg={fe.errors.monto} /></div>
           </div>
 
@@ -680,6 +692,7 @@ function CobroModal({ clients, contracts, onClose, onSave, busy, contratoInicial
     paymentId: "", amount: "", paymentMethod: "transfer",
     paid_date: new Date().toISOString().split("T")[0],
   });
+  const [methodDetail, setMethodDetail] = useState("");
   const [modo, setModo] = useState("completa");
   const [file, setFile] = useState(null);
   const [err, setErr] = useState("");
@@ -760,6 +773,7 @@ function CobroModal({ clients, contracts, onClose, onSave, busy, contratoInicial
     if (!cuota)           { setErr("Elige la cuota que se está cobrando."); return; }
     if (invalid)          { setErr("Ingresa un monto mayor a $0."); return; }
     if (!form.paid_date) { setErr("Indica la fecha del cobro."); return; }
+    if (form.paymentMethod === "other" && !methodDetail.trim()) { setErr("Describe el método de pago."); return; }
     if (modo === "parcial" && val >= saldo - 0.001) {
       setErr(`Un abono parcial debe ser menor a ${currency(saldo)}.`); return;
     }
@@ -773,6 +787,7 @@ function CobroModal({ clients, contracts, onClose, onSave, busy, contratoInicial
       paymentIds: modo === "varias" ? reparto.map(f => f.id) : null,
       paidDate: form.paid_date,
       paymentMethod: form.paymentMethod,
+      notes: methodNotes(form.paymentMethod, methodDetail),
       file,
     });
   };
@@ -868,7 +883,7 @@ function CobroModal({ clients, contracts, onClose, onSave, busy, contratoInicial
 
               <div className="fg">
                 <label className="fl" htmlFor="lands-cobromodal-3">{modo === "varias" ? "Monto total recibido" : "Monto a cobrar ahora"}</label>
-                <input id="lands-cobromodal-3" className={`fi ${err ? "is-invalid" : ""}`} type="number" min="0" step="0.01"
+                <AmountInput id="lands-cobromodal-3" className={`fi ${err ? "is-invalid" : ""}`} min="0"
                   value={form.amount} onChange={set("amount")} />
                 {modo === "varias" && reparto.length > 1 && (
                   <div style={{ marginTop: 10, border: "1px solid rgba(67,69,63,.12)", borderRadius: 10, overflow: "hidden" }}>
@@ -901,6 +916,7 @@ function CobroModal({ clients, contracts, onClose, onSave, busy, contratoInicial
           )}
 
           <div className="fg"><label className="fl" htmlFor="cobro-method">Método de pago</label><select id="cobro-method" className="fi" value={form.paymentMethod} onChange={set("paymentMethod")}>{PAYMENT_METHODS.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select></div>
+          {form.paymentMethod === "other" && <MethodDetail id="cobro-method-detail" value={methodDetail} onChange={setMethodDetail} />}
           <div className="fg">
             <label className="fl" htmlFor="lands-cobromodal-4">Fecha del cobro</label>
             <input id="lands-cobromodal-4" className="fi" type="date" value={form.paid_date} onChange={set("paid_date")} />
@@ -939,6 +955,7 @@ function AbonoModal({ payment, siguientes = [], onClose, onConfirm, busy }) {
   const haySiguientes = siguientes.length > 0;
   const [modo, setModo]   = useState("completa");
   const [paymentMethod, setPaymentMethod] = useState("transfer");
+  const [methodDetail, setMethodDetail] = useState("");
   const [paidDate, setPaidDate] = useState(new Date().toISOString().split("T")[0]);
   const [monto, setMonto] = useState(saldo ? String(saldo) : "");
   const [file, setFile]   = useState(null);
@@ -986,6 +1003,7 @@ function AbonoModal({ payment, siguientes = [], onClose, onConfirm, busy }) {
   const confirm = () => {
     if (!paidDate) { setErr("Indica la fecha del cobro."); return; }
     if (invalid) { setErr("Ingresa un monto mayor a $0."); return; }
+    if (paymentMethod === "other" && !methodDetail.trim()) { setErr("Describe el método de pago."); return; }
     if (modo === "parcial" && val >= saldo - 0.001) {
       setErr(`Un abono parcial debe ser menor a ${currency(saldo)}. Elige "Saldar la cuota" si va completa.`);
       return;
@@ -998,7 +1016,7 @@ function AbonoModal({ payment, siguientes = [], onClose, onConfirm, busy }) {
       Number(val.toFixed(2)),
       modo === "varias" ? reparto.map(f => f.id) : null,
       file,
-      { paymentMethod, paidDate },
+      { paymentMethod, paidDate, notes: methodNotes(paymentMethod, methodDetail) },
     );
   };
 
@@ -1068,7 +1086,7 @@ function AbonoModal({ payment, siguientes = [], onClose, onConfirm, busy }) {
 
           <div className="fg">
             <label className="fl" htmlFor="lands-abonomodal-1">{modo === "varias" ? "Monto total recibido" : "Monto a cobrar ahora"}</label>
-            <input id="lands-abonomodal-1" className={`fi ${err ? "is-invalid" : ""}`} type="number" min="0" step="0.01"
+            <AmountInput id="lands-abonomodal-1" className={`fi ${err ? "is-invalid" : ""}`} min="0"
               value={monto} onChange={e => { setMonto(e.target.value); setErr(""); }} autoFocus />
             <FieldError msg={err} />
             {!err && !invalid && modo === "completa" && (
@@ -1102,6 +1120,7 @@ function AbonoModal({ payment, siguientes = [], onClose, onConfirm, busy }) {
           </div>
 
           <div className="fg"><label className="fl" htmlFor="abono-method">Método de pago</label><select id="abono-method" className="fi" value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>{PAYMENT_METHODS.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select></div>
+          {paymentMethod === "other" && <MethodDetail id="abono-method-detail" value={methodDetail} onChange={setMethodDetail} />}
           <div className="fg"><label className="fl" htmlFor="abono-date">Fecha del cobro</label><input id="abono-date" className="fi" type="date" value={paidDate} onChange={e => setPaidDate(e.target.value)} /></div>
           <div className="fg">
             <label className="fl">Comprobante (opcional)</label>
@@ -1335,13 +1354,13 @@ export default function PaymentsPage() {
 
   /* ── handlers ── */
   const handlePagar = r => isEg ? markPaidExpense.mutate(r.id) : setAbono(r);
-  const confirmAbono = async (amount, paymentIds, file, { paymentMethod, paidDate } = {}) => {
+  const confirmAbono = async (amount, paymentIds, file, { paymentMethod, paidDate, notes } = {}) => {
     setAbonoBusy(true);
     // Un solo destino sigue por mark-paid; varias cuotas van por el cobro del
     // contrato, que es quien sabe repartir y deja un único recibo.
     const ok = paymentIds?.length
-      ? await collectOnContract(abono.contract?.id, { amount, paymentIds, file, paymentMethod, paidDate })
-      : await quickPay(abono.id, amount, file, paidDate, paymentMethod);
+      ? await collectOnContract(abono.contract?.id, { amount, paymentIds, file, paymentMethod, paidDate, notes })
+      : await quickPay(abono.id, amount, file, paidDate, paymentMethod, notes);
     setAbonoBusy(false);
     if (ok) { pendingReceipts.add(ok.receiptIssue); setAbono(null); }
   };
@@ -1360,11 +1379,11 @@ export default function PaymentsPage() {
   }, [abono, ingresos]);
   /* El modal de arriba antes solo se cerraba: el formulario no guardaba nada.
      Ahora pasa por el mismo cobro que el de la fila. */
-  const guardarCobroManual = async ({ contractId, paymentId, amount, paymentIds, file, paidDate, paymentMethod }) => {
+  const guardarCobroManual = async ({ contractId, paymentId, amount, paymentIds, file, paidDate, paymentMethod, notes }) => {
     setAbonoBusy(true);
     const ok = paymentIds?.length
-      ? await collectOnContract(contractId, { amount, paymentIds, file, paidDate, paymentMethod })
-      : await quickPay(paymentId, amount, file, paidDate, paymentMethod);
+      ? await collectOnContract(contractId, { amount, paymentIds, file, paidDate, paymentMethod, notes })
+      : await quickPay(paymentId, amount, file, paidDate, paymentMethod, notes);
     setAbonoBusy(false);
     if (ok) { pendingReceipts.add(ok.receiptIssue); setModal(null); }
   };

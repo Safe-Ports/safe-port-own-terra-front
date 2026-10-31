@@ -8,6 +8,13 @@ import { localRef, errorClipboardText } from "@/errors/parseApiError";
  * los reporta a Sentry con tags `code` + `request_id`, y muestra una pantalla amigable
  * con el código + Ref + botón copiar (mismo contrato que los errores de API).
  */
+const CHUNK_ERROR = /dynamically imported module|Importing a module script failed|error loading dynamically|ChunkLoadError|Loading chunk/i;
+
+export function isConnectionError(error) {
+  const text = `${error?.name || ""} ${error?.message || ""}`;
+  return CHUNK_ERROR.test(text) || (typeof navigator !== "undefined" && navigator.onLine === false);
+}
+
 class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
@@ -52,12 +59,15 @@ class ErrorBoundary extends Component {
     }
 
     const meta = getErrorMeta(UI_CODE);
+    // Si la sección no se pudo descargar porque se fue el internet, no es que
+    // "algo se rompió": se dice qué pasó y cómo seguir.
+    const connection = isConnectionError(this.state.error);
     return (
       <div style={styles.wrap}>
         <div style={styles.card}>
-          <div style={styles.title}>⚠ Algo se rompió en la pantalla</div>
-          <p style={styles.msg}>{meta.message}</p>
-          <p style={styles.action}>{meta.action}</p>
+          <div style={styles.title}>{connection ? "Se perdió la conexión" : "Algo se rompió en la pantalla"}</div>
+          <p style={styles.msg}>{connection ? "No pudimos abrir esta sección porque no hay conexión a internet." : meta.message}</p>
+          <p style={styles.action}>{connection ? "Revisa tu red y vuelve a intentarlo; lo que ya guardaste está a salvo." : meta.action}</p>
           {/* Sólo en local: el detalle técnico ahorra abrir la consola para diagnosticar. */}
           {import.meta.env.DEV && this.state.error ? (
             <pre style={styles.detail}>
@@ -73,7 +83,7 @@ class ErrorBoundary extends Component {
             </button>
           </div>
           <button type="button" style={styles.reload} onClick={() => window.location.reload()}>
-            Recargar la página
+            {connection ? "Reintentar" : "Recargar la página"}
           </button>
         </div>
       </div>

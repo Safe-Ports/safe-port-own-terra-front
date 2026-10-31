@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { HiSpeakerWave, HiSpeakerXMark } from "react-icons/hi2";
 // react-joyride 3.x: `Joyride` es export con nombre (en la 2.x era default), la
 // configuración global vive en `options` y el callback se llama `onEvent`. Casi toda
 // la documentación que circula es de la 2.x y no aplica aquí.
 import { Joyride, ACTIONS, EVENTS, STATUS } from "react-joyride";
 import { useAppContext } from "@/context/AppContext";
 import { TOURS } from "@/tours/definitions";
+import { setSoundEnabled, soundEnabled, tourMusic } from "@/utils/sounds";
+import "./guided-tour.css";
 
 // Única excepción a "nada se auto-lanza": la bienvenida. Sin ella, un usuario nuevo
 // no tiene forma de enterarse de que existe el botón ❓ Guías — nada se lo dice. Se
@@ -41,6 +44,7 @@ function GuidedTour() {
   const { currentUser, markTourSeen, authHydrating } = useAppContext();
   const [running, setRunning] = useState(false);
   const [tour, setTour] = useState(null);
+  const [musicOn, setMusicOn] = useState(() => soundEnabled("tourMusic"));
   // true si el usuario dijo explícitamente "no sigas" (Saltar/Cerrar) sobre el tour
   // ACTUAL. Un ref, no state: se lee dentro de un `setInterval` sin necesitar
   // volver a renderizar cuando cambia. Se resetea a false cada vez que arranca un
@@ -136,6 +140,20 @@ function GuidedTour() {
     return () => clearInterval(poll);
   }, [tour]);
 
+  // Música de fondo solo mientras el tutorial está en pantalla. Entre un tour y
+  // su continuación `running` baja un momento y la música se desvanece; vuelve
+  // al aparecer la siguiente parte.
+  useEffect(() => {
+    if (running && musicOn) tourMusic.start();
+    else tourMusic.stop();
+  }, [running, musicOn]);
+  useEffect(() => () => tourMusic.stop(), []);
+
+  const toggleMusic = () => {
+    setSoundEnabled("tourMusic", !musicOn);
+    setMusicOn(!musicOn);
+  };
+
   if (!tour) return null;
 
   const handleEvent = ({ action, status, type }) => {
@@ -164,6 +182,20 @@ function GuidedTour() {
   };
 
   return (
+    <>
+    {running ? (
+      <button
+        type="button"
+        className="tour-music-toggle"
+        style={{ zIndex: (tour.zIndex ?? 45) + 10 }}
+        onClick={toggleMusic}
+        aria-pressed={musicOn}
+        aria-label={musicOn ? "Silenciar la música del tutorial" : "Activar la música del tutorial"}
+      >
+        {musicOn ? <HiSpeakerWave aria-hidden /> : <HiSpeakerXMark aria-hidden />}
+        <span>{musicOn ? "Música" : "Sin música"}</span>
+      </button>
+    ) : null}
     <Joyride
       // Fuerza un montaje nuevo por cada tour: sin esto, React reutiliza la MISMA
       // instancia al pasar de un tour a otro (p. ej. selector -> inicio -> tablero),
@@ -230,6 +262,7 @@ function GuidedTour() {
         buttonSkip: { color: COLORS.muted, fontSize: 13 },
       }}
     />
+    </>
   );
 }
 

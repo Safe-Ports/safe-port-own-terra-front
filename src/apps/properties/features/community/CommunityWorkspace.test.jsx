@@ -39,6 +39,18 @@ describe("CommunityWorkspace · Unidades", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  it("opens the unit as its own view, without the community chrome, and climbs back level by level", () => {
+    renderUnits();
+    fireEvent.click(screen.getByRole("button", { name: /Penthouse 501/ }));
+    expect(screen.queryByRole("button", { name: "Mostrar información" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Configuración de comunidad" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "← Volver a comunidades" })).not.toBeInTheDocument();
+    const crumbs = screen.getByRole("navigation", { name: "Navegación de unidades" });
+    fireEvent.click(within(crumbs).getByRole("button", { name: /Torre Jacarandas|Jacarandas/ }));
+    expect(screen.getByRole("navigation", { name: "Configuración de comunidad" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mostrar información" })).toBeInTheDocument();
+  });
+
   it("adds a new person to an empty unit in one step", async () => {
     renderUnits();
     fireEvent.click(screen.getByRole("button", { name: /Penthouse 501/ }));
@@ -75,7 +87,7 @@ describe("CommunityWorkspace · Detalle y edición", () => {
     expect(screen.queryByRole("region", { name: /Detalle de/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Configuración/ })).not.toBeInTheDocument();
 
-    const card = screen.getByRole("button", { name: "Información de la comunidad" });
+    const card = screen.getByRole("button", { name: "Mostrar información" });
     fireEvent.click(card);
     const detail = screen.getByRole("region", { name: "Detalle de Comunidad Torre Jacarandas" });
     fireEvent.click(within(detail).getByRole("button", { name: /Editar comunidad/ }));
@@ -86,8 +98,9 @@ describe("CommunityWorkspace · Detalle y edición", () => {
     await waitFor(() => expect(mocks.showToast).toHaveBeenCalledWith("Comunidad actualizada", "success"));
     expect(screen.getByRole("region", { name: "Detalle de Jacarandas Residencial" })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Información de la comunidad" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ocultar información" }));
     expect(screen.queryByRole("region", { name: /Detalle de/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mostrar información" })).toBeInTheDocument();
   });
 
   it("edits a unit from its detail", async () => {

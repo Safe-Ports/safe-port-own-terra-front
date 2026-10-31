@@ -67,7 +67,8 @@ export const TOUR_ECOSISTEMA = {
       title: "Tus aplicaciones",
       content:
         "Cada tarjeta es una app del ecosistema. OwnTerra Lands es la de lotes y " +
-        "fraccionamientos: ahí vive tu operación diaria. Las demás llegarán después.",
+        "fraccionamientos; OwnTerra Properties, la de comunidades, rentas y unidades. " +
+        "Ahí vive tu operación diaria.",
     },
     {
       target: '[data-tour="app-miday"]',
@@ -88,16 +89,19 @@ export const TOUR_ECOSISTEMA = {
       placement: "right",
       title: "Equipo",
       content:
-        "Aquí das de alta vendedores y decides a qué apps entra cada uno. Un vendedor " +
-        "solo ve lo que le corresponde.",
+        "Aquí das de alta a tu equipo y decides a qué apps entra cada uno. Un " +
+        "colaborador atiende sus clientes, aparta, arma contratos y agenda citas; " +
+        "precios, pagos, reportes, equipo y configuración quedan para el administrador.",
     },
     {
-      target: "body",
-      placement: "center",
+      // Cierra sobre la galería principal y no centrado en la página: después de
+      // Mi Día, Calendario y Equipo la vista quedaba en las apps transversales, y
+      // el recorrido terminaba lejos de donde el usuario va a entrar a trabajar.
+      target: '[data-tour="apps"]',
       title: "Eso es todo por ahora",
       content:
-        "Cuando quieras seguir aprendiendo, ya sabes dónde: el botón ❓ Guías, en " +
-        "cualquier pantalla de la app.",
+        "Entra a tu app desde aquí. Cuando quieras seguir aprendiendo, el botón " +
+        "Guías está en cualquier pantalla de la app.",
     },
   ],
 };
@@ -226,10 +230,11 @@ export const TOUR_LANDS_TABLERO = {
     {
       target: '[data-tour="frac-excel"]',
       title: "¿Ya tienes tu inventario en Excel?",
+      locale: { last: "Entendido" },
       content:
-        "Es más rápido que escribir sección por sección. Descarga la Plantilla, " +
-        "revisa Ver formato para llenarla bien, y luego Subir. También sirve para " +
-        "cargar lotes que se te quedaron pendientes más adelante.",
+        "Es más rápido que escribir sección por sección. Elige \"Importar archivo\": " +
+        "ahí descargas la Plantilla, revisas Ver formato para llenarla bien y la subes. " +
+        "También sirve para cargar lotes que se te quedaron pendientes más adelante.",
     },
   ],
 };
@@ -434,8 +439,8 @@ export const TOUR_CONTRATO_FORM = {
       target: '[data-tour="contrato-cliente"]',
       title: "Vincula al cliente",
       content:
-        "Busca por nombre. Si el cliente no existe todavía, créalo primero desde " +
-        "Clientes — este formulario no da de alta clientes nuevos.",
+        "Búscalo por nombre, correo o teléfono. Si ya está registrado, selecciónalo; " +
+        "si no aparece, regístralo aquí mismo con \"Nuevo\", sin salir del contrato.",
     },
     {
       target: '[data-tour="contrato-tipo"]',
@@ -449,8 +454,9 @@ export const TOUR_CONTRATO_FORM = {
       target: '[data-tour="contrato-vendedor"]',
       title: "Vendedor asignado",
       content:
-        "Queda como responsable de este cliente y este lote — es quien lo verá en " +
-        "su cartera si algún día hay que transferirla.",
+        "Búscalo por nombre o correo, igual que al cliente. Si todavía no está en tu " +
+        "equipo, un administrador lo registra aquí mismo con \"Nuevo\": entra a Lands " +
+        "con su correo y queda asignado. Es quien lleva este cliente y este lote en su cartera.",
     },
     {
       target: '[data-tour="contrato-financiero"]',
@@ -461,12 +467,12 @@ export const TOUR_CONTRATO_FORM = {
     },
     {
       target: '[data-tour="contrato-mensualidad"]',
-      title: "La mensualidad se congela aquí",
+      title: "Cómo se calcula la mensualidad",
       content:
-        "Si tienes una calculadora activa, aquí ves la mensualidad que calcula — se " +
-        "guarda una COPIA exacta en el contrato, así que cambios futuros a la " +
-        "calculadora no afectan ventas ya hechas. Sin una calculadora activa, no " +
-        "podrás registrar la venta hasta crear una.",
+        "La calculadora es opcional. Si tienes una activa, eliges si esta venta usa " +
+        "tu fórmula (se guarda una COPIA exacta, así que cambios futuros a la " +
+        "calculadora no afectan ventas ya hechas) o la amortización estándar. Sin " +
+        "calculadora, la mensualidad es un pago fijo con la tasa anual que captures.",
     },
     {
       target: '[data-tour="contrato-documentos"]',
@@ -529,11 +535,11 @@ export const TOUR_RESTRICCIONES = {
     {
       target: "body",
       placement: "center",
-      title: "Vender exige una calculadora activa",
+      title: "La calculadora es opcional",
       content:
-        "Para registrar una venta necesitas al menos una calculadora de " +
-        "financiamiento activa (Calculadora → activarla con el interruptor). Sin " +
-        "eso, el formulario de contrato no te deja continuar.",
+        "Puedes vender a mensualidades con o sin calculadora. Sin ella, la " +
+        "mensualidad es un pago fijo con la tasa anual del contrato. Con una " +
+        "calculadora activa, cada venta elige si usa tu fórmula o la estándar.",
     },
     {
       target: "body",
@@ -612,6 +618,7 @@ export const TOUR_REPORTES_CLIENTES = {
       target: '[data-tour="rp-clientes"]',
       placement: "right",
       title: "Elige un cliente",
+      locale: { last: "Entendido" },
       content:
         "Busca por nombre, correo o teléfono. En cuanto elijas uno, se arma su " +
         "reporte completo: comportamiento de pago, contratos, saldo y plan de pagos.",

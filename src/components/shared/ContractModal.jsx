@@ -1,4 +1,5 @@
 import WorkflowForm from "@/components/forms/WorkflowForm";
+import AmountInput from "@/components/forms/AmountInput";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { clientService } from "@/services/clientService";
 import ClientPicker from "@/components/shared/ClientPicker";
@@ -11,7 +12,8 @@ import { lotService } from "@/services/lotService";
 import { orgService } from "@/services/orgService";
 import { folderService } from "@/services/folderService";
 import { calculatorService } from "@/services/calculatorService";
-import { guessVarValue } from "@/services/financingQuote";
+import SellerPicker from "./SellerPicker";
+import { guessVarValue, standardMonthlyPayment } from "@/services/financingQuote";
 import { evaluate, FormulaError } from "@/services/formulaEngine";
 import { getFieldErrors } from "@/services/errors";
 import { HiOutlinePlus, HiOutlineTrash, HiOutlineDocument } from "react-icons/hi2";
@@ -21,7 +23,22 @@ const PAYMENT_METHODS = [
   { value: "transfer", label: "Transferencia" },
   { value: "check",    label: "Cheque"        },
   { value: "card",     label: "Tarjeta"       },
+  { value: "other",    label: "Otro"          },
 ];
+
+// Una venta de contado es un solo pago, sin enganche ni interés: el backend la
+// registra como un plazo de 1 mes. Así no hace falta una calculadora para
+// vender a quien paga todo de una vez.
+//
+// En parcialidades: varios pagos mensuales sin intereses y sin calculadora —
+// el backend reparte el saldo en partes iguales cuando la tasa es 0.
+const planOf = (contract) => {
+  const months = Number(contract?.total_months ?? contract?.totalM);
+  const rate = Number(contract?.interest_rate ?? 0);
+  if (months === 1 && rate === 0 && Number(contract?.down_payment ?? 0) === 0) return "cash";
+  if (rate === 0 && !contract?.calculator_id) return "installments";
+  return "financed";
+};
 
 const DOC_CATEGORIES = [
   { value: "contrato",       label: "Contrato"      },
@@ -124,102 +141,6 @@ function DocRow({ entry, folders, onChange, onRemove }) {
 let _nextId = 1;
 const newEntry = () => ({ id: _nextId++, file: null, fileName: "", category: "contrato", folderId: "" });
 
-/* ── Selector con búsqueda (igual al de lote) ───────────────── */
-function SearchSelect({ id, value, onChange, onBlur, options, placeholder, disabled, hasError, emptyLabel }) {
-  const [search, setSearch] = useState("");
-  const [open, setOpen]     = useState(false);
-  const ref = useRef(null);
-
-  const selected = options.find(o => String(o.value) === String(value));
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
-
-  const filtered = options.filter(o =>
-    !search || o.label.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const borderStyle = hasError ? { border: "1.8px solid var(--danger, #c0392b)", outline: "none" } : undefined;
-
-  return (
-    <div ref={ref} style={{ position: "relative" }}>
-      <input
-        id={id}
-        className="fi"
-        style={borderStyle}
-        value={selected ? selected.label : search}
-        placeholder={placeholder}
-        disabled={disabled}
-        autoComplete="off"
-        onChange={(e) => {
-          setSearch(e.target.value);
-          onChange("");
-          setOpen(true);
-        }}
-        onFocus={() => { if (!selected) setOpen(true); }}
-        onBlur={onBlur}
-      />
-      {value && (
-        <button
-          type="button"
-          onClick={() => { onChange(""); setSearch(""); setOpen(true); }}
-          style={{
-            position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
-            background: "none", border: "none", cursor: "pointer", color: "var(--mu)",
-            fontSize: ".75rem", padding: "2px 4px",
-          }}
-        >✕</button>
-      )}
-      {open && (
-        <div style={{
-          position: "absolute", top: "100%", left: 0, right: 0, zIndex: 1000,
-          background: "var(--sf, #fff)", border: "1.5px solid var(--bd)",
-          borderRadius: 10, maxHeight: 200, overflowY: "auto",
-          boxShadow: "0 8px 24px rgba(30,61,43,.14)", marginTop: 4,
-        }}>
-          {emptyLabel && (
-            <div
-              onMouseDown={(e) => { e.preventDefault(); onChange(""); setSearch(""); setOpen(false); }}
-              style={{
-                padding: "9px 12px", cursor: "pointer", fontSize: ".82rem",
-                color: "var(--mu)", borderBottom: "1px solid rgba(67,69,63,.08)",
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = "var(--tan-lt, #f5f0e8)"}
-              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-            >
-              {emptyLabel}
-            </div>
-          )}
-          {filtered.map(o => (
-            <div
-              key={o.value}
-              onMouseDown={(e) => { e.preventDefault(); onChange(o.value); setSearch(""); setOpen(false); }}
-              style={{
-                padding: "9px 12px", cursor: "pointer", fontSize: ".82rem",
-                borderBottom: "1px solid rgba(67,69,63,.08)",
-                color: "var(--tx)", background: String(o.value) === String(value) ? "var(--tan-lt)" : "transparent",
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = "var(--tan-lt, #f5f0e8)"}
-              onMouseLeave={e => e.currentTarget.style.background = String(o.value) === String(value) ? "var(--tan-lt)" : "transparent"}
-            >
-              {o.label}
-            </div>
-          ))}
-          {filtered.length === 0 && search && (
-            <div style={{ padding: "10px 12px", fontSize: ".78rem", color: "var(--mu)" }}>
-              Sin resultados
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 /**
  * Nombres de variables de la calculadora sin un valor numérico válido en calcVars.
  * Antes esto no existía: una variable vacía/inválida se mandaba como 0 en silencio
@@ -233,8 +154,24 @@ export function missingCalcVars(variables, calcVars) {
 }
 
 /* ── Reglas de validación ───────────────────────────────────── */
+// Nombre de cada campo en el aviso de "te falta completar".
+const FIELD_LABEL = {
+  inmuebleId: "fraccionamiento", lot: "lote", clientId: "cliente", date: "fecha de firma",
+  firstPaymentDate: "fecha de pago", expirationDate: "vencimiento", amount: "monto total",
+  down_payment: "enganche", totalM: "plazo", interest_rate: "tasa", down_payment_method_detail: "descripción del método de pago",
+};
+
+export function incompleteMessage(errs) {
+  const names = [...new Set(Object.keys(errs).map((key) => FIELD_LABEL[key] || key))];
+  if (!names.length) return "";
+  const list = names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} y ${names.at(-1)}`;
+  return `El contrato todavía no está completo. Revisa: ${list}.`;
+}
+
 function validate(form, isEditing) {
   const errs = {};
+  const cash = form.type === "sale" && form.paymentPlan === "cash";
+  const installments = form.type === "sale" && form.paymentPlan === "installments";
 
   if (!isEditing && !form.inmuebleId)
     errs.inmuebleId = "Selecciona un fraccionamiento";
@@ -261,20 +198,27 @@ function validate(form, isEditing) {
     errs.amount = "El monto parece muy bajo, verifica el valor";
 
   const down = Number(form.down_payment);
-  if (down < 0)
+  if (cash) {
+    // Contado: sin enganche, plazo ni tasa que revisar.
+  } else if (down < 0)
     errs.down_payment = "El enganche no puede ser negativo";
   else if (amount > 0 && down >= amount)
     errs.down_payment = "El enganche debe ser menor al monto total";
 
   const meses = Number(form.totalM);
-  if (!meses || meses < 1)
+  if (cash) {
+    // El plazo de contado lo fija el formulario (1 pago).
+  } else if (!meses || meses < 1)
     errs.totalM = "El plazo debe ser al menos 1 mes";
   else if (meses > 360)
     errs.totalM = "El plazo máximo es 360 meses (30 años)";
 
   const interest = Number(form.interest_rate);
-  if (interest < 0 || interest > 1)
+  if (!cash && !installments && (interest < 0 || interest > 1))
     errs.interest_rate = "La tasa debe estar entre 0 y 1";
+
+  if (form.down_payment_method === "other" && !String(form.down_payment_method_detail || "").trim())
+    errs.down_payment_method_detail = "Describe cómo se va a pagar";
 
   return errs;
 }
@@ -349,20 +293,28 @@ function ContractModal() {
     firstPaymentDate: new Date().toISOString().split("T")[0], expirationDate: "",
     amount: 0, down_payment: 0, totalM: 96,
     interest_rate: 0.12,
-    seller_id: "", down_payment_method: "cash", notes: "",
+    seller_id: "", down_payment_method: "cash", down_payment_method_detail: "", notes: "",
+    paymentPlan: "financed",
+    // A mensualidades: "calculator" usa la calculadora activa (si hay);
+    // "standard" usa la amortización estándar con la tasa anual.
+    calcMode: "calculator",
   };
   const [form, setForm] = useState(defaultForm);
 
   /* ── Calculadora de financiamiento activa (snapshot inmutable en la venta) ── */
-  const useCalculator = ui.contractModal && !editingContract && form.type === "sale";
+  const isCash = form.type === "sale" && form.paymentPlan === "cash";
+  const isInstallments = form.type === "sale" && form.paymentPlan === "installments";
+  // La calculadora es opcional. A mensualidades, si la organización tiene una
+  // activa se ofrece (su fórmula queda congelada en la venta); si no tiene o la
+  // venta elige no usarla, el backend aplica la amortización estándar con la tasa.
+  const useCalculator = ui.contractModal && !editingContract && form.type === "sale" && form.paymentPlan === "financed";
   const { data: activeCalc, isSuccess: calcLoaded, isPending: calcPending, isError: calcFailed, refetch: retryCalculator } = useQuery({
     queryKey: ["calculators", "active", "lands"],
     queryFn: () => calculatorService.getActive("lands"),
     enabled: useCalculator,
     staleTime: 60_000,
   });
-  // No hay calculadora activa configurada: no se puede registrar la venta.
-  const noCalculator = useCalculator && calcLoaded && !activeCalc;
+  const applyCalc = useCalculator && !!activeCalc && form.calcMode !== "standard";
   const [calcVars, setCalcVars] = useState({});
   // Marca qué variables editó el usuario a mano (esas no se re-sincronizan del formulario).
   const calcEditedRef = useRef({});
@@ -385,7 +337,7 @@ function ContractModal() {
   // de la calculadora (ya no hay un campo aparte). guessVarValue la expone como
   // porcentaje (interest_rate * 100), así que aquí hacemos la conversión inversa.
   useEffect(() => {
-    if (!useCalculator || !activeCalc?.variables?.length) return;
+    if (!applyCalc || !activeCalc?.variables?.length) return;
     const tasaVar = activeCalc.variables.find((v) => {
       const k = v.toLowerCase().replace(/_/g, "");
       return /(tasa|interes|rate)/.test(k);
@@ -395,7 +347,7 @@ function ContractModal() {
     if (raw === "" || raw == null) return;
     const dec = (Number(raw) || 0) / 100;
     setForm((f) => (f.interest_rate === dec ? f : { ...f, interest_rate: dec }));
-  }, [useCalculator, activeCalc, calcVars]);
+  }, [applyCalc, activeCalc, calcVars]);
 
   const calcResult = useMemo(() => {
     if (!activeCalc?.formula || !activeCalc.variables?.length) return { value: null, error: "" };
@@ -443,15 +395,6 @@ function ContractModal() {
     queryFn: () => fetchAvailableLotsForFrac(form.inmuebleId),
     enabled: ui.contractModal && !editingContract && !!form.inmuebleId,
   });
-  const { data: usersData } = useQuery({
-    // Solo vendedores ACTIVOS: no ofrecer integrantes dados de baja como responsable.
-    // Se filtra en el servidor (para no-admin la lista ni siquiera trae is_active).
-    queryKey: ["users-list", "active"],
-    queryFn: () => orgService.listUsers({ limit: 100, is_active: true }),
-    enabled: ui.contractModal,
-    staleTime: 120_000,
-  });
-  const users = usersData?.items || (Array.isArray(usersData) ? usersData : []);
   const { data: folders = [] } = useQuery({
     queryKey: ["document-folders"],
     queryFn: folderService.list,
@@ -491,6 +434,8 @@ function ContractModal() {
         interest_rate:       editingContract.interest_rate ?? 0.12,
         seller_id:           String(editingContract.seller?.id || editingContract.seller_id || ""),
         down_payment_method: editingContract.down_payment_method || "cash",
+        down_payment_method_detail: editingContract.down_payment_method_detail || "",
+        paymentPlan:         planOf(editingContract),
         notes:               editingContract.notes || "",
       });
     } else {
@@ -521,14 +466,11 @@ function ContractModal() {
     const errs = validate(form, !!editingContract);
     if (Object.keys(errs).length) {
       setErrors(errs);
+      // Sin este aviso el botón parecía no hacer nada: los errores quedaban en
+      // campos fuera de la vista y el contrato no se registraba.
+      showToast(incompleteMessage(errs), "warning");
       const first = Object.keys(errs)[0];
       document.getElementById(`cf-${first}`)?.focus();
-      return;
-    }
-
-    // Para una venta se requiere una calculadora activa configurada.
-    if (noCalculator) {
-      showToast("Primero crea y activa una calculadora en Calculadora de financiamiento");
       return;
     }
 
@@ -537,7 +479,7 @@ function ContractModal() {
     // vacío mientras falta una variable (a propósito, para no regañar mientras el
     // usuario todavía está llenando el formulario), así que aquí se revisa aparte,
     // justo antes de guardar.
-    if (useCalculator && activeCalc) {
+    if (applyCalc) {
       const missing = missingCalcVars(activeCalc.variables, calcVars);
       if (missing.length > 0) {
         showToast(
@@ -552,7 +494,7 @@ function ContractModal() {
       }
     }
 
-    const calcPayload = (useCalculator && activeCalc)
+    const calcPayload = applyCalc
       ? {
           calculator_id: activeCalc.id,
           calculator_vars: Object.fromEntries(
@@ -571,10 +513,12 @@ function ContractModal() {
         contract_date:       form.date,
         first_payment_date:  form.firstPaymentDate,
         expiration_date:     form.expirationDate || undefined,
-        total_months:        Number(form.totalM),
-        interest_rate:       Number(form.interest_rate ?? 0),
+        total_months:        isCash ? 1 : Number(form.totalM),
+        interest_rate:       isCash || isInstallments ? 0 : Number(form.interest_rate ?? 0),
+        down_payment:        isCash ? 0 : form.down_payment,
         seller_id:           form.seller_id || undefined,
         down_payment_method: form.down_payment_method || undefined,
+        down_payment_method_detail: form.down_payment_method === "other" ? form.down_payment_method_detail.trim() : undefined,
         ...calcPayload,
         _docs: docs.filter(d => d.file),
       });
@@ -616,7 +560,7 @@ function ContractModal() {
               Eliminar
             </button>
           )}
-          <button className="btn-p" data-tour="contrato-guardar" type="submit" form="lands-contract-form" disabled={saving || (useCalculator && (calcPending || calcFailed || noCalculator))}>
+          <button className="btn-p" data-tour="contrato-guardar" type="submit" form="lands-contract-form" disabled={saving || (useCalculator && (calcPending || calcFailed))}>
             {saving ? "Guardando…" : editingContract ? "Guardar cambios" : "Registrar"}
           </button>
         </>
@@ -797,7 +741,7 @@ function ContractModal() {
         </div>
         <div className="fg" style={{ flex: 1 }}>
           <label className="fl" htmlFor="cf-firstPaymentDate">
-            Primer pago
+            {isCash ? "Fecha de pago" : "Primer pago"}
             <span style={{ color: "var(--danger)", marginLeft: 3 }}>*</span>
           </label>
           <input id="cf-firstPaymentDate" type="date" {...fi(errors.firstPaymentDate)} value={form.firstPaymentDate}
@@ -819,13 +763,12 @@ function ContractModal() {
       )}
 
       <div className="fg" data-tour="contrato-vendedor">
-        <label className="fl">Vendedor asignado</label>
-        <SearchSelect
+        <label className="fl" htmlFor="cf-seller">Vendedor asignado</label>
+        <SellerPicker
+          inputId="cf-seller"
           value={form.seller_id}
-          onChange={v => setForm(p => ({ ...p, seller_id: v }))}
-          options={users.map(u => ({ value: u.id, label: u.name }))}
-          placeholder="Buscar vendedor…"
-          emptyLabel="— Sin asignar —"
+          onChange={(id) => setForm((p) => ({ ...p, seller_id: id }))}
+          disabled={saving}
         />
       </div>
 
@@ -837,13 +780,38 @@ function ContractModal() {
       {/* ── 2. Condiciones financieras ── */}
       <SectionLabel>Condiciones financieras</SectionLabel>
 
+      {form.type === "sale" && (
+        <div className="fg">
+          <span className="fl" id="cf-plan-label">¿Cómo va a pagar?</span>
+          <div className="cf-plan" role="radiogroup" aria-labelledby="cf-plan-label">
+            {[
+              { value: "cash", title: "De contado", hint: "Un solo pago, sin enganche ni intereses" },
+              { value: "installments", title: "En parcialidades", hint: "Varios pagos sin intereses" },
+              { value: "financed", title: "A mensualidades", hint: "Con intereses, con o sin calculadora" },
+            ].map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                role="radio"
+                aria-checked={form.paymentPlan === option.value}
+                className={`cf-plan-option${form.paymentPlan === option.value ? " is-on" : ""}`}
+                onClick={() => setForm((p) => ({ ...p, paymentPlan: option.value }))}
+              >
+                <b>{option.title}</b>
+                <small>{option.hint}</small>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="fr-row" data-tour="contrato-financiero">
         <div className="fg" style={{ flex: 1 }}>
           <label className="fl" htmlFor="cf-amount">
             Monto total ($)
             {!editingContract && <span style={{ color: "var(--danger)", marginLeft: 3 }}>*</span>}
           </label>
-          <input id="cf-amount" type="number" min="0" {...fi(errors.amount)}
+          <AmountInput id="cf-amount" min="0" {...fi(errors.amount)}
             value={form.amount}
             onChange={setNum("amount")}
             onBlur={() => blurField("amount")}
@@ -851,9 +819,9 @@ function ContractModal() {
           <FieldError msg={errors.amount} />
         </div>
 
-        <div className="fg" style={{ flex: 1 }}>
+        {!isCash && <div className="fg" style={{ flex: 1 }}>
           <label className="fl" htmlFor="cf-down_payment">Enganche ($)</label>
-          <input id="cf-down_payment" type="number" min="0" {...fi(errors.down_payment)}
+          <AmountInput id="cf-down_payment" min="0" {...fi(errors.down_payment)}
             value={form.down_payment}
             onChange={setNum("down_payment")}
             onBlur={() => blurField("down_payment")}
@@ -864,11 +832,11 @@ function ContractModal() {
               {((Number(form.down_payment) / Number(form.amount)) * 100).toFixed(1)}% del total
             </span>
           )}
-        </div>
+        </div>}
 
-        <div className="fg" style={{ flex: 1 }}>
+        {!isCash && <div className="fg" style={{ flex: 1 }}>
           <label className="fl" htmlFor="cf-totalM">
-            Plazo (meses)
+            {isInstallments ? "Número de pagos" : "Plazo (meses)"}
             {!editingContract && <span style={{ color: "var(--danger)", marginLeft: 3 }}>*</span>}
           </label>
           <input id="cf-totalM" type="number" min="1" max="360" {...fi(errors.totalM)}
@@ -882,40 +850,58 @@ function ContractModal() {
               {(Number(form.totalM) / 12).toFixed(1)} años
             </span>
           )}
-        </div>
+        </div>}
       </div>
 
       {useCalculator && calcPending && <p role="status">Consultando el plan de financiamiento…</p>}
       {useCalculator && calcFailed && <div role="alert">No se pudo consultar el plan. Tus datos siguen en el formulario. <button type="button" className="btn-s" onClick={() => retryCalculator()}>Reintentar</button></div>}
-      {/* ── Sin calculadora activa: obligatoria para registrar la venta ── */}
-      {noCalculator && (
-        <div data-tour="contrato-mensualidad" style={{
-          border: "1px solid rgba(192,57,43,.45)", borderRadius: 16,
-          padding: 14, marginBottom: 4, background: "rgba(192,57,43,.05)",
-          boxShadow: "0 8px 18px rgba(192,57,43,.06)",
-        }}>
-          <div style={{ fontWeight: 700, fontSize: ".82rem", color: "var(--danger)", marginBottom: 4 }}>
-            No hay una calculadora de financiamiento activa
-          </div>
-          {/* Quien no puede definir fórmulas no tiene nada que hacer en la
-              calculadora: mandarlo ahí sería mandarlo a un "sin acceso". Se le dice
-              a quién pedírselo, que es lo único accionable de su lado. */}
-          <div style={{ fontSize: ".76rem", color: "var(--tx)", marginBottom: canEditCalculator ? 10 : 0, lineHeight: 1.5 }}>
-            {canEditCalculator
-              ? "Para registrar una venta primero debes crear y activar una calculadora con la fórmula de la mensualidad. La venta guardará una copia de esa fórmula."
-              : "Para registrar una venta hace falta una calculadora activa con la fórmula de la mensualidad. Pídele a un administrador que la configure."}
-          </div>
-          {canEditCalculator && (
-            <button type="button" className="btn-p" style={{ padding: "6px 12px", fontSize: ".75rem" }} onClick={goToCalculator}>
-              Crear calculadora →
-            </button>
+      {/* ── Cómo se calcula la mensualidad: calculadora opcional ── */}
+      {useCalculator && calcLoaded && (
+        <div data-tour="contrato-mensualidad" className="cf-monthly">
+          {activeCalc && (
+            <div className="cf-plan cf-calc-mode" role="radiogroup" aria-label="Cómo calcular la mensualidad">
+              {[
+                { value: "calculator", title: `Calculadora «${activeCalc.name}»`, hint: "Tu fórmula; se congela en la venta" },
+                { value: "standard", title: "Amortización estándar", hint: "Pago fijo con la tasa anual" },
+              ].map((option) => {
+                const on = (form.calcMode === "standard" ? "standard" : "calculator") === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    className={`cf-plan-option${on ? " is-on" : ""}`}
+                    onClick={() => setForm((p) => ({ ...p, calcMode: option.value }))}
+                  >
+                    <b>{option.title}</b>
+                    <small>{option.hint}</small>
+                  </button>
+                );
+              })}
+            </div>
           )}
-        </div>
-      )}
-
+          {!applyCalc && (
+            <div className="cf-calc-standard" role="status">
+              <b>Mensualidad con amortización estándar</b>
+              <span>
+                {activeCalc
+                  ? "Esta venta no usa la calculadora: pago fijo cada mes con la tasa anual de abajo."
+                  : "Pago fijo cada mes con la tasa anual de abajo. La calculadora es opcional: créala solo si quieres tu propia fórmula."}
+              </span>
+              {standardMonthlyPayment(form) != null && (
+                <span className="cf-calc-standard-total">
+                  Mensualidad estimada <b>${standardMonthlyPayment(form).toLocaleString("en-US", { minimumFractionDigits: 2 })}</b>
+                </span>
+              )}
+              {!activeCalc && canEditCalculator && (
+                <button type="button" className="btn-s" onClick={goToCalculator}>Crear una calculadora (opcional)</button>
+              )}
+            </div>
+          )}
       {/* ── Calculadora de financiamiento activa ── */}
-      {useCalculator && activeCalc && (
-        <div data-tour="contrato-mensualidad" style={{
+      {applyCalc && (
+        <div style={{
           border: "1px solid rgba(53,94,59,.45)", borderRadius: 16,
           padding: 14, marginBottom: 4,
           background: "linear-gradient(135deg, var(--tan-lt), var(--sf))",
@@ -957,10 +943,12 @@ function ContractModal() {
           )}
         </div>
       )}
+        </div>
+      )}
 
       {/* La tasa vive en la variable TASA_ANUAL de la calculadora activa; este campo
-          solo aparece cuando NO hay calculadora (edición o tipos sin calculadora). */}
-      {!(useCalculator && activeCalc) && (
+          solo aparece cuando la venta NO usa calculadora (no hay, se eligió la estándar o es edición). */}
+      {!applyCalc && form.paymentPlan === "financed" && (
         <div className="fg">
           <label className="fl" htmlFor="cf-interest_rate">Tasa anual (decimal, 0 a 1)</label>
           <input id="cf-interest_rate" type="number" min="0" max="1" step="0.01" {...fi(errors.interest_rate)}
@@ -970,11 +958,22 @@ function ContractModal() {
       )}
 
       <div className="fg">
-        <label htmlFor="field-shared-contractmodal-4" className="fl">Método de pago del enganche</label>
+        <label htmlFor="field-shared-contractmodal-4" className="fl">{isCash ? "Método de pago" : "Método de pago del enganche"}</label>
         <select id="field-shared-contractmodal-4" className="fi" value={form.down_payment_method} onChange={set("down_payment_method")}>
           {PAYMENT_METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
         </select>
       </div>
+      {form.down_payment_method === "other" && (
+        <div className="fg">
+          <label htmlFor="cf-down_payment_method_detail" className="fl">
+            Describe el método de pago<span style={{ color: "var(--danger)", marginLeft: 3 }}>*</span>
+          </label>
+          <input id="cf-down_payment_method_detail" {...fi(errors.down_payment_method_detail)} maxLength={120}
+            value={form.down_payment_method_detail} onChange={set("down_payment_method_detail")}
+            placeholder="Ej. permuta de un terreno, pago en especie, crédito Infonavit" />
+          <FieldError msg={errors.down_payment_method_detail} />
+        </div>
+      )}
 
       {/* ── 3. Documentos ── */}
       <SectionLabel data-tour="contrato-documentos">Documentos</SectionLabel>

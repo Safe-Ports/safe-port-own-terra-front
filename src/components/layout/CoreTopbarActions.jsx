@@ -8,7 +8,8 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import Avatar from "@/components/Avatar";
-import Modal from "@/components/ui/Modal";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
+import { LOGOUT_CONFIRMATION } from "@/components/shared/logoutConfirmation";
 import AppLauncher from "@/components/layout/AppLauncher";
 import { useAppContext } from "@/context/AppContext";
 
@@ -101,17 +102,17 @@ function CoreTopbarActions({ onGuide, className = "" }) {
           ella, así que no se mezcla con las demás. */}
       <AppLauncher />
     </nav>
-    <Modal
+    <ConfirmDialog
       open={logoutOpen}
-      title="¿Cerrar sesión?"
-      onClose={() => setLogoutOpen(false)}
-      footer={<>
-        <button type="button" onClick={() => setLogoutOpen(false)}>Cancelar</button>
-        <button type="button" onClick={() => { setLogoutOpen(false); logout(); }}>Cerrar sesión</button>
-      </>}
+      title={LOGOUT_CONFIRMATION.title}
+      icon={LOGOUT_CONFIRMATION.icon}
+      confirmLabel={LOGOUT_CONFIRMATION.confirmLabel}
+      cancelLabel={LOGOUT_CONFIRMATION.cancelLabel}
+      onCancel={() => setLogoutOpen(false)}
+      onConfirm={() => { setLogoutOpen(false); logout(); }}
     >
-      <p>Podrás volver a entrar con tu cuenta de Own Terra.</p>
-    </Modal>
+      <p>{LOGOUT_CONFIRMATION.text}</p>
+    </ConfirmDialog>
     </>
   );
 }

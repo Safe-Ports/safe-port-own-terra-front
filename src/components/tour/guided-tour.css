@@ -1,0 +1,4 @@
+.tour-music-toggle{position:fixed;left:20px;bottom:20px;display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border:1px solid rgba(255,255,255,.35);border-radius:999px;background:rgba(255,255,255,.94);color:#1E3D2B;font:700 13px/1 var(--font-body, system-ui, sans-serif);box-shadow:0 10px 24px -12px rgba(0,0,0,.45);cursor:pointer}
+.tour-music-toggle svg{width:18px;height:18px}
+.tour-music-toggle[aria-pressed="false"]{color:#83867C}
+.tour-music-toggle:focus-visible{outline:2px solid #355E3B;outline-offset:2px}

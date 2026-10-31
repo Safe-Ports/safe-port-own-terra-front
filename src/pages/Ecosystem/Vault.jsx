@@ -157,7 +157,7 @@ function EcosystemVault() {
 
   const deleteFolder = async (id) => {
     setMenuFor(null);
-    if (!await requestConfirmation("¿Eliminar esta carpeta? Los documentos dentro se conservarán sin carpeta.")) return;
+    if (!await requestConfirmation("Los documentos que tiene no se borran: quedan sin carpeta.", { title: "¿Eliminar esta carpeta?", confirmLabel: "Eliminar carpeta", danger: true })) return;
     deleteFolderMutation.mutate(id);
   };
 
@@ -319,7 +319,7 @@ function EcosystemVault() {
                           className="usr-dl"
                           style={{ color: "var(--danger)", marginLeft: 4 }}
                           title="Eliminar"
-                          onClick={async () => await requestConfirmation(`¿Eliminar "${d.name}"?`) && deleteDocMutation.mutate(d.id)}
+                          onClick={async () => await requestConfirmation("El documento se quita de la bóveda.", { title: `¿Eliminar "${d.name}"?`, confirmLabel: "Eliminar documento", danger: true }) && deleteDocMutation.mutate(d.id)}
                         >
                           <HiOutlineTrash />
                         </button>

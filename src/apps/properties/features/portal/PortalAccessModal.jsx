@@ -1,22 +1,23 @@
 import WorkflowForm from "@/components/forms/WorkflowForm";
 import { useCallback, useEffect, useState } from "react";
-import { HiClipboardDocument, HiKey, HiLockClosed, HiTrash } from "react-icons/hi2";
+import { HiChatBubbleLeftRight, HiClipboardDocument, HiEnvelope, HiKey, HiLockClosed, HiTrash } from "react-icons/hi2";
 import useConfirmation from "@/hooks/useConfirmation";
 import Modal from "@/components/ui/Modal";
 import { useAppContext } from "@/context/AppContext";
 import { usePropertiesData } from "../../data/PropertiesDataContext";
+import { inviteMessage, mailtoUrl, whatsappUrl } from "./shareLinks";
 import "./portal-access.css";
 
 const SCOPE={property:"Una unidad",inmueble:"Todo el inmueble",organization:"Toda la organización"};
 const when=value=>value?new Date(value).toLocaleString("es-MX",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}):"nunca";
 
-function PortalAccessModal({person,units,onClose}){
+function PortalAccessModal({person,units,initialInvite=null,onClose}){
   const {showToast,canUseFeature}=useAppContext();
   const canWrite=canUseFeature("properties.write");
   const {portalIdentities,personUnitRelations,invitePortal,grantPortalAccess,suspendPortal,revokePortalGrant,portalGrants}=usePropertiesData();
   const identity=(portalIdentities||[]).find(item=>item.persona_id===person?.id);
   const [email,setEmail]=useState(person?.email||"");
-  const [invite,setInvite]=useState(null);
+  const [invite,setInvite]=useState(initialInvite);
   const [grants,setGrants]=useState([]);
   const [scopeId,setScopeId]=useState("");
   const [busy,setBusy]=useState("");
@@ -66,7 +67,7 @@ function PortalAccessModal({person,units,onClose}){
 
   const suspend=async()=>{
     if(busy||!canWrite)return;
-    if(!await requestConfirmation("Se suspenderá esta cuenta de portal en todas las comunidades y verticales de la organización. Sus datos e historial se conservan. ¿Continuar?"))return;
+    if(!await requestConfirmation("No podrá entrar al portal en ninguna comunidad de la organización. Sus datos e historial se conservan.", { title: "¿Suspender el acceso al portal?", confirmLabel: "Suspender acceso", danger: true }))return;
     setBusy("suspend");
     try{await suspendPortal(identity.id);showToast("Acceso suspendido","success");onClose();}
     catch(error){showToast(error.response?.data?.error?.message||error.message,"warning");}
@@ -74,6 +75,8 @@ function PortalAccessModal({person,units,onClose}){
   };
 
   const inviteUrl=invite?.invite_token?`${window.location.origin}/portal/invitacion?token=${invite.invite_token}`:"";
+  const message=inviteUrl?inviteMessage({name:person?.name,url:inviteUrl}):"";
+  const sendTo=(email||identity?.email||"").trim();
   const copy=async()=>{try{await navigator.clipboard.writeText(inviteUrl);showToast("Enlace copiado","success");}catch{showToast("No se pudo copiar","warning");}};
 
   return <><Modal open={Boolean(person)} onClose={onClose} title="Acceso al portal" subtitle={person?.name} icon={<HiKey/>} width="max-w-[620px]">
@@ -115,7 +118,11 @@ function PortalAccessModal({person,units,onClose}){
 
       {inviteUrl?<div className="portal-invite">
         <strong>Comparte este enlace</strong>
-        <p>Todavía no hay envío de correo en properties-back, así que la invitación no se manda sola: pásasela tú. Es de un solo uso.</p>
+        <p>Mándasela por WhatsApp o por correo con el mensaje ya escrito, o copia el enlace. Es de un solo uso.</p>
+        <div className="portal-send">
+          <a className="is-whatsapp" href={whatsappUrl({phone:person?.phone,text:message})} target="_blank" rel="noreferrer"><HiChatBubbleLeftRight/> Enviar por WhatsApp{person?.phone?"":" (elige el contacto)"}</a>
+          <a href={mailtoUrl({email:sendTo,subject:"Tu acceso al portal de residentes",body:message})}><HiEnvelope/> Enviar por correo{sendTo?` a ${sendTo}`:""}</a>
+        </div>
         <div className="portal-link"><code>{inviteUrl}</code><button type="button" onClick={copy}><HiClipboardDocument/> Copiar</button></div>
       </div>:invite?<p role="status">{invite.status==="active"?"La cuenta ya está activa. Puede entrar desde el acceso del portal.":"La cuenta ya tiene una invitación pendiente; el servidor no devolvió un enlace nuevo. Solicita su reemisión al administrador."}</p>:null}
     </div>

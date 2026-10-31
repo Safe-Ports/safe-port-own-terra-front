@@ -82,7 +82,7 @@ export default function MigrationWizard({ onSalir }) {
           </p>
           <button onClick={onSalir}
             className="mt-4 rounded-[9px] border border-[#B4552F] px-4 py-2 text-[0.8rem] font-bold text-[#B4552F]">
-            Volver a Carga de Lotes
+            Volver a Editar lotes
           </button>
         </section>
       )}
@@ -332,7 +332,7 @@ function Asistente({ onSalir }) {
     <section className="rounded-[28px] border border-[#E2E7E5] bg-white/88 p-8 shadow-[0_18px_40px_rgba(24,18,14,.08)]">
       <button onClick={onSalir}
         className="mb-6 inline-flex items-center gap-2 text-[0.82rem] font-semibold text-[#83867C] hover:text-forest">
-        <HiOutlineArrowLeft /> Volver a Carga de Lotes
+        <HiOutlineArrowLeft /> Volver a Editar lotes
       </button>
 
       <ConfirmDialog open={restartOpen} title="¿Reiniciar el asistente?" confirmLabel="Reiniciar" onCancel={() => setRestartOpen(false)} onConfirm={() => { empezarOtra(); setRestartOpen(false); }}>Se olvida el avance de esta pantalla. Lo ya cargado en la base se conserva.</ConfirmDialog>

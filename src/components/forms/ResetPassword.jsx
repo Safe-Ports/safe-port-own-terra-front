@@ -88,10 +88,9 @@ function ResetPassword() {
               <div className="lf-field">
                 <label className="lf-label" htmlFor="reset-password">Nueva contraseña</label>
                 <div className="lf-input-wrap">
-                  <span className="lf-ico">PW</span>
                   <input
                     id="reset-password"
-                    className={`lf-input${fieldError ? " error" : ""}`}
+                    className={`lf-input has-toggle${fieldError ? " error" : ""}`}
                     type={showPassword ? "text" : "password"}
                     value={form.password}
                     onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
@@ -107,7 +106,6 @@ function ResetPassword() {
               <div className="lf-field">
                 <label className="lf-label" htmlFor="reset-password-confirmation">Confirmar contraseña</label>
                 <div className="lf-input-wrap">
-                  <span className="lf-ico">PW</span>
                   <input
                     id="reset-password-confirmation"
                     className={`lf-input${fieldError ? " error" : ""}`}

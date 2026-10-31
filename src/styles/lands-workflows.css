@@ -67,3 +67,27 @@
 .app-shell .lot-edit-foot button,.app-shell .lands-document-dialog button,.app-shell .lands-payment-dialog button{min-height:44px}
 .app-shell .calc-page .card-hd{flex-wrap:wrap;gap:8px}
 }
+
+/* Contrato: forma de pago (contado / mensualidades) */
+.cf-plan{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.cf-plan-option{display:grid;gap:3px;text-align:left;padding:11px 13px;border:1.5px solid var(--bd,#E2E7E5);border-radius:12px;background:var(--sf,#fff);color:var(--tx,#2b2f2c);cursor:pointer;font:inherit}
+.cf-plan-option b{font-size:.84rem}
+.cf-plan-option small{font-size:.72rem;color:var(--mu,#83867C);line-height:1.35}
+.cf-plan-option.is-on{border-color:var(--leaf,#355E3B);background:var(--tan-lt,#f3f6f1);box-shadow:0 0 0 3px rgba(53,94,59,.12)}
+.cf-plan-option:focus-visible{outline:2px solid var(--leaf,#355E3B);outline-offset:2px}
+.cf-monthly{display:grid;gap:10px;margin-bottom:4px}
+.cf-calc-standard{display:grid;gap:6px;justify-items:start;padding:14px;border:1px solid var(--bd,#E2E7E5);border-radius:16px;background:var(--tan-lt,#f3f6f1);font-size:.76rem;line-height:1.5;color:var(--tx,#2b2f2c)}
+.cf-calc-standard>b{font-size:.82rem;color:var(--forest,#355E3B)}
+.cf-calc-standard-total b{font-size:.92rem;color:var(--forest,#355E3B)}
+.cf-calc-standard .btn-s{padding:6px 12px;font-size:.75rem}
+@media (max-width:520px){.cf-plan{grid-template-columns:1fr}}
+.quick-seller{display:grid;gap:10px;padding:12px;border:1px solid var(--bd,#E2E7E5);border-radius:14px;background:var(--tan-lt,#f3f6f1)}
+.quick-seller-head{display:grid;gap:2px}
+.quick-seller-head b{font-size:.84rem;color:var(--forest,#1E3D2B)}
+.quick-seller-head small{font-size:.72rem;color:var(--mu,#83867C);line-height:1.4}
+.quick-seller-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.quick-seller-grid .fg{margin:0}
+.quick-seller-dupe{font-size:.76rem;line-height:1.45;color:var(--forest,#1E3D2B);padding:8px 10px;border-radius:10px;background:var(--sf,#fff);border:1px solid var(--bd,#E2E7E5)}
+.quick-seller-error{font-size:.74rem;color:var(--danger,#c0392b)}
+.quick-seller-actions{display:flex;justify-content:flex-end;gap:8px}
+@media (max-width:620px){.quick-seller-grid{grid-template-columns:1fr}}

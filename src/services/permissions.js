@@ -15,6 +15,33 @@ export const GLOBAL_ROLES = {
   vendor: { label: "Colaborador", desc: "Opera su cartera de clientes, aparta lotes y agenda citas." },
 };
 
+/**
+ * Qué puede y qué no puede hacer cada rol, en palabras del usuario. Lo leen el
+ * alta de usuarios y la guía de Equipo para que quien da el acceso sepa qué
+ * está entregando. Sigue los paquetes de `defaultPermissionsFor` y las reglas
+ * que el backend reserva al administrador: si cambian, esto cambia con ellos.
+ */
+export const ROLE_ACCESS = {
+  admin: {
+    can: ["Todo lo de las apps del ecosistema", "Equipo, accesos y contraseñas", "Configuración, plan y facturación"],
+    cannot: [],
+  },
+  vendor: {
+    can: [
+      "Solo entra a las apps que le asignes",
+      "En Lands: ve los lotes, atiende sus clientes, aparta y arma contratos, agenda citas y sube documentos",
+      "Cambia el estado de sus propios lotes",
+      "En Properties: opera las comunidades (unidades, residentes, cuotas, tickets y accesos)",
+    ],
+    cannot: [
+      "Crear o editar fraccionamientos y la calculadora",
+      "Cambiar precio, enganche, tasa, plazo o vendedor asignado de un lote",
+      "Registrar pagos y ver reportes de Lands",
+      "Autorizar contratos, ni entrar a Equipo o Configuración",
+    ],
+  },
+};
+
 export const APP_CATALOG = [
   { key: "core", name: "Ecosistema Core", icon: "eco-brand", cls: "ic-lands", roles: ["admin", "manager", "viewer"], defaultRole: "viewer", desc: "Panel central, clientes, equipo y configuración." },
   { key: "lands", name: "OwnTerra Lands", icon: "eco-g-lands", cls: "ic-lands", roles: ["seller", "manager", "collections", "viewer"], defaultRole: "seller", desc: "Lotes, fraccionamientos, ventas y cobranza.", vertical: true, live: true },

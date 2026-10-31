@@ -6,6 +6,8 @@ import EcoLayout from "../EcoLayout";
 import { formService } from "@/services/formService";
 import { useAppContext } from "@/context/AppContext";
 import { isGlobalAdmin } from "@/services/permissions";
+import { HiOutlineDocumentArrowDown } from "react-icons/hi2";
+import { downloadBlankFormPdf, downloadSubmissionPdf, downloadSubmissionsPdf, formValue } from "@/services/formPdf";
 
 const PAGE_SIZE = 25;
 
@@ -14,7 +16,7 @@ function exportCsv(template, submissions) {
   const headers = ["Fecha", ...cols.map((f) => f.label)];
   const rows = submissions.map((s) => [
     new Date(s.submitted_at).toLocaleDateString("es-MX"),
-    ...cols.map((f) => s.data?.[f.id] ?? ""),
+    ...cols.map((f) => (s.data?.[f.id] == null || s.data?.[f.id] === "" ? "" : formValue(s.data[f.id]))),
   ]);
   const escape = (v) => `"${String(v).replace(/"/g, '""')}"`;
   const csv = [headers, ...rows].map((r) => r.map(escape).join(",")).join("\n");
@@ -32,6 +34,7 @@ function EcosystemFormRespuestas() {
   const { id } = useParams();
   const { showToast, showError, currentUser } = useAppContext();
   const [page, setPage] = useState(1);
+  const [exporting, setExporting] = useState(null);
 
   const isAdmin = isGlobalAdmin(currentUser);
 
@@ -42,7 +45,7 @@ function EcosystemFormRespuestas() {
 
   const { data: submissionsData, isLoading: loadingSubmissions } = useQuery({
     queryKey: ["form-submissions", id, page],
-    queryFn: () => formService.getSubmissions(id, { page, limit: PAGE_SIZE }),
+    queryFn: () => formService.getSubmissions(id, { page, page_size: PAGE_SIZE }),
     enabled: !!id,
   });
 
@@ -60,8 +63,28 @@ function EcosystemFormRespuestas() {
     onError: (err) => showError(err, "Error al eliminar"),
   });
 
+  // Descargas: CSV y PDF llevan TODAS las respuestas, no solo la página visible.
+  const runExport = async (kind, task, errorMessage) => {
+    if (exporting) return;
+    setExporting(kind);
+    try {
+      await task();
+    } catch (err) {
+      showError(err, errorMessage);
+    } finally {
+      setExporting(null);
+    }
+  };
+  const exportAllCsv = () => runExport("csv", async () => exportCsv(template, await formService.getAllSubmissions(id)), "No se pudo exportar el CSV");
+  const exportAllPdf = () => runExport("pdf", async () => {
+    await downloadSubmissionsPdf(template, await formService.getAllSubmissions(id));
+    showToast("PDF de respuestas descargado");
+  }, "No se pudo generar el PDF");
+  const exportBlankPdf = () => runExport("blank", () => downloadBlankFormPdf(template), "No se pudo generar el PDF");
+  const exportOnePdf = (sub) => runExport(sub.id, () => downloadSubmissionPdf(template, sub), "No se pudo generar el PDF");
+
   const handleDelete = async (sub) => {
-    if (!await requestConfirmation("¿Eliminar esta respuesta?")) return;
+    if (!await requestConfirmation("Deja de aparecer en la lista de respuestas de este formulario.", { title: "¿Eliminar esta respuesta?", confirmLabel: "Eliminar respuesta", danger: true })) return;
     deleteMutation.mutate(sub.id);
   };
 
@@ -84,10 +107,20 @@ function EcosystemFormRespuestas() {
       <div className="section-head">
         <h3>{template?.name ?? "Respuestas"}</h3>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          {submissions.length > 0 && (
-            <button className="usr-btn-ghost" onClick={() => exportCsv(template, submissions)}>
-              Exportar CSV
+          {fields.length > 0 && (
+            <button className="usr-btn-ghost" onClick={exportBlankPdf} disabled={Boolean(exporting)}>
+              {exporting === "blank" ? "Generando…" : "Formulario en blanco (PDF)"}
             </button>
+          )}
+          {submissions.length > 0 && (
+            <>
+              <button className="usr-btn-ghost" onClick={exportAllCsv} disabled={Boolean(exporting)}>
+                {exporting === "csv" ? "Exportando…" : "Exportar CSV"}
+              </button>
+              <button className="usr-btn-ghost" onClick={exportAllPdf} disabled={Boolean(exporting)}>
+                {exporting === "pdf" ? "Generando PDF…" : "Descargar PDF"}
+              </button>
+            </>
           )}
           <button className="usr-btn-ghost" onClick={() => navigate("/ecosistema/formularios")}>
             ← Formularios
@@ -133,7 +166,6 @@ function EcosystemFormRespuestas() {
           <div className="fom-resp-empty">Cargando respuestas…</div>
         ) : submissions.length === 0 ? (
           <div className="fom-resp-empty">
-            <div style={{ fontSize: 36, marginBottom: 12 }}>📭</div>
             <div style={{ fontSize: 14, fontWeight: 700, color: "var(--deep)", marginBottom: 6 }}>Sin respuestas aún</div>
             <div style={{ fontSize: 12.5, color: "var(--text3)" }}>
               {template?.is_published
@@ -148,7 +180,7 @@ function EcosystemFormRespuestas() {
                 <tr>
                   <th>Fecha</th>
                   {fields.map((f) => <th key={f.id}>{f.label}</th>)}
-                  {isAdmin && <th style={{ width: 40 }} />}
+                  <th style={{ width: isAdmin ? 72 : 40 }} />
                 </tr>
               </thead>
               <tbody>
@@ -164,8 +196,18 @@ function EcosystemFormRespuestas() {
                         {s.data?.[f.id] || <span style={{ color: "var(--text3)" }}>—</span>}
                       </td>
                     ))}
-                    {isAdmin && (
-                      <td>
+                    <td style={{ whiteSpace: "nowrap" }}>
+                      <button
+                        className="usr-dl"
+                        title="Descargar esta respuesta en PDF"
+                        aria-label="Descargar esta respuesta en PDF"
+                        onClick={() => exportOnePdf(s)}
+                        disabled={Boolean(exporting)}
+                        style={{ fontSize: 16 }}
+                      >
+                        <HiOutlineDocumentArrowDown aria-hidden="true" />
+                      </button>
+                      {isAdmin && (
                         <button
                           className="usr-dl"
                           title="Eliminar respuesta"
@@ -175,8 +217,8 @@ function EcosystemFormRespuestas() {
                         >
                           ×
                         </button>
-                      </td>
-                    )}
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

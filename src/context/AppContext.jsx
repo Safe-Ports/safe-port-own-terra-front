@@ -566,6 +566,7 @@ export function AppProvider({ children }) {
         notes:               payload.notes?.trim() || null,
         seller_id:           payload.seller_id || null,
         down_payment_method: payload.down_payment_method || null,
+        down_payment_method_detail: payload.down_payment_method === "other" ? (payload.down_payment_method_detail?.trim() || null) : null,
         interest_rate:       Number(payload.interest_rate ?? 0),
       });
     } else {
@@ -582,6 +583,7 @@ export function AppProvider({ children }) {
         expiration_date:     (payload.expiration_date ?? payload.expirationDate) || undefined,
         seller_id:           payload.seller_id || undefined,
         down_payment_method: payload.down_payment_method || undefined,
+        down_payment_method_detail: payload.down_payment_method === "other" ? (payload.down_payment_method_detail?.trim() || undefined) : undefined,
         notes:               payload.notes || undefined,
         calculator_id:       payload.calculator_id || undefined,
         calculator_vars:     payload.calculator_vars || undefined,
@@ -682,13 +684,15 @@ export function AppProvider({ children }) {
     }
   };
 
-  const quickPay = async (paymentId, amount, file, paidDate, paymentMethod = "transfer") => {
+  // `notes` lleva la descripción cuando el método es "other" (permuta, en especie…).
+  const quickPay = async (paymentId, amount, file, paidDate, paymentMethod = "transfer", notes) => {
     try {
       let receiptIssue = null;
       await paymentService.markPaid(paymentId, {
         paid_date: paidDate || new Date().toISOString().split("T")[0],
         payment_method: paymentMethod,
         amount_paid: amount,
+        ...(notes ? { notes } : {}),
       });
       // El comprobante va aparte y no bloquea: si falla la subida, el cobro ya
       // quedó registrado y el papel se puede adjuntar después.
@@ -708,13 +712,14 @@ export function AppProvider({ children }) {
     }
   };
 
-  const collectOnContract = async (contractId, { amount, paymentIds, file, paidDate, paymentMethod = "transfer" } = {}) => {
+  const collectOnContract = async (contractId, { amount, paymentIds, file, paidDate, paymentMethod = "transfer", notes } = {}) => {
     try {
       let receiptIssue = null;
       const data = await paymentService.collect(contractId, {
         amount,
         paid_date: paidDate || new Date().toISOString().split("T")[0],
         payment_method: paymentMethod,
+        ...(notes ? { notes } : {}),
         ...(paymentIds?.length ? { payment_ids: paymentIds } : {}),
       });
       await queryClient.invalidateQueries({ queryKey: ["payments"] });
@@ -914,7 +919,10 @@ export function AppProvider({ children }) {
           .map((lot) => {
             const orig = lot._orig || {};
             const body = {};
-            if (lot.status && lot.status !== (orig.status || "available")) body.status = lot.status;
+            // El estado NO se manda desde Editar lotes: apartar, liberar y vender
+            // pasan solo en Operación de lotes, que pide lo que cada uno necesita
+            // (vencimiento, cliente, contrato). Desde aquí un "Apartado" llegaba
+            // al backend sin vencimiento y se rechazaba.
             if (lot.code != null && String(lot.code) !== String(orig.code ?? "")) body.code = lot.code;
             if (String(lot.area ?? "")            !== String(orig.area ?? "")            && lot.area          != null && lot.area          !== "") body.area_m2          = Number(lot.area);
             if (String(lot.frente ?? "")           !== String(orig.frente ?? "")          && lot.frente        != null && lot.frente        !== "") body.frente_ml        = Number(lot.frente);
@@ -922,6 +930,9 @@ export function AppProvider({ children }) {
             if (String(lot.orientacion ?? "")      !== String(orig.orientacion ?? "")      && lot.orientacion   != null && lot.orientacion   !== "") body.orientacion      = lot.orientacion;
             if (String(lot.price ?? "")            !== String(orig.price ?? "")           && lot.price         != null && lot.price         !== "") body.price_contado    = Number(lot.price);
             if (String(lot.priceFinanciado ?? "")  !== String(orig.priceFinanciado ?? "") && lot.priceFinanciado != null && lot.priceFinanciado !== "") body.price_financiado = Number(lot.priceFinanciado);
+            // Solo se asigna o cambia: el backend ignora un seller_id vacío, así
+            // que quitar al vendedor de un lote no se puede desde aquí.
+            if (lot.sellerId && String(lot.sellerId) !== String(orig.sellerId ?? "")) body.seller_id = lot.sellerId;
             if (lot.especificaciones && JSON.stringify(lot.especificaciones) !== (orig.especificaciones ?? "{}")) {
               body.especificaciones = buildEspecificacionesPayload(lot.especificaciones);
             }
@@ -934,7 +945,6 @@ export function AppProvider({ children }) {
         section.lots
           .filter((lot) => !lot._backendId)
           .map((lot) => ({
-            _draftStatus: lot.status || "available",
             payload: {
               inmueble_id: _editingFracId,
               code: lot.code,
@@ -945,22 +955,18 @@ export function AppProvider({ children }) {
               price_contado: lot.price !== "" && lot.price != null ? Number(lot.price) : null,
               price_financiado: lot.priceFinanciado !== "" && lot.priceFinanciado != null ? Number(lot.priceFinanciado) : null,
               especificaciones: buildEspecificacionesPayload(lot.especificaciones),
+              seller_id: lot.sellerId || null,
             },
           }))
       );
 
       await Promise.all(patches.map(({ id, body }) => lotService.update(id, body)));
       if (newLots.length > 0) {
-        const result = await lotService.bulkCreate({
+        // Todo lote nuevo nace disponible.
+        await lotService.bulkCreate({
           inmueble_id: _editingFracId,
           lots: newLots.map(({ payload }) => payload),
         });
-        await Promise.all(
-          (result.lot_ids || [])
-            .map((id, index) => ({ id, status: newLots[index]?._draftStatus }))
-            .filter(({ status }) => status === "reserved")
-            .map(({ id, status }) => lotService.update(id, { status }))
-        );
       }
       await queryClient.invalidateQueries({ queryKey: ["inmuebles"] });
       await queryClient.invalidateQueries({ queryKey: ["lots"] });
