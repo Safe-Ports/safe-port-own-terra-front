@@ -1782,7 +1782,7 @@ export default function PaymentsPage() {
         <IngresoModal busy={abonoBusy} onClose={() => setModal(null)} onSave={guardarIngreso} />
       )}
       {abono && <AbonoModal payment={abono} siguientes={siguientesDelContrato} busy={abonoBusy} onClose={() => setAbono(null)} onConfirm={confirmAbono} />}
-      <Modal open={!!statementClientId} onClose={() => setStatementClientId(null)} title="Estado de cuenta" width="max-w-[960px]">
+      <Modal open={!!statementClientId} onClose={() => setStatementClientId(null)} title="Estado de cuenta" overlayClassName="lands-statement-dialog">
         <style>{CLIENT_REPORT_STYLES}</style>
         {statementClientId && <ClientReport clientId={statementClientId} />}
       </Modal>
