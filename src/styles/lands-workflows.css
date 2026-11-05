@@ -57,7 +57,7 @@
 .app-shell .lands-calculator-grid{grid-template-columns:minmax(260px,340px) minmax(0,1fr)}
 .app-shell .lands-document-dialog{padding:16px}
 .app-shell .lands-document-dialog .modal-box{max-height:90dvh;overflow-y:auto;width:min(100%,440px)}
-.app-shell .lands-statement-dialog .modal-box{width:min(96vw,1240px);max-height:92dvh}
+.app-shell .lands-statement-dialog .modal-box{width:96vw;max-height:94dvh}
 .app-shell .lot-edit-overlay{position:fixed;inset:0;z-index:50;padding:16px;display:flex;align-items:center;justify-content:center}
 .app-shell .lot-edit-overlay .lot-edit-modal{max-height:90dvh;display:flex;flex-direction:column;overflow:hidden;max-width:100%}
 .app-shell .lot-edit-body{overflow-y:auto;min-height:0}
