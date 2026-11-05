@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import GuideModal from "@/components/shared/GuideModal";
+import Modal from "@/components/ui/Modal";
+import ClientReport, { CLIENT_REPORT_STYLES } from "@/components/shared/ClientReport";
 import {
   HiOutlinePlus, HiOutlinePencil, HiOutlineTrash, HiOutlineCalendar,
   HiOutlineXMark, HiOutlineMagnifyingGlass, HiOutlineChevronDown,
@@ -1187,6 +1189,7 @@ const ESTADO_AL  = [["all","Todas las alertas"],["roja","Urgentes"],["amarilla",
 
 export default function PaymentsPage() {
   const { payments, clients, contracts, datosIncompletos, quickPay, collectOnContract, sendReminder, showToast, showError, currentUser } = useAppContext();
+  const [statementClientId, setStatementClientId] = useState(null);
   const qc = useQueryClient();
   const [params] = useSearchParams();
   const targetPaymentId = params.get("payment");
@@ -1690,13 +1693,9 @@ export default function PaymentsPage() {
                     {amortFiltered.map(r => {
                       const pct = r.total ? Math.min(Math.round(r.paid / r.total * 100), 100) : 0;
                       const link = waLink(r);
-                      // Pestaña nueva, no modal ni fila desplegada: así no se pierde el
-                      // lugar en que se estaba en Pagos, y es una pantalla propia (no
-                      // la de /reportes, con su selector de cliente al lado).
-                      const openStatement = () => {
-                        const clientId = r.contract.client?.id || "";
-                        window.open(`/estado-cuenta/${encodeURIComponent(clientId)}`, "_blank", "noopener");
-                      };
+                      // Modal sobre la misma pantalla: nada de navegar a otra página
+                      // ni abrir pestaña nueva, para no perder el lugar en Pagos.
+                      const openStatement = () => setStatementClientId(r.contract.client?.id || null);
                       return (
                         <tr key={r.id} className="cf-amort-row" onClick={openStatement} style={{ cursor: "pointer" }}>
                           <td><div className="cf-cli">{r.cli}</div><div className="cf-prop">{r.prop}</div></td>
@@ -1783,6 +1782,10 @@ export default function PaymentsPage() {
         <IngresoModal busy={abonoBusy} onClose={() => setModal(null)} onSave={guardarIngreso} />
       )}
       {abono && <AbonoModal payment={abono} siguientes={siguientesDelContrato} busy={abonoBusy} onClose={() => setAbono(null)} onConfirm={confirmAbono} />}
+      <Modal open={!!statementClientId} onClose={() => setStatementClientId(null)} title="Estado de cuenta" width="max-w-[960px]">
+        <style>{CLIENT_REPORT_STYLES}</style>
+        {statementClientId && <ClientReport clientId={statementClientId} />}
+      </Modal>
       <GuideModal
         open={showGuide}
         onClose={() => setShowGuide(false)}
