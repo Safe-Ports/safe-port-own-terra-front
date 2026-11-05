@@ -19,6 +19,7 @@ export const contractService = {
     if (file) fd.append("file", file);
     return api.post("/contracts/releases/settle", fd).then(r => r.data);
   },
+  amortization: (id) => api.get(`/contracts/${id}/amortization`).then((r) => r.data),
   list: (params = {}) => api.get("/contracts", { params }).then((r) => r.data),
   get: (id) => api.get(`/contracts/${id}`).then((r) => r.data),
   create: (body) => api.post("/contracts", body).then((r) => r.data),
