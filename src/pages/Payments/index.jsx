@@ -1236,7 +1236,7 @@ const ESTADO_EG  = [["all","Todos los estados"],["pending","Pendiente"],["overdu
 const ESTADO_AL  = [["all","Todas las alertas"],["roja","Urgentes"],["amarilla","Próximas"]];
 
 export default function PaymentsPage() {
-  const { payments, clients, contracts, datosIncompletos, quickPay, collectOnContract, sendReminder, showToast, showError, currentUser, openClientReport } = useAppContext();
+  const { payments, clients, contracts, datosIncompletos, quickPay, collectOnContract, sendReminder, showToast, showError, currentUser } = useAppContext();
   const [expandedAmortId, setExpandedAmortId] = useState(null);
   const qc = useQueryClient();
   const [params] = useSearchParams();
@@ -1750,7 +1750,13 @@ export default function PaymentsPage() {
                       const link = waLink(r);
                       const expanded = expandedAmortId === r.id;
                       const toggle = () => setExpandedAmortId(prev => prev === r.id ? null : r.id);
-                      const openStatement = () => openClientReport(r.contract.client?.id);
+                      // Pestaña nueva, no modal: así no se pierde el lugar en que se
+                      // estaba en Pagos, y es el mismo reporte (con descargar/enviar/
+                      // imprimir) que ya vive en /reportes.
+                      const openStatement = () => {
+                        const clientId = r.contract.client?.id || "";
+                        window.open(`/reportes?client=${encodeURIComponent(clientId)}`, "_blank", "noopener");
+                      };
                       return (
                         <Fragment key={r.id}>
                           <tr className="cf-amort-row" onClick={toggle} style={{ cursor: "pointer" }}>
