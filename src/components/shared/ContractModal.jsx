@@ -308,12 +308,20 @@ function ContractModal() {
   // activa se ofrece (su fórmula queda congelada en la venta); si no tiene o la
   // venta elige no usarla, el backend aplica la amortización estándar con la tasa.
   const useCalculator = ui.contractModal && !editingContract && form.type === "sale" && form.paymentPlan === "financed";
-  const { data: activeCalc, isSuccess: calcLoaded, isPending: calcPending, isError: calcFailed, refetch: retryCalculator } = useQuery({
+  const { data: activeCalcs = [], isSuccess: calcLoaded, isPending: calcPending, isError: calcFailed, refetch: retryCalculator } = useQuery({
     queryKey: ["calculators", "active", "lands"],
-    queryFn: () => calculatorService.getActive("lands"),
+    queryFn: () => calculatorService.list({ app_key: "lands" }).then((rows) => rows.filter((c) => c.is_active)),
     enabled: useCalculator,
     staleTime: 60_000,
   });
+  // De las activas, cuál está eligiendo este contrato en particular (no hay una
+  // sola "la" calculadora: el vendedor decide entre todas las que estén activas).
+  const [selectedCalcId, setSelectedCalcId] = useState(null);
+  useEffect(() => {
+    if (!activeCalcs.length) return;
+    if (!activeCalcs.some((c) => c.id === selectedCalcId)) setSelectedCalcId(activeCalcs[0].id);
+  }, [activeCalcs, selectedCalcId]);
+  const activeCalc = activeCalcs.find((c) => c.id === selectedCalcId) || null;
   const applyCalc = useCalculator && !!activeCalc && form.calcMode !== "standard";
   const [calcVars, setCalcVars] = useState({});
   // Marca qué variables editó el usuario a mano (esas no se re-sincronizan del formulario).
@@ -417,6 +425,7 @@ function ContractModal() {
     setSaving(false);
     setLotSearch("");
     setShowLotDrop(false);
+    setSelectedCalcId(contractDraft?._calculatorId || null);
     if (editingContract) {
       setForm({
         ...defaultForm,
@@ -858,13 +867,20 @@ function ContractModal() {
       {/* ── Cómo se calcula la mensualidad: calculadora opcional ── */}
       {useCalculator && calcLoaded && (
         <div data-tour="contrato-mensualidad" className="cf-monthly">
-          {activeCalc && (
+          {activeCalcs.length > 0 && (
             <div className="cf-plan cf-calc-mode" role="radiogroup" aria-label="Cómo calcular la mensualidad">
               {[
-                { value: "calculator", title: `Calculadora «${activeCalc.name}»`, hint: "Tu fórmula; se congela en la venta" },
-                { value: "standard", title: "Amortización estándar", hint: "Pago fijo con la tasa anual" },
+                ...activeCalcs.map((calc) => ({
+                  value: calc.id,
+                  mode: "calculator",
+                  title: `Calculadora «${calc.name}»`,
+                  hint: "Tu fórmula; se congela en la venta",
+                })),
+                { value: "standard", mode: "standard", title: "Amortización estándar", hint: "Pago fijo con la tasa anual" },
               ].map((option) => {
-                const on = (form.calcMode === "standard" ? "standard" : "calculator") === option.value;
+                const on = option.mode === "standard"
+                  ? form.calcMode === "standard"
+                  : form.calcMode !== "standard" && selectedCalcId === option.value;
                 return (
                   <button
                     key={option.value}
@@ -872,7 +888,10 @@ function ContractModal() {
                     role="radio"
                     aria-checked={on}
                     className={`cf-plan-option${on ? " is-on" : ""}`}
-                    onClick={() => setForm((p) => ({ ...p, calcMode: option.value }))}
+                    onClick={() => {
+                      if (option.mode === "standard") setForm((p) => ({ ...p, calcMode: "standard" }));
+                      else { setSelectedCalcId(option.value); setForm((p) => ({ ...p, calcMode: "calculator" })); }
+                    }}
                   >
                     <b>{option.title}</b>
                     <small>{option.hint}</small>
@@ -885,8 +904,8 @@ function ContractModal() {
             <div className="cf-calc-standard" role="status">
               <b>Mensualidad con amortización estándar</b>
               <span>
-                {activeCalc
-                  ? "Esta venta no usa la calculadora: pago fijo cada mes con la tasa anual de abajo."
+                {activeCalcs.length > 0
+                  ? "Esta venta no usa calculadora: pago fijo cada mes con la tasa anual de abajo."
                   : "Pago fijo cada mes con la tasa anual de abajo. La calculadora es opcional: créala solo si quieres tu propia fórmula."}
               </span>
               {standardMonthlyPayment(form) != null && (
@@ -894,7 +913,7 @@ function ContractModal() {
                   Mensualidad estimada <b>${standardMonthlyPayment(form).toLocaleString("en-US", { minimumFractionDigits: 2 })}</b>
                 </span>
               )}
-              {!activeCalc && canEditCalculator && (
+              {!activeCalcs.length && canEditCalculator && (
                 <button type="button" className="btn-s" onClick={goToCalculator}>Crear una calculadora (opcional)</button>
               )}
             </div>
