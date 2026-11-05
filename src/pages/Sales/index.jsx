@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { HiDocumentText, HiFolder } from "react-icons/hi2";
+import { HiDocumentText, HiFolder, HiLockOpen } from "react-icons/hi2";
 import { useSearchParams } from "react-router-dom";
 import useDebouncedValue from "@/hooks/useDebouncedValue";
 import ClientPicker from "@/components/shared/ClientPicker";
@@ -41,6 +41,12 @@ function SalesPage() {
   const status = params.get("status") || "";
   const page = Math.max(1, Number(params.get("page")) || 1);
   const clientId = params.get("client") || "";
+  const view = params.get("view") || "contracts";
+  const setView = (next) => setParams(previous => {
+    const p = new URLSearchParams(previous);
+    if (next === "contracts") p.delete("view"); else p.set("view", next);
+    return p;
+  }, { replace: true });
   const debounced = useDebouncedValue(search.trim());
   const updateFilters = (changes) => {
     setParams(previous => {
@@ -66,6 +72,15 @@ function SalesPage() {
   return (
     <>
     <PendingApproval />
+    <div className="lands-tabs" role="tablist" aria-label="Vista de contratos">
+      <button type="button" role="tab" aria-selected={view === "contracts"} className={view === "contracts" ? "is-active" : ""} onClick={() => setView("contracts")}>
+        <HiDocumentText /> Contratos
+      </button>
+      <button type="button" role="tab" aria-selected={view === "releases"} className={view === "releases" ? "is-active" : ""} onClick={() => setView("releases")}>
+        <HiLockOpen /> Liberaciones
+      </button>
+    </div>
+    {view === "releases" ? <ReleasesTable /> : (
     <div className="card lands-contracts">
       {targetId && <section className="lands-found-record" aria-label="Contrato encontrado">
         {target.isPending ? <p role="status">Cargando contrato…</p> : target.isError ? <><InlineError error={parseApiError(target.error)} /><button type="button" className="btn-s" onClick={() => target.refetch()}>Reintentar</button></> : target.data && <><div><strong>{target.data.contract_number}</strong><p>{target.data.client?.name} · {target.data.lot?.code}</p></div><button type="button" className="btn-p" onClick={() => openRecord(target.data)}>Abrir contrato</button></>}
@@ -159,7 +174,7 @@ function SalesPage() {
         )}
       </Modal>
     </div>
-    <ReleasesTable />
+    )}
     </>
   );
 }
