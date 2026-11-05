@@ -150,7 +150,7 @@ function CalculatorPage() {
         isEditing ? old.map((c) => (c.id === saved.id ? saved : c)) : [saved, ...old]
       );
       loadIntoEditor(saved);
-      qc.invalidateQueries({ queryKey: ["calculators", "active", APP_KEY] });
+      qc.invalidateQueries({ queryKey: ["calculators"] });
       showToast(isEditing ? "Calculadora actualizada" : "Calculadora creada");
     } catch (err) {
       showError(err, "No se pudo guardar la calculadora");
@@ -175,7 +175,7 @@ function CalculatorPage() {
       await calculatorService.activate(calc.id);
       qc.setQueryData(LIST_KEY, (old = []) => old.map((c) => (c.id === calc.id ? { ...c, is_active: true } : c)));
       if (editor.id === calc.id) setEditor((e) => ({ ...e, is_active: true }));
-      qc.invalidateQueries({ queryKey: ["calculators", "active", APP_KEY] });
+      qc.invalidateQueries({ queryKey: ["calculators"] });
       showToast(`«${calc.name}» está activa: disponible al crear contratos`);
       setActivateTarget(null);
     } catch (err) {
@@ -192,7 +192,7 @@ function CalculatorPage() {
       await calculatorService.deactivate(calc.id);
       qc.setQueryData(LIST_KEY, (old = []) => old.map((c) => (c.id === calc.id ? { ...c, is_active: false } : c)));
       if (editor.id === calc.id) setEditor((e) => ({ ...e, is_active: false }));
-      qc.invalidateQueries({ queryKey: ["calculators", "active", APP_KEY] });
+      qc.invalidateQueries({ queryKey: ["calculators"] });
       showToast(`«${calc.name}» ya no está disponible para nuevos contratos`);
     } catch (err) {
       showError(err, "No se pudo desactivar la calculadora");
@@ -211,7 +211,7 @@ function CalculatorPage() {
       await calculatorService.delete(calc.id);
       qc.setQueryData(LIST_KEY, (old = []) => old.filter((c) => c.id !== calc.id));
       if (editor.id === calc.id) { setOpen(false); setEditor(EMPTY); }
-      qc.invalidateQueries({ queryKey: ["calculators", "active", APP_KEY] });
+      qc.invalidateQueries({ queryKey: ["calculators"] });
       setDeleteTarget(null);
       showToast("Calculadora eliminada");
     } catch (err) {
@@ -256,7 +256,7 @@ function CalculatorPage() {
           border-top-color:var(--forest);animation:calc-spin .6s linear infinite;}
         @keyframes calc-spin{to{transform:rotate(360deg);}}
       `}</style>
-      {contractDraft?._resumeContract && <section className="lands-found-record"><div><strong>Tu contrato sigue en borrador</strong><p>Los datos capturados se conservaron mientras configuras el plan.</p></div><button type="button" className="btn-p" onClick={() => { qc.invalidateQueries({ queryKey: ["calculators", "active", APP_KEY] }); navigate("/contratos"); openModal("contractModal"); }}>Volver al contrato</button></section>}
+      {contractDraft?._resumeContract && <section className="lands-found-record"><div><strong>Tu contrato sigue en borrador</strong><p>Los datos capturados se conservaron mientras configuras el plan.</p></div><button type="button" className="btn-p" onClick={() => { qc.invalidateQueries({ queryKey: ["calculators"] }); navigate("/contratos"); openModal("contractModal"); }}>Volver al contrato</button></section>}
       <div className="flex items-center justify-between">
         <div>
           <div className="text-lg font-semibold" style={{ color: "var(--tx,#1E3D2B)" }}>

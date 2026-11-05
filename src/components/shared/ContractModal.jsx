@@ -308,8 +308,12 @@ function ContractModal() {
   // activa se ofrece (su fórmula queda congelada en la venta); si no tiene o la
   // venta elige no usarla, el backend aplica la amortización estándar con la tasa.
   const useCalculator = ui.contractModal && !editingContract && form.type === "sale" && form.paymentPlan === "financed";
+  // Clave de caché propia: distinta de ["calculators","active","lands"] (la que usa
+  // Fracs/index.jsx para pedir UNA calculadora). Antes compartían la misma clave y,
+  // como esta devuelve un arreglo y esa un objeto único, el que llegara primero
+  // "contaminaba" la caché para el otro y rompía el render (.find sobre un objeto).
   const { data: activeCalcs = [], isSuccess: calcLoaded, isPending: calcPending, isError: calcFailed, refetch: retryCalculator } = useQuery({
-    queryKey: ["calculators", "active", "lands"],
+    queryKey: ["calculators", "activeList", "lands"],
     queryFn: () => calculatorService.list({ app_key: "lands" }).then((rows) => rows.filter((c) => c.is_active)),
     enabled: useCalculator,
     staleTime: 60_000,
