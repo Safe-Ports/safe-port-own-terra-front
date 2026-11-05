@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   HiOutlineExclamationTriangle, HiOutlineCheckCircle, HiOutlineArrowDownTray,
-  HiOutlineEnvelope, HiOutlinePrinter,
+  HiOutlineEnvelope, HiOutlinePrinter, HiPhone,
 } from "react-icons/hi2";
 import { useAppContext } from "@/context/AppContext";
 import { clientService } from "@/services/clientService";
@@ -261,6 +261,7 @@ function ClientReport({ clientId }) {
   const { showToast, showError } = useAppContext();
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [sharingWhatsapp, setSharingWhatsapp] = useState(false);
   const { data: client } = useQuery({
     queryKey: ["client-detail", clientId],
     queryFn: () => clientService.get(clientId),
@@ -322,6 +323,41 @@ function ClientReport({ clientId }) {
       setSendingEmail(false);
     }
   };
+  // WhatsApp no tiene forma de adjuntar un archivo desde un link (wa.me solo
+  // manda texto). Donde el navegador lo permite (Web Share API con archivos,
+  // Chrome/Safari/Android), se comparte el PDF real y WhatsApp aparece como
+  // una opción más entre las apps para compartir. Si no, se descarga el PDF
+  // y se abre el chat para que la persona lo adjunte a mano.
+  const shareWhatsapp = async () => {
+    setSharingWhatsapp(true);
+    try {
+      const blob = await clientService.statementPdf(clientId);
+      const fileName = `estado_cuenta_${String(client?.name || "cliente").replace(/\s+/g, "_").toLowerCase()}.pdf`;
+      const file = new File([blob], fileName, { type: "application/pdf" });
+      const text = `Estado de cuenta de ${client?.name || "cliente"} — OwnTerra`;
+      if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: "Estado de cuenta", text });
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      let phone = (client?.phone || "").replace(/\D/g, "");
+      if (phone.length === 10) phone = `52${phone}`;
+      const waText = encodeURIComponent(`Hola ${client?.name || ""}, te comparto tu estado de cuenta. Adjunto el PDF que se acaba de descargar. — OwnTerra`);
+      window.open(phone ? `https://wa.me/${phone}?text=${waText}` : `https://wa.me/?text=${waText}`, "_blank", "noopener");
+      showToast("PDF descargado — adjúntalo en el chat de WhatsApp que se abrió");
+    } catch (err) {
+      if (err?.name !== "AbortError") showError(err, "No se pudo compartir el estado de cuenta");
+    } finally {
+      setSharingWhatsapp(false);
+    }
+  };
 
   if (!client) return (
     <div style={{ flex: 1, padding: 40, textAlign: "center", color: "var(--mu)" }}>Cargando…</div>
@@ -337,6 +373,9 @@ function ClientReport({ clientId }) {
         </button>
         <button className="btn-s" onClick={downloadPdf} disabled={downloadingPdf}>
           <HiOutlineArrowDownTray style={{ fontSize: "1rem" }}/> {downloadingPdf ? "Descargando..." : "Descargar PDF"}
+        </button>
+        <button className="btn-s" onClick={shareWhatsapp} disabled={sharingWhatsapp} style={{ color: "#1DA851", borderColor: "rgba(29,168,81,.4)" }}>
+          <HiPhone style={{ fontSize: "1rem" }}/> {sharingWhatsapp ? "Preparando..." : "Compartir por WhatsApp"}
         </button>
         <button onClick={handlePrint} style={{
           display: "flex", alignItems: "center", gap: 6, padding: "9px 18px",
