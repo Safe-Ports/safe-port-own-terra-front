@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { HiArrowDownTray, HiDocumentText, HiFolder, HiPrinter } from "react-icons/hi2";
+import { HiDocumentText, HiFolder } from "react-icons/hi2";
 import { useSearchParams } from "react-router-dom";
 import useDebouncedValue from "@/hooks/useDebouncedValue";
 import ClientPicker from "@/components/shared/ClientPicker";
@@ -14,6 +14,8 @@ import { contractService } from "@/services/contractService";
 import ReleasesTable from "./ReleasesTable";
 import Button from "@/components/Button";
 import GuideModal from "@/components/shared/GuideModal";
+import Modal from "@/components/ui/Modal";
+import InlineDocumentsPanel from "@/components/shared/InlineDocumentsPanel";
 import PendingApproval from "./PendingApproval";
 import Pagination from "@/components/shared/Pagination";
 
@@ -31,8 +33,9 @@ const ESTADO = {
 };
 
 function SalesPage() {
-  const { setEditingContract, openModal, openContractCreate, openDocumentUpload, openClientReport, showToast } = useAppContext();
+  const { setEditingContract, openModal, openContractCreate } = useAppContext();
   const [showGuide, setShowGuide] = useState(false);
+  const [docsContract, setDocsContract] = useState(null);
   const [params, setParams] = useSearchParams();
   const search = params.get("q") || "";
   const status = params.get("status") || "";
@@ -59,23 +62,6 @@ function SalesPage() {
 
   const contractRows = search.trim() === debounced ? list.data?.items || [] : [];
   const searching = list.isFetching || search.trim() !== debounced;
-
-  const handleDownloadPdf = async (contract) => {
-    try {
-      showToast(`Generando PDF de ${contract.contract_number}…`);
-      const blob = await contractService.downloadPdf(contract.id);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${contract.contract_number || contract.id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch {
-      showToast("Error al descargar el contrato PDF", "error");
-    }
-  };
 
   return (
     <>
@@ -113,9 +99,9 @@ function SalesPage() {
             {contractRows.length ? contractRows.map((contract) => (
               <tr key={contract.id}>
                 <td>
-                  <button type="button" className="contract-badge" onClick={() => openRecord(contract)}>
+                  <span className="contract-badge">
                     <HiDocumentText style={{ display: "inline", verticalAlign: "-2px" }} /> {contract.contract_number}
-                  </button>
+                  </span>
                 </td>
                 <td>{{ sale: "Compraventa", reserve: "Apartado", rent: "Arrendamiento" }[contract.type] || contract.type}</td>
                 <td>{contract.lot?.code || "—"}<small className="lands-row-secondary">{contract.lot?.inmueble_name}</small></td>
@@ -134,9 +120,7 @@ function SalesPage() {
                 </td>
                 <td style={{ whiteSpace: "nowrap" }}>
                   <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => openRecord(contract)}>Editar</button>{" "}
-                  <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} aria-label={`Adjuntar documento a ${contract.contract_number}`} title="Adjuntar documento" onClick={() => openDocumentUpload({ linkType: "contract", linkedId: contract.id })}><HiFolder /></button>{" "}
-                  <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} aria-label={`Estado de cuenta de ${contract.client?.name}`} title="Estado de cuenta" onClick={() => openClientReport(contract.client?.id)}><HiPrinter /></button>{" "}
-                  <button className="btn-p" style={{ padding: "4px 10px", fontSize: ".7rem" }} onClick={() => handleDownloadPdf(contract)}><HiArrowDownTray /> PDF</button>
+                  <button className="btn-s" style={{ padding: "4px 10px", fontSize: ".7rem" }} aria-label={`Documentos de ${contract.contract_number}`} title="Documentos adjuntos" onClick={() => setDocsContract(contract)}><HiFolder /></button>
                 </td>
               </tr>
             )) : (
@@ -157,12 +141,23 @@ function SalesPage() {
         subtitle="Gestión y seguimiento de todos los contratos de venta."
         steps={[
           { title: "Ver tus contratos", text: "La tabla muestra todos los contratos con su número, cliente, fraccionamiento, monto y estado de pago. Busca por número de contrato o selecciona un cliente; combina con el estado. La búsqueda consulta todos los registros autorizados." },
-          { title: "Descargar PDF", text: "Haz clic en el ícono de descarga en cualquier fila para generar y descargar el contrato en formato PDF." },
-          { title: "Editar contrato", text: "Pulsa el ícono de edición para modificar los datos del contrato: fecha, monto, vendedor asignado, enganche y plan de pagos." },
-          { title: "Subir documentos", text: "Cada contrato puede tener documentos adjuntos (INE, acta de nacimiento, comprobante de domicilio). Pulsa el clip para adjuntar archivos." },
-          { title: "Estado de cuenta", text: "El ícono de reporte abre el estado de cuenta completo del cliente con su historial de pagos y saldo pendiente." },
+          { title: "Editar contrato", text: "Pulsa \"Editar\" para modificar los datos del contrato: fecha, monto, vendedor asignado, enganche y plan de pagos." },
+          { title: "Documentos adjuntos", text: "El ícono de carpeta muestra los documentos ya adjuntos a ese contrato (con opción de verlos o descargarlos) y permite subir nuevos." },
         ]}
       />
+      <Modal
+        open={!!docsContract}
+        onClose={() => setDocsContract(null)}
+        title="Documentos del contrato"
+        subtitle={docsContract?.contract_number}
+      >
+        {docsContract && (
+          <InlineDocumentsPanel
+            entityType="contract"
+            entityId={docsContract.id}
+          />
+        )}
+      </Modal>
     </div>
     <ReleasesTable />
     </>

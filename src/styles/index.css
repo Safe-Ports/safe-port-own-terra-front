@@ -1797,14 +1797,7 @@ textarea.is-invalid {
   background: var(--tan-lt);
   color: var(--tan-dk);
   border: 1px solid var(--tan);
-  cursor: pointer;
-  transition: background .3s cubic-bezier(.2,.8,.2,1), color .3s cubic-bezier(.2,.8,.2,1);
   white-space: nowrap;
-}
-
-.contract-badge:hover {
-  background: var(--tan);
-  color: #fff;
 }
 
 .fr-row {
