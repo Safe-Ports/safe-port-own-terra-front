@@ -1,6 +1,6 @@
 import WorkflowForm from "@/components/forms/WorkflowForm";
 import AmountInput from "@/components/forms/AmountInput";
-import { Fragment, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import GuideModal from "@/components/shared/GuideModal";
@@ -22,7 +22,6 @@ import FilePicker from "@/components/shared/FilePicker";
 import IncomesPanel from "./IncomesPanel";
 import { incomeService, INCOME_CAT } from "@/services/incomeService";
 import { clientService } from "@/services/clientService";
-import { contractService } from "@/services/contractService";
 import { paymentService } from "@/services/paymentService";
 import { useLandsGuide } from "@/context/LandsGuideContext";
 import { expenseService, CAT_LABEL, CAT_STYLE } from "@/services/expenseService";
@@ -1178,55 +1177,6 @@ function TipoModal({ onSelect, onClose }) {
   );
 }
 
-/* Tabla de amortización completa de un contrato (todas las cuotas, pagadas y
-   pendientes), con el botón que abre el mismo estado de cuenta con
-   descargar/compartir que usa el resto de la app. */
-function AmortizationPanel({ contract, onGenerateStatement }) {
-  const { data, isPending, isError, refetch } = useQuery({
-    queryKey: ["contracts", "amortization", contract.id],
-    queryFn: () => contractService.amortization(contract.id),
-  });
-  const rows = data?.payments || [];
-  return (
-    <div className="cf-amort-panel">
-      <div className="cf-amort-hd">
-        <div className="cf-amort-title">Tabla de amortización · {contract.contract_number}</div>
-        <button type="button" className="cf-btn cf-btn-primary" onClick={onGenerateStatement}>
-          <HiOutlinePaperClip /> Generar estado de cuenta
-        </button>
-      </div>
-      {isPending ? (
-        <div className="cf-empty">Cargando cuotas…</div>
-      ) : isError ? (
-        <div className="cf-empty">No se pudo cargar la tabla. <button type="button" className="btn-s" onClick={() => refetch()}>Reintentar</button></div>
-      ) : !rows.length ? (
-        <div className="cf-empty">Este contrato no tiene cuotas generadas.</div>
-      ) : (
-        <div className="cf-tbl-wrap">
-          <table className="cf-tbl">
-            <thead><tr>
-              <th>Cuota</th><th>Vencimiento</th><th>Capital</th><th>Interés</th><th>Pago</th><th>Saldo</th><th>Estado</th>
-            </tr></thead>
-            <tbody>
-              {rows.map(p => (
-                <tr key={p.installment_n}>
-                  <td>{p.installment_n}</td>
-                  <td>{p.due_date ? fmtD(p.due_date) : "—"}</td>
-                  <td>{currency(p.capital)}</td>
-                  <td>{currency(p.interest)}</td>
-                  <td className="cf-amt">{currency(p.amount)}</td>
-                  <td>{currency(p.remaining_balance)}</td>
-                  <td><span className={`cf-badge ${p.status === "paid" ? "ok" : p.status === "overdue" ? "late" : "soon"}`}>{ESTADO_LABEL[p.status] || p.status}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ══ PAGE ════════════════════════════════════════════════════════ */
 const INIT_PERIOD = "todo";
 const { desde: INIT_DESDE, hasta: INIT_HASTA } = getDateRange(INIT_PERIOD); // "", ""
@@ -1237,7 +1187,6 @@ const ESTADO_AL  = [["all","Todas las alertas"],["roja","Urgentes"],["amarilla",
 
 export default function PaymentsPage() {
   const { payments, clients, contracts, datosIncompletos, quickPay, collectOnContract, sendReminder, showToast, showError, currentUser } = useAppContext();
-  const [expandedAmortId, setExpandedAmortId] = useState(null);
   const qc = useQueryClient();
   const [params] = useSearchParams();
   const targetPaymentId = params.get("payment");
@@ -1661,13 +1610,6 @@ export default function PaymentsPage() {
         .cf-ico.wa{color:#1DA851;border-color:rgba(29,168,81,.4)}
         .cf-ico.pay{color:var(--mid);border-color:rgba(111,175,107,.4)}
         .cf-empty{padding:40px;text-align:center;color:var(--mu);font-size:13.5px}
-        .cf-amort-expand td{padding:0;border-bottom:1px solid var(--line-soft)}
-        .cf-amort-expand:hover{background:transparent}
-        .cf-amort-panel{padding:16px 18px;background:var(--sf2)}
-        .cf-amort-hd{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
-        .cf-amort-title{font-weight:700;color:var(--deep);font-size:13.5px}
-        .cf-amort-panel .cf-tbl-wrap{border-radius:12px;overflow:hidden;border:1px solid var(--bd)}
-        .cf-amort-panel .cf-tbl thead th,.cf-amort-panel .cf-tbl tbody td{padding:9px 14px}
         .cf-neto{display:flex;gap:20px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--line-soft)}
         .cf-neto div{font-size:12.5px;color:var(--mu)}.cf-neto b{display:block;font-size:1.1rem;font-weight:800;margin-top:2px;color:var(--deep)}
         @media(max-width:800px){.cf-kpis{grid-template-columns:repeat(2,1fr)}}
@@ -1748,38 +1690,27 @@ export default function PaymentsPage() {
                     {amortFiltered.map(r => {
                       const pct = r.total ? Math.min(Math.round(r.paid / r.total * 100), 100) : 0;
                       const link = waLink(r);
-                      const expanded = expandedAmortId === r.id;
-                      const toggle = () => setExpandedAmortId(prev => prev === r.id ? null : r.id);
-                      // Pestaña nueva, no modal: así no se pierde el lugar en que se
-                      // estaba en Pagos, y es el mismo reporte (con descargar/enviar/
-                      // imprimir) que ya vive en /reportes.
+                      // Pestaña nueva, no modal ni fila desplegada: así no se pierde el
+                      // lugar en que se estaba en Pagos, y es una pantalla propia (no
+                      // la de /reportes, con su selector de cliente al lado).
                       const openStatement = () => {
                         const clientId = r.contract.client?.id || "";
-                        window.open(`/reportes?client=${encodeURIComponent(clientId)}`, "_blank", "noopener");
+                        window.open(`/estado-cuenta/${encodeURIComponent(clientId)}`, "_blank", "noopener");
                       };
                       return (
-                        <Fragment key={r.id}>
-                          <tr className="cf-amort-row" onClick={toggle} style={{ cursor: "pointer" }}>
-                            <td><div className="cf-cli">{r.cli}</div><div className="cf-prop">{r.prop}</div></td>
-                            <td><div className="cf-prog"><div className={`cf-bar ${r.estado}`}><i style={{ width: `${pct}%` }} /></div><span className="cf-prog-n">{r.paid}/{r.total}</span></div></td>
-                            <td className="cf-amt">{currency(r.cuota)}</td>
-                            <td className={`cf-venc ${r.estado === "late" ? "late" : ""}`}>{r.venc ? fmtD(r.venc) : "—"}</td>
-                            <td><span className={`cf-badge ${r.estado}`}>{AMORT_EST[r.estado]}</span></td>
-                            <td><div className="cf-acts">
-                              <button className="cf-ico pay" title="Registrar pago" onClick={(e) => { e.stopPropagation(); setCobroContrato(r.contract); setModal("cobro"); }}><HiBanknotes /></button>
-                              {link ? <a className="cf-ico wa" href={link} target="_blank" rel="noreferrer" title="Recordatorio por WhatsApp" onClick={(e) => e.stopPropagation()}><HiPhone /></a>
-                                    : <button className="cf-ico" title="Sin teléfono del cliente" disabled style={{ opacity: .4, cursor: "default" }} onClick={(e) => e.stopPropagation()}><HiPhone /></button>}
-                              <button className="cf-ico" title="Generar estado de cuenta" onClick={(e) => { e.stopPropagation(); openStatement(); }}><HiBars3 /></button>
-                            </div></td>
-                          </tr>
-                          {expanded && (
-                            <tr className="cf-amort-expand">
-                              <td colSpan={6}>
-                                <AmortizationPanel contract={r.contract} onGenerateStatement={openStatement} />
-                              </td>
-                            </tr>
-                          )}
-                        </Fragment>
+                        <tr key={r.id} className="cf-amort-row" onClick={openStatement} style={{ cursor: "pointer" }}>
+                          <td><div className="cf-cli">{r.cli}</div><div className="cf-prop">{r.prop}</div></td>
+                          <td><div className="cf-prog"><div className={`cf-bar ${r.estado}`}><i style={{ width: `${pct}%` }} /></div><span className="cf-prog-n">{r.paid}/{r.total}</span></div></td>
+                          <td className="cf-amt">{currency(r.cuota)}</td>
+                          <td className={`cf-venc ${r.estado === "late" ? "late" : ""}`}>{r.venc ? fmtD(r.venc) : "—"}</td>
+                          <td><span className={`cf-badge ${r.estado}`}>{AMORT_EST[r.estado]}</span></td>
+                          <td><div className="cf-acts">
+                            <button className="cf-ico pay" title="Registrar pago" onClick={(e) => { e.stopPropagation(); setCobroContrato(r.contract); setModal("cobro"); }}><HiBanknotes /></button>
+                            {link ? <a className="cf-ico wa" href={link} target="_blank" rel="noreferrer" title="Recordatorio por WhatsApp" onClick={(e) => e.stopPropagation()}><HiPhone /></a>
+                                  : <button className="cf-ico" title="Sin teléfono del cliente" disabled style={{ opacity: .4, cursor: "default" }} onClick={(e) => e.stopPropagation()}><HiPhone /></button>}
+                            <button className="cf-ico" title="Generar estado de cuenta" onClick={(e) => { e.stopPropagation(); openStatement(); }}><HiBars3 /></button>
+                          </div></td>
+                        </tr>
                       );
                     })}
                   </tbody>
