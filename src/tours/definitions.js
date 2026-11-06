@@ -71,13 +71,6 @@ export const TOUR_ECOSISTEMA = {
         "Ahí vive tu operación diaria.",
     },
     {
-      target: '[data-tour="app-miday"]',
-      title: "Mi Día",
-      content:
-        "Tu punto de partida cada mañana: las citas de hoy, los pagos por cobrar y lo " +
-        "que requiere tu atención, todo en una pantalla.",
-    },
-    {
       target: '[data-tour="app-agenda"]',
       title: "Calendario",
       content:
@@ -95,7 +88,7 @@ export const TOUR_ECOSISTEMA = {
     },
     {
       // Cierra sobre la galería principal y no centrado en la página: después de
-      // Mi Día, Calendario y Equipo la vista quedaba en las apps transversales, y
+      // Calendario y Equipo la vista quedaba en las apps transversales, y
       // el recorrido terminaba lejos de donde el usuario va a entrar a trabajar.
       target: '[data-tour="apps"]',
       title: "Eso es todo por ahora",

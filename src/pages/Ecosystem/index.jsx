@@ -109,20 +109,6 @@ function EcosystemHub() {
           </div>
         </div>
 
-        <div className="app-card" data-tour="app-miday" onClick={() => navigate("/ecosistema/mi-dia")} role="button" tabIndex={0}
-          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && navigate("/ecosistema/mi-dia")}>
-          <div className="app-top">
-            <div className="app-icon ic-neutral"><svg><use href="#eco-n-sun" /></svg></div>
-            <span className="app-status st-active">Activo</span>
-          </div>
-          <div className="app-name">Mi Día</div>
-          <div className="app-desc">Tu jornada consolidada: citas de hoy, pagos por cobrar y lo que requiere tu atención.</div>
-          <div className="app-cta">
-            <span className="app-open">Abrir</span>
-            <span className="app-arrow">→</span>
-          </div>
-        </div>
-
         <div className={`app-card ${!canUseFeature("core.forms") ? "is-disabled" : ""}`} onClick={openFormularios} role="button" tabIndex={0}
           onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && openFormularios()}>
           <div className="app-top">
@@ -194,7 +180,7 @@ function EcosystemHub() {
           { title: "Aplicaciones Core", text: "Los tres productos principales del ecosistema. OwnTerra Lands, OwnTerra Properties y Ownterra Construct están activos." },
           { title: "Ingresar a Lands", text: "Haz clic en la tarjeta de OwnTerra Lands para acceder al módulo de gestión de lotes, clientes y cobranza de fraccionamientos." },
           { title: "Ingresar a Properties", text: "Haz clic en OwnTerra Properties para administrar tus comunidades: unidades, residentes, cuotas, avisos y amenidades." },
-          { title: "Aplicaciones Verticales", text: "Servicios compartidos por todas las apps core: Calendario, Mi Día, Formularios, Proveedores y OwnTerra Vault." },
+          { title: "Aplicaciones Verticales", text: "Servicios compartidos por todas las apps core: Calendario, Formularios, Proveedores y OwnTerra Vault." },
           { title: "Ingresar a una app", text: "Haz clic en cualquier tarjeta activa para entrar. Las que aún no tienes asignadas se marcan como \"Sin acceso\" — pídele a un administrador que te las habilite en Equipo." },
         ]}
       />
