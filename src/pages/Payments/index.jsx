@@ -1188,7 +1188,7 @@ const ESTADO_EG  = [["all","Todos los estados"],["pending","Pendiente"],["overdu
 const ESTADO_AL  = [["all","Todas las alertas"],["roja","Urgentes"],["amarilla","Próximas"]];
 
 export default function PaymentsPage() {
-  const { payments, clients, contracts, datosIncompletos, quickPay, collectOnContract, sendReminder, showToast, showError, currentUser } = useAppContext();
+  const { payments, clients, contracts, quickPay, collectOnContract, sendReminder, showToast, showError, currentUser } = useAppContext();
   const [statementClientId, setStatementClientId] = useState(null);
   const qc = useQueryClient();
   const [params] = useSearchParams();
@@ -1550,10 +1550,6 @@ export default function PaymentsPage() {
         .cf-btn-ghost{background:var(--sf);color:var(--danger);border-color:var(--bd)}
         .cf-btn-ghost:hover{border-color:var(--danger)}
         .cf-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
-        .cf-aviso-parcial{display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;
-          padding:12px 14px;border:1px solid #C98A2B;border-left-width:3px;border-radius:6px;
-          background:rgba(201,138,43,.08);color:inherit;font-size:13.5px;line-height:1.5}
-        .cf-aviso-parcial svg{flex:none;margin-top:2px;color:#C98A2B;font-size:16px}
         .cf-kpi{background:var(--sf);border:1px solid var(--bd);border-radius:18px;box-shadow:var(--sh);padding:16px 18px 6px;display:flex;flex-direction:column}
         .cf-kpi .top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
         .cf-kpi .ico{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;font-size:1.15rem}
@@ -1647,18 +1643,6 @@ export default function PaymentsPage() {
 
       {targetPaymentId && <section className="lands-found-record" aria-label="Pago encontrado">{targetPayment.isPending ? <p role="status">Cargando pago…</p> : targetPayment.isError ? <p role="alert">No se pudo consultar el pago. <button type="button" className="btn-s" onClick={() => targetPayment.refetch()}>Reintentar</button></p> : targetPayment.data && <><div><strong>{targetPayment.data.client?.name} · Cuota {targetPayment.data.installment_n}</strong><p>{targetPayment.data.contract?.contract_number} · {currency(targetPayment.data.amount)} · {{ paid: "Pagado", partial: "Parcial", pending: "Pendiente", overdue: "Vencido", cancelled: "Cancelado" }[targetPayment.data.status] || targetPayment.data.status}</p></div>{["pending", "partial", "overdue"].includes(targetPayment.data.status) && <button type="button" className="btn-p" onClick={() => setAbono(targetPayment.data)}>Registrar este cobro</button>}</>}</section>}
       {pendingReceipts.issues.filter(issue => issue.kind !== "reservation").map(issue => <PendingReceiptUpload key={`${issue.kind}-${issue.id}`} issue={issue} onDone={() => pendingReceipts.remove(issue)} />)}
-      {datosIncompletos?.payments && (
-        <div className="cf-aviso-parcial" role="status">
-          <HiOutlineClock aria-hidden="true" />
-          <span>
-            Se cargaron <strong>{datosIncompletos.payments.cargados}</strong> de{" "}
-            <strong>{datosIncompletos.payments.total}</strong> cuotas. El{" "}
-            <strong>Registro de Ingresos</strong> y su gráfica mensual solo cubren
-            esas. Los indicadores, las alertas y las amortizaciones vienen
-            calculados del servidor y sí abarcan todo.
-          </span>
-        </div>
-      )}
 
       <div className="cf-panel">
         <div className="cf-tabs" data-tour="pagos-tabs">
