@@ -350,7 +350,7 @@ function ClientReport({ clientId }) {
       </div>
 
       <div id="rp-print-area" style={{
-        background: "#FDFBF5", border: "1px solid var(--bd)",
+        background: "var(--sf)", border: "1px solid var(--bd)",
         borderRadius: 16, padding: "36px 40px",
         boxShadow: "0 8px 28px rgba(27,43,24,.08)",
         maxWidth: 920, margin: "0 auto",
@@ -380,7 +380,7 @@ function ClientReport({ clientId }) {
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 14, marginBottom: 14 }}>
 
-          <div style={{ background: "var(--sf)", border: "1px solid var(--bd)",
+          <div style={{ background: "var(--sf2)", border: "1px solid var(--bd)",
             borderRadius: 12, padding: "14px 16px" }}>
             <div style={{ fontSize: ".7rem", fontWeight: 800, letterSpacing: ".12em",
               textTransform: "uppercase", color: "var(--tan-dk)",
@@ -424,7 +424,7 @@ function ClientReport({ clientId }) {
             </div>
           </div>
 
-          <div data-tour="rp-comportamiento" style={{ background: "var(--sf)", border: "1px solid var(--bd)",
+          <div data-tour="rp-comportamiento" style={{ background: "var(--sf2)", border: "1px solid var(--bd)",
             borderRadius: 12, padding: "14px 16px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center",
               borderBottom: "1.5px solid var(--tan-lt)", paddingBottom: 6, marginBottom: 10 }}>
@@ -451,7 +451,7 @@ function ClientReport({ clientId }) {
 
         <div data-tour="rp-resumen" style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 14, marginBottom: 14 }}>
 
-          <div style={{ background: "var(--sf)", border: "1px solid var(--bd)",
+          <div style={{ background: "var(--sf2)", border: "1px solid var(--bd)",
             borderRadius: 12, padding: "14px 16px" }}>
             <div style={{ fontSize: ".7rem", fontWeight: 800, letterSpacing: ".12em",
               textTransform: "uppercase", color: "var(--tan-dk)",
@@ -477,7 +477,7 @@ function ClientReport({ clientId }) {
             </div>
           </div>
 
-          <div style={{ background: "var(--sf)", border: "1px solid var(--bd)",
+          <div style={{ background: "var(--sf2)", border: "1px solid var(--bd)",
             borderRadius: 12, overflow: "hidden" }}>
             <div style={{ padding: "12px 16px 8px",
               borderBottom: "1.5px solid var(--tan-lt)",
@@ -502,7 +502,7 @@ function ClientReport({ clientId }) {
                 </thead>
                 <tbody>
                   {contracts.map((c, i) => (
-                    <tr key={c.id} style={{ background: i % 2 === 0 ? "#FAF7EF" : "transparent" }}>
+                    <tr key={c.id} style={{ background: i % 2 === 0 ? "var(--sf)" : "transparent" }}>
                       <td style={{ fontWeight: 700, fontSize: ".8rem" }}>{c.contract_number}</td>
                       <td style={{ fontSize: ".8rem", color: "var(--tx2)" }}>{TYPE_LABEL[c.type] || c.type}</td>
                       <td style={{ fontWeight: 700, color: "var(--tx)", textAlign: "right", whiteSpace: "nowrap" }}>
@@ -522,7 +522,7 @@ function ClientReport({ clientId }) {
           </div>
         </div>
 
-        <div style={{ background: "var(--sf)", border: "1px solid var(--bd)",
+        <div style={{ background: "var(--sf2)", border: "1px solid var(--bd)",
           borderRadius: 12, overflow: "hidden", marginBottom: 14 }}>
           <div style={{
             padding: "12px 16px 8px", borderBottom: "1.5px solid var(--tan-lt)",
@@ -563,7 +563,7 @@ function ClientReport({ clientId }) {
                     .map((p, i) => {
                       const ct = contracts.find(c => c.id === p.contract_id);
                       return (
-                        <tr key={p.id} style={{ background: i % 2 === 0 ? "#FAF7EF" : "transparent" }}>
+                        <tr key={p.id} style={{ background: i % 2 === 0 ? "var(--sf)" : "transparent" }}>
                           <td style={{ fontWeight: 700, fontSize: ".8rem", textAlign: "center" }}>#{p.installment_n}</td>
                           <td style={{ fontSize: ".78rem", color: "var(--tx2)" }}>
                             {ct?.contract_number || "—"}
