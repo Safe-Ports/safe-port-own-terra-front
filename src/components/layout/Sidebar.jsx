@@ -7,7 +7,6 @@ import {
   HiCalculator,
   HiChevronDoubleLeft,
   HiChevronDoubleRight,
-  HiChartBarSquare,
   HiCog6Tooth,
   HiDocumentDuplicate,
   HiHome,
@@ -35,7 +34,6 @@ const items = [
   { label: "Pagos", to: "/pagos", icon: HiBellAlert, section: "Gestion" },
   { label: "Documentos", to: "/documentos", icon: HiDocumentDuplicate, section: "Gestion" },
   { label: "Calculadora", to: "/calculadora", icon: HiCalculator, section: "Gestion" },
-  { label: "Reportes", to: "/reportes", icon: HiChartBarSquare, section: "Sistema" },
   { label: "Configuracion", to: "/configuracion", icon: HiCog6Tooth, section: "Sistema" },
 ];
 
@@ -88,7 +86,6 @@ function Sidebar() {
             if (item.to === "/ventas" || item.to === "/contratos") return canUseFeature("lands.sales");
             if (item.to === "/documentos") return canUseFeature("lands.documents");
             if (item.to === "/pagos") return canUseFeature("lands.payments");
-            if (item.to === "/reportes") return canUseFeature("lands.reports");
             // Mismo criterio que las rutas (ver AppRouter): son de administración,
             // así que no basta con tener acceso a Lands. Sin esto el vendedor las
             // veía en el menú y al entrar chocaba con "sin acceso".

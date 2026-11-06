@@ -603,70 +603,6 @@ export const TOUR_DOCUMENTOS = {
 };
 
 /**
- * Estado de cuenta (Reportes), parte 1: la lista de clientes. Siempre visible al
- * entrar a /reportes, así que no necesita `waitFor`.
- */
-export const TOUR_REPORTES_CLIENTES = {
-  key: "reportes-clientes",
-  label: "Estado de cuenta",
-  description: "El reporte financiero de un cliente: comportamiento, saldo, plan de pagos y PDF.",
-  route: "/reportes",
-  gate: "lands.reports",
-  next: "reportes-detalle",
-  steps: [
-    {
-      target: '[data-tour="rp-clientes"]',
-      placement: "right",
-      title: "Elige un cliente",
-      locale: { last: "Entendido" },
-      content:
-        "Busca por nombre, correo o teléfono. En cuanto elijas uno, se arma su " +
-        "reporte completo: comportamiento de pago, contratos, saldo y plan de pagos.",
-    },
-  ],
-};
-
-/**
- * Estado de cuenta, parte 2: el reporte en sí. Sus anclas solo existen una vez que
- * hay un cliente seleccionado — de ahí el `waitFor` sobre la gráfica.
- */
-export const TOUR_REPORTES_DETALLE = {
-  key: "reportes-detalle",
-  waitFor: '[data-tour="rp-comportamiento"]',
-  hidden: true, // continúa reportes-clientes
-  steps: [
-    {
-      target: '[data-tour="rp-comportamiento"]',
-      title: "Comportamiento de pago",
-      content:
-        "Los últimos 12 meses: verde es pago puntual, rojo es vencido. Te dice de un " +
-        "vistazo qué tan cumplido es este cliente.",
-    },
-    {
-      target: '[data-tour="rp-resumen"]',
-      title: "Cumplimiento y contratos",
-      content:
-        "Cuántas cuotas están al corriente, por vencer o vencidas, y la lista de " +
-        "contratos de este cliente con su monto y estado.",
-    },
-    {
-      target: '.rp-payments-scroll',
-      title: "El plan de pagos, cuota por cuota",
-      content:
-        "Cada abono programado: número, fecha, monto, estado y cuándo se pagó (si ya " +
-        "se pagó). Es el detalle completo detrás del resumen de arriba.",
-    },
-    {
-      target: '[data-tour="rp-acciones"]',
-      title: "Compártelo",
-      content:
-        "Descarga el estado de cuenta en PDF, o envíalo directo al correo " +
-        "registrado del cliente — sin salir de esta pantalla.",
-    },
-  ],
-};
-
-/**
  * Control Financiero (Pagos): un solo tour, sin waitFor. Todo lo que explica está
  * visible desde que se entra a /pagos, en la pestaña "Amortizaciones" que abre por
  * defecto.
@@ -722,8 +658,6 @@ export const TOURS = [
   TOUR_CONTRATO_BOTON,
   TOUR_CONTRATO_FORM,
   TOUR_DOCUMENTOS,
-  TOUR_REPORTES_CLIENTES,
-  TOUR_REPORTES_DETALLE,
   TOUR_PAGOS,
   TOUR_RESTRICCIONES,
 ];
