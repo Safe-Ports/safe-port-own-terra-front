@@ -161,16 +161,16 @@ function FormPublico() {
                     {f.required && <span className="fp-required">*</span>}
                   </label>
                   {f.description && <div className="fp-hint">{f.description}</div>}
-                  <input
+                  <textarea
                     id={`fp-${f.id}`}
                     className={`fp-input${errors[f.id] ? " error" : ""}`}
+                    rows={1}
                     value={values[f.id] ?? ""}
                     onChange={(e) => handleChange(f.id, e.target.value)}
                     placeholder={`Escribe ${f.label.toLowerCase()}`}
                     aria-required={f.required}
                     aria-invalid={Boolean(errors[f.id])}
                     aria-describedby={errors[f.id] ? `fp-error-${f.id}` : undefined}
-                    autoComplete="off"
                   />
                   {errors[f.id] && <div id={`fp-error-${f.id}`} className="fp-error">{errors[f.id]}</div>}
                 </div>

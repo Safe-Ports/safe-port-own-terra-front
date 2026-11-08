@@ -51,6 +51,7 @@
   line-height: 1.2;
   margin-bottom: 8px;
   font-family: var(--font-title);
+  overflow-wrap: anywhere;
 }
 
 .fp-desc {
@@ -58,6 +59,8 @@
   color: #666;
   line-height: 1.55;
   margin-bottom: 20px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 .fp-divider {
@@ -71,18 +74,21 @@
   flex-direction: column;
   gap: 18px;
   margin-bottom: 22px;
+  min-width: 0;
 }
 
 .fp-field {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  min-width: 0;
 }
 
 .fp-label {
   font-size: 13px;
   font-weight: 600;
   color: #1a1a1a;
+  overflow-wrap: anywhere;
 }
 
 .fp-required { color: #C0392B; margin-left: 2px; }
@@ -91,18 +97,26 @@
   font-size: 11.5px;
   color: #888;
   line-height: 1.4;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 .fp-input {
+  display: block;
   width: 100%;
+  max-width: 100%;
+  min-height: 44px;
   border: 1px solid #d4d0c9;
   border-radius: 10px;
   padding: 11px 13px;
   font-size: 14px;
   color: #1a1a1a;
   font-family: var(--font-body);
+  line-height: 1.45;
   outline: none;
   background: #fdfcfa;
+  resize: vertical;
+  overflow-wrap: anywhere;
   transition: border-color .15s, box-shadow .15s;
 }
 
