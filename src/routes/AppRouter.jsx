@@ -34,7 +34,6 @@ const PaymentsPage = lazyWithRetry(() => import("@/pages/Payments"));
 const CalculatorPage = lazyWithRetry(() => import("@/pages/Calculator"));
 const ProfilePage = lazyWithRetry(() => import("@/pages/Profile"));
 const SettingsPage = lazyWithRetry(() => import("@/pages/Settings"));
-const ReportsPage = lazyWithRetry(() => import("@/pages/Reports"));
 const PricingPage = lazyWithRetry(() => import("@/pages/Pricing"));
 const AccessDenied = lazyWithRetry(() => import("@/pages/AccessDenied"));
 const PropertiesDashboard = lazyWithRetry(() => import("@/apps/properties/features/dashboard/PropertiesDashboard"));
@@ -163,7 +162,6 @@ function AppRouter() {
             <Route path="/documentos" element={<RequireFeature feature="lands.documents"><DocumentsPage /></RequireFeature>} />
             <Route path="/alertas" element={<Navigate to="/pagos" replace />} />
             <Route path="/pagos" element={<RequireFeature feature="lands.payments"><PaymentsPage /></RequireFeature>} />
-            <Route path="/reportes" element={<RequireFeature feature="lands.reports"><ReportsPage /></RequireFeature>} />
             <Route path="/calculadora" element={<RequireFeature feature="lands.write"><CalculatorPage /></RequireFeature>} />
             <Route path="/perfil" element={<ProfilePage />} />
             <Route path="/configuracion" element={<RequireFeature feature="core.config"><SettingsPage /></RequireFeature>} />

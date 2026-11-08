@@ -528,8 +528,9 @@
 .eco-root .usr-field{margin-bottom:14px}
 .eco-root .usr-field-lbl{display:block;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
   color:var(--text3);font-family: var(--font-body);margin-bottom:6px}
-.eco-root .usr-input,.eco-root .usr-select{width:100%;border:1px solid var(--border2);background:var(--surface);border-radius:11px;
-  padding:10px 12px;font-size:13px;color:var(--text);outline:none;font-family: var(--font-body);transition:border-color .15s}
+.eco-root .usr-input,.eco-root .usr-select{width:100%;max-width:100%;border:1px solid var(--border2);background:var(--surface);border-radius:11px;
+  padding:10px 12px;font-size:13px;color:var(--text);outline:none;font-family: var(--font-body);transition:border-color .15s;overflow-wrap:anywhere}
+.eco-root textarea.usr-input{min-height:64px;line-height:1.5}
 .eco-root .usr-input:focus,.eco-root .usr-select:focus{border-color:var(--leaf)}
 .eco-root .usr-field-row{display:flex;gap:10px}
 .eco-root .usr-field-row .usr-field{flex:1}
@@ -923,8 +924,10 @@
 .eco-root .fom-badge{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;padding:4px 9px;border-radius:30px;font-family: var(--font-body);background:var(--bg2);color:var(--text2);border:1px solid var(--border)}
 .eco-root .fom-link-row{display:flex;align-items:center;gap:8px;padding:9px 11px;background:var(--bg2);border:1px solid var(--border);border-radius:11px;margin-bottom:14px}
 .eco-root .fom-link-text{font-size:11px;font-family: var(--font-body);color:var(--text3);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.eco-root .fom-copy-btn{flex-shrink:0;border:1px solid var(--border2);background:var(--surface);color:var(--mid);border-radius:9px;padding:5px 10px;font-size:11.5px;font-weight:600;cursor:pointer;font-family: var(--font-body);transition:all .15s;white-space:nowrap}
+.eco-root .fom-copy-btn{flex-shrink:0;border:1px solid var(--border2);background:var(--surface);color:var(--mid);border-radius:9px;padding:5px 10px;font-size:11.5px;font-weight:600;cursor:pointer;font-family: var(--font-body);transition:all .15s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
 .eco-root .fom-copy-btn:hover{background:var(--bg2);border-color:var(--leaf);color:var(--deep)}
+.eco-root .fom-wa-btn{color:#1DA851;border-color:rgba(29,168,81,.35)}
+.eco-root .fom-wa-btn:hover{background:rgba(29,168,81,.08);border-color:#1DA851;color:#1DA851}
 .eco-root .fom-actions{display:flex;align-items:center;gap:6px;padding-top:14px;border-top:1px solid var(--border);flex-wrap:wrap}
 .eco-root .fom-action{display:inline-flex;align-items:center;gap:5px;padding:7px 11px;border-radius:9px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);font-size:11.5px;font-weight:500;cursor:pointer;font-family: var(--font-body);transition:all .15s}
 .eco-root .fom-action:hover{background:var(--surface2);border-color:var(--leaf);color:var(--deep)}
@@ -932,9 +935,9 @@
 .eco-root .fom-action:disabled{opacity:.5;cursor:not-allowed}
 
 /* Editor */
-.eco-root .fom-editor{display:grid;grid-template-columns:1fr 400px;gap:16px;align-items:start}
-.eco-root .fom-builder{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px}
-.eco-root .fom-preview-col{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;position:sticky;top:16px}
+.eco-root .fom-editor{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,400px);gap:16px;align-items:start}
+.eco-root .fom-builder{min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px}
+.eco-root .fom-preview-col{min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;position:sticky;top:16px}
 .eco-root .fom-section-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-family: var(--font-body);color:var(--text3);font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:10px}
 .eco-root .fom-section-label::after{content:'';flex:1;height:1px;background:var(--border)}
 .eco-root .fom-field-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
@@ -966,12 +969,12 @@
 .eco-root .fom-editor-foot{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding-top:18px;border-top:1px solid var(--border);margin-top:22px;flex-wrap:wrap}
 
 /* Preview */
-.eco-root .fom-prev-name{font-family: var(--font-title);font-size:20px;color:var(--deep);margin-bottom:6px}
-.eco-root .fom-prev-desc{font-size:12.5px;color:var(--text3);line-height:1.5;margin-bottom:14px}
-.eco-root .fom-prev-fields{display:flex;flex-direction:column;gap:14px}
-.eco-root .fom-prev-field{display:flex;flex-direction:column;gap:5px}
-.eco-root .fom-prev-lbl{font-size:12.5px;font-weight:600;color:var(--text)}
-.eco-root .fom-prev-hint{font-size:11px;color:var(--text3);margin-top:-2px}
+.eco-root .fom-prev-name{font-family: var(--font-title);font-size:20px;color:var(--deep);margin-bottom:6px;overflow-wrap:anywhere}
+.eco-root .fom-prev-desc{font-size:12.5px;color:var(--text3);line-height:1.5;margin-bottom:14px;overflow-wrap:anywhere;white-space:pre-wrap}
+.eco-root .fom-prev-fields{display:flex;flex-direction:column;gap:14px;min-width:0}
+.eco-root .fom-prev-field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.eco-root .fom-prev-lbl{font-size:12.5px;font-weight:600;color:var(--text);overflow-wrap:anywhere}
+.eco-root .fom-prev-hint{font-size:11px;color:var(--text3);margin-top:-2px;overflow-wrap:anywhere;white-space:pre-wrap}
 .eco-root .fom-prev-input{width:100%;border:1px solid var(--border2);background:var(--bg2);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--text);font-family: var(--font-body);outline:none;pointer-events:none}
 .eco-root .fom-prev-btn{width:100%;padding:11px;border-radius:12px;border:none;background:linear-gradient(140deg,var(--mid),var(--deep));color:var(--cream);font-size:14px;font-weight:600;cursor:default;font-family: var(--font-body);margin-top:8px}
 .eco-root .fom-prev-empty{border:1.5px dashed var(--border2);border-radius:14px;padding:24px;text-align:center;color:var(--text3);font-size:12.5px}

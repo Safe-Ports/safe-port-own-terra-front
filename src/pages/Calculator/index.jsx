@@ -66,6 +66,7 @@ function CalculatorPage() {
   const [evalError, setEvalError] = useState("");
   const [saving, setSaving]       = useState(false);
   const [pendingId, setPendingId] = useState(null);        // id en operación (activar/eliminar)
+  const [activateTarget, setActivateTarget] = useState(null); // calculadora a confirmar antes de activar
   const [proj, setProj]           = useState({ months: "", principal: "" }); // override de proyección
 
   const isEditing = Boolean(editor.id);
@@ -149,7 +150,7 @@ function CalculatorPage() {
         isEditing ? old.map((c) => (c.id === saved.id ? saved : c)) : [saved, ...old]
       );
       loadIntoEditor(saved);
-      qc.invalidateQueries({ queryKey: ["calculators", "active", APP_KEY] });
+      qc.invalidateQueries({ queryKey: ["calculators"] });
       showToast(isEditing ? "Calculadora actualizada" : "Calculadora creada");
     } catch (err) {
       showError(err, "No se pudo guardar la calculadora");
@@ -158,22 +159,49 @@ function CalculatorPage() {
     }
   };
 
-  const activate = async (calc) => {
+  // Activar pide confirmación: varias calculadoras pueden estar activas a la vez
+  // y quedan disponibles para que un vendedor las elija al concretar una venta,
+  // así que antes de habilitar una forma de interés conviene pensarlo dos veces.
+  const requestActivate = (calc) => {
     if (calc.is_active || pendingId) return;
+    setActivateTarget(calc);
+  };
+
+  const confirmActivate = async () => {
+    const calc = activateTarget;
+    if (!calc) return;
     setPendingId(calc.id);                 // muestra "Cargando…" en ese ítem
     try {
       await calculatorService.activate(calc.id);
-      // Server confirmó: refleja el cambio (una sola activa por módulo).
-      qc.setQueryData(LIST_KEY, (old = []) => old.map((c) => ({ ...c, is_active: c.id === calc.id })));
+      qc.setQueryData(LIST_KEY, (old = []) => old.map((c) => (c.id === calc.id ? { ...c, is_active: true } : c)));
       if (editor.id === calc.id) setEditor((e) => ({ ...e, is_active: true }));
-      qc.invalidateQueries({ queryKey: ["calculators", "active", APP_KEY] });
-      showToast(`«${calc.name}» es ahora la calculadora activa`);
+      qc.invalidateQueries({ queryKey: ["calculators"] });
+      showToast(`«${calc.name}» está activa: disponible al crear contratos`);
+      setActivateTarget(null);
     } catch (err) {
       showError(err, "No se pudo activar la calculadora");
     } finally {
       setPendingId(null);
     }
   };
+
+  const deactivate = async (calc) => {
+    if (!calc.is_active || pendingId) return;
+    setPendingId(calc.id);
+    try {
+      await calculatorService.deactivate(calc.id);
+      qc.setQueryData(LIST_KEY, (old = []) => old.map((c) => (c.id === calc.id ? { ...c, is_active: false } : c)));
+      if (editor.id === calc.id) setEditor((e) => ({ ...e, is_active: false }));
+      qc.invalidateQueries({ queryKey: ["calculators"] });
+      showToast(`«${calc.name}» ya no está disponible para nuevos contratos`);
+    } catch (err) {
+      showError(err, "No se pudo desactivar la calculadora");
+    } finally {
+      setPendingId(null);
+    }
+  };
+
+  const toggleActive = (calc) => (calc.is_active ? deactivate(calc) : requestActivate(calc));
 
   const remove = async (calc) => {
     if (pendingId) return;
@@ -183,7 +211,7 @@ function CalculatorPage() {
       await calculatorService.delete(calc.id);
       qc.setQueryData(LIST_KEY, (old = []) => old.filter((c) => c.id !== calc.id));
       if (editor.id === calc.id) { setOpen(false); setEditor(EMPTY); }
-      qc.invalidateQueries({ queryKey: ["calculators", "active", APP_KEY] });
+      qc.invalidateQueries({ queryKey: ["calculators"] });
       setDeleteTarget(null);
       showToast("Calculadora eliminada");
     } catch (err) {
@@ -228,19 +256,29 @@ function CalculatorPage() {
           border-top-color:var(--forest);animation:calc-spin .6s linear infinite;}
         @keyframes calc-spin{to{transform:rotate(360deg);}}
       `}</style>
-      {contractDraft?._resumeContract && <section className="lands-found-record"><div><strong>Tu contrato sigue en borrador</strong><p>Los datos capturados se conservaron mientras configuras el plan.</p></div><button type="button" className="btn-p" onClick={() => { qc.invalidateQueries({ queryKey: ["calculators", "active", APP_KEY] }); navigate("/contratos"); openModal("contractModal"); }}>Volver al contrato</button></section>}
+      {contractDraft?._resumeContract && <section className="lands-found-record"><div><strong>Tu contrato sigue en borrador</strong><p>Los datos capturados se conservaron mientras configuras el plan.</p></div><button type="button" className="btn-p" onClick={() => { qc.invalidateQueries({ queryKey: ["calculators"] }); navigate("/contratos"); openModal("contractModal"); }}>Volver al contrato</button></section>}
       <div className="flex items-center justify-between">
         <div>
           <div className="text-lg font-semibold" style={{ color: "var(--tx,#1E3D2B)" }}>
             <HiCalculator style={{ display: "inline", verticalAlign: "-2px" }} /> Calculadoras de financiamiento
           </div>
           <div className="text-xs" style={{ color: "var(--mu)" }}>
-            Define la fórmula de la mensualidad. La <strong>activa</strong> se usa al concretar una venta.
+            Define la fórmula de la mensualidad. Las que estén <strong>activas</strong> quedan disponibles para elegir al concretar una venta.
           </div>
         </div>
       </div>
 
       <ConfirmDialog open={!!deleteTarget} title="¿Eliminar esta calculadora?" confirmLabel="Eliminar calculadora" danger busy={!!pendingId} onCancel={() => setDeleteTarget(null)} onConfirm={() => remove(deleteTarget)}>Las ventas anteriores conservan su fórmula.</ConfirmDialog>
+      <ConfirmDialog
+        open={!!activateTarget}
+        title={`¿Activar «${activateTarget?.name || ""}» como forma de financiamiento?`}
+        confirmLabel="Sí, activar"
+        busy={!!pendingId}
+        onCancel={() => setActivateTarget(null)}
+        onConfirm={confirmActivate}
+      >
+        Quedará disponible para que cualquier vendedor la elija al crear un contrato. Revisa que la fórmula y la tasa de interés sean exactamente las que quieres ofrecer antes de confirmar.
+      </ConfirmDialog>
       <div className="grid gap-4 lands-calculator-grid">
         {/* ── Lista ── */}
         <div className="card" style={{ alignSelf: "start" }} data-tour="calc-lista">
@@ -275,10 +313,10 @@ function CalculatorPage() {
                         type="button"
                         className="calc-switch"
                         disabled={!!pendingId}
-                        title={calc.is_active ? "Calculadora activa" : "Activar esta calculadora"}
-                        onClick={(e) => { e.stopPropagation(); activate(calc); }}
+                        title={calc.is_active ? "Desactivar esta calculadora" : "Activar esta calculadora"}
+                        onClick={(e) => { e.stopPropagation(); toggleActive(calc); }}
                         style={{
-                          cursor: calc.is_active ? "default" : "pointer",
+                          cursor: "pointer",
                           background: calc.is_active ? "var(--forest)" : "var(--bd)",
                         }}
                       >
@@ -471,7 +509,7 @@ function CalculatorPage() {
         title="Calculadoras de financiamiento"
         subtitle="Crea fórmulas propias para la mensualidad y elige cuál se usa en las ventas."
         steps={[
-          { title: "Lista de calculadoras", text: "A la izquierda ves tus calculadoras guardadas. El interruptor marca cuál está ACTIVA; solo una puede estarlo a la vez y es la que se aplica al concretar una venta." },
+          { title: "Lista de calculadoras", text: "A la izquierda ves tus calculadoras guardadas. El interruptor marca cuáles están ACTIVAS; puedes activar varias a la vez, y el vendedor elige cuál usar al concretar cada venta." },
           { title: "Crear / editar", text: "Pulsa “+ Nueva” o toca una existente para cargarla en el editor. Escribe nombre, descripción y la fórmula matemática de la mensualidad." },
           { title: "Variables abiertas", text: "Nombra las variables como quieras dentro de la fórmula (ej. Precio_Lote, Enganche, Tasa, Plazo). Pulsa “Analizar fórmula” para que el sistema genere los campos de prueba." },
           { title: "Modo prueba", text: "Captura valores y verás la mensualidad y la tabla de amortización proyectada (ajusta plazo y monto financiado si hace falta), antes de guardar." },

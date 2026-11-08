@@ -47,11 +47,13 @@ function FieldModal({ field, onSave, onClose }) {
           </div>
           <div className="usr-field">
             <label htmlFor="field-formularios-editor-2" className="usr-field-lbl">Descripción / ayuda (opcional)</label>
-            <input id="field-formularios-editor-2"
+            <textarea id="field-formularios-editor-2"
               className="usr-input"
+              rows={2}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Ej. Tal como aparece en su identificación oficial"
+              style={{ resize: "vertical" }}
             />
           </div>
           <label className="usr-check">

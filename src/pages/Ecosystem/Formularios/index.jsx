@@ -48,6 +48,12 @@ const IcoEyeOff = () => (
   </svg>
 );
 
+const IcoWhatsapp = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.33 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm5.8 14.14c-.24.68-1.4 1.3-1.93 1.37-.5.07-1.12.1-1.8-.11a16.6 16.6 0 0 1-1.65-.6c-2.9-1.25-4.78-4.17-4.93-4.36-.14-.2-1.18-1.57-1.18-3 0-1.42.75-2.12 1.01-2.4.26-.29.58-.36.77-.36l.55.01c.18.01.42-.07.65.5.24.58.8 2 .87 2.15.07.15.12.32.02.51-.1.2-.15.32-.3.49-.14.17-.3.38-.43.51-.14.14-.3.3-.13.58.17.29.76 1.26 1.64 2.04 1.13.99 2.08 1.3 2.37 1.45.29.14.46.12.63-.07.17-.19.72-.84.92-1.13.19-.29.38-.24.64-.14.26.1 1.63.77 1.91.91.29.14.47.21.54.33.07.12.07.68-.17 1.36z"/>
+  </svg>
+);
+
 const IcoTrash = () => (
   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="3 6 5 6 21 6"/>
@@ -92,6 +98,12 @@ function EcosystemFormularios() {
   const copyLink = (slug) => {
     const url = `${window.location.origin}/f/${slug}`;
     navigator.clipboard.writeText(url).then(() => showToast("Link copiado al portapapeles"));
+  };
+
+  const shareWhatsapp = (t) => {
+    const url = `${window.location.origin}/f/${t.slug}`;
+    const text = `Por favor completa este formulario — ${t.name}: ${url}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
   };
 
   const handleDelete = async (t) => {
@@ -183,6 +195,9 @@ function EcosystemFormularios() {
                   <div className="fom-link-row">
                     <span className="fom-link-text">{link}</span>
                     <button className="fom-copy-btn" onClick={() => copyLink(t.slug)}>Copiar link</button>
+                    <button className="fom-copy-btn fom-wa-btn" onClick={() => shareWhatsapp(t)}>
+                      <IcoWhatsapp /> WhatsApp
+                    </button>
                   </div>
                 )}
 

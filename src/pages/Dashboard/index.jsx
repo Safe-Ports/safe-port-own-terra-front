@@ -12,7 +12,7 @@ import { compactCurrency, currency } from "@/services/formatters";
 import { expenseService } from "@/services/expenseService";
 import { dashboardService } from "@/services/dashboardService";
 import {
-  HiOutlineSquares2X2, HiOutlineDocumentText,
+  HiOutlineDocumentText,
   HiOutlineChevronDown, HiOutlineArrowRight,
 } from "react-icons/hi2";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -397,9 +397,6 @@ export default function DashboardPage() {
         <div className="db-card">
           <div className="db-card-hd">
             <div className="db-card-title">Top vendedores</div>
-            <button className="db-ver-todos" onClick={() => navigate("/reportes")}>
-              Ver todas <HiOutlineArrowRight />
-            </button>
           </div>
           {teamPerf.length === 0 ? (
             <div style={{ padding: "24px 0", textAlign: "center", color: "var(--mu)", fontSize: ".8rem" }}>
@@ -450,7 +447,6 @@ export default function DashboardPage() {
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           {[
             { icon: HiOutlineDocumentText, label: "Generar contrato", path: "/contratos" },
-            { icon: HiOutlineSquares2X2,   label: "Ver reportes",     path: "/reportes"  },
           ].map(({ icon: Icon, label, path }) => (
             <button key={label} className="db-accion" onClick={() => navigate(path)}>
               <div className="db-accion-ico" style={{ background: "rgba(111,175,107,.14)" }}>

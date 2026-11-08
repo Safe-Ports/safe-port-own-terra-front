@@ -1,9 +1,11 @@
 import WorkflowForm from "@/components/forms/WorkflowForm";
 import AmountInput from "@/components/forms/AmountInput";
 import { useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import GuideModal from "@/components/shared/GuideModal";
+import Modal from "@/components/ui/Modal";
+import ClientReport, { CLIENT_REPORT_STYLES } from "@/components/shared/ClientReport";
 import {
   HiOutlinePlus, HiOutlinePencil, HiOutlineTrash, HiOutlineCalendar,
   HiOutlineXMark, HiOutlineMagnifyingGlass, HiOutlineChevronDown,
@@ -1186,9 +1188,9 @@ const ESTADO_EG  = [["all","Todos los estados"],["pending","Pendiente"],["overdu
 const ESTADO_AL  = [["all","Todas las alertas"],["roja","Urgentes"],["amarilla","Próximas"]];
 
 export default function PaymentsPage() {
-  const { payments, clients, contracts, datosIncompletos, quickPay, collectOnContract, sendReminder, showToast, showError, currentUser } = useAppContext();
+  const { payments, clients, contracts, quickPay, collectOnContract, sendReminder, showToast, showError, currentUser } = useAppContext();
+  const [statementClientId, setStatementClientId] = useState(null);
   const qc = useQueryClient();
-  const navigate = useNavigate();
   const [params] = useSearchParams();
   const targetPaymentId = params.get("payment");
   const targetPayment = useQuery({ queryKey: ["payments", "detail", targetPaymentId], queryFn: () => paymentService.get(targetPaymentId), enabled: !!targetPaymentId });
@@ -1548,10 +1550,6 @@ export default function PaymentsPage() {
         .cf-btn-ghost{background:var(--sf);color:var(--danger);border-color:var(--bd)}
         .cf-btn-ghost:hover{border-color:var(--danger)}
         .cf-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
-        .cf-aviso-parcial{display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;
-          padding:12px 14px;border:1px solid #C98A2B;border-left-width:3px;border-radius:6px;
-          background:rgba(201,138,43,.08);color:inherit;font-size:13.5px;line-height:1.5}
-        .cf-aviso-parcial svg{flex:none;margin-top:2px;color:#C98A2B;font-size:16px}
         .cf-kpi{background:var(--sf);border:1px solid var(--bd);border-radius:18px;box-shadow:var(--sh);padding:16px 18px 6px;display:flex;flex-direction:column}
         .cf-kpi .top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
         .cf-kpi .ico{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;font-size:1.15rem}
@@ -1645,18 +1643,6 @@ export default function PaymentsPage() {
 
       {targetPaymentId && <section className="lands-found-record" aria-label="Pago encontrado">{targetPayment.isPending ? <p role="status">Cargando pago…</p> : targetPayment.isError ? <p role="alert">No se pudo consultar el pago. <button type="button" className="btn-s" onClick={() => targetPayment.refetch()}>Reintentar</button></p> : targetPayment.data && <><div><strong>{targetPayment.data.client?.name} · Cuota {targetPayment.data.installment_n}</strong><p>{targetPayment.data.contract?.contract_number} · {currency(targetPayment.data.amount)} · {{ paid: "Pagado", partial: "Parcial", pending: "Pendiente", overdue: "Vencido", cancelled: "Cancelado" }[targetPayment.data.status] || targetPayment.data.status}</p></div>{["pending", "partial", "overdue"].includes(targetPayment.data.status) && <button type="button" className="btn-p" onClick={() => setAbono(targetPayment.data)}>Registrar este cobro</button>}</>}</section>}
       {pendingReceipts.issues.filter(issue => issue.kind !== "reservation").map(issue => <PendingReceiptUpload key={`${issue.kind}-${issue.id}`} issue={issue} onDone={() => pendingReceipts.remove(issue)} />)}
-      {datosIncompletos?.payments && (
-        <div className="cf-aviso-parcial" role="status">
-          <HiOutlineClock aria-hidden="true" />
-          <span>
-            Se cargaron <strong>{datosIncompletos.payments.cargados}</strong> de{" "}
-            <strong>{datosIncompletos.payments.total}</strong> cuotas. El{" "}
-            <strong>Registro de Ingresos</strong> y su gráfica mensual solo cubren
-            esas. Los indicadores, las alertas y las amortizaciones vienen
-            calculados del servidor y sí abarcan todo.
-          </span>
-        </div>
-      )}
 
       <div className="cf-panel">
         <div className="cf-tabs" data-tour="pagos-tabs">
@@ -1691,18 +1677,21 @@ export default function PaymentsPage() {
                     {amortFiltered.map(r => {
                       const pct = r.total ? Math.min(Math.round(r.paid / r.total * 100), 100) : 0;
                       const link = waLink(r);
+                      // Modal sobre la misma pantalla: nada de navegar a otra página
+                      // ni abrir pestaña nueva, para no perder el lugar en Pagos.
+                      const openStatement = () => setStatementClientId(r.contract.client?.id || null);
                       return (
-                        <tr key={r.id}>
+                        <tr key={r.id} className="cf-amort-row" onClick={openStatement} style={{ cursor: "pointer" }}>
                           <td><div className="cf-cli">{r.cli}</div><div className="cf-prop">{r.prop}</div></td>
                           <td><div className="cf-prog"><div className={`cf-bar ${r.estado}`}><i style={{ width: `${pct}%` }} /></div><span className="cf-prog-n">{r.paid}/{r.total}</span></div></td>
                           <td className="cf-amt">{currency(r.cuota)}</td>
                           <td className={`cf-venc ${r.estado === "late" ? "late" : ""}`}>{r.venc ? fmtD(r.venc) : "—"}</td>
                           <td><span className={`cf-badge ${r.estado}`}>{AMORT_EST[r.estado]}</span></td>
                           <td><div className="cf-acts">
-                            <button className="cf-ico pay" title="Registrar pago" onClick={() => { setCobroContrato(r.contract); setModal("cobro"); }}><HiBanknotes /></button>
-                            {link ? <a className="cf-ico wa" href={link} target="_blank" rel="noreferrer" title="Recordatorio por WhatsApp"><HiPhone /></a>
-                                  : <button className="cf-ico" title="Sin teléfono del cliente" disabled style={{ opacity: .4, cursor: "default" }}><HiPhone /></button>}
-                            <button className="cf-ico" title="Historial de amortización" onClick={() => navigate(`/reportes?client=${encodeURIComponent(r.contract.client?.id || "")}`)}><HiBars3 /></button>
+                            <button className="cf-ico pay" title="Registrar pago" onClick={(e) => { e.stopPropagation(); setCobroContrato(r.contract); setModal("cobro"); }}><HiBanknotes /></button>
+                            {link ? <a className="cf-ico wa" href={link} target="_blank" rel="noreferrer" title="Recordatorio por WhatsApp" onClick={(e) => e.stopPropagation()}><HiPhone /></a>
+                                  : <button className="cf-ico" title="Sin teléfono del cliente" disabled style={{ opacity: .4, cursor: "default" }} onClick={(e) => e.stopPropagation()}><HiPhone /></button>}
+                            <button className="cf-ico" title="Generar estado de cuenta" onClick={(e) => { e.stopPropagation(); openStatement(); }}><HiBars3 /></button>
                           </div></td>
                         </tr>
                       );
@@ -1777,6 +1766,10 @@ export default function PaymentsPage() {
         <IngresoModal busy={abonoBusy} onClose={() => setModal(null)} onSave={guardarIngreso} />
       )}
       {abono && <AbonoModal payment={abono} siguientes={siguientesDelContrato} busy={abonoBusy} onClose={() => setAbono(null)} onConfirm={confirmAbono} />}
+      <Modal open={!!statementClientId} onClose={() => setStatementClientId(null)} title="Estado de cuenta" overlayClassName="lands-statement-dialog">
+        <style>{CLIENT_REPORT_STYLES}</style>
+        {statementClientId && <ClientReport clientId={statementClientId} />}
+      </Modal>
       <GuideModal
         open={showGuide}
         onClose={() => setShowGuide(false)}

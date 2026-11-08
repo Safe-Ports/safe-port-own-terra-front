@@ -139,24 +139,6 @@ describe("Tutorial guiado: encadenado explícito vía `next`", () => {
     el.remove();
   });
 
-  it("el tour de Reportes espera a que se elija un cliente antes de continuar", async () => {
-    renderTour();
-    act(() => replayTour("reportes-clientes"));
-    await waitFor(() => expect(lastPropsRef.current).not.toBeNull());
-    finish("finished");
-
-    // Sin cliente elegido, rp-comportamiento no existe: no debe arrancar solo.
-    act(() => vi.advanceTimersByTime(2000));
-    expect(titleLog).not.toContain("Comportamiento de pago");
-
-    const el = document.createElement("div");
-    el.setAttribute("data-tour", "rp-comportamiento");
-    document.body.appendChild(el);
-    act(() => vi.advanceTimersByTime(700));
-    await waitFor(() => expect(titleLog).toContain("Comportamiento de pago"));
-    el.remove();
-  });
-
   it("recorre la cadena completa de 4 partes, una vez arrancada a mano", async () => {
     renderTour();
     act(() => replayTour("lands-frac-selector"));
