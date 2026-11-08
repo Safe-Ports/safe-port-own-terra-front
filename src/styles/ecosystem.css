@@ -924,8 +924,10 @@
 .eco-root .fom-badge{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;padding:4px 9px;border-radius:30px;font-family: var(--font-body);background:var(--bg2);color:var(--text2);border:1px solid var(--border)}
 .eco-root .fom-link-row{display:flex;align-items:center;gap:8px;padding:9px 11px;background:var(--bg2);border:1px solid var(--border);border-radius:11px;margin-bottom:14px}
 .eco-root .fom-link-text{font-size:11px;font-family: var(--font-body);color:var(--text3);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.eco-root .fom-copy-btn{flex-shrink:0;border:1px solid var(--border2);background:var(--surface);color:var(--mid);border-radius:9px;padding:5px 10px;font-size:11.5px;font-weight:600;cursor:pointer;font-family: var(--font-body);transition:all .15s;white-space:nowrap}
+.eco-root .fom-copy-btn{flex-shrink:0;border:1px solid var(--border2);background:var(--surface);color:var(--mid);border-radius:9px;padding:5px 10px;font-size:11.5px;font-weight:600;cursor:pointer;font-family: var(--font-body);transition:all .15s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
 .eco-root .fom-copy-btn:hover{background:var(--bg2);border-color:var(--leaf);color:var(--deep)}
+.eco-root .fom-wa-btn{color:#1DA851;border-color:rgba(29,168,81,.35)}
+.eco-root .fom-wa-btn:hover{background:rgba(29,168,81,.08);border-color:#1DA851;color:#1DA851}
 .eco-root .fom-actions{display:flex;align-items:center;gap:6px;padding-top:14px;border-top:1px solid var(--border);flex-wrap:wrap}
 .eco-root .fom-action{display:inline-flex;align-items:center;gap:5px;padding:7px 11px;border-radius:9px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);font-size:11.5px;font-weight:500;cursor:pointer;font-family: var(--font-body);transition:all .15s}
 .eco-root .fom-action:hover{background:var(--surface2);border-color:var(--leaf);color:var(--deep)}
