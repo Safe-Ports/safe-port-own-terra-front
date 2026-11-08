@@ -164,7 +164,7 @@ function FormPublico() {
                   <textarea
                     id={`fp-${f.id}`}
                     className={`fp-input${errors[f.id] ? " error" : ""}`}
-                    rows={1}
+                    rows={4}
                     value={values[f.id] ?? ""}
                     onChange={(e) => handleChange(f.id, e.target.value)}
                     placeholder={`Escribe ${f.label.toLowerCase()}`}
