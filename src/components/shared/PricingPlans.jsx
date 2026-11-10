@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { STANDARD_PLAN, ENTERPRISE_PLAN } from "@/services/landsPricing";
 
 /**
- * Planes de OwnTerra (propuesta "Own terraLand"), 3 tiers de pago + prueba.
+ * Planes de OwnTerra Lands: prueba + Estándar + Empresarial (montos en
+ * services/landsPricing.js). Las operaciones de más de 600 lotes se cotizan.
  *
  * Los copys/límites viven aquí; el PRECIO y el COBRO los define Stripe. Cada tier
  * se enlaza a su propio Price ID vía el backend (`GET /billing/plans`, que devuelve
@@ -9,8 +11,8 @@ import { useState } from "react";
  * Stripe cuando está disponible y cae al de marketing (`price`) solo como respaldo,
  * así panel y cobro nunca se desincronizan.
  *
- * Para conectar cada tier: crea 3 precios en Stripe (MXN) y pon sus IDs en las env
- * vars STRIPE_PRICE_ID_ESTANDAR / _CRECIMIENTO / _PROFESIONAL.
+ * Para conectar cada tier: crea los precios en Stripe (MXN) y pon sus IDs en las
+ * env vars del backend (slugs `estandar` y `empresarial`).
  */
 const CURRENCY = "MXN"; // respaldo de moneda si Stripe aún no reporta la real
 
@@ -52,63 +54,40 @@ const PLANS = [
     },
   },
   {
-    key: "estandar",
-    name: "Estándar",
-    tagline: "Para inmobiliarias que arrancan.",
-    price: 2000,
-    highlights: [
-      "5 usuarios del equipo",
-      "3 inmuebles · 25 lotes en total",
-      "Reportes y dashboard ilimitados",
-      "10 GB · Bot de soporte · App móvil",
-    ],
-    limits: {
-      usuarios: "5", inmuebles: "3", lotes: "25", formularios: "5",
-      calculadoras: "2", reportes: "Ilimitados", dashboard: true,
-      almacenamiento: "10 GB", bot: "Bot de soporte", movil: true,
-    },
-  },
-  {
-    key: "crecimiento",
-    name: "Crecimiento",
+    key: STANDARD_PLAN.key,
+    name: STANDARD_PLAN.name,
     recommended: true,
-    tagline: "Para desarrolladoras en expansión.",
-    price: 5000,
+    tagline: "Para inmobiliarias y desarrolladoras en operación.",
+    price: STANDARD_PLAN.price,
     highlights: [
       "10 usuarios del equipo",
-      "5 inmuebles · 50 lotes en total",
+      `${STANDARD_PLAN.lots} lotes en total`,
       "Formularios y calculadoras ilimitados",
-      "50 GB · Bot prioritario · App móvil",
+      "15 GB · Bot prioritario · App móvil",
     ],
     limits: {
-      usuarios: "10", inmuebles: "5", lotes: "50", formularios: "Ilimitados",
+      usuarios: "10", inmuebles: "Ilimitados", lotes: String(STANDARD_PLAN.lots), formularios: "Ilimitados",
       calculadoras: "Ilimitadas", reportes: "Ilimitados", dashboard: true,
-      almacenamiento: "50 GB", bot: "Bot prioritario", movil: true,
+      almacenamiento: "15 GB", bot: "Bot prioritario", movil: true,
     },
   },
   {
-    key: "profesional",
-    name: "Profesional",
+    key: ENTERPRISE_PLAN.key,
+    name: ENTERPRISE_PLAN.name,
     tagline: "Para grupos y constructoras.",
-    price: 8000,
+    price: ENTERPRISE_PLAN.price,
     highlights: [
       "Usuarios e inmuebles ilimitados",
-      "250 lotes en total",
+      `${ENTERPRISE_PLAN.lots} lotes en total`,
       "Formularios y calculadoras ilimitados",
-      "100 GB · Bot dedicado · App móvil",
+      "25 GB · Bot dedicado · App móvil",
     ],
     limits: {
-      usuarios: "Ilimitados", inmuebles: "Ilimitados", lotes: "250",
+      usuarios: "Ilimitados", inmuebles: "Ilimitados", lotes: String(ENTERPRISE_PLAN.lots),
       formularios: "Ilimitados", calculadoras: "Ilimitadas", reportes: "Ilimitados",
-      dashboard: true, almacenamiento: "100 GB", bot: "Bot dedicado", movil: true,
+      dashboard: true, almacenamiento: "25 GB", bot: "Bot dedicado", movil: true,
     },
   },
-];
-
-// Lo que llega después (solo tiers altos), de la propuesta.
-const SOON = [
-  "Carga de archivos CAD",
-  "Módulo de virtualización de lotes",
 ];
 
 function fmtMoney(amount, currency) {
@@ -140,7 +119,7 @@ function MatrixCell({ value }) {
 }
 
 /**
- * Panel de planes de OwnTerra: 3 tiers de pago + prueba + tabla comparativa.
+ * Panel de planes de OwnTerra: 2 tiers de pago + prueba + tabla comparativa.
  * `plans` (de `GET /billing/plans`) aporta el price_id, monto y moneda reales por
  * tier, emparejados por `plan` (slug). Compatible con Pricing/index.jsx.
  */
@@ -151,9 +130,22 @@ function PricingPlans({
   currentPlan = null,
   currentPlanCancelling = false,
   onSelect,
-  onContact,
 }) {
-  const [showMatrix, setShowMatrix] = useState(true);
+  const [showMatrix, setShowMatrix] = useState(false);
+  // Plan seleccionado (resaltado) y si su información está desplegada. Arranca
+  // en el recomendado, cerrado: lo que incluye cada plan solo se ve al darle clic.
+  const [selectedKey, setSelectedKey] = useState(
+    () => (PLANS.find((p) => p.recommended) || PLANS[0]).key
+  );
+  const [infoOpen, setInfoOpen] = useState(false);
+  const selectPlan = (key) => {
+    if (key === selectedKey) {
+      setInfoOpen((v) => !v);
+    } else {
+      setSelectedKey(key);
+      setInfoOpen(true);
+    }
+  };
 
   // Índice de precios de Stripe por slug de tier.
   const priceByKey = Object.fromEntries((plans || []).map((p) => [p.plan, p]));
@@ -161,12 +153,20 @@ function PricingPlans({
   // los tiers de pago (todas las tarjetas cobrarían ese precio hasta configurar tiers).
   const legacyPaid = priceByKey.pro || null;
 
-  // Vista precalculada por plan (precio real de Stripe con respaldo de marketing).
+  // Vista precalculada por plan. Se muestra siempre el precio oficial; si el de
+  // Stripe no coincide (precio viejo en el backend), no se vende hasta corregirlo
+  // para que nadie pague un monto distinto al anunciado.
   const view = PLANS.map((plan) => {
     const backend = priceByKey[plan.key] || (plan.price > 0 ? legacyPaid : null);
-    const amount = backend?.amount != null ? backend.amount / 100 : plan.price;
+    const priceMismatch = backend?.amount != null && backend.amount !== plan.price * 100;
     const currency = backend?.currency || CURRENCY;
-    return { ...plan, priceId: backend?.price_id || null, amount, currency };
+    return {
+      ...plan,
+      priceId: priceMismatch ? null : backend?.price_id || null,
+      priceMismatch,
+      amount: plan.price,
+      currency,
+    };
   });
 
   const isCurrent = (plan) =>
@@ -180,24 +180,37 @@ function PricingPlans({
         <p className="pp-sub">Crece a tu ritmo. Cambia o cancela cuando quieras.</p>
       </div>
 
-      <div className="pp-grid pp-grid--4">
+      <div className="pp-grid pp-grid--3">
         {view.map((plan) => {
           const paid = plan.price > 0;
           const current = isCurrent(plan);
           const canBuy = !!plan.priceId;
+          const selected = selectedKey === plan.key;
+          const open = selected && infoOpen;
 
           return (
             <div
               key={plan.key}
-              className={`pp-card${plan.recommended ? " pp-card--rec" : ""}${current ? " pp-card--current" : ""}`}
+              className={`pp-card${selected ? " pp-card--selected" : ""}${current ? " pp-card--current" : ""}`}
+              onClick={(e) => {
+                // El botón de compra no cambia la selección.
+                if (!e.target.closest(".pp-cta")) selectPlan(plan.key);
+              }}
             >
               {plan.recommended && <div className="pp-ribbon">Recomendado</div>}
 
-              <div className="pp-name">
-                OwnTerra <b>{plan.name}</b>
-                {plan.badge && <span className="pp-badge">{plan.badge}</span>}
-              </div>
-              <div className="pp-tagline">{plan.tagline}</div>
+              <button
+                type="button"
+                className="pp-toggle"
+                aria-expanded={open}
+                aria-controls={`pp-feats-${plan.key}`}
+              >
+                <span className="pp-name">
+                  OwnTerra <b>{plan.name}</b>
+                  {plan.badge && <span className="pp-badge">{plan.badge}</span>}
+                </span>
+                <span className="pp-tagline">{plan.tagline}</span>
+              </button>
 
               <div className="pp-price">
                 {paid ? (
@@ -206,7 +219,7 @@ function PricingPlans({
                     <span className="pp-amount">
                       {new Intl.NumberFormat("es-MX", { maximumFractionDigits: 2 }).format(plan.amount)}
                     </span>
-                    <span className="pp-per">{(plan.currency || CURRENCY).toUpperCase()}/mes</span>
+                    <span className="pp-per">{(plan.currency || CURRENCY).toUpperCase()}/mes + IVA</span>
                   </>
                 ) : (
                   <span className="pp-amount pp-amount--sm">Gratis</span>
@@ -228,26 +241,33 @@ function PricingPlans({
                   onClick={() => canBuy && onSelect?.(plan.priceId)}
                   title={!canBuy ? "Este plan aún no tiene precio configurado en Stripe" : undefined}
                 >
-                  {busyKey === plan.priceId ? "Redirigiendo…" : ctaLabel}
+                  {canBuy && busyKey === plan.priceId ? "Redirigiendo…" : ctaLabel}
                 </button>
               )}
+              {paid && !current && plan.priceMismatch && (
+                <p className="pp-note">Precio en actualización. Muy pronto podrás contratarlo.</p>
+              )}
 
-              <ul className="pp-feats">
-                {plan.highlights.map((f) => (
-                  <li key={f}><Check /> {f}</li>
-                ))}
-              </ul>
+              <button
+                type="button"
+                className="pp-more"
+                aria-expanded={open}
+                aria-controls={`pp-feats-${plan.key}`}
+              >
+                {open ? "Ocultar" : "Ver qué incluye"}
+                <span className={`pp-chev${open ? " up" : ""}`} aria-hidden="true">▾</span>
+              </button>
+
+              {open && (
+                <ul className="pp-feats" id={`pp-feats-${plan.key}`}>
+                  {plan.highlights.map((f) => (
+                    <li key={f}><Check /> {f}</li>
+                  ))}
+                </ul>
+              )}
             </div>
           );
         })}
-      </div>
-
-      {/* Add-on disponible en cualquier plan */}
-      <div className="pp-addon">
-        <span className="pp-addon-icon" aria-hidden="true">＋</span>
-        <span className="pp-addon-text">
-          <b>Paquetes de +100 lotes</b> por <b>$10</b> — disponibles en cualquier plan.
-        </span>
       </div>
 
       {/* Tabla comparativa (la propuesta, celda por celda) */}
@@ -269,7 +289,7 @@ function PricingPlans({
                 <tr>
                   <th className="pp-mx-feature">Incluye</th>
                   {view.map((p) => (
-                    <th key={p.key} className={p.recommended ? "is-rec" : ""}>
+                    <th key={p.key} className={p.key === selectedKey ? "is-rec" : ""}>
                       {p.name}
                       {p.price > 0 && (
                         <span className="pp-mx-price">
@@ -288,7 +308,7 @@ function PricingPlans({
                       {row.hint && <span className="pp-mx-hint">{row.hint}</span>}
                     </th>
                     {view.map((p) => (
-                      <td key={p.key} className={p.recommended ? "is-rec" : ""}>
+                      <td key={p.key} className={p.key === selectedKey ? "is-rec" : ""}>
                         <MatrixCell value={p.limits[row.key]} />
                       </td>
                     ))}
@@ -300,21 +320,6 @@ function PricingPlans({
         )}
       </div>
 
-      {/* Próximamente (solo tiers altos) + contacto ventas */}
-      <div className="pp-soon">
-        <div className="pp-soon-title">Próximamente en Profesional / Enterprise</div>
-        <ul className="pp-soon-list">
-          {SOON.map((s) => (
-            <li key={s}>{s}</li>
-          ))}
-        </ul>
-        <p className="pp-soon-cta">
-          ¿Necesitas algo a la medida u operación multi-sucursal?{" "}
-          <button type="button" className="pp-link" onClick={() => onContact?.()}>
-            Habla con ventas
-          </button>
-        </p>
-      </div>
     </div>
   );
 }

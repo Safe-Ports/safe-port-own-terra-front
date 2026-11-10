@@ -4,10 +4,14 @@ import { useNavigate } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
 import { billingService } from "@/services/billingService";
 import PricingPlans from "@/components/shared/PricingPlans";
+import LotsCalculator from "@/components/shared/LotsCalculator";
 
 /**
  * Página dedicada de planes, a pantalla completa (estilo upsell de Google One /
  * Claude) con la paleta de OwnTerra. Se abre desde Configuración o el banner.
+ *
+ * Galería principal (prueba, Estándar, Empresarial) con checkout de Stripe; la
+ * calculadora (operaciones de más de 600 lotes) queda a la vista debajo.
  */
 function PricingPage() {
   const navigate = useNavigate();
@@ -45,9 +49,22 @@ function PricingPage() {
     }
   };
 
-  const contactSales = () => {
-    window.location.href = "mailto:ventas@own-terra.com?subject=Interesado en OwnTerra Enterprise";
+  // Cotizaciones: van a ventas por correo con los lotes (y el estimado, si viene
+  // de la calculadora de operación grande).
+  const sendQuoteRequest = (lots, estimate = null) => {
+    const subject = `Cotización OwnTerra Lands · ${lots} lotes`;
+    const body = [
+      `Hola, quiero una cotización personalizada para una operación de ${lots} lotes.`,
+      estimate &&
+        `Estimado de la calculadora: $${estimate.total.toLocaleString("es-MX")} MXN/mes + IVA (cubre ${estimate.coveredLots} lotes).`,
+    ].filter(Boolean).join("\n");
+    window.location.href = `mailto:ventas@own-terra.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
+  const requestQuote = (estimate) => sendQuoteRequest(estimate.requestedLots, estimate);
+
+  const [customLots, setCustomLots] = useState("");
+  const customLotsValue = Math.floor(Number(customLots));
+  const canSendCustom = customLotsValue > 0;
 
   const close = () => navigate("/configuracion");
   const isSubscribed = subscription && ["active", "past_due"].includes(subscription.status);
@@ -70,11 +87,42 @@ function PricingPage() {
           currentPlanCancelling={isSubscribed && subscription.cancel_at_period_end}
           ctaLabel={subscription?.status === "trialing" ? "Suscribirme" : isSubscribed ? "Cambiar a este plan" : "Renovar"}
           onSelect={startCheckout}
-          onContact={contactSales}
         />
         {plans.length === 0 && (
           <p className="pricing-empty">Aún no hay planes de pago configurados.</p>
         )}
+
+        <div className="pricing-large">
+          <LotsCalculator onQuote={requestQuote} />
+        </div>
+
+        <form
+          className="pricing-custom"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (canSendCustom) sendQuoteRequest(customLotsValue);
+          }}
+        >
+          <p>
+            Si este presupuesto no satisface tus necesidades, envíanos la cantidad de lotes de tu operación y con
+            gusto te generamos una cotización personalizada.
+          </p>
+          <div className="pricing-custom-row">
+            <label className="sr-only" htmlFor="pricing-custom-lots">Lotes de tu operación</label>
+            <input
+              id="pricing-custom-lots"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              placeholder="Lotes de tu operación"
+              value={customLots}
+              onChange={(e) => setCustomLots(e.target.value)}
+            />
+            <button type="submit" className="pp-cta" disabled={!canSendCustom}>
+              Solicitar cotización personalizada
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

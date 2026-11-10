@@ -2132,6 +2132,20 @@ textarea.is-invalid {
 /* En la página completa, agranda el encabezado de los planes */
 .pricing-body .pp-title { font-size: clamp(1.7rem, 3.2vw, 2.1rem); }
 .pricing-body .pp-sub { font-size: 1rem; }
+.pricing-large { margin-top: 28px; display: flex; flex-direction: column; align-items: center; }
+.pricing-large > .lc { width: 100%; }
+.pricing-custom {
+  margin-top: 22px; padding: 20px 24px; text-align: center;
+  border: 1px dashed var(--bd); border-radius: 14px; background: var(--sf2);
+}
+.pricing-custom p { margin: 0 0 14px; color: var(--tx2); font-size: 0.9rem; line-height: 1.5; }
+.pricing-custom-row { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.pricing-custom-row input {
+  width: 220px; max-width: 100%; padding: 10px 14px; border: 1px solid var(--bd);
+  border-radius: 10px; background: var(--cream); color: var(--deep); font: inherit;
+}
+.pricing-custom-row input:focus { outline: none; border-color: var(--forest-hi); }
+.pricing-custom-row .pp-cta { width: auto; margin: 0; padding-left: 20px; padding-right: 20px; }
 
 /* ── Planes / Pricing (estilo SaaS elegante, paleta OwnTerra) ─────────────── */
 .pp { padding: 8px 0 4px; }
@@ -2165,8 +2179,9 @@ textarea.is-invalid {
   padding: 26px 24px; box-shadow: var(--sh);
   transition: transform .38s cubic-bezier(.2,.8,.2,1), box-shadow .38s cubic-bezier(.2,.8,.2,1);
 }
+.pp-card { cursor: pointer; }
 .pp-card:hover { transform: translateY(-3px); box-shadow: var(--sh2); }
-.pp-card--rec {
+.pp-card--selected {
   border: 1.5px solid var(--forest-hi);
   background: linear-gradient(180deg, #EAF5F4 0%, var(--cream) 60%);
   box-shadow: var(--sh2);
@@ -2194,6 +2209,7 @@ textarea.is-invalid {
 .pp-cta:disabled { opacity: 0.55; cursor: default; }
 .pp-cta--ghost { background: transparent; color: var(--forest); border: 1.5px solid var(--bd); }
 .pp-cta--ghost:hover:not(:disabled) { background: var(--tan-lt); border-color: var(--forest-hi); }
+.pp-note { margin: 8px 0 0; font-size: 12.5px; color: var(--muted); text-align: center; }
 
 .pp-feats { list-style: none; margin: 20px 0 0; padding: 0; display: grid; gap: 11px; }
 .pp-feats li {
@@ -2202,9 +2218,9 @@ textarea.is-invalid {
 }
 .pp-check { color: var(--forest-hi); flex-shrink: 0; margin-top: 1px; }
 
-/* ── 4 planes (propuesta Own terraLand) ──────────────────────────────────── */
-.pp-grid--4 { grid-template-columns: repeat(auto-fit, minmax(212px, 1fr)); gap: 16px; }
-.pp-grid--4 .pp-card { padding: 24px 20px; }
+/* ── 3 planes de Lands (prueba + 2 de pago) ──────────────────────────────────── */
+.pp-grid--3 { grid-template-columns: repeat(auto-fit, minmax(212px, 1fr)); gap: 16px; }
+.pp-grid--3 .pp-card { padding: 24px 20px; }
 
 .pp-badge {
   display: inline-block; margin-left: 8px; vertical-align: middle;
@@ -2215,9 +2231,9 @@ textarea.is-invalid {
 }
 .pp-card--current { border-color: var(--forest-hi); }
 .pp-cur { font-size: 1.3rem; font-weight: 800; color: var(--deep); align-self: flex-start; margin-top: 4px; }
-.pp-grid--4 .pp-amount { font-size: 1.9rem; }
-.pp-grid--4 .pp-tagline { min-height: 40px; font-size: 0.82rem; }
-.pp-grid--4 .pp-feats li { font-size: 0.82rem; gap: 8px; }
+.pp-grid--3 .pp-amount { font-size: 1.9rem; }
+.pp-grid--3 .pp-tagline { min-height: 40px; font-size: 0.82rem; }
+.pp-grid--3 .pp-feats li { font-size: 0.82rem; gap: 8px; }
 
 /* ── Add-on transversal (paquetes de lotes) ──────────────────────────────── */
 .pp-addon {
@@ -2243,6 +2259,17 @@ textarea.is-invalid {
 }
 .pp-compare-toggle:hover { background: var(--sf2); }
 .pp-chev { transition: transform 0.2s ease; }
+.pp-toggle {
+  display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 0;
+  border: 0; background: none; text-align: left; font: inherit; cursor: pointer;
+}
+.pp-toggle .pp-tagline { display: block; }
+.pp-more {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 14px; padding: 0;
+  border: 0; background: none; font: inherit; font-size: 0.82rem; font-weight: 700;
+  color: var(--forest-hi); cursor: pointer;
+}
+.pp-more:hover { text-decoration: underline; }
 .pp-chev.up { transform: rotate(180deg); }
 
 .pp-matrix-wrap { margin-top: 20px; overflow-x: auto; }
@@ -2298,42 +2325,84 @@ textarea.is-invalid {
   color: var(--forest); font-weight: 800; font-size: inherit; text-decoration: underline;
 }
 
-/* Banner de estado de suscripción (vencida / pago fallido / prueba por vencer) */
-.sub-banner {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 12px 22px;
-  font-family: var(--font-body);
-  font-size: 0.86rem;
-  font-weight: 600;
-  color: var(--deep);
-  border-bottom: 1px solid var(--line-soft);
+/* ── Calculadora de suscripción por paquetes de lotes (Lands) ─────────────── */
+.lc-card {
+  display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 0;
+  background: var(--cream); border: 1px solid var(--bd); border-radius: 18px;
+  box-shadow: var(--sh2); overflow: hidden;
 }
-.sub-banner--warn  { background: linear-gradient(90deg, #FAF1DD, #F5E9D2); }
-.sub-banner--error { background: linear-gradient(90deg, #FBEAE6, #F6DCD7); }
-.sub-banner__icon { width: 18px; height: 18px; flex-shrink: 0; }
-.sub-banner--warn  .sub-banner__icon { color: #B8791A; }
-.sub-banner--error .sub-banner__icon { color: var(--danger); }
-.sub-banner__msg { flex: 1; min-width: 200px; }
-.sub-banner__hint { font-weight: 500; color: var(--muted); }
-.sub-banner__btn {
-  border: none;
-  border-radius: 999px;
-  padding: 7px 18px;
-  font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 0.8rem;
-  letter-spacing: 0.01em;
-  cursor: pointer;
-  color: var(--cream);
-  box-shadow: 0 4px 12px rgba(30, 61, 43, 0.22);
-  transition: transform .3s cubic-bezier(.2,.8,.2,1), filter .3s cubic-bezier(.2,.8,.2,1);
+.lc-input { padding: 28px 28px 26px; }
+.lc-label { display: block; font-weight: 800; color: var(--deep); font-size: 1rem; margin-bottom: 14px; }
+.lc-number {
+  display: flex; align-items: baseline; gap: 10px;
+  border-bottom: 2px solid var(--bd); padding-bottom: 6px; margin-bottom: 18px;
+  transition: border-color .2s ease;
 }
-.sub-banner__btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
-.sub-banner--warn  .sub-banner__btn { background: linear-gradient(140deg, var(--mid), var(--deep)); }
-.sub-banner--error .sub-banner__btn { background: linear-gradient(140deg, #C0392B, #96281F); box-shadow: 0 4px 12px rgba(150, 40, 31, 0.28); }
+.lc-number:focus-within { border-color: var(--forest-hi); }
+.lc-number input {
+  width: 100%; min-width: 0; border: none; background: transparent; outline: none;
+  font-size: 2.4rem; font-weight: 800; color: var(--deep); letter-spacing: -0.02em;
+  -moz-appearance: textfield; appearance: textfield;
+}
+.lc-number input::-webkit-outer-spin-button,
+.lc-number input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.lc-number span { color: var(--mu); font-weight: 700; }
+.lc-range { width: 100%; accent-color: var(--forest); cursor: pointer; }
+.lc-range-scale {
+  position: relative; display: flex; justify-content: space-between; margin-top: 4px;
+  font-size: 0.72rem; font-weight: 700; color: var(--mu);
+}
+.lc-range-mark { position: absolute; top: 0; transform: translateX(-50%); }
+.lc-presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.lc-chip {
+  border: 1px solid var(--bd); background: var(--sf2); color: var(--tx2);
+  border-radius: 999px; padding: 7px 14px; font-size: 0.8rem; font-weight: 700; cursor: pointer;
+  transition: background .2s ease, border-color .2s ease, color .2s ease;
+}
+.lc-chip:hover { border-color: var(--forest-hi); }
+.lc-chip.is-active { background: var(--forest); border-color: var(--forest); color: #fff; }
+.lc-tiers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 22px; }
+.lc-tier {
+  display: flex; flex-direction: column; gap: 4px; align-items: flex-start;
+  padding: 12px 14px; border: 1px solid var(--bd); border-radius: 12px; background: var(--bg);
+}
+.lc-tier--large { border-color: var(--forest-hi); background: #EAF5F4; }
+.lc-tier .pp-badge { margin-left: 0; }
+.lc-tier-title { font-size: 0.78rem; font-weight: 700; color: var(--mu); }
+.lc-tier-price { font-size: 1.05rem; font-weight: 800; color: var(--deep); }
+.lc-tier-price small { font-size: 0.72rem; font-weight: 600; color: var(--mu); }
+
+.lc-summary {
+  display: flex; flex-direction: column; padding: 28px 26px 24px;
+  background: linear-gradient(180deg, #EAF5F4 0%, var(--cream) 75%);
+  border-left: 1px solid var(--bd);
+}
+.lc-summary-label {
+  font-size: 0.74rem; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--forest-hi); margin-bottom: 6px;
+}
+.lc-summary .pp-price { margin-bottom: 6px; }
+.lc-summary .pp-amount { font-size: 2.5rem; }
+.lc-summary-pkgs { margin: 0 0 16px; color: var(--tx2); font-size: 0.9rem; }
+.lc-summary-pkgs b { color: var(--deep); }
+.lc-spare { display: block; color: var(--mu); font-size: 0.8rem; margin-top: 3px; }
+.lc-lines { list-style: none; margin: 0 0 10px; padding: 12px 0 0; border-top: 1px dashed var(--bd); display: grid; gap: 10px; }
+.lc-lines li { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 0.86rem; color: var(--tx2); }
+.lc-lines li small { display: block; color: var(--mu); font-size: 0.74rem; font-weight: 600; }
+.lc-lines li b { color: var(--deep); white-space: nowrap; }
+.lc-lines .lc-savings, .lc-lines .lc-savings b { color: var(--forest-hi); font-weight: 800; }
+.lc-perlot { font-size: 0.78rem; color: var(--mu); font-weight: 600; margin: 4px 0 18px; }
+.lc-summary .pp-cta { margin-top: auto; }
+.lc-note { margin: 8px 0 0; text-align: center; font-size: 0.76rem; color: var(--mu); }
+.lc .pp-soon { margin-top: 22px; padding: 16px 20px; }
+.lc .pp-soon-cta { margin: 0; }
+
+@media (max-width: 760px) {
+  .lc-card { grid-template-columns: 1fr; }
+  .lc-summary { border-left: none; border-top: 1px solid var(--bd); }
+  .lc-input, .lc-summary { padding: 22px 18px; }
+  .lc-number input { font-size: 2rem; }
+}
 
 /* Skeleton de carga (placeholder animado) */
 .skeleton-line {
