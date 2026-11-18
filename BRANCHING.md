@@ -1,8 +1,10 @@
-# Protección de ramas — pendiente de activar
+# Protección de ramas
 
-GitHub **no aplica** branch protection en repos privados del plan Free (se puede configurar la regla, pero no se hace cumplir). Para que sea real hace falta **GitHub Team** ($4/usuario/mes). Esto está pendiente de decisión — mientras tanto, el gate real es la disciplina del equipo: PR + revisión de @ABISUKI + CI en verde.
+⚠️ **Este repo es PÚBLICO** (a diferencia de core-back/lands-back/properties-back/bot, que son privados) — confirmado con `curl` sin login a la API de GitHub. Un repo privado da 404 ahí; este respondió con los datos. **Si no es intencional, revísalo en Settings → General → Danger Zone → Change visibility antes de seguir** — el código del front (rutas, lógica de negocio, comentarios internos) queda visible a cualquiera en internet. No lo cambié yo: es una decisión de seguridad que te toca a ti, no algo que yo deba asumir.
 
-El día que se confirme GitHub Team, activar esto en **Settings → Branches** de este repo, una regla para `develop` y otra para `main`:
+Dando por hecho que sea intencional: GitHub **sí aplica** branch protection gratis en repos **públicos** en cualquier plan — a diferencia de los otros 4 repos (privados), acá **no hace falta esperar la decisión de GitHub Team para activar esto de verdad, ahora mismo**.
+
+Activar en **Settings → Branches** de este repo, una regla para `develop` y otra para `main`:
 
 1. **Add branch protection rule** → branch name pattern: `develop` (repetir para `main`).
 2. ✅ **Require a pull request before merging**
