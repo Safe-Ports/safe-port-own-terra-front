@@ -7,6 +7,7 @@ import { lotService } from "@/services/lotService";
 import { currency, measure } from "@/services/formatters";
 import EmptyState from "@/components/ui/EmptyState";
 import useEscapeKey from "@/hooks/useEscapeKey";
+import { boldMarkupSegments } from "@/utils/safeHtml";
 import "./lotTrack.css";
 
 const STATUS_META = {
@@ -332,9 +333,14 @@ function TimelineDrawer({ row, onClose }) {
             <div className="lt-feed">
               {events.map((e, i) => (
                 <div className="lt-ev" key={i} data-tone={e.tone}>
-                  {/* El texto viene ya redactado del backend, con <b> en los
-                      nombres propios; no hay entrada de usuario sin escapar. */}
-                  <div className="lt-ev-txt" dangerouslySetInnerHTML={{ __html: e.text }} />
+                  {/* El backend manda <b> en los nombres propios, pero esos
+                      nombres los escribe el usuario: se pintan como texto,
+                      nunca como HTML (auditoría 2026-11-12, A1). */}
+                  <div className="lt-ev-txt">
+                    {boldMarkupSegments(e.text).map((seg, j) =>
+                      seg.bold ? <b key={j}>{seg.text}</b> : <span key={j}>{seg.text}</span>
+                    )}
+                  </div>
                   <div className="lt-ev-time">
                     {new Date(e.at).toLocaleString("es-MX", {
                       day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",

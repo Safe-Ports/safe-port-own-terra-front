@@ -4,8 +4,23 @@
 
 # index.html y rutas SPA: el navegador revalida siempre (nunca sirve un HTML viejo
 # que apunte a un bundle que ya no existe).
+#
+# Cabeceras de seguridad (auditoría 2026-11-12, A3). La sesión vive en
+# localStorage, así que un XSS equivale a robar la cuenta: estas cabeceras son
+# la segunda barrera después de no inyectar HTML.
+# CSP en modo REPORT-ONLY: el navegador avisa en consola qué bloquearía, sin
+# bloquear nada. Cuando dev.own-terra.com quede sin violaciones, cambiar el
+# nombre a Content-Security-Policy. Si se agrega un dominio nuevo (API, R2
+# público, otro proveedor), sumarlo aquí. El <script> inline de index.html
+# solo hace algo en localhost (donde estas cabeceras no aplican), así que es
+# normal que aparezca reportado y bloquearlo no cambia nada en producción.
 /*
   Cache-Control: public, max-age=0, must-revalidate
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://api.own-terra.com https://dev-api.own-terra.com https://bot-api.own-terra.com https://dev-bot-api.own-terra.com https://*.ingest.us.sentry.io https://*.ingest.sentry.io https://*.r2.cloudflarestorage.com https://*.r2.dev https://raw.githubusercontent.com; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 
 # Assets con hash en el nombre (JS/CSS): el nombre cambia cuando cambia el contenido,
 # así que se pueden cachear "para siempre" sin riesgo de quedar viejos.
