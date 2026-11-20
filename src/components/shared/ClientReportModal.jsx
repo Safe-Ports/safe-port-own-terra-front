@@ -5,19 +5,20 @@ import { useAppContext } from "@/context/AppContext";
 import Modal from "@/components/ui/Modal";
 import { currency, dateLabel, progress } from "@/services/formatters";
 import { clientService } from "@/services/clientService";
+import { escapeHtml } from "@/utils/safeHtml";
 
-function buildPrintHTML(data) {
+export function buildPrintHTML(data) {
   const rows = data.clientPayments
     .map(
       (p) => `
     <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:1px solid #EBEFED;border-radius:14px;background:#fff;margin-bottom:8px">
       <div>
-        <div style="font-size:13px;font-weight:600;color:#1E3D2B">Cuota ${p.installment_n}</div>
-        <div style="font-size:11px;color:#83867C;margin-top:2px">${dateLabel(p.due_date)}</div>
+        <div style="font-size:13px;font-weight:600;color:#1E3D2B">Cuota ${escapeHtml(p.installment_n)}</div>
+        <div style="font-size:11px;color:#83867C;margin-top:2px">${escapeHtml(dateLabel(p.due_date))}</div>
       </div>
       <div style="text-align:right">
-        <div style="font-size:13px;font-weight:700;color:#1E3D2B">${currency(p.amount)}</div>
-        <div style="font-size:11px;color:#83867C;margin-top:2px">${p.status}</div>
+        <div style="font-size:13px;font-weight:700;color:#1E3D2B">${escapeHtml(currency(p.amount))}</div>
+        <div style="font-size:11px;color:#83867C;margin-top:2px">${escapeHtml(p.status)}</div>
       </div>
     </div>`
     )
@@ -31,12 +32,12 @@ function buildPrintHTML(data) {
     <div style="padding:12px 14px;border:1px solid #EBEFED;border-radius:14px;background:#fff;margin-bottom:8px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
         <div>
-          <div style="font-size:13px;font-weight:600;color:#1E3D2B">${c.contract_number}</div>
-          <div style="font-size:11px;color:#83867C;margin-top:2px">${c.lot?.code || "—"} · ${dateLabel(c.contract_date)}</div>
+          <div style="font-size:13px;font-weight:600;color:#1E3D2B">${escapeHtml(c.contract_number)}</div>
+          <div style="font-size:11px;color:#83867C;margin-top:2px">${escapeHtml(c.lot?.code || "—")} · ${escapeHtml(dateLabel(c.contract_date))}</div>
         </div>
         <div style="text-align:right">
-          <div style="font-size:13px;font-weight:700;color:#1E3D2B">${currency(c.amount)}</div>
-          <div style="font-size:11px;color:#83867C;margin-top:2px">${progress(paid, total)}%</div>
+          <div style="font-size:13px;font-weight:700;color:#1E3D2B">${escapeHtml(currency(c.amount))}</div>
+          <div style="font-size:11px;color:#83867C;margin-top:2px">${escapeHtml(progress(paid, total))}%</div>
         </div>
       </div>
     </div>`;
@@ -44,7 +45,7 @@ function buildPrintHTML(data) {
     .join("");
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8">
-<title>Estado de cuenta · ${data.client.name}</title>
+<title>Estado de cuenta · ${escapeHtml(data.client.name)}</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Inter', Arial, sans-serif; background: #fff; color: #1E3D2B; padding: 32px; }
@@ -58,12 +59,12 @@ function buildPrintHTML(data) {
   .section-title { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
   @media print { body { padding: 20px; } }
 </style></head><body>
-<h1>Estado de cuenta · ${data.client.name}</h1>
-<div class="sub">Resumen de contratos y pagos · ${new Date().toLocaleDateString("es-MX")}</div>
+<h1>Estado de cuenta · ${escapeHtml(data.client.name)}</h1>
+<div class="sub">Resumen de contratos y pagos · ${escapeHtml(new Date().toLocaleDateString("es-MX"))}</div>
 <div class="stats">
-  <div class="stat"><div class="stat-label">Inversión</div><div class="stat-val">${currency(data.totalInvestment)}</div></div>
-  <div class="stat"><div class="stat-label">Pagado</div><div class="stat-val">${currency(data.totalPaid)}</div></div>
-  <div class="stat"><div class="stat-label">Saldo</div><div class="stat-val" style="color:#C0392B">${currency(data.balance)}</div></div>
+  <div class="stat"><div class="stat-label">Inversión</div><div class="stat-val">${escapeHtml(currency(data.totalInvestment))}</div></div>
+  <div class="stat"><div class="stat-label">Pagado</div><div class="stat-val">${escapeHtml(currency(data.totalPaid))}</div></div>
+  <div class="stat"><div class="stat-label">Saldo</div><div class="stat-val" style="color:#C0392B">${escapeHtml(currency(data.balance))}</div></div>
 </div>
 <div class="section"><div class="section-title">Contratos</div>${contracts}</div>
 <div class="section"><div class="section-title">Historial de pagos</div>${rows}</div>

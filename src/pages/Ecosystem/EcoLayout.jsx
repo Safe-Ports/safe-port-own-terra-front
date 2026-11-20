@@ -6,7 +6,6 @@ import EcoSprite from "./EcoSprite";
 import "@/styles/ecosystem.css";
 import CoreTopbarActions from "@/components/layout/CoreTopbarActions";
 import Toast from "@/components/shared/Toast";
-import SubscriptionBanner from "@/components/shared/SubscriptionBanner";
 import useEscapeKey from "@/hooks/useEscapeKey";
 import PropertiesQuickNav from "@/apps/properties/components/PropertiesQuickNav";
 
@@ -118,7 +117,6 @@ function EcoLayout({ active = "panel", title, subtitle, onGuide, children }) {
           <CoreTopbarActions onGuide={onGuide} className="topbar-right" />
         </div>
 
-        <SubscriptionBanner />
         <div className="scroll-area">{children}</div>
       </div>
       <Toast />
