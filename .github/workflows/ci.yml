@@ -33,6 +33,12 @@ jobs:
         # que hacen los scripts de deploy.
         run: npm ci
 
+      - name: Lint
+        # Primera vez que corre esto (eslint.config.js es nuevo) — la deuda
+        # preexistente quedó en "warn" a propósito, ver el comentario en el
+        # propio eslint.config.js. Esto solo falla ante un error real.
+        run: npm run lint
+
       - name: Tests
         run: npm test
 

@@ -1,0 +1,5 @@
+# Dueño de revisión por defecto para todo el repo. Esto es lo que usará
+# "Require review from Code Owners" en branch protection el día que haya
+# GitHub Team (ver BRANCHING.md) — mientras tanto, GitHub ya te pide como
+# revisor automáticamente en cada PR aunque la protección no esté activa.
+* @ABISUKI
