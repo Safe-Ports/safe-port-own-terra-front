@@ -1,24 +1,23 @@
 # Flujo de release — front
 
 ## Ramas
-- `develop`: trabajo diario. Cualquiera abre PR hacia acá.
-- `main`: lo que está (o va a estar) en producción. Solo se llega por merge de `develop`, y ese merge lo hace **@ABISUKI**.
+- `develop`: trabajo diario. Todo cambio entra por PR — **branch protection bloquea el push directo, incluso a `develop`**.
+- `main`: lo que está (o va a estar) en producción. Se llega mergeando una rama `release/X.Y.Z` (ver abajo).
 
 ## Pull requests
 - Todo PR usa la plantilla (`.github/pull_request_template.md`) y corre CI (`.github/workflows/ci.yml`: lint + tests + build) antes de poder mergearse.
-- La revisión/aprobación final es de **@ABISUKI** (ver `.github/CODEOWNERS`).
+- Requiere 1 aprobación. **@ABISUKI y Fernando se aprueban los PRs mutuamente** (GitHub no deja auto-aprobar el propio) — esto hasta que el equipo crezca y se pueda repartir distinto.
 
-## Versionado y tags
+## Versionado y tags — automático
 - Prefijo de este repo: **sin prefijo**, solo `vMAJOR.MINOR.PATCH`.
   - **patch**: fix sin cambio de comportamiento externo.
   - **minor**: feature nueva, compatible hacia atrás.
   - **major**: cambio grande de UX/flujo que amerita avisar al equipo antes de desplegar.
-- El tag se crea **sobre el commit de `main`** recién mergeado:
-  ```
-  git checkout main && git pull
-  git tag -a vX.Y.Z -m "Resumen del release"
-  git push origin main --tags
-  ```
+- **Ya no se crea el tag a mano.** El flujo es:
+  1. Desde `develop`, crea una rama `release/X.Y.Z` (tú decides el número, igual que antes).
+  2. Ábrela como PR hacia `main`, que se apruebe, mergéala.
+  3. `.github/workflows/release-tag.yml` detecta el merge, lee `X.Y.Z` del nombre de la rama, y crea + pushea el tag `vX.Y.Z` solo — sin intervención manual.
+- Antes de desplegar a prod, acuérdate de `git checkout main && git pull` para bajar el tag nuevo que el workflow ya creó.
 
 ## Deploy a producción
 - Script: `scripts/deploy-prod-frontend.sh` (exige estar en `main`, árbol limpio y un tag exacto en el commit actual — si falta, el script se niega a correr).
